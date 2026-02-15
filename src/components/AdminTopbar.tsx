@@ -1,0 +1,31 @@
+import React from "react";
+import { Bell, Search } from "lucide-react";
+
+export default function AdminTopbar() {
+  return (
+    <header className="fixed top-0 left-[260px] right-0 bg-white border-b border-l-0 flex items-center justify-between px-8 py-4 z-40">
+      <div className="flex-1 max-w-md">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search for employees, documents..."
+            className="w-full pl-10 pr-4 py-2 rounded-md border bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-200"
+          />
+          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+        </div>
+      </div>
+      <div className="flex items-center gap-6">
+        <Bell className="text-gray-400" size={20} />
+        <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full">
+          <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center overflow-hidden">
+            <img src="/admin-profile.jpg" alt="Admin" className="w-full h-full object-cover" />
+          </div>
+          <div className="text-right">
+            <div className="font-semibold text-sm">Admin Profile</div>
+            <div className="text-xs text-gray-500">HR Administrator</div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
