@@ -1,0 +1,13 @@
+export function HomeFooter() {
+    const currentYear = new Date().getFullYear();
+
+    return (
+        <footer className="w-full border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-8">
+            <div className="container mx-auto px-6 lg:px-12">
+                <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+                    Copyright {currentYear} - 2030 HR MATE All right reserved
+                </p>
+            </div>
+        </footer>
+    );
+}
