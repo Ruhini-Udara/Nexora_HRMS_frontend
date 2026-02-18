@@ -1,6 +1,6 @@
 import { Search, Bell } from 'lucide-react';
 
-const Header = () => {
+const ManagerHeader = () => {
     return (
         <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between sticky top-0 z-40">
             <div className="relative w-full max-w-lg">
@@ -35,4 +35,4 @@ const Header = () => {
     );
 };
 
-export default Header;
+export default ManagerHeader;

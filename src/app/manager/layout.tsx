@@ -1,6 +1,6 @@
 
-import Header from "./components/Header";
-import Sidebar from "./components/Sidebar";
+import ManagerHeader from "@/components/ManagerHeader";
+import ManagerSidebar from "@/components/ManagerSidebar";
 
 export default function ManagerLayout({
     children,
@@ -9,9 +9,9 @@ export default function ManagerLayout({
 }) {
     return (
         <div className="flex min-h-screen bg-dashboard-bg">
-            <Sidebar />
+            <ManagerSidebar />
             <main className="flex-1 ml-[260px]">
-                <Header />
+                <ManagerHeader />
                 {children}
             </main>
         </div>

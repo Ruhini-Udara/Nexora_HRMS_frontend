@@ -1,7 +1,7 @@
 
 import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, ShieldQuestion, Heart, GraduationCap, UserX } from 'lucide-react';
-import SummaryCard from './components/SummaryCard';
-import ModuleCard from './components/ModuleCard';
+import SummaryCard from '@/components/dashboard/SummaryCard';
+import ModuleCard from '@/components/dashboard/ModuleCard';
 
 export default function ManagerDashboard() {
     return (
