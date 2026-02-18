@@ -6,7 +6,7 @@ type ActiveView =
   | "dashboard" 
   | "employeeMaster" 
   | "registerEmployee"
-  | "calendar" 
+  | "officeCalendar" 
   | "shifts" 
   | "documents" 
   | "reports";

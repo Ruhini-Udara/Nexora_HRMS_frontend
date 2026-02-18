@@ -28,7 +28,7 @@ export default function AdminContent() {
     return <RegisterEmployee />;
   }
 
-  if (activeView === "officeCalendar") {
+  if (activeView === "officeCalendar") {  
     return <OfficeCalendar />;
   }
 
