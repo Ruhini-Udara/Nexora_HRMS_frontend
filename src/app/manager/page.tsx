@@ -93,7 +93,7 @@ export default function ManagerDashboard() {
                         title="Training Requests"
                         description="Approve skill development courses and external certification requests for your team."
                         icon={<GraduationCap className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/training"
                     />
                     <ModuleCard
                         title="Leave Requests"
