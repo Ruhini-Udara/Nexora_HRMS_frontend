@@ -1,4 +1,5 @@
 import { Search, Bell } from 'lucide-react';
+import Link from 'next/link';
 
 const ManagerHeader = () => {
     return (
@@ -19,7 +20,7 @@ const ManagerHeader = () => {
                     <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
                 </button>
                 <div className="h-8 border-l border-gray-200"></div>
-                <div className="flex items-center gap-3">
+                <Link href="/manager/profile" className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors">
                     <div className="text-right">
                         <p className="text-sm font-semibold text-gray-800">Sarah Wilson</p>
                         <p className="text-xs text-gray-500 font-medium">Department Manager</p>
@@ -29,7 +30,7 @@ const ManagerHeader = () => {
                         className="h-10 w-10 rounded-full border border-gray-200 object-cover"
                         src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0_EpiKV1FoHDgAQfJ4rg83HDGt52Mf76DbiZg-5YXGFexAzfFOK6HXsKwPFXZ_aBQxmRCel5HE_8VPgOE3buNKrN9gzvB-B6PXO2p92qhVvj8jVbL_VyRY2z9uj-7DtFpsErKweMcde6LaKc30qDRpXhr5sUpIK0FSsmuTYYYRNokRhVFH2Dp28wXQ98Tp6djm90wX3AYB82QOjaQPxPjJS1iNTuoYn5OT1gGfpN4JiA2hmCsiQOwMOQNcNfd2Ry0gb9SOSkRtdU"
                     />
-                </div>
+                </Link>
             </div>
         </header>
     );
