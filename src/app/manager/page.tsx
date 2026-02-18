@@ -69,7 +69,7 @@ export default function ManagerDashboard() {
                         title="Termination Requests"
                         description="Manage offboarding procedures and resignation notices for department staff."
                         icon={<UserMinus className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/termination"
                     />
                     <ModuleCard
                         title="Registration Requests"
