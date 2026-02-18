@@ -19,7 +19,7 @@ const EmployeeSidebar = () => {
         { name: "My Documents", href: "/employee/documents", icon: "description" },
         { name: "Transfer Requests", href: "/employee/transfer-request", icon: "swap_horiz" },
         { name: "Resignation Requests", href: "/employee/resignation", icon: "exit_to_app" },
-        { name: "Welfare Requests", href: "/employee/welfare", icon: "volunteer_activism" },
+        { name: "Welfare Requests", href: "/employee/welfare-request", icon: "volunteer_activism" },
         { name: "Training Requests", href: "/employee/training", icon: "school" },
         { name: "Leave Requests", href: "/employee/leave", icon: "calendar_today" },
     ];
