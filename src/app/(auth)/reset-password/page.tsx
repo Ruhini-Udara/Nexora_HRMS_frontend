@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
 
                             <div className="mt-8">
                                 <p className="text-sm text-slate-400">
-                                    Didn't receive the email?{" "}
+                                    Didn&apos;t receive the email?{" "}
                                     <button className="text-[#8B3A00] font-semibold hover:underline transition-all">
                                         Resend Email
                                     </button>

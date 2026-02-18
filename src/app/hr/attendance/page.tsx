@@ -1,9 +1,3 @@
-<<<<<<< feature-employee_training
-export default function AttendancePage() {
-    return (
-        <div>
-            <h1>Attendance Page</h1>
-=======
 
 import Link from "next/link";
 
@@ -131,7 +125,6 @@ export default function AttendancePage() {
                     </span>
                 </Link>
             </div>
->>>>>>> main
         </div>
     );
 }
