@@ -30,6 +30,11 @@
   --color-sidebar-text: #4b5563;
   
   --radius-custom: 8px;
+
+  /* Training Request Page Custom Colors */
+  --color-training-primary: #9e3f00;
+  --color-training-bg-light: #f8f7f5;
+  --color-training-bg-dark: #23170f;
 }
 
 @media (prefers-color-scheme: dark) {

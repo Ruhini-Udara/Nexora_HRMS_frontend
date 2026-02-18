@@ -1,3 +1,9 @@
+<<<<<<< feature-employee_training
+export default function LeavePage() {
+    return (
+        <div>
+            <h1>Leave Page</h1>
+=======
 
 import Link from "next/link";
 
@@ -125,6 +131,7 @@ export default function LeavePage() {
                     </span>
                 </Link>
             </div>
+>>>>>>> main
         </div>
     );
 }

@@ -1,3 +1,9 @@
+<<<<<<< feature-employee_training
+export default function TrainingPage() {
+    return (
+        <div>
+            <h1>Training Page</h1>
+=======
 
 import Link from "next/link";
 
@@ -129,6 +135,7 @@ export default function TrainingPage() {
                     </span>
                 </Link>
             </div>
+>>>>>>> main
         </div>
     );
 }
