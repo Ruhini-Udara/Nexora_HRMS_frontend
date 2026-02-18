@@ -1,4 +1,4 @@
-import { MoreHorizontal, Eye, Check, X } from 'lucide-react';
+import { MoreHorizontal, Eye, Check, X, Download, Filter } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TransferTable() {
@@ -50,12 +50,12 @@ export default function TransferTable() {
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="font-bold text-gray-900">Recent Requests</h3>
                 <div className="flex gap-2">
-                    <input
-                        type="text"
-                        placeholder="Search employees..."
-                        className="text-sm border border-gray-300 rounded-lg px-3 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    />
-                    <button className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold text-sm hover:bg-primary/90 rounded-lg transition-colors shadow-sm">
+                        <Download className="w-4 h-4" />
+                        Export CSV
+                    </button>
+                    <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
+                        <Filter className="w-[18px] h-[18px]" />
                         Filter
                     </button>
                 </div>
