@@ -11,6 +11,7 @@ export function DarkModeToggle() {
         const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
         if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+            // eslint-disable-next-line react-hooks/exhaustive-deps
             setIsDark(true);
             document.documentElement.classList.add("dark");
         }

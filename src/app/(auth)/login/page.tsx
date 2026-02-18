@@ -143,7 +143,7 @@ export default function LoginPage() {
                         <div className="mt-8 pt-8">
                             <Separator className="mb-8" />
                             <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center">
-                                Don't have an account?{" "}
+                                Don&apos;t have an account?{" "}
                                 <Link href="#" className="font-semibold text-[#8B3A00] hover:underline">
                                     Contact Support
                                 </Link>

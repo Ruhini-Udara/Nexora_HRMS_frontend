@@ -9,7 +9,7 @@ export default function ManagerDashboard() {
             {/* Page Title */}
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-gray-900">Manager Dashboard</h1>
-                <p className="text-gray-500 mt-1">Manage your team's requests and monitor department performance.</p>
+                <p className="text-gray-500 mt-1">Manage your team&apos;s requests and monitor department performance.</p>
             </div>
 
             {/* Summary Cards */}
@@ -63,7 +63,7 @@ export default function ManagerDashboard() {
                         title="Transfer Requests"
                         description="Review and approve employee requests for internal department transfers or location changes."
                         icon={<ArrowLeftRight className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/transfer"
                     />
                     <ModuleCard
                         title="Termination Requests"
