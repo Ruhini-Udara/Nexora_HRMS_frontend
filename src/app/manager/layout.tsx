@@ -10,9 +10,14 @@ export default function ManagerLayout({
     return (
         <div className="flex min-h-screen bg-dashboard-bg">
             <ManagerSidebar />
-            <main className="flex-1 ml-[260px]">
+            <main className="flex-1 ml-[260px] flex flex-col min-h-screen">
                 <ManagerHeader />
-                {children}
+                <div className="flex-1">
+                    {children}
+                </div>
+                <footer className="mt-auto px-8 py-6 border-t border-border-light dark:border-border-dark text-center text-sm text-gray-500 dark:text-gray-400">
+                    Copyright 2026 - 2030 HR MATE All right reserved
+                </footer>
             </main>
         </div>
     );
