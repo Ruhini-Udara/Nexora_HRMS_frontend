@@ -22,13 +22,13 @@
   --color-surface-dark: #1F2937;
   --color-border-light: #E5E7EB;
   --color-border-dark: #374151;
-  
+
   /* Manager Dashboard Custom Colors */
   --color-primary: #9e3f00;
   --color-primary-light: #fef2f2;
   --color-dashboard-bg: #f9fafb;
   --color-sidebar-text: #4b5563;
-  
+
   --radius-custom: 8px;
 
   /* Training Request Page Custom Colors */
@@ -37,15 +37,15 @@
   --color-training-bg-dark: #23170f;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
+  background: #ffffff;
   background: var(--background);
+  color: #171717;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
