@@ -31,6 +31,12 @@ export default function TransferRequestsPage() {
                 <div className="lg:col-span-3">
 
 
+
+                    <div className="flex justify-end mb-4">
+                        <Link href="#" className="text-primary text-sm font-medium hover:underline flex items-center gap-1">
+                            View Transfer List <span className="text-lg leading-none">&rarr;</span>
+                        </Link>
+                    </div>
                     <TransferTable />
                 </div>
             </div>
