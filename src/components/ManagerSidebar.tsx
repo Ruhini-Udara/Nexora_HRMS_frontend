@@ -1,7 +1,23 @@
-import Link from 'next/link'; // Trigger re-check
+"use client";
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Home, ArrowLeftRight, UserX, Heart, UserMinus, ShieldQuestion, GraduationCap, Calendar } from 'lucide-react';
 
 const ManagerSidebar = () => {
+    const pathname = usePathname();
+
+    const navLinks = [
+        { label: "Dashboard", href: "/manager", icon: Home },
+        { label: "Transfer Requests", href: "/manager/transfer", icon: ArrowLeftRight },
+        { label: "Termination Requests", href: "/manager/termination", icon: UserMinus },
+        { label: "Death Applications", href: "/manager/death", icon: UserX },
+        { label: "Resignation Requests", href: "/manager/resignation", icon: ShieldQuestion },
+        { label: "Welfare Requests", href: "/manager/welfare", icon: Heart },
+        { label: "Training Requests", href: "/manager/training", icon: GraduationCap },
+        { label: "Leave Requests", href: "/manager/leave", icon: Calendar },
+    ];
+
     return (
         <aside className="w-[260px] bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 z-50">
             <div className="p-6 flex items-center gap-2">
@@ -11,38 +27,22 @@ const ManagerSidebar = () => {
                 <span className="text-xl font-bold tracking-tight text-gray-800">HR MATE</span>
             </div>
             <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-primary-light text-primary border-r-4 border-primary rounded-custom">
-                    <Home className="w-5 h-5" />
-                    Dashboard
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-sidebar-text hover:bg-gray-50 rounded-custom">
-                    <ArrowLeftRight className="w-5 h-5" />
-                    Transfer Requests
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-sidebar-text hover:bg-gray-50 rounded-custom">
-                    <UserMinus className="w-5 h-5" />
-                    Termination Requests
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-sidebar-text hover:bg-gray-50 rounded-custom">
-                    <UserX className="w-5 h-5" />
-                    Death Applications
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-sidebar-text hover:bg-gray-50 rounded-custom">
-                    <ShieldQuestion className="w-5 h-5" />
-                    Resignation Requests
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-sidebar-text hover:bg-gray-50 rounded-custom">
-                    <Heart className="w-5 h-5" />
-                    Welfare Requests
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-sidebar-text hover:bg-gray-50 rounded-custom">
-                    <GraduationCap className="w-5 h-5" />
-                    Training Requests
-                </Link>
-                <Link href="#" className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-sidebar-text hover:bg-gray-50 rounded-custom">
-                    <Calendar className="w-5 h-5" />
-                    Leave Requests
-                </Link>
+                {navLinks.map(({ label, href, icon: Icon }) => {
+                    const isActive = pathname === href;
+                    return (
+                        <Link
+                            key={href}
+                            href={href}
+                            className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors ${isActive
+                                ? "bg-primary-light text-primary border-r-4 border-primary"
+                                : "text-sidebar-text hover:bg-gray-50"
+                                }`}
+                        >
+                            <Icon className="w-5 h-5" />
+                            {label}
+                        </Link>
+                    );
+                })}
             </nav>
             <div className="p-4 border-t border-gray-200">
                 <button className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-custom hover:bg-gray-50">

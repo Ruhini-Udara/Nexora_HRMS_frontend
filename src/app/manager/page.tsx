@@ -63,7 +63,7 @@ export default function ManagerDashboard() {
                         title="Transfer Requests"
                         description="Review and approve employee requests for internal department transfers or location changes."
                         icon={<ArrowLeftRight className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/transfer"
                     />
                     <ModuleCard
                         title="Termination Requests"
