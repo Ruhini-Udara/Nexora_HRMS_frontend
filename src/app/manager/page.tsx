@@ -87,7 +87,7 @@ export default function ManagerDashboard() {
                         title="Welfare Requests"
                         description="Handle employee benefit claims, health insurance inquiries, and wellness program enrollments."
                         icon={<Heart className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/welfare"
                     />
                     <ModuleCard
                         title="Training Requests"
