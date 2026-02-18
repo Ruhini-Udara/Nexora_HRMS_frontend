@@ -1,7 +1,7 @@
 import Link from 'next/link'; // Trigger re-check
 import { Home, ArrowLeftRight, UserX, Heart, UserMinus, ShieldQuestion, GraduationCap, Calendar } from 'lucide-react';
 
-const Sidebar = () => {
+const ManagerSidebar = () => {
     return (
         <aside className="w-[260px] bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 z-50">
             <div className="p-6 flex items-center gap-2">
@@ -54,4 +54,4 @@ const Sidebar = () => {
     );
 };
 
-export default Sidebar;
+export default ManagerSidebar;
