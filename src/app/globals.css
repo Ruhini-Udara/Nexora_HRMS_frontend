@@ -1,29 +1,15 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --primary: #8B3A00;
-  --primary-dark: #702E00;
-  --light-cream: #FAF6F3;
-  --need-help-bg: #FDF2F2;
-  --need-help-btn: #F8D7D7;
-  --need-help-text: #B91C1C;
 }
 
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-dark: var(--primary-dark);
-  --color-light-cream: var(--light-cream);
-  --color-need-help-bg: var(--need-help-bg);
-  --color-need-help-btn: var(--need-help-btn);
-  --color-need-help-text: var(--need-help-text);
-}
-
-body {
-  background-color: var(--background);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
 
@@ -61,12 +47,22 @@ body {
   background: var(--background);
   color: #171717;
   color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 @utility sidebar-active {
-  background-color: var(--light-cream);
-  color: var(--primary);
-  border-left: 4px solid var(--primary);
+  background-color: rgba(139, 58, 0, 0.1);
+  color: #8B3A00;
+  border-right-width: 4px;
+  border-right-color: #8B3A00;
+}
+
+@utility card-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+@utility dropdown-shadow {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .material-symbols-outlined {
