@@ -69,7 +69,7 @@ export default function ManagerDashboard() {
                         title="Termination Requests"
                         description="Manage offboarding procedures and resignation notices for department staff."
                         icon={<UserMinus className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/termination"
                     />
                     <ModuleCard
                         title="Registration Requests"
@@ -81,7 +81,7 @@ export default function ManagerDashboard() {
                         title="Death Application"
                         description="Process compassionate leave and insurance benefit claims for bereaved employees."
                         icon={<UserX className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/death"
                     />
                     <ModuleCard
                         title="Welfare Requests"

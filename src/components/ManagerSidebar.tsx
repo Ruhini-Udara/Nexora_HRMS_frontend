@@ -24,7 +24,7 @@ const ManagerSidebar = () => {
                 <div className="w-10 h-10 bg-primary rounded-custom flex items-center justify-center text-white font-bold text-xl">
                     HM
                 </div>
-                <span className="text-xl font-bold tracking-tight text-gray-800">HR MATE</span>
+                <span className="text-xl font-bold tracking-tight text-primary">HR MATE</span>
             </div>
             <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
                 {navLinks.map(({ label, href, icon: Icon }) => {
