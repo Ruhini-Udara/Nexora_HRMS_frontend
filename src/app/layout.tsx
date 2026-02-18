@@ -23,7 +23,7 @@ export default function RootLayout({
       <head>
         {/* Material Icons */}
         <link
-          href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined"
+          href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined|Material+Icons+Round|Material+Symbols+Outlined"
           rel="stylesheet"
         />
       </head>
