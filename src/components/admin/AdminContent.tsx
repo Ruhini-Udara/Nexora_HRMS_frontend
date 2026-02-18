@@ -40,7 +40,7 @@ export default function AdminContent() {
           Admin Dashboard
         </h1>
         <p className="text-gray-500 text-base">
-          Welcome back! Here's what's happening in HR MATE today.
+          Welcome back! Here&apos;s what&apos;s happening in HR MATE today.
         </p>
       </div>
 

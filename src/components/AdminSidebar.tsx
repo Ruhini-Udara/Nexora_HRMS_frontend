@@ -17,9 +17,9 @@ export default function AdminSidebar() {
   const { activeView, setActiveView } = useAdminNavigation();
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-64 bg-white border-r flex flex-col justify-between z-30">
+    <aside className="fixed top-0 left-0 h-screen w-64 bg-white flex flex-col justify-between z-30">
       <div>
-        <div className="flex items-center gap-2 px-6 py-6 border-b">
+        <div className="flex items-center gap-2 px-6 py-6 border-b border-slate-200">
           <div className="bg-orange-900 text-white rounded-md w-10 h-10 flex items-center justify-center font-bold text-lg">HM</div>
           <span className="font-bold text-xl text-orange-900">HR MATE</span>
         </div>
