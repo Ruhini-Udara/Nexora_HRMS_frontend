@@ -3,15 +3,15 @@ import { Bell, Search } from "lucide-react";
 
 export default function AdminTopbar() {
   return (
-    <header className="fixed top-0 left-[260px] right-0 bg-white border-b border-l-0 flex items-center justify-between px-8 py-4 z-40">
+    <header className="fixed top-0 left-64 right-0 bg-white border-b border-slate-200 flex items-center justify-between px-8 py-4 z-40">
       <div className="flex-1 max-w-md">
         <div className="relative">
           <input
             type="text"
             placeholder="Search for employees, documents..."
-            className="w-full pl-10 pr-4 py-2 rounded-md border bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-200"
+            className="w-full pl-10 pr-4 py-2 rounded-md border border-slate-200 bg-white text-slate-400 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
           />
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+          <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
         </div>
       </div>
       <div className="flex items-center gap-6">

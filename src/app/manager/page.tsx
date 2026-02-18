@@ -9,7 +9,7 @@ export default function ManagerDashboard() {
             {/* Page Title */}
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-gray-900">Manager Dashboard</h1>
-                <p className="text-gray-500 mt-1">Manage your team's requests and monitor department performance.</p>
+                <p className="text-gray-500 mt-1">Manage your team&apos;s requests and monitor department performance.</p>
             </div>
 
             {/* Summary Cards */}
@@ -69,7 +69,7 @@ export default function ManagerDashboard() {
                         title="Termination Requests"
                         description="Manage offboarding procedures and resignation notices for department staff."
                         icon={<UserMinus className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/termination"
                     />
                     <ModuleCard
                         title="Registration Requests"
@@ -81,7 +81,7 @@ export default function ManagerDashboard() {
                         title="Death Application"
                         description="Process compassionate leave and insurance benefit claims for bereaved employees."
                         icon={<UserX className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/death"
                     />
                     <ModuleCard
                         title="Welfare Requests"
