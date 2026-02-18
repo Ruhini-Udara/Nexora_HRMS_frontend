@@ -15,11 +15,11 @@ const EmployeeSidebar = () => {
     };
 
     const menuItems = [
-        { name: "Dashboard", href: "/employee/dashboard", icon: "dashboard" },
+        { name: "Dashboard", href: "/employee", icon: "dashboard" },
         { name: "My Documents", href: "/employee/documents", icon: "description" },
         { name: "Transfer Requests", href: "/employee/transfer-request", icon: "swap_horiz" },
         { name: "Resignation Requests", href: "/employee/resignation", icon: "exit_to_app" },
-        { name: "Welfare Requests", href: "/employee/welfare", icon: "volunteer_activism" },
+        { name: "Welfare Requests", href: "/employee/welfare-request", icon: "volunteer_activism" },
         { name: "Training Requests", href: "/employee/training-request", icon: "school" },
         { name: "Leave Requests", href: "/employee/leave", icon: "calendar_today" },
     ];
@@ -37,10 +37,10 @@ const EmployeeSidebar = () => {
         >
             <div className="px-6 pt-6 pb-2">
                 <div className="flex items-center gap-2 mb-8">
-                    <div className="bg-[#8B4513] rounded-lg flex items-center justify-center w-[42px] h-[30px]">
-                        <span className="text-white font-bold text-lg leading-[18px]">HM</span>
+                    <div className="w-10 h-10 bg-primary rounded-custom flex items-center justify-center text-white font-bold text-xl">
+                        HM
                     </div>
-                    <span className="font-bold text-2xl text-[#8B4513] tracking-tight">HR MATE</span>
+                    <span className="text-xl font-bold tracking-tight text-gray-800">HR MATE</span>
                 </div>
             </div>
             <nav className="flex flex-col gap-1 px-4 flex-1">
