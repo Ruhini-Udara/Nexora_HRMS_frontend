@@ -14,9 +14,6 @@ export default function TransferRequestsPage() {
                     <p className="text-gray-500 mt-1">Manage internal transfer applications and department changes.</p>
                 </div>
                 <div className="flex gap-3">
-                    <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                        Export Report
-                    </button>
                     <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
                         New Transfer Request
                     </button>
