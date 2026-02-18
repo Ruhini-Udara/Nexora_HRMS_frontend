@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nexora HRMS – Frontend
 
-## Getting Started
+## 📌 Project Overview
 
-First, run the development server:
+Nexora HRMS (Human Resource Management System) is a web-based application designed to streamline and digitalize HR operations within an organization.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+This repository contains the **frontend application**, built using **Next.js and TypeScript**, which provides the user interface for managing employees, attendance, leave, training, welfare, and HR-related workflows.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The system is designed to support HR administrators, HR users, and employees through a structured, role-based interface.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🎯 Purpose of the System
 
-## Learn More
+The Nexora HRMS aims to:
 
-To learn more about Next.js, take a look at the following resources:
+- Centralize employee data management
+- Automate HR workflows
+- Improve transparency in attendance and leave tracking
+- Digitally manage employee documents
+- Support training and development processes
+- Streamline welfare and approval workflows
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 👥 Target Users
 
-## Deploy on Vercel
+The system supports multiple user roles:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **HR Administrator** – Full access to manage employees and system settings
+- **HR User** – Manage employee records, documents, attendance, and workflows
+- **Employee** – View personal data, request leave, submit documents, and track requests
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Access to features is controlled using role-based authorization.
+
+---
+
+## 🧩 Core Functional Modules
+
+### 1️⃣ Employee Management
+- Create, update, and manage employee profiles
+- Track employee lifecycle events (transfers, resignations, terminations)
+- Maintain structured employee records
+
+### 2️⃣ Document Management
+- Upload and manage employee documents
+- Track document validity
+- Maintain document version history
+- Download and preview files
+
+### 3️⃣ Attendance Management
+- Record and monitor attendance
+- View personal and team attendance
+- Support attendance verification processes
+
+### 4️⃣ Leave Management
+- Submit and review leave requests
+- Track leave balances
+- Manage approvals and status updates
+- Handle special leave categories
+
+### 5️⃣ Training & Development
+- Create training plans
+- Assign employees to training programs
+- Track attendance and confirmations
+- Collect feedback
+
+### 6️⃣ Welfare Management
+- Submit welfare requests
+- Multi-step certification and approval workflow
+- Track request status
+
+### 7️⃣ Reports & Analytics
+- View HR-related reports
+- Monitor employee statistics and trends
+
+---
+
+## 🛠️ Technology Stack
+
+- **Framework:** Next.js (React)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **State Management:** Zustand
+- **Form Handling:** React Hook Form + Zod
+- **Data Fetching:** TanStack Query
+- **HTTP Client:** Axios
+
+---
+
+## 🏗️ Architecture Overview
+
+The frontend communicates with a backend REST API to:
+
+- Authenticate users
+- Retrieve and update HR data
+- Manage workflows
+- Upload and retrieve documents
+- Handle approval processes
+
+The system follows a modular structure to ensure scalability and maintainability.
+
