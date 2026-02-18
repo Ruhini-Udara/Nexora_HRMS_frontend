@@ -1,0 +1,136 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+
+export default function HRDashboard() {
+    return (
+        <div className="p-8 max-w-7xl mx-auto w-full">
+            <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">HR User Dashboard</h2>
+                <p className="text-gray-600 dark:text-gray-400">Manage daily HR operations and staff activities.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Staff</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">842</h3>
+                        <p className="text-xs text-green-600 font-medium mt-2 flex items-center">
+                            <span className="material-icons-round text-sm mr-1">trending_up</span> +5 new hires this week
+                        </p>
+                    </div>
+                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
+                        <span className="material-icons-round text-primary">groups</span>
+                    </div>
+                </div>
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Training Programs</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">12</h3>
+                        <p className="text-xs text-amber-600 font-medium mt-2 flex items-center">
+                            <span className="material-icons-round text-sm mr-1">pending_actions</span> 3 finishing soon
+                        </p>
+                    </div>
+                    <div className="w-12 h-12 bg-secondary/10 flex items-center justify-center rounded-lg">
+                        <span className="material-icons-round text-secondary">school</span>
+                    </div>
+                </div>
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Today&apos;s Attendance %</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">94.8%</h3>
+                        <p className="text-xs text-blue-600 font-medium mt-2 flex items-center">
+                            <span className="material-icons-round text-sm mr-1">check_circle</span> 798 present today
+                        </p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-500/10 flex items-center justify-center rounded-lg">
+                        <span className="material-icons-round text-blue-600">how_to_reg</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="mb-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">HR Management Modules</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Link href="/hr/employees" className="group bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
+                        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-primary/5 transition-colors">
+                            <span className="material-icons-round text-primary text-3xl">people</span>
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Employees</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">View and update staff directory, roles, and basic contact information.</p>
+                        <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                            Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </span>
+                    </Link>
+
+                    <Link href="/hr/documents" className="group bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
+                        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-primary/5 transition-colors">
+                            <span className="material-icons-round text-primary text-3xl">description</span>
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Documents</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Manage staff folders, upload contracts, and monitor document expirations.</p>
+                        <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                            Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </span>
+                    </Link>
+
+                    <Link href="/hr/training" className="group bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
+                        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-primary/5 transition-colors">
+                            <span className="material-icons-round text-primary text-3xl">school</span>
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Training & Development</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Track employee skills growth, mandatory training, and career pathing.</p>
+                        <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                            Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </span>
+                    </Link>
+
+                    <Link href="/hr/attendance" className="group bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
+                        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-primary/5 transition-colors">
+                            <span className="material-icons-round text-primary text-3xl">how_to_reg</span>
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Attendance</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Monitor daily check-ins, overtime hours, and attendance patterns.</p>
+                        <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                            Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </span>
+                    </Link>
+
+                    <Link href="/hr/leave" className="group bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
+                        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-primary/5 transition-colors">
+                            <span className="material-icons-round text-primary text-3xl">event_note</span>
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Leave Management</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Process holiday requests, sick leaves, and manage the team calendar.</p>
+                        <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                            Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </span>
+                    </Link>
+
+                    <Link href="/hr/welfare" className="group bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
+                        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-primary/5 transition-colors">
+                            <span className="material-icons-round text-primary text-3xl">volunteer_activism</span>
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Welfare</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Oversee employee benefits, wellness programs, and insurance claims.</p>
+                        <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                            Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </span>
+                    </Link>
+
+                    <Link href="/hr/reports" className="group bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
+                        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-primary/5 transition-colors">
+                            <span className="material-icons-round text-primary text-3xl">insights</span>
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Reports & Analytics</h4>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Generate departmental reports and track key HR performance indicators.</p>
+                        <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                            Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
+                        </span>
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
