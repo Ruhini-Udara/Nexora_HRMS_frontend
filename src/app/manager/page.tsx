@@ -99,7 +99,7 @@ export default function ManagerDashboard() {
                         title="Leave Requests"
                         description="Review and approve annual leave, sick leave, and other time-off applications."
                         icon={<Calendar className="w-5 h-5" />}
-                        href="#"
+                        href="/manager/leave"
                     />
                 </div>
             </section>
