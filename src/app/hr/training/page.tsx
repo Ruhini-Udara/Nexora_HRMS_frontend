@@ -5,13 +5,7 @@ export default function TrainingPage() {
     return (
         <div className="p-8 max-w-7xl mx-auto w-full flex-1">
             <div className="mb-8">
-                <nav className="flex mb-4 text-sm font-medium text-gray-500 dark:text-gray-400">
-                    <Link href="/hr" className="hover:text-primary">
-                        Dashboard
-                    </Link>
-                    <span className="mx-2">/</span>
-                    <span className="text-primary">Training & Development</span>
-                </nav>
+
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                     Training & Development
                 </h2>
