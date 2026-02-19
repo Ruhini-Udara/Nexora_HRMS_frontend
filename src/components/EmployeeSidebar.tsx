@@ -37,10 +37,10 @@ const EmployeeSidebar = () => {
         >
             <div className="px-6 pt-6 pb-2">
                 <div className="flex items-center gap-2 mb-8">
-                    <div className="bg-[#8B4513] rounded-lg flex items-center justify-center w-[42px] h-[30px]">
-                        <span className="text-white font-bold text-lg leading-[18px]">HM</span>
+                    <div className="w-10 h-10 bg-primary rounded-custom flex items-center justify-center text-white font-bold text-xl">
+                        HM
                     </div>
-                    <span className="font-bold text-2xl text-[#8B4513] tracking-tight">HR MATE</span>
+                    <span className="text-xl font-bold tracking-tight text-gray-800">HR MATE</span>
                 </div>
             </div>
             <nav className="flex flex-col gap-1 px-4 flex-1">
