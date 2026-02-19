@@ -1,5 +1,5 @@
 
-import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, ShieldQuestion, Heart, GraduationCap, UserX } from 'lucide-react';
+import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, ShieldQuestion, Heart, GraduationCap, UserX, LogOut } from 'lucide-react';
 import SummaryCard from '@/components/dashboard/SummaryCard';
 import ModuleCard from '@/components/dashboard/ModuleCard';
 
@@ -72,10 +72,10 @@ export default function ManagerDashboard() {
                         href="/manager/termination"
                     />
                     <ModuleCard
-                        title="Registration Requests"
-                        description="Approve new account registrations and role permissions for new team joiners."
-                        icon={<UserX className="w-5 h-5" />}
-                        href="#"
+                        title="Resignation Requests"
+                        description="Review and process employee resignation letters and exit interviews."
+                        icon={<LogOut className="w-5 h-5" />}
+                        href="/manager/resign"
                     />
                     <ModuleCard
                         title="Death Application"

@@ -1,38 +1,49 @@
-import { Clock, XCircle, CheckCircle, TrendingUp } from 'lucide-react';
+import { Clock, XCircle, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function TrainingStats() {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {/* Card 1: Pending Requests */}
-            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-primary/20 transition-all">
-                <div className="flex flex-col gap-1">
-                    <p className="text-gray-500 text-sm font-medium">Pending Requests</p>
-                    <h3 className="text-3xl font-bold text-gray-900">08</h3>
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-500 text-sm font-medium">Pending Requests</span>
+                    <div className="size-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+                        <Clock className="w-5 h-5" />
+                    </div>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
-                    <Clock className="w-6 h-6" />
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">08</p>
+                <div className="flex items-center gap-1 mt-1 text-secondary">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span className="text-xs font-bold">Action Required</span>
                 </div>
             </div>
 
             {/* Card 2: Rejected Lists */}
-            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-primary/20 transition-all">
-                <div className="flex flex-col gap-1">
-                    <p className="text-gray-500 text-sm font-medium">Rejected Lists</p>
-                    <h3 className="text-3xl font-bold text-gray-900">12</h3>
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-500 text-sm font-medium">Rejected Lists</span>
+                    <div className="size-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
+                        <XCircle className="w-5 h-5" />
+                    </div>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
-                    <XCircle className="w-6 h-6" />
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">12</p>
+                <div className="flex items-center gap-1 mt-1 text-red-600">
+                    <span className="text-xs font-bold">Updates available</span>
                 </div>
             </div>
 
             {/* Card 3: Approved This Month */}
-            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-primary/20 transition-all">
-                <div className="flex flex-col gap-1">
-                    <p className="text-gray-500 text-sm font-medium">Approved This Month</p>
-                    <h3 className="text-3xl font-bold text-gray-900">45</h3>
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-500 text-sm font-medium">Approved This Month</span>
+                    <div className="size-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                        <CheckCircle className="w-5 h-5" />
+                    </div>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
-                    <CheckCircle className="w-6 h-6" />
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">45</p>
+                <div className="flex items-center gap-1 mt-1 text-emerald-600">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span className="text-xs font-bold">On track</span>
                 </div>
             </div>
         </div>

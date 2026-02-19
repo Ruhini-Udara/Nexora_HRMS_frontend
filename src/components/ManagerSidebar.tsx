@@ -12,7 +12,7 @@ const ManagerSidebar = () => {
         { label: "Transfer Requests", href: "/manager/transfer", icon: ArrowLeftRight },
         { label: "Termination Requests", href: "/manager/termination", icon: UserMinus },
         { label: "Death Applications", href: "/manager/death", icon: UserX },
-        { label: "Resignation Requests", href: "/manager/resignation", icon: ShieldQuestion },
+        { label: "Resignation Requests", href: "/manager/resign", icon: ShieldQuestion },
         { label: "Welfare Requests", href: "/manager/welfare", icon: Heart },
         { label: "Training Requests", href: "/manager/training", icon: GraduationCap },
         { label: "Leave Requests", href: "/manager/leave", icon: Calendar },
