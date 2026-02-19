@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import Image from "next/image";
 
 interface TrainingEventProps {
@@ -45,10 +46,13 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
                         {time}
                     </div>
                 </div>
-                <button className="w-full py-2.5 bg-[var(--color-training-primary)] text-white rounded-lg font-bold text-sm hover:bg-[#853500] transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                <Link
+                    href={`/employee/training-request/${title.toLowerCase().replace(/ /g, '-')}`}
+                    className="w-full py-2.5 bg-[var(--color-training-primary)] text-white rounded-lg font-bold text-sm hover:bg-[#853500] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
                     <span className="material-symbols-outlined text-sm">send</span>
                     Apply Now
-                </button>
+                </Link>
             </div>
         </div>
     );
