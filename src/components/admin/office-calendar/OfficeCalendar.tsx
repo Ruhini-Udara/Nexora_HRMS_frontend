@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import AddCompanyHoliday from "../addcompanyholiday/AddCompanyHoliday";
 
 interface CalendarEvent {
   id: number;
@@ -14,6 +15,7 @@ interface CalendarEvent {
 export default function OfficeCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1)); // October 2026
   const [view, setView] = useState<"day" | "week" | "month">("month");
+  const [showAddHoliday, setShowAddHoliday] = useState(false);
 
   const events: CalendarEvent[] = [
     { id: 1, title: "Quarterly All-Ha...", date: "2026-10-05", type: "internal-event" },
@@ -159,7 +161,10 @@ export default function OfficeCalendar() {
             <Plus size={18} />
             Add Event
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors">
+          <button 
+            onClick={() => setShowAddHoliday(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors"
+          >
             <Plus size={18} />
             Add Holiday
           </button>
@@ -253,6 +258,9 @@ export default function OfficeCalendar() {
           </div>
         </div>
       </div>
+
+      {/* Add Holiday Modal */}
+      {showAddHoliday && <AddCompanyHoliday onClose={() => setShowAddHoliday(false)} />}
     </div>
   );
 }
