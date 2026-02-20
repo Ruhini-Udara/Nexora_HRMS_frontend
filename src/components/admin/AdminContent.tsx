@@ -15,6 +15,7 @@ import {
 import EmployeeMaster from "@/components/admin/employee-master/EmployeeMaster";
 import RegisterEmployee from "@/components/admin/register-employee/RegisterEmployee";
 import OfficeCalendar from "@/components/admin/office-calendar/OfficeCalendar";
+import ShiftManagement from "@/components/admin/shift-management/ShiftManagement";
 import { useAdminNavigation } from "./AdminNavigationContext";
 
 export default function AdminContent() {
@@ -30,6 +31,10 @@ export default function AdminContent() {
 
   if (activeView === "officeCalendar") {  
     return <OfficeCalendar />;
+  }
+
+  if (activeView === "shifts") {
+    return <ShiftManagement />;
   }
 
   return (
