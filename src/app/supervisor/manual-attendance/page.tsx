@@ -32,7 +32,8 @@ function calcWorkHours(inT: string, outT: string) {
     if (!inT || !outT) return { label: "—", ot: "" };
     const parse = (t: string) => {
         const [time, mer] = t.split(" ");
-        let [h, m] = time.split(":").map(Number);
+        const [hRaw, m] = time.split(":").map(Number);
+        let h = hRaw;
         if (mer === "PM" && h !== 12) h += 12;
         if (mer === "AM" && h === 12) h = 0;
         return h * 60 + m;
@@ -125,6 +126,7 @@ export default function ManualAttendancePage() {
                             <p className="text-[13px] font-semibold text-gray-800 leading-tight">Sarah Jenkins</p>
                             <p className="text-[11px] text-gray-500 leading-tight">Operations Lead</p>
                         </div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src="https://i.pravatar.cc/150?img=23"
                             alt="Sarah Jenkins"
@@ -188,6 +190,7 @@ export default function ManualAttendancePage() {
                         <div className="flex flex-col gap-5 px-6 py-5 flex-1">
                             {/* Employee chip */}
                             <div className="flex items-center gap-3 bg-[#fdf9f7] border border-[#9e3f00]/10 rounded-xl p-4">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={sel.avatar} alt={sel.name} className="w-12 h-12 rounded-full bg-gray-100 border-2 border-white shadow-sm flex-shrink-0" />
                                 <div>
                                     <p className="font-bold text-gray-900 text-sm">{sel.name}</p>
@@ -305,6 +308,7 @@ function Card({ emp, selected, onStatus, onCustom }: {
 
             {/* Avatar + Info */}
             <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={emp.avatar} alt={emp.name}
                     className="w-12 h-12 rounded-full bg-gray-100 border-2 border-gray-100 flex-shrink-0 object-cover" />
                 <div className="min-w-0">
