@@ -32,6 +32,7 @@ const EmployeeTopbar = () => (
           <span className="text-xs text-[#94A3B8] font-medium tracking-wide uppercase leading-4">Employee</span>
         </div>
         <span className="w-10 h-10 rounded-full border-2 border-[#F1F5F9] overflow-hidden flex items-center justify-center bg-[#F9E7DF]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/avatar-employee.png" alt="Employee Avatar" className="w-full h-full object-cover" />
         </span>
       </Link>

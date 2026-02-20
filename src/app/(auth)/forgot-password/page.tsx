@@ -38,6 +38,7 @@ export default function ForgotPasswordPage() {
                 <div className="flex-1 flex flex-col items-center justify-center max-w-md xl:max-w-lg text-center mx-auto min-h-0">
                     <div className="mb-8 relative flex-shrink-1 min-h-0">
                         <div className="absolute inset-0 bg-[#8a3900]/5 rounded-full blur-3xl -z-10 transform scale-150"></div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             alt="Security Illustration"
                             className="w-full h-auto object-contain mx-auto mix-blend-multiply max-h-[40vh]"

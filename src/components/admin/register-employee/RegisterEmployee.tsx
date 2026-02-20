@@ -6,10 +6,10 @@ import { useAdminNavigation } from "../AdminNavigationContext";
 
 export default function RegisterEmployee() {
   const { setActiveView } = useAdminNavigation();
-  const [currentStep, setCurrentStep] = useState(3);
+  const [currentStep] = useState(3);
   const [showPassword, setShowPassword] = useState(false);
   const [enableSystemAccess, setEnableSystemAccess] = useState(true);
-  
+
   // Form states
   const [email, setEmail] = useState("alex.morris@hrmate.com");
   const [userRole, setUserRole] = useState("Employee");
@@ -46,13 +46,12 @@ export default function RegisterEmployee() {
               {/* Step Circle */}
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all ${
-                    step.completed
+                  className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all ${step.completed
                       ? "bg-emerald-500 text-white"
                       : step.id === currentStep
-                      ? "bg-amber-400 text-slate-900"
-                      : "bg-slate-200 text-slate-400"
-                  }`}
+                        ? "bg-amber-400 text-slate-900"
+                        : "bg-slate-200 text-slate-400"
+                    }`}
                 >
                   {step.completed ? (
                     <CheckCircle2 size={24} />
@@ -63,9 +62,8 @@ export default function RegisterEmployee() {
                   )}
                 </div>
                 <p
-                  className={`mt-2 text-sm font-medium ${
-                    step.id === currentStep ? "text-[#111827]" : "text-slate-500"
-                  }`}
+                  className={`mt-2 text-sm font-medium ${step.id === currentStep ? "text-[#111827]" : "text-slate-500"
+                    }`}
                 >
                   {step.label}
                 </p>
@@ -74,9 +72,8 @@ export default function RegisterEmployee() {
               {/* Connecting Line */}
               {index < steps.length - 1 && (
                 <div
-                  className={`flex-1 h-0.5 mx-4 -mt-10 transition-all ${
-                    step.completed ? "bg-emerald-500" : "bg-slate-200"
-                  }`}
+                  className={`flex-1 h-0.5 mx-4 -mt-10 transition-all ${step.completed ? "bg-emerald-500" : "bg-slate-200"
+                    }`}
                 />
               )}
             </div>
@@ -192,14 +189,12 @@ export default function RegisterEmployee() {
               </div>
               <button
                 onClick={() => setEnableSystemAccess(!enableSystemAccess)}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                  enableSystemAccess ? "bg-amber-400" : "bg-slate-300"
-                }`}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${enableSystemAccess ? "bg-amber-400" : "bg-slate-300"
+                  }`}
               >
                 <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                    enableSystemAccess ? "translate-x-6" : "translate-x-1"
-                  }`}
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${enableSystemAccess ? "translate-x-6" : "translate-x-1"
+                    }`}
                 />
               </button>
             </div>

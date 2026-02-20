@@ -4,14 +4,9 @@ const TransferRequestPage = () => {
     // State for form fields
     const [transferType, setTransferType] = useState('Promotion');
     const [expectedJoiningDate, setExpectedJoiningDate] = useState('');
-    const [files, setFiles] = useState<File[]>([]);
 
-    // Dynamic data
-    const userProfile = {
-        name: "Alex Rivera",
-        department: "SALES DEPARTMENT",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDWiWK6hMgU9EsbhRab9a6-uuAZEHdFU51oj4VcZI9GSFqGldPv8K8AHfbKnSr6xf4-L7YusDLpOpaFiYoix4eqg94QjCPfMmphbyGQ0VEfXoKugqzTHETLlUWi8INPP0i-VoteXCHcq_JfN_zvnwL7DmqsryOHiRcDgExolr0wShed36OpGX4HXluVrE4r2jEXuoelA_nO7AiRAacH41E-YQZg9nuEPtr_-SoG4Y0uy7UzDmettTH2L-cmOSDRZMARhxNO4WAzpA4"
-    };
+
+
 
     const currentDepartment = "Operations Division - Level 4";
 
