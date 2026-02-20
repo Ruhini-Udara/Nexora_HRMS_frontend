@@ -166,7 +166,7 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
         {/* Header */}
         <div className="p-6 border-b border-slate-200 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-[#111827]">Add New Shift Mapping</h2>
+            <h2 className="text-2xl font-bold text-background-dark">Add New Shift Mapping</h2>
             <p className="text-sm text-slate-500 mt-1">Assign shifts to designations or roles</p>
           </div>
           <button

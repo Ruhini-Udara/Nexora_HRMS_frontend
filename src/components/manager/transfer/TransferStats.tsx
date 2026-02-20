@@ -1,61 +1,61 @@
-import { CheckCircle, Clock, XCircle, FileText } from 'lucide-react';
-import SummaryCard from '@/components/dashboard/SummaryCard';
+import { CheckCircle, Clock, XCircle, FileText, AlertCircle } from 'lucide-react';
 
 export default function TransferStats() {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <SummaryCard
-                title="Total Requests"
-                value="24"
-                subContent={
-                    <div className="text-gray-500 flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
-                        <span>All time</span>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-500 text-sm font-medium">Total Requests</span>
+                    <div className="size-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                        <FileText className="w-5 h-5" />
                     </div>
-                }
-                icon={<FileText className="w-6 h-6" />}
-                iconBgColor="bg-blue-50"
-                iconColor="text-blue-600"
-            />
-            <SummaryCard
-                title="Pending"
-                value="8"
-                subContent={
-                    <div className="text-orange-600 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>Awaiting review</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">24</p>
+                <div className="flex items-center gap-1 mt-1 text-gray-500">
+                    <span className="text-xs font-bold">All time</span>
+                </div>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-500 text-sm font-medium">Pending</span>
+                    <div className="size-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+                        <Clock className="w-5 h-5" />
                     </div>
-                }
-                icon={<Clock className="w-6 h-6" />}
-                iconBgColor="bg-orange-50"
-                iconColor="text-orange-600"
-            />
-            <SummaryCard
-                title="Approved"
-                value="12"
-                subContent={
-                    <div className="text-green-600 flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" />
-                        <span>This month</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">8</p>
+                <div className="flex items-center gap-1 mt-1 text-secondary">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span className="text-xs font-bold">Awaiting review</span>
+                </div>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-500 text-sm font-medium">Approved</span>
+                    <div className="size-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                        <CheckCircle className="w-5 h-5" />
                     </div>
-                }
-                icon={<CheckCircle className="w-6 h-6" />}
-                iconBgColor="bg-green-50"
-                iconColor="text-green-600"
-            />
-            <SummaryCard
-                title="Rejected"
-                value="4"
-                subContent={
-                    <div className="text-red-600 flex items-center gap-1">
-                        <XCircle className="w-3 h-3" />
-                        <span>Low matching</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">12</p>
+                <div className="flex items-center gap-1 mt-1 text-emerald-600">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span className="text-xs font-bold">This month</span>
+                </div>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-500 text-sm font-medium">Rejected</span>
+                    <div className="size-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
+                        <XCircle className="w-5 h-5" />
                     </div>
-                }
-                icon={<XCircle className="w-6 h-6" />}
-                iconBgColor="bg-red-50"
-                iconColor="text-red-600"
-            />
+                </div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">4</p>
+                <div className="flex items-center gap-1 mt-1 text-red-600">
+                    <span className="text-xs font-bold">Low matching</span>
+                </div>
+            </div>
         </div>
     );
 }
