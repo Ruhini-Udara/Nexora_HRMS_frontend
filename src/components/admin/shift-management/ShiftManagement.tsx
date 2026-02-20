@@ -28,9 +28,9 @@ interface ShiftMapping {
 }
 
 export default function ShiftManagement() {
-  const [selectedDesignation, setSelectedDesignation] = useState("All Designations");
-  const [selectedShift, setSelectedShift] = useState("All Shifts");
-  const [selectedStatus, setSelectedStatus] = useState("Active");
+  const [selectedDesignation, setSelectedDesignation] = useState("");
+  const [selectedShift, setSelectedShift] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
   const [showAddMapping, setShowAddMapping] = useState(false);
 
   const shifts: Shift[] = [
@@ -134,6 +134,21 @@ export default function ShiftManagement() {
     return "bg-slate-100 text-slate-700";
   };
 
+  // Filter shift mappings based on selected filters
+  const filteredShiftMappings = shiftMappings.filter((mapping) => {
+    const matchesDesignation = !selectedDesignation || mapping.role === selectedDesignation;
+    const matchesShift = !selectedShift || mapping.assignedShift === selectedShift;
+    const matchesStatus = !selectedStatus || mapping.status === selectedStatus;
+    
+    return matchesDesignation && matchesShift && matchesStatus;
+  });
+
+  const handleResetFilters = () => {
+    setSelectedDesignation("");
+    setSelectedShift("");
+    setSelectedStatus("");
+  };
+
   return (
     <div className="pt-20 p-8">
       {/* Header */}
@@ -204,10 +219,10 @@ export default function ShiftManagement() {
               onChange={(e) => setSelectedDesignation(e.target.value)}
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
             >
-              <option>All Designations</option>
-              <option>Management Assistant</option>
-              <option>Executive</option>
-              <option>Staff Assistant</option>
+              <option value="">All Designations</option>
+              <option value="Management Assistant">Management Assistant</option>
+              <option value="Executive">Executive</option>
+              <option value="Staff Assistant">Staff Assistant</option>
             </select>
           </div>
           <div>
@@ -219,10 +234,10 @@ export default function ShiftManagement() {
               onChange={(e) => setSelectedShift(e.target.value)}
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
             >
-              <option>All Shifts</option>
-              <option>Normal Shift</option>
-              <option>Temporary Shift</option>
-              <option>Drivers Shift</option>
+              <option value="">All Shifts</option>
+              <option value="Normal Shift">Normal Shift</option>
+              <option value="Temporary Shift">Temporary Shift</option>
+              <option value="Drivers Shift">Drivers Shift</option>
             </select>
           </div>
           <div>
@@ -234,14 +249,17 @@ export default function ShiftManagement() {
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
             >
-              <option>Active</option>
-              <option>Inactive</option>
-              <option>All</option>
+              <option value="">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
             </select>
           </div>
           <div className="flex items-end">
-            <button className="w-full px-6 py-2.5 bg-amber-900 hover:bg-amber-800 text-white font-medium rounded-lg transition-colors">
-              Apply
+            <button 
+              onClick={handleResetFilters}
+              className="w-full px-6 py-2.5 border border-amber-900 text-amber-900 hover:bg-amber-50 font-medium rounded-lg transition-colors"
+            >
+              Clear Filters
             </button>
           </div>
         </div>
@@ -251,7 +269,7 @@ export default function ShiftManagement() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-6 border-b border-slate-200 flex items-center justify-between">
           <h2 className="text-lg font-bold text-[#111827]">Designation to Shift Mapping</h2>
-          <span className="text-sm text-slate-600">Total 4 Mappings</span>
+          <span className="text-sm text-slate-600">Total {filteredShiftMappings.length} Mappings</span>
         </div>
 
         <div className="overflow-x-auto">
@@ -279,7 +297,7 @@ export default function ShiftManagement() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {shiftMappings.map((mapping) => (
+              {filteredShiftMappings.map((mapping) => (
                 <tr key={mapping.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
