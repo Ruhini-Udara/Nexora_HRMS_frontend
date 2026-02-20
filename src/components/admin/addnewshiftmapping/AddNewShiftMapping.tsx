@@ -380,7 +380,7 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
-              <div className="flex items-center gap-3 h-[42px]">
+              <div className="flex items-center gap-3 h-10.5">
                 <button
                   type="button"
                   onClick={() => setStatus(!status)}
