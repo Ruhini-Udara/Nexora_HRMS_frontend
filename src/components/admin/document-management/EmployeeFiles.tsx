@@ -147,7 +147,7 @@ export default function EmployeeFiles() {
               <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                    <div className="shrink-0 w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
                       <span className="text-xl">{doc.icon}</span>
                     </div>
                     <div>
