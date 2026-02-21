@@ -4,15 +4,15 @@ import Link from "next/link";
 export default function LeaveModules() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Leave Approvals Card */}
-            <Link href="/hr/leave/leave-approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
+            {/* Normal Leave Approvals Card */}
+            <Link href="/hr/leave/normal-approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
                 <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors">
                     <span className="material-symbols-outlined text-primary text-4xl">
                         event_available
                     </span>
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                    Leave Approvals
+                    Normal Leave Approvals
                 </h4>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed flex-grow">
                     Review and process standard daily and short-term leave requests from
@@ -27,7 +27,7 @@ export default function LeaveModules() {
             </Link>
 
             {/* Overseas Leave Verification & Board Flow Card */}
-            <Link href="/hr/leave/overseas" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
+            <Link href="/hr/leave/leave-approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
                 <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors">
                     <span className="material-symbols-outlined text-primary text-4xl">
                         travel_explore
