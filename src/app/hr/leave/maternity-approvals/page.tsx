@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import HrTopbar from "@/components/HrTopbar";
 
 // Mock Data for pending requests
 const MOCK_REQUESTS = [
@@ -61,7 +60,7 @@ export default function MaternityApprovalsPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-            <HrTopbar />
+
 
             <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
                 <div className="mb-8 flex items-center justify-between">
@@ -107,10 +106,10 @@ export default function MaternityApprovalsPage() {
                                         </td>
                                         <td className="py-4 px-6">
                                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${req.status === "Submitted for Maternity Leaves Verification"
-                                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                                                    : req.status === "Submitted for HR Approvals"
-                                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                                                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                                : req.status === "Submitted for HR Approvals"
+                                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                                                 }`}>
                                                 {req.status}
                                             </span>
