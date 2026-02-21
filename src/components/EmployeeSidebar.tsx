@@ -4,6 +4,16 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import {
+    LayoutDashboard,
+    FolderOpen,
+    ArrowRightLeft,
+    LogOut,
+    Heart,
+    GraduationCap,
+    Calendar,
+} from 'lucide-react';
+
 const EmployeeSidebar = () => {
     const pathname = usePathname();
     const [isDark, setIsDark] = React.useState(false);
@@ -14,51 +24,48 @@ const EmployeeSidebar = () => {
         document.documentElement.classList.toggle('dark');
     };
 
-    const menuItems = [
-        { name: "Dashboard", href: "/employee", icon: "dashboard" },
-        { name: "My Documents", href: "/employee/documents", icon: "description" },
-        { name: "Transfer Requests", href: "/employee/transfer-request", icon: "swap_horiz" },
-        { name: "Resignation Requests", href: "/employee/resignation", icon: "exit_to_app" },
-        { name: "Welfare Requests", href: "/employee/welfare-request", icon: "volunteer_activism" },
-        { name: "Training Requests", href: "/employee/training-request", icon: "school" },
-        { name: "Leave Requests", href: "/employee/leave", icon: "calendar_today" },
+    const navLinks = [
+        { label: "Dashboard", href: "/employee", icon: LayoutDashboard },
+        { label: "My Documents", href: "/employee/documents", icon: FolderOpen },
+        { label: "Transfer Requests", href: "/employee/transfer-request", icon: ArrowRightLeft },
+        { label: "Resignation Requests", href: "/employee/resignation", icon: LogOut },
+        { label: "Welfare Requests", href: "/employee/welfare-request", icon: Heart },
+        { label: "Training Requests", href: "/employee/training-request", icon: GraduationCap },
+        { label: "Leave Requests", href: "/employee/leave-requests", icon: Calendar },
     ];
 
     // Helper to check if link is active
-    const isActive = (href: string) => {
+    const isActiveLink = (href: string) => {
         if (href === "/employee/dashboard" && pathname === "/employee") return true; // Default match
-        return pathname === href;
+        if (href === "/employee") return pathname === "/employee";
+
+        // Check if the current pathname starts with the href (useful for nested routes like /employee/leave-requests/overseas-leave)
+        return pathname.startsWith(href);
     };
 
     return (
-        <aside
-            className="fixed left-0 top-0 bottom-0 w-[260px] bg-white border-r border-[#E2E8F0] flex flex-col z-10"
-            style={{ minHeight: '100vh' }}
-        >
-            <div className="px-6 pt-6 pb-2">
-                <div className="flex items-center gap-2 mb-8">
-                    <div className="w-10 h-10 bg-primary rounded-custom flex items-center justify-center text-white font-bold text-xl">
-                        HM
-                    </div>
-                    <span className="text-xl font-bold tracking-tight text-primary">HR MATE</span>
+        <aside className="w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full">
+            <div className="p-6 flex items-center gap-2">
+                <div className="w-10 h-10 bg-[#8B3A00] rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                    HM
                 </div>
+                <span className="text-xl font-bold tracking-tight text-[#8B3A00] dark:text-white">HR MATE</span>
             </div>
-            <nav className="flex flex-col gap-1 px-4 flex-1">
-                {menuItems.map((item) => {
-                    const active = isActive(item.href);
+
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                {navLinks.map(({ label, href, icon: Icon }) => {
+                    const isActive = isActiveLink(href);
                     return (
                         <Link
-                            key={item.name}
-                            href={item.href}
-                            className={`flex items-center px-4 py-3 text-base transition-all ${active
-                                ? "bg-[#FFF3E6] border-r-4 border-[#8B3A00] rounded-none font-medium text-[#8B3A00]"
-                                : "rounded-xl font-medium text-[#64748B] hover:bg-slate-50"
+                            key={href}
+                            href={href}
+                            className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${isActive
+                                ? "bg-primary-light text-primary border-r-4 border-primary dark:bg-primary/10 dark:text-primary dark:border-primary"
+                                : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                                 }`}
                         >
-                            <span className={`material-symbols-outlined text-[22px] mr-3 ${active ? "text-[#8B3A00]" : "text-[#64748B]"}`}>
-                                {item.icon}
-                            </span>
-                            {item.name}
+                            <Icon className="w-5 h-5" />
+                            {label}
                         </Link>
                     );
                 })}
