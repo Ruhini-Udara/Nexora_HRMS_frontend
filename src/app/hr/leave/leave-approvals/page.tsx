@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-//import HrTopbar from "@/components/HrTopbar";
 
 // Mock Data for pending requests
 const MOCK_REQUESTS = [
@@ -62,7 +61,6 @@ export default function LeaveApprovalsPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-            {/*<HrTopbar />*/}
 
             <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
                 <div className="mb-8 flex items-center justify-between">
