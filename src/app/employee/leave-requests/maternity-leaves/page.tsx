@@ -118,7 +118,7 @@ export default function MaternityLeaveRequestPage() {
                     <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/30 flex items-center gap-3 mb-6">
                         <span className="material-symbols-outlined text-amber-500">save</span>
                         <div className="text-sm font-medium">
-                            Your request has been saved as a draft. You can continue editing or submit it later.
+                            Your request has been saved with a <strong className="font-bold">"New"</strong> status. You can continue editing or submit it later.
                         </div>
                     </div>
                 )}
@@ -126,7 +126,7 @@ export default function MaternityLeaveRequestPage() {
                     <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/30 flex items-center gap-3 mb-6">
                         <span className="material-symbols-outlined text-emerald-500">check_circle</span>
                         <div className="text-sm font-medium">
-                            Your maternity leave request has been submitted successfully and is pending approval. Editing is now disabled.
+                            Status: <strong className="font-bold">"Submitted for Maternity Leaves Verification"</strong>. Your request is pending verification and editing is now disabled.
                         </div>
                     </div>
                 )}

@@ -5,7 +5,7 @@ export default function LeaveModules() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Leave Approvals Card */}
-            <Link href="/hr/leave/approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
+            <Link href="/hr/leave/leave-approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
                 <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors">
                     <span className="material-symbols-outlined text-primary text-4xl">
                         event_available
@@ -49,7 +49,7 @@ export default function LeaveModules() {
             </Link>
 
             {/* Maternity Leave Workflow Card */}
-            <Link href="/hr/leave/maternity" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
+            <Link href="/hr/leave/maternity-approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
                 <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors">
                     <span className="material-symbols-outlined text-primary text-4xl">
                         child_care
