@@ -19,6 +19,7 @@ export default function MaternityLeaveRequestPage() {
         contactNumber: "",
         email: "",
         specialRemark: "",
+        acknowledgement: false,
     });
 
     // File state
@@ -452,34 +453,60 @@ export default function MaternityLeaveRequestPage() {
                             />
                         </section>
 
-                        {/* Form Actions */}
-                        <div className="flex items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                            {!isDisabled && (
-                                <>
-                                    <button
-                                        className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all flex items-center gap-2"
-                                        type="submit"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">send</span>
-                                        Submit Request
-                                    </button>
+                        {/* Form Actions with Acknowledgment */}
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <div className="mb-6">
+                                <label className="flex items-start gap-3 cursor-pointer group">
+                                    <div className="relative flex items-center justify-center mt-0.5">
+                                        <input
+                                            type="checkbox"
+                                            required
+                                            disabled={isDisabled}
+                                            name="acknowledgement"
+                                            checked={formData.acknowledgement || false}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, acknowledgement: e.target.checked }))}
+                                            className="appearance-none w-5 h-5 border-2 border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 checked:bg-primary checked:border-primary disabled:opacity-60 disabled:cursor-not-allowed transition-all peer"
+                                        />
+                                        <span className="material-symbols-outlined absolute text-white text-[14px] opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">
+                                            check
+                                        </span>
+                                    </div>
+                                    <span className={`text-sm ${isDisabled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'} transition-colors leading-snug`}>
+                                        I acknowledge that all provided details and mandatory documents are accurate.
+                                        I understand that <strong className="text-slate-800 dark:text-slate-200">once submitted, this maternity leave request cannot be edited</strong> or modified.
+                                    </span>
+                                </label>
+                            </div>
 
-                                    <button
-                                        onClick={handleSaveDraft}
-                                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 px-8 py-2.5 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2"
-                                        type="button"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">save</span>
-                                        Save as Draft
-                                    </button>
-                                </>
-                            )}
-                            <Link
-                                href="/employee/leave-requests"
-                                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4 transition-colors"
-                            >
-                                {isDisabled ? "Back to Dashboard" : "Cancel"}
-                            </Link>
+                            <div className="flex items-center gap-4">
+                                {!isDisabled && (
+                                    <>
+                                        <button
+                                            className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            type="submit"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">send</span>
+                                            Submit Request
+                                        </button>
+
+                                        <button
+                                            onClick={handleSaveDraft}
+                                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 px-8 py-2.5 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+                                            type="button"
+                                            disabled={isDisabled}
+                                        >
+                                            <span className="material-symbols-outlined text-sm">save</span>
+                                            Save as Draft
+                                        </button>
+                                    </>
+                                )}
+                                <Link
+                                    href="/employee/leave-requests"
+                                    className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4 transition-colors"
+                                >
+                                    {isDisabled ? "Back to Dashboard" : "Cancel"}
+                                </Link>
+                            </div>
                         </div>
                     </form>
                 </div>
