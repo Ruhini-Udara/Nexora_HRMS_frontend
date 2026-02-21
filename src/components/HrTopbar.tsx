@@ -66,7 +66,7 @@ const HrTopbar = () => (
                                     <div className="flex items-center justify-between mb-1">
                                         <p className="text-sm font-semibold text-gray-900 dark:text-white">Document Expiring</p>
                                     </div>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400">Sarah Smith's ISO certification expires in 30 days.</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">Sarah Smith&apos;s ISO certification expires in 30 days.</p>
                                     <p className="text-[10px] text-gray-400 mt-1">5 hours ago</p>
                                 </div>
                             </div>
