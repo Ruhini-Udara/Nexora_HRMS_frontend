@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Eye, Pencil, Clock, Sun, Truck } from "lucide-react";
+import { Plus, Eye, Pencil, Clock, Sun, Truck, X, Briefcase, Building2, Timer, BadgeCheck } from "lucide-react";
 import AddNewShiftMapping from "../addnewshiftmapping/AddNewShiftMapping";
 
 interface Shift {
@@ -32,8 +32,13 @@ export default function ShiftManagement() {
   const [selectedShift, setSelectedShift] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [showAddMapping, setShowAddMapping] = useState(false);
+  const [viewingMapping, setViewingMapping] = useState<ShiftMapping | null>(null);
+  const [editingMapping, setEditingMapping] = useState<ShiftMapping | null>(null);
+  const [editForm, setEditForm] = useState<ShiftMapping | null>(null);
+  const [editingShiftId, setEditingShiftId] = useState<number | null>(null);
+  const [editingShiftData, setEditingShiftData] = useState<Shift | null>(null);
 
-  const shifts: Shift[] = [
+  const [shifts, setShifts] = useState<Shift[]>([
     {
       id: 1,
       name: "Normal Shift",
@@ -67,9 +72,9 @@ export default function ShiftManagement() {
       icon: "truck",
       color: "purple",
     },
-  ];
+  ]);
 
-  const shiftMappings: ShiftMapping[] = [
+  const [shiftMappings, setShiftMappings] = useState<ShiftMapping[]>([
     {
       id: 1,
       role: "Management Assistant",
@@ -100,7 +105,7 @@ export default function ShiftManagement() {
       status: "Active",
       avatar: "SA",
     },
-  ];
+  ]);
 
   const getShiftIcon = (icon: string) => {
     switch (icon) {
@@ -132,6 +137,71 @@ export default function ShiftManagement() {
     if (shiftName === "Normal Shift") return "bg-blue-100 text-blue-700";
     if (shiftName === "Temporary Shift") return "bg-orange-100 text-orange-700";
     return "bg-slate-100 text-slate-700";
+  };
+
+  const handleEdit = (mapping: ShiftMapping) => {
+    setEditingMapping(mapping);
+    setEditForm({ ...mapping });
+  };
+
+  const handleSave = () => {
+    if (editForm) {
+      setShiftMappings(shiftMappings.map((mapping) => 
+        mapping.id === editForm.id ? editForm : mapping
+      ));
+      setEditingMapping(null);
+      setEditForm(null);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditingMapping(null);
+    setEditForm(null);
+  };
+
+  const handleEditShift = (shift: Shift) => {
+    setEditingShiftId(shift.id);
+    setEditingShiftData({ ...shift });
+  };
+
+  const calculateDuration = (startTime: string, endTime: string): string => {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+    
+    // Handle overnight shifts
+    if (totalMinutes < 0) {
+      totalMinutes += 24 * 60;
+    }
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    if (minutes === 0) {
+      return `${hours}h Work Duration`;
+    } else {
+      return `${hours}h ${minutes}m Work Duration`;
+    }
+  };
+
+  const handleSaveShift = () => {
+    if (editingShiftData) {
+      const updatedShift = {
+        ...editingShiftData,
+        duration: calculateDuration(editingShiftData.startTime, editingShiftData.endTime)
+      };
+      setShifts(shifts.map((shift) => 
+        shift.id === updatedShift.id ? updatedShift : shift
+      ));
+      setEditingShiftId(null);
+      setEditingShiftData(null);
+    }
+  };
+
+  const handleCancelShift = () => {
+    setEditingShiftId(null);
+    setEditingShiftData(null);
   };
 
   // Filter shift mappings based on selected filters
@@ -176,34 +246,92 @@ export default function ShiftManagement() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {shifts.map((shift) => (
+          {shifts.map((shift) => {
+            const isEditing = editingShiftId === shift.id;
+            const displayShift = isEditing && editingShiftData ? editingShiftData : shift;
+            
+            return (
             <div
               key={shift.id}
               className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-lg ${getShiftColor(shift.color)}`}>
-                  {getShiftIcon(shift.icon)}
+                <div className={`p-3 rounded-lg ${getShiftColor(displayShift.color)}`}>
+                  {getShiftIcon(displayShift.icon)}
                 </div>
                 <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                  {shift.status}
+                  {displayShift.status}
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-[#111827] mb-1">{shift.name}</h3>
-              <p className="text-sm text-slate-600 mb-4">{shift.description}</p>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-2xl font-bold text-[#111827]">
-                  {shift.startTime} - {shift.endTime}
-                </span>
-              </div>
+              <h3 className="text-lg font-bold text-[#111827] mb-1">{displayShift.name}</h3>
+              <p className="text-sm text-slate-600 mb-4">{displayShift.description}</p>
+              
+              {isEditing ? (
+                <div className="space-y-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Start Time</label>
+                    <input
+                      type="time"
+                      value={displayShift.startTime}
+                      onChange={(e) => {
+                        const newShift = { ...displayShift, startTime: e.target.value };
+                        newShift.duration = calculateDuration(newShift.startTime, newShift.endTime);
+                        setEditingShiftData(newShift);
+                      }}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">End Time</label>
+                    <input
+                      type="time"
+                      value={displayShift.endTime}
+                      onChange={(e) => {
+                        const newShift = { ...displayShift, endTime: e.target.value };
+                        newShift.duration = calculateDuration(newShift.startTime, newShift.endTime);
+                        setEditingShiftData(newShift);
+                      }}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-2xl font-bold text-[#111827]">
+                    {displayShift.startTime} - {displayShift.endTime}
+                  </span>
+                </div>
+              )}
+              
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">{shift.duration}</span>
-                <button className="text-sm text-amber-600 hover:text-amber-700 font-medium">
-                  Edit Details
-                </button>
+                <span className="text-sm text-slate-500">{displayShift.duration}</span>
+                {isEditing ? (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleSaveShift}
+                      className="text-sm text-green-600 hover:text-green-700 font-medium"
+                    >
+                      Save
+                    </button>
+                    <button 
+                      onClick={handleCancelShift}
+                      className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => handleEditShift(shift)}
+                    className="text-sm text-amber-600 hover:text-amber-700 font-medium"
+                  >
+                    Edit Details
+                  </button>
+                )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -331,10 +459,16 @@ export default function ShiftManagement() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                      <button 
+                        onClick={() => setViewingMapping(mapping)}
+                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
                         <Eye size={18} className="text-slate-600" />
                       </button>
-                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                      <button 
+                        onClick={() => handleEdit(mapping)}
+                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
                         <Pencil size={18} className="text-slate-600" />
                       </button>
                     </div>
@@ -345,6 +479,213 @@ export default function ShiftManagement() {
           </table>
         </div>
       </div>
+
+      {/* View Shift Mapping Modal */}
+      {viewingMapping && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Shift Mapping Details</h2>
+                <p className="text-sm text-slate-500 mt-1">View designation to shift mapping information</p>
+              </div>
+              <button
+                onClick={() => setViewingMapping(null)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
+                <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-2xl">
+                  {viewingMapping.avatar}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{viewingMapping.role}</h3>
+                  <p className="text-amber-800 font-semibold">{viewingMapping.department}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="text-blue-600" size={18} />
+                    <label className="block text-sm font-medium text-blue-900">
+                      Assigned Shift
+                    </label>
+                  </div>
+                  <p className="text-base text-gray-900 font-semibold">{viewingMapping.assignedShift}</p>
+                </div>
+                
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Timer className="text-purple-600" size={18} />
+                    <label className="block text-sm font-medium text-purple-900">
+                      Time Range
+                    </label>
+                  </div>
+                  <p className="text-base text-gray-900 font-semibold">{viewingMapping.timeRange}</p>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="text-green-600" size={18} />
+                    <label className="block text-sm font-medium text-green-900">
+                      Grace Period
+                    </label>
+                  </div>
+                  <p className="text-base text-gray-900 font-semibold">{viewingMapping.gracePeriod}</p>
+                </div>
+                
+                <div className="bg-amber-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BadgeCheck className="text-amber-600" size={18} />
+                    <label className="block text-sm font-medium text-amber-900">
+                      Status
+                    </label>
+                  </div>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+                    viewingMapping.status === 'Active' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {viewingMapping.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-200">
+              <button
+                onClick={() => setViewingMapping(null)}
+                className="w-full bg-gray-200 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Shift Mapping Modal */}
+      {editingMapping && editForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Edit Shift Mapping</h2>
+                <p className="text-sm text-slate-500 mt-1">Update designation to shift mapping</p>
+              </div>
+              <button
+                onClick={handleCancel}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            {/* Form Content */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Designation / Role
+                </label>
+                <input
+                  type="text"
+                  value={editForm.role}
+                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Department
+                </label>
+                <input
+                  type="text"
+                  value={editForm.department}
+                  onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assigned Shift
+                </label>
+                <select
+                  value={editForm.assignedShift}
+                  onChange={(e) => setEditForm({ ...editForm, assignedShift: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                >
+                  <option value="">Select Shift</option>
+                  <option value="Normal Shift">Normal Shift</option>
+                  <option value="Temporary Shift">Temporary Shift</option>
+                  <option value="Drivers Shift">Drivers Shift</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Time Range
+                </label>
+                <input
+                  type="text"
+                  value={editForm.timeRange}
+                  onChange={(e) => setEditForm({ ...editForm, timeRange: e.target.value })}
+                  placeholder="08:30 - 16:30"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Grace Period
+                </label>
+                <input
+                  type="text"
+                  value={editForm.gracePeriod}
+                  onChange={(e) => setEditForm({ ...editForm, gracePeriod: e.target.value })}
+                  placeholder="15 mins"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Status
+                </label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value as "Active" | "Inactive" })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Footer with Buttons */}
+            <div className="p-6 border-t border-slate-200 flex gap-3">
+              <button
+                onClick={handleSave}
+                className="flex-1 bg-amber-900 text-white py-2.5 px-4 rounded-lg hover:bg-amber-800 transition-colors font-medium"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={handleCancel}
+                className="flex-1 bg-gray-200 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add New Shift Mapping Modal */}
       {showAddMapping && <AddNewShiftMapping onClose={() => setShowAddMapping(false)} />}

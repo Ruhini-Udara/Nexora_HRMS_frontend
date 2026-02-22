@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { ArrowLeft, Mail, Shield, Lock, Eye, EyeOff, CheckCircle2, Circle, Sparkles } from "lucide-react";
 import { useAdminNavigation } from "../AdminNavigationContext";
 
-export default function RegisterEmployee() {
+export default function RegisterEmployeeStep3() {
   const { setActiveView } = useAdminNavigation();
   const [currentStep, setCurrentStep] = useState(3);
   const [showPassword, setShowPassword] = useState(false);
@@ -150,7 +150,7 @@ export default function RegisterEmployee() {
             <label className="block text-sm font-semibold text-[#111827] mb-2">
               Temporary Password
             </label>
-            <div className="flex gap-3">            :wq
+            <div className="flex gap-3">
               <div className="relative flex-1">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock size={18} className="text-slate-400" />

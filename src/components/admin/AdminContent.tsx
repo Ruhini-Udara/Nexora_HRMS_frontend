@@ -13,21 +13,21 @@ import {
   BarChart2,
 } from "lucide-react";
 import EmployeeMaster from "@/components/admin/employee-master/EmployeeMaster";
-import RegisterEmployee from "@/components/admin/register-employee/RegisterEmployee";
+import RegisterEmployeeStep3 from "@/components/admin/register-employee/RegisterEmployeeStep3";
 import OfficeCalendar from "@/components/admin/office-calendar/OfficeCalendar";
 import ShiftManagement from "@/components/admin/shift-management/ShiftManagement";
 import DocumentManagement from "@/components/admin/document-management/DocumentManagement";
 import { useAdminNavigation } from "./AdminNavigationContext";
 
 export default function AdminContent() {
-  const { activeView } = useAdminNavigation();
+  const { activeView, setActiveView } = useAdminNavigation();
 
   if (activeView === "employeeMaster") {
     return <EmployeeMaster />;
   }
 
   if (activeView === "registerEmployee") {
-    return <RegisterEmployee />;
+    return <RegisterEmployeeStep3 />;
   }
 
   if (activeView === "officeCalendar") {  
@@ -90,28 +90,28 @@ export default function AdminContent() {
           title="Employee Master"
           description="Centralized database for all personnel information, documents, and career history."
           icon={<Contact className="w-7 h-7" />}
-          href="/admin/employees"
+          onClick={() => setActiveView("employeeMaster")}
           className="lg:col-span-2"
         />
         <ModuleCard
           title="Office Calendar"
           description="Global view of holidays, events, and company-wide deadlines for efficient planning."
           icon={<Calendar className="w-7 h-7" />}
-          href="/admin/calendar"
+          onClick={() => setActiveView("officeCalendar")}
           className="lg:col-span-2"
         />
         <ModuleCard
           title="Shift Management"
           description="Optimize workforce allocation across multiple shifts with automated scheduling tools."
           icon={<Clock className="w-7 h-7" />}
-          href="/admin/shifts"
+          onClick={() => setActiveView("shifts")}
           className="lg:col-span-2"
         />
         <ModuleCard
           title="Document Management"
           description="Securely store and track employee contracts, policies, and certifications in one place."
           icon={<FileText className="w-6 h-6" />}
-          href="/admin/documents"
+          onClick={() => setActiveView("documents")}
           className="lg:col-span-3"
         />
         <ModuleCard
