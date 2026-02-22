@@ -28,6 +28,54 @@ const MOCK_REQUESTS = [
             supportingDoc: "ultrasound_confirmation.pdf"
         },
         hrRemark: ""
+    },
+    {
+        id: "MAT-002",
+        epfNumber: "EMP-145",
+        employeeName: "Emily Chen",
+        employeeType: "Permanent",
+        designation: "UX Designer",
+        branch: "Design Studio",
+        leaveReason: "Second Child Maternity Leave",
+        startDate: "2024-07-15",
+        endDate: "2024-10-22",
+        noOfDays: 100,
+        childNumber: "2",
+        contactNumber: "+94 71 234 5678",
+        email: "emily.c@example.com",
+        specialRemark: "",
+        status: "Submitted for Maternity Leaves Verification",
+        requestDate: "2024-06-10",
+        documents: {
+            requestLetter: "emily_maternity_request.pdf",
+            medicalCertificate: "dr_jones_medical_cert.pdf",
+            supportingDoc: ""
+        },
+        hrRemark: ""
+    },
+    {
+        id: "MAT-003",
+        epfNumber: "EMP-023",
+        employeeName: "Aisha Fernando",
+        employeeType: "Contract",
+        designation: "Customer Support Specialist",
+        branch: "Colombo City Office",
+        leaveReason: "First Child Maternity Leave",
+        startDate: "2024-08-01",
+        endDate: "2024-11-08",
+        noOfDays: 100,
+        childNumber: "1",
+        contactNumber: "+94 76 543 2109",
+        email: "aisha.f@example.com",
+        specialRemark: "Pending secondary medical document upload.",
+        status: "Submitted for Maternity Leaves Verification",
+        requestDate: "2024-07-05",
+        documents: {
+            requestLetter: "aisha_request.pdf",
+            medicalCertificate: "medical_cert_08.pdf",
+            supportingDoc: ""
+        },
+        hrRemark: ""
     }
 ];
 

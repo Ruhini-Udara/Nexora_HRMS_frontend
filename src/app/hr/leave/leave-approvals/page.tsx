@@ -29,6 +29,56 @@ const MOCK_REQUESTS = [
             leaveLetter: "leave_request.pdf"
         },
         hrRemark: ""
+    },
+    {
+        id: "REQ-002",
+        epfNumber: "87654",
+        employeeName: "Kasun Perera",
+        designation: "Marketing Manager",
+        branch: "Colombo Branch",
+        leaveReason: "Attending International Marketing Conference in Dubai",
+        startDate: "2024-06-15",
+        endDate: "2024-06-20",
+        noOfDays: 6,
+        passportNumber: "N98765432",
+        passportExpDate: "2029-05-20",
+        contactNumber: "+94 71 987 6543",
+        email: "kasun.p@example.com",
+        specialRemark: "Conference registration confirmed. Company sponsored trip.",
+        status: "Submitted for Overseas Leaves Verification",
+        requestDate: "2024-05-02",
+        documents: {
+            passportCopy: "passport_kasun.pdf",
+            visaCopy: "dubai_visa.pdf",
+            confirmationLetter: "conference_invite.pdf",
+            leaveLetter: "leave_req_kasun.pdf"
+        },
+        hrRemark: ""
+    },
+    {
+        id: "REQ-003",
+        epfNumber: "45678",
+        employeeName: "Nimali Silva",
+        designation: "Senior Accountant",
+        branch: "Kandy Branch",
+        leaveReason: "Personal travel to Australia to visit family",
+        startDate: "2024-08-01",
+        endDate: "2024-08-21",
+        noOfDays: 21,
+        passportNumber: "N45678901",
+        passportExpDate: "2027-11-10",
+        contactNumber: "+94 76 543 2109",
+        email: "nimali.s@example.com",
+        specialRemark: "Visa application in progress. Will upload once received.",
+        status: "Submitted for Overseas Leaves Verification",
+        requestDate: "2024-06-25",
+        documents: {
+            passportCopy: "passport_nimali.pdf",
+            visaCopy: "",
+            confirmationLetter: "",
+            leaveLetter: "overseas_leave_nimali.pdf"
+        },
+        hrRemark: ""
     }
 ];
 
