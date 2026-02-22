@@ -86,6 +86,8 @@ export default function LeaveApprovalsPage() {
     const [requests, setRequests] = useState(MOCK_REQUESTS);
     const [selectedRequest, setSelectedRequest] = useState<typeof MOCK_REQUESTS[0] | null>(null);
     const [hrRemarkInput, setHrRemarkInput] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All");
 
     const handleView = (req: typeof MOCK_REQUESTS[0]) => {
         setSelectedRequest(req);
@@ -109,6 +111,13 @@ export default function LeaveApprovalsPage() {
         handleCloseModal();
     };
 
+    const filteredRequests = requests.filter(req => {
+        const matchesSearch = req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            req.id.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === "All" || req.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
 
@@ -129,6 +138,35 @@ export default function LeaveApprovalsPage() {
                     </div>
                 </div>
 
+                {/* Filter & Search Bar */}
+                <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <div className="relative w-full sm:w-96">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span className="material-symbols-outlined text-slate-400">search</span>
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Search by ID or Name..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="material-symbols-outlined text-slate-400">filter_list</span>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                        >
+                            <option value="All">All Statuses</option>
+                            <option value="Submitted for Overseas Leaves Verification">Pending Verification</option>
+                            <option value="Submitted for HR Approvals">Verified</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+
                 {/* Data Table */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
                     <div className="overflow-x-auto">
@@ -143,7 +181,7 @@ export default function LeaveApprovalsPage() {
                                 </tr>
                             </thead>
                             <tbody className="text-sm">
-                                {requests.map((req) => (
+                                {filteredRequests.map((req) => (
                                     <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
                                         <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">{req.id}</td>
                                         <td className="py-4 px-6">
@@ -175,9 +213,9 @@ export default function LeaveApprovalsPage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {requests.length === 0 && (
+                                {filteredRequests.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="py-8 text-center text-slate-500">No requests found.</td>
+                                        <td colSpan={5} className="py-8 text-center text-slate-500">No requests found matching your filters.</td>
                                     </tr>
                                 )}
                             </tbody>
