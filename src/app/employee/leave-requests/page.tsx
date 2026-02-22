@@ -114,6 +114,20 @@ export default function LeaveRequestsDashboard() {
                                     </span>
                                 </td>
                             </tr>
+                            <tr className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                <td className="py-4 px-4">
+                                    <div className="font-semibold text-slate-800 dark:text-white">Overseas Leave</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tech Conference (Dubai)</div>
+                                </td>
+                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">Nov 10, 2023 - Nov 15, 2023</td>
+                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">5</td>
+                                <td className="py-4 px-4">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                        Sent for Admin Approval
+                                    </span>
+                                </td>
+                            </tr>
                             <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                                 <td className="py-4 px-4">
                                     <div className="font-semibold text-slate-800 dark:text-white">Casual Leave</div>
@@ -122,9 +136,9 @@ export default function LeaveRequestsDashboard() {
                                 <td className="py-4 px-4 text-slate-600 dark:text-slate-300">Aug 20, 2023 - Aug 20, 2023</td>
                                 <td className="py-4 px-4 text-slate-600 dark:text-slate-300">1</td>
                                 <td className="py-4 px-4">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                        Pending
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        Submitted for Administrator Approvals
                                     </span>
                                 </td>
                             </tr>
