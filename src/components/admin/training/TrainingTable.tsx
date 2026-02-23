@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 
 export default function TrainingTable() {
@@ -51,19 +52,12 @@ export default function TrainingTable() {
 
     return (
         <>
-            {/* Filters & Sorting */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm gap-4">
+            {/* Filters */}
+            <div className="flex flex-col md:flex-row md:items-center mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm gap-4">
                 <div className="flex items-center gap-4">
                     <button className="flex items-center gap-2 px-4 py-2 bg-primary/5 text-primary text-sm font-semibold rounded-lg hover:bg-primary/10 transition-colors">
                         <SlidersHorizontal className="w-4 h-4" />
                         <span>Filter by Training Type</span>
-                        <ChevronDown className="w-4 h-4" />
-                    </button>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 font-medium">Sort:</span>
-                    <button className="flex items-center gap-1 px-3 py-2 text-gray-900 text-sm font-semibold rounded-lg hover:bg-primary/5 transition-colors">
-                        <span>Latest First</span>
                         <ChevronDown className="w-4 h-4" />
                     </button>
                 </div>
@@ -103,9 +97,12 @@ export default function TrainingTable() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <button className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm">
+                                        <Link
+                                            href="/admin/training/view-list"
+                                            className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm inline-block"
+                                        >
                                             View List
-                                        </button>
+                                        </Link>
                                     </td>
                                 </tr>
                             ))}
