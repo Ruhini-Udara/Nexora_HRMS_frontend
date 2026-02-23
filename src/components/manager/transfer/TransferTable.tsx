@@ -1,5 +1,4 @@
-import { MoreHorizontal, Eye, Check, X, Download, Filter } from 'lucide-react';
-import Link from 'next/link';
+import { Download, Filter } from 'lucide-react';
 
 export default function TransferTable() {
     const requests = [

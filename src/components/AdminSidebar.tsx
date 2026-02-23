@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BarChart2, Calendar, Clock, Contact, FileText, Users } from "lucide-react";
+import { BarChart2, Calendar, Clock, FileText, Users } from "lucide-react";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
 
 const menuItems = [
@@ -28,11 +28,10 @@ export default function AdminSidebar() {
             <div
               key={item.label}
               onClick={() => setActiveView(item.view)}
-              className={`flex items-center gap-3 px-6 py-3 cursor-pointer text-gray-700 hover:bg-orange-50 transition ${
-                activeView === item.view
+              className={`flex items-center gap-3 px-6 py-3 cursor-pointer text-gray-700 hover:bg-orange-50 transition ${activeView === item.view
                   ? "bg-orange-50 border-l-4 border-orange-700 font-semibold"
                   : ""
-              }`}
+                }`}
             >
               {item.icon}
               <span>{item.label}</span>
