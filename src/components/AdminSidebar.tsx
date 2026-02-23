@@ -13,7 +13,7 @@ const menuItems = [
   { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const, href: "/admin" },
   { label: "Employees", icon: <Users size={18} />, view: "employees" as const, href: "/admin" },
   { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const, href: "/admin/training" },
-  { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const, href: "/admin" },
+  { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const, href: "/admin/" },
 ];
 
 export default function AdminSidebar() {
