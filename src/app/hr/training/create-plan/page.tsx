@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 
 const trainingEvents = [
@@ -45,10 +46,10 @@ export default function CreateTrainingPlanPage() {
                     <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
                         3 Available Courses
                     </span>
-                    <button className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-full flex items-center gap-1 hover:bg-[#853500] transition-colors shadow-sm shadow-primary/20">
+                    <Link href="/hr/training/create-plan/new" className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-full flex items-center gap-1 hover:bg-[#853500] transition-colors shadow-sm shadow-primary/20">
                         <span className="material-symbols-outlined text-sm">add</span>
                         Create New Training Event
-                    </button>
+                    </Link>
                 </div>
             </div>
 
