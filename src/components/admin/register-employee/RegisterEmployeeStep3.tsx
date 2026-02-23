@@ -4,7 +4,11 @@ import React, { useState } from "react";
 import { ArrowLeft, Mail, Shield, Lock, Eye, EyeOff, CheckCircle2, Circle, Sparkles } from "lucide-react";
 import { useAdminNavigation } from "../AdminNavigationContext";
 
-export default function RegisterEmployeeStep3() {
+interface RegisterEmployeeStep3Props {
+  onPrevious: () => void;
+}
+
+export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeStep3Props) {
   const { setActiveView } = useAdminNavigation();
   const [currentStep, setCurrentStep] = useState(3);
   const [showPassword, setShowPassword] = useState(false);

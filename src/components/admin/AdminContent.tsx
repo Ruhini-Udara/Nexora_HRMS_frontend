@@ -13,7 +13,7 @@ import {
   BarChart2,
 } from "lucide-react";
 import EmployeeMaster from "@/components/admin/employee-master/EmployeeMaster";
-import RegisterEmployeeStep3 from "@/components/admin/register-employee/RegisterEmployeeStep3";
+import RegisterEmployee from "@/components/admin/register-employee/RegisterEmployee";
 import OfficeCalendar from "@/components/admin/office-calendar/OfficeCalendar";
 import ShiftManagement from "@/components/admin/shift-management/ShiftManagement";
 import DocumentManagement from "@/components/admin/document-management/DocumentManagement";
@@ -27,7 +27,7 @@ export default function AdminContent() {
   }
 
   if (activeView === "registerEmployee") {
-    return <RegisterEmployeeStep3 />;
+    return <RegisterEmployee />;
   }
 
   if (activeView === "officeCalendar") {  
@@ -74,8 +74,8 @@ export default function AdminContent() {
         />
         <StatCard
           title="Today's Shifts"
-          value="456"
-          subtext={<span className="text-blue-600">ℹ 98% staffing capacity</span>}
+          value="3"
+          subtext={<span className="text-blue-600"> 98% staffing capacity</span>}
           icon={<Clock className="w-7 h-7 text-blue-600" />}
           iconBgColor="bg-blue-50"
         />
