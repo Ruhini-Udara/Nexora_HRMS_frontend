@@ -522,7 +522,7 @@ export default function RegisterEmployeeStep1({
 
             {/* Info Alert */}
             <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
               <p className="text-sm text-blue-800 leading-relaxed">
                 Please ensure all personal details match the employee&apos;s
                 government-issued ID documents (NIC) for compliance purposes.

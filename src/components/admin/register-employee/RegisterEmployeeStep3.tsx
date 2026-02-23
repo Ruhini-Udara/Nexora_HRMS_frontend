@@ -39,7 +39,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
     <div className="pt-20 p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#111827]">Register New Employee</h1>
+        <h1 className="text-3xl font-bold text-background-dark">Register New Employee</h1>
       </div>
 
       {/* Progress Steps */}
@@ -68,7 +68,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
                 </div>
                 <p
                   className={`mt-2 text-sm font-medium ${
-                    step.id === currentStep ? "text-[#111827]" : "text-slate-500"
+                    step.id === currentStep ? "text-background-dark" : "text-slate-500"
                   }`}
                 >
                   {step.label}
@@ -91,7 +91,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
       {/* System Access Form */}
       <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-[#111827] mb-2">Configure System Access</h2>
+          <h2 className="text-xl font-bold text-background-dark mb-2">Configure System Access</h2>
           <p className="text-slate-500 text-sm">
             Set up the login credentials and permissions for the new employee.
           </p>
@@ -101,7 +101,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
           {/* Official Business Email */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-[#111827] mb-2">
+              <label className="block text-sm font-semibold text-background-dark mb-2">
                 Official Business Email
               </label>
               <div className="relative">
@@ -112,7 +112,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-[#111827]"
+                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-background-dark"
                   placeholder="employee@hrmate.com"
                 />
               </div>
@@ -123,7 +123,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
 
             {/* User Role */}
             <div>
-              <label className="block text-sm font-semibold text-[#111827] mb-2">
+              <label className="block text-sm font-semibold text-background-dark mb-2">
                 User Role
               </label>
               <div className="relative">
@@ -133,7 +133,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
                 <select
                   value={userRole}
                   onChange={(e) => setUserRole(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-[#111827] appearance-none cursor-pointer"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-background-dark appearance-none cursor-pointer"
                 >
                   <option value="Employee">Employee</option>
                   <option value="Manager">Manager</option>
@@ -151,7 +151,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
 
           {/* Temporary Password */}
           <div>
-            <label className="block text-sm font-semibold text-[#111827] mb-2">
+            <label className="block text-sm font-semibold text-background-dark mb-2">
               Temporary Password
             </label>
             <div className="flex gap-3">
@@ -163,7 +163,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-[#111827]"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-background-dark"
                   placeholder="Enter password"
                 />
                 <button
@@ -189,7 +189,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
           <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-[#111827]">Enable System Access</h3>
+                <h3 className="text-sm font-semibold text-background-dark">Enable System Access</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Allow the employee to log in immediately after registration.
                 </p>
@@ -211,7 +211,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
 
           {/* Info Message */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
                 <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path
