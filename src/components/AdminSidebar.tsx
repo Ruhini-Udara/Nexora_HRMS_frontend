@@ -10,7 +10,6 @@ const menuItems = [
   { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const },
   { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const },
   { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const },
-  { label: "Reports", icon: <BarChart2 size={18} />, view: "reports" as const },
   { label: "Employees", icon: <Users size={18} />, view: "employees" as const },
   { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const },
   { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const },
