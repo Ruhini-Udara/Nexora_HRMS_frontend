@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
 import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
-import { useRouter, usePathname } from "next/navigation";
 
 const menuItems = [
   { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const, href: "/admin" },
@@ -18,21 +18,14 @@ const menuItems = [
 
 export default function AdminSidebar() {
   const { activeView, setActiveView } = useAdminNavigation();
-  const router = useRouter();
   const pathname = usePathname();
+  const router = useRouter();
 
-  const handleItemClick = (item: typeof menuItems[0]) => {
-    setActiveView(item.view);
-    if (item.href) {
-      router.push(item.href);
+  const handleMenuClick = (view: typeof menuItems[number]["view"]) => {
+    setActiveView(view);
+    if (pathname !== "/admin") {
+      router.push("/admin");
     }
-  };
-
-  const isItemActive = (item: typeof menuItems[0]) => {
-    if (item.href === "/admin/training") {
-      return pathname.startsWith("/admin/training");
-    }
-    return pathname === "/admin" && activeView === item.view;
   };
 
   return (
@@ -43,19 +36,38 @@ export default function AdminSidebar() {
           <span className="font-bold text-xl text-orange-900">HR MATE</span>
         </div>
         <nav className="mt-4">
-          {menuItems.map((item) => (
-            <div
-              key={item.label}
-              onClick={() => handleItemClick(item)}
-              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isItemActive(item)
-                ? "bg-primary-light text-primary border-r-4 border-primary"
-                : "text-sidebar-text hover:bg-gray-50"
-                }`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </div>
-          ))}
+          {menuItems.map((item) => {
+            const isActive =
+              item.view === "leaveManagement"
+                ? pathname.startsWith("/admin/leave-requests")
+                : activeView === item.view && pathname === "/admin";
+
+            return item.view === "leaveManagement" ? (
+              <Link
+                key={item.label}
+                href="/admin/leave-requests"
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isActive
+                  ? "bg-primary-light text-primary border-r-4 border-primary"
+                  : "text-sidebar-text hover:bg-gray-50"
+                  }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            ) : (
+              <div
+                key={item.label}
+                onClick={() => handleMenuClick(item.view)}
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isActive
+                  ? "bg-primary-light text-primary border-r-4 border-primary"
+                  : "text-sidebar-text hover:bg-gray-50"
+                  }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </div>
+            );
+          })}
         </nav>
       </div>
       <div className="px-6 py-4 border-t border-gray-200">
