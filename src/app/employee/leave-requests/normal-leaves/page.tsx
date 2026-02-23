@@ -3,12 +3,19 @@
 import React from "react";
 import Link from "next/link";
 
-export default function LeaveRequestPage() {
+export default function NormalLeaveRequestPage() {
     return (
         <div className="max-w-7xl mx-auto w-full grid grid-cols-12 gap-8">
             <div className="col-span-12">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Apply for Leave</h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Please fill out the form below to submit a new leave request.</p>
+                <div className="flex items-center gap-4 mb-4">
+                    <Link href="/employee/leave-requests" className="w-10 h-10 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-primary transition-colors">
+                        <span className="material-symbols-outlined">arrow_back</span>
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Apply for Normal Leave</h1>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Please fill out the form below to submit a normal leave request.</p>
+                    </div>
+                </div>
             </div>
 
             <div className="col-span-12 lg:col-span-8">

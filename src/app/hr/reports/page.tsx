@@ -18,7 +18,7 @@ export default function HRReportsPage() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Attendance Reports</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Detailed breakdown of daily punch-ins, late arrivals, and overtime metrics.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </div>
@@ -30,7 +30,7 @@ export default function HRReportsPage() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Leave Analytics</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Analyze leave utilization patterns, balances, and departmental leave trends.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </div>
@@ -42,7 +42,7 @@ export default function HRReportsPage() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Employee Turnover</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Monitor retention rates and track attrition reasons across the organization.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </div>
@@ -54,7 +54,7 @@ export default function HRReportsPage() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Training Progress</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Track certification completion rates and employee skill development ROI.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </div>
@@ -66,7 +66,7 @@ export default function HRReportsPage() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Custom Report Builder</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Create bespoke reports by selecting specific data fields and filtering criteria.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </div>

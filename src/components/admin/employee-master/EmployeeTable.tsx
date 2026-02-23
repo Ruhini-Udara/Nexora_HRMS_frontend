@@ -9,9 +9,10 @@ interface Employee {
   department: string;
   designation: string;
   joiningDate: string;
+  employmentStatus: string;
 }
 
-const employees: Employee[] = [
+const allEmployees: Employee[] = [
   {
     id: "#EMP-2024-001",
     name: "John Doe",
@@ -20,6 +21,7 @@ const employees: Employee[] = [
     department: "Product Development",
     designation: "Senior Engineer",
     joiningDate: "Jan 15, 2021",
+    employmentStatus: "Full-time",
   },
   {
     id: "#EMP-2024-002",
@@ -29,6 +31,7 @@ const employees: Employee[] = [
     department: "Human Resources",
     designation: "HR Manager",
     joiningDate: "Mar 22, 2022",
+    employmentStatus: "Full-time",
   },
   {
     id: "#EMP-2024-045",
@@ -38,6 +41,7 @@ const employees: Employee[] = [
     department: "Engineering",
     designation: "Backend Lead",
     joiningDate: "Jul 10, 2020",
+    employmentStatus: "Full-time",
   },
   {
     id: "#EMP-2024-098",
@@ -46,6 +50,7 @@ const employees: Employee[] = [
     department: "Sales & Marketing",
     designation: "Marketing Head",
     joiningDate: "Oct 05, 2023",
+    employmentStatus: "Contract",
   },
   {
     id: "#EMP-2024-112",
@@ -55,10 +60,27 @@ const employees: Employee[] = [
     department: "Operations",
     designation: "Operations Lead",
     joiningDate: "Feb 28, 2019",
+    employmentStatus: "Full-time",
   },
 ];
 
-export default function EmployeeTable() {
+interface EmployeeTableProps {
+  department: string;
+  jobTitle: string;
+  status: string;
+}
+
+export default function EmployeeTable({ department, jobTitle, status }: EmployeeTableProps) {
+  // Filter employees based on selected filters
+  const filteredEmployees = allEmployees.filter((employee) => {
+    const matchesDepartment = !department || employee.department === department;
+    const matchesJobTitle = !jobTitle || employee.designation === jobTitle;
+    const matchesStatus = !status || employee.employmentStatus === status;
+    
+    return matchesDepartment && matchesJobTitle && matchesStatus;
+  });
+
+  const employees = filteredEmployees;
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <table className="w-full text-left">
@@ -141,7 +163,7 @@ export default function EmployeeTable() {
       </table>
       <div className="px-6 py-4 flex items-center justify-between bg-slate-50 border-t border-slate-200">
         <p className="text-sm text-slate-500">
-          Showing 1 to 5 of 1,248 entries
+          Showing {employees.length > 0 ? 1 : 0} to {employees.length} of {employees.length} entries
         </p>
         <div className="flex items-center gap-2">
           <button
