@@ -1,4 +1,4 @@
-import { SlidersHorizontal, ChevronDown, Info } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 
 export default function TrainingTable() {
     const requests = [

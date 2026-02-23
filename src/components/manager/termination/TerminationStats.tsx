@@ -1,4 +1,4 @@
-import { FileText, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, TrendingUp, TrendingDown, Clock, CheckCircle } from 'lucide-react';
 
 export default function TerminationStats() {
     return (

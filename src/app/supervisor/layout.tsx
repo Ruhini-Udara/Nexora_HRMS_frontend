@@ -9,7 +9,7 @@ export default function SupervisorLayout({
     return (
         <div className="flex min-h-screen bg-dashboard-bg">
             <SupervisorSidebar />
-            <main className="flex-1 ml-[260px] flex flex-col">
+            <main className="flex-1 ml-[260px] flex flex-col min-h-screen">
                 {children}
             </main>
         </div>

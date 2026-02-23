@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Download, Filter, Check, X, Send } from 'lucide-react';
+import { Download, Check, X, Send } from 'lucide-react';
 
 const mockRequests = [
     {

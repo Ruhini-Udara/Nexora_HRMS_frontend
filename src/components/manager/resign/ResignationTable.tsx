@@ -1,5 +1,5 @@
 import React from 'react';
-import { Filter, Download, Link, MoreVertical, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
+import { Filter, Download, Link, MoreVertical, Check, X } from 'lucide-react';
 
 const ResignationTable = () => {
     const requests = [

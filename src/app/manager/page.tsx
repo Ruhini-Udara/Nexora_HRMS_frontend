@@ -1,5 +1,5 @@
 
-import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, ShieldQuestion, Heart, GraduationCap, UserX, LogOut } from 'lucide-react';
+import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, Heart, GraduationCap, UserX, LogOut } from 'lucide-react';
 import SummaryCard from '@/components/dashboard/SummaryCard';
 import ModuleCard from '@/components/dashboard/ModuleCard';
 

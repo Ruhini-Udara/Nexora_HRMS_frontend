@@ -288,7 +288,6 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
     const activeRequest = requests.find((r) => r.status !== 'REJECTED');
     const draftRequest = requests.find((r) => r.status === 'DRAFT');
     const isEditing = draftRequest !== undefined;
-    const showForm = !activeRequest || activeRequest.status === 'DRAFT';
     const submittedRequest = activeRequest && activeRequest.status !== 'DRAFT' ? activeRequest : null;
 
     // ── react-hook-form + Zod ───────────────────────────────────────
@@ -575,8 +574,8 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
                                             type="submit"
                                             disabled={mandatoryDocsMissing}
                                             className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${mandatoryDocsMissing
-                                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                                    : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
+                                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                                : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
                                                 }`}
                                         >
                                             <span className="material-symbols-outlined text-[20px]">send</span>

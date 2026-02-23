@@ -18,6 +18,7 @@ export default function AdminTopbar() {
         <Bell className="text-gray-400" size={20} />
         <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full">
           <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/admin-profile.jpg" alt="Admin" className="w-full h-full object-cover" />
           </div>
           <div className="text-right">
