@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
     Search, Bell, Calendar, Download, PenLine,
-    X, CheckCircle, XCircle, Clock, BookOpen,
+    X, CheckCircle, BookOpen,
     ChevronDown,
 } from "lucide-react";
 
@@ -167,9 +168,11 @@ export default function LeaveManagementPage() {
                             <p className="text-[13px] font-semibold text-gray-800 leading-tight">Sarah Jenkins</p>
                             <p className="text-[11px] text-gray-500 leading-tight">Operations Lead</p>
                         </div>
-                        <img
+                        <Image
                             src="https://i.pravatar.cc/150?img=23"
                             alt="Sarah Jenkins"
+                            width={40}
+                            height={40}
                             className="w-10 h-10 rounded-full border-2 border-gray-100 bg-gray-100"
                         />
                     </div>
@@ -258,7 +261,13 @@ export default function LeaveManagementPage() {
                         {/* Panel Header */}
                         <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100 flex-shrink-0">
                             <div className="flex items-center gap-3">
-                                <img src={sel.avatar} alt={sel.name} className="w-14 h-14 rounded-full bg-gray-100 border-2 border-white shadow-sm flex-shrink-0" />
+                                <Image
+                                    src={sel.avatar}
+                                    alt={sel.name}
+                                    width={56}
+                                    height={56}
+                                    className="w-14 h-14 rounded-full bg-gray-100 border-2 border-white shadow-sm flex-shrink-0"
+                                />
                                 <div>
                                     <p className="font-bold text-gray-900 text-[15px]">{sel.name}</p>
                                     <p className="text-xs text-gray-500 mt-0.5">{sel.role} · {sel.department}</p>
@@ -419,7 +428,6 @@ function LeaveCard({ req, selected, onSelect, onApprove, onReject }: {
     onApprove: () => void;
     onReject: () => void;
 }) {
-    const isClosed = req.status === "Rejected" || req.status === "Approved";
 
     return (
         <div
@@ -438,8 +446,13 @@ function LeaveCard({ req, selected, onSelect, onApprove, onReject }: {
 
             {/* Avatar + Info Row */}
             <div className="flex items-center gap-3">
-                <img src={req.avatar} alt={req.name}
-                    className="w-12 h-12 rounded-full bg-gray-100 border-2 border-gray-100 flex-shrink-0 object-cover" />
+                <Image
+                    src={req.avatar}
+                    alt={req.name}
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 rounded-full bg-gray-100 border-2 border-gray-100 flex-shrink-0 object-cover"
+                />
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                         <p className="text-[14px] font-bold text-gray-900 leading-tight truncate">{req.name}</p>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, ChevronDown, Download, MoreVertical, Eye, Trash2, X, Users } from "lucide-react";
+import { ChevronDown, Download, MoreVertical, Eye, Trash2, X, Users } from "lucide-react";
 
 interface Document {
   id: string;
@@ -236,20 +236,18 @@ export default function EmployeeFiles() {
                 <ChevronDown className="h-4 w-4 rotate-90" />
               </button>
               <button
-                className={`px-3 py-1 rounded ${
-                  currentPage === 1
+                className={`px-3 py-1 rounded ${currentPage === 1
                     ? "bg-orange-500 text-white"
                     : "border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 1
               </button>
               <button
-                className={`px-3 py-1 rounded ${
-                  currentPage === 2
+                className={`px-3 py-1 rounded ${currentPage === 2
                     ? "bg-orange-500 text-white"
                     : "border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 2
               </button>
@@ -266,12 +264,12 @@ export default function EmployeeFiles() {
 
       {/* Document Details Modal */}
       {showModal && selectedDocument && (
-        <div 
+        <div
           onClick={() => setShowModal(false)}
           className="fixed inset-0 flex items-center justify-center z-50"
           style={{ backgroundColor: 'rgba(249, 250, 251, 0.6)' }}
         >
-          <div 
+          <div
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
           >
