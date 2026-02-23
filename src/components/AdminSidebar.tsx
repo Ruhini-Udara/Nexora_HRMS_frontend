@@ -4,7 +4,6 @@ import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDay
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
-import { useRouter, usePathname } from "next/navigation";
 
 const menuItems = [
   { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const, href: "/admin" },
