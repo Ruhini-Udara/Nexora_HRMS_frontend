@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays } from "lucide-react";
+import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays, ClipboardCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
@@ -11,7 +11,7 @@ const menuItems = [
   { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const, href: "/admin" },
   { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const, href: "/admin" },
   { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const, href: "/admin" },
-  { label: "Employees", icon: <Users size={18} />, view: "employees" as const, href: "/admin" },
+  { label: "Other Approvals", icon: <ClipboardCheck size={18} />, view: "otherApprovals" as const, href: "/admin/other-approvals" },
   { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const, href: "/admin/training" },
   { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const, href: "/admin" },
 ];
@@ -40,12 +40,14 @@ export default function AdminSidebar() {
             const isActive =
               item.view === "leaveManagement"
                 ? pathname.startsWith("/admin/leave-requests")
-                : activeView === item.view && pathname === "/admin";
+                : item.view === "otherApprovals"
+                  ? pathname.startsWith("/admin/other-approvals")
+                  : activeView === item.view && pathname === "/admin";
 
-            return item.view === "leaveManagement" ? (
+            return item.view === "leaveManagement" || item.view === "otherApprovals" ? (
               <Link
                 key={item.label}
-                href="/admin/leave-requests"
+                href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isActive
                   ? "bg-primary-light text-primary border-r-4 border-primary"
                   : "text-sidebar-text hover:bg-gray-50"
