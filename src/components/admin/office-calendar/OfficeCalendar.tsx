@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import AddCompanyHoliday from "../addcompanyholiday/AddCompanyHoliday";
+import AddCompanyEvent from "../addcompanyevent/AddCompanyEvent";
 
 interface CalendarEvent {
   id: number;
@@ -16,6 +17,7 @@ export default function OfficeCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1)); // October 2026
   const [view, setView] = useState<"day" | "week" | "month">("month");
   const [showAddHoliday, setShowAddHoliday] = useState(false);
+  const [showAddEvent, setShowAddEvent] = useState(false);
 
   const events: CalendarEvent[] = [
     { id: 1, title: "Quarterly All-Ha...", date: "2026-10-05", type: "internal-event" },
@@ -130,34 +132,10 @@ export default function OfficeCalendar() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {/* View Selector */}
-          <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setView("day")}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                view === "day" ? "bg-slate-100 text-[#111827]" : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Day
-            </button>
-            <button
-              onClick={() => setView("week")}
-              className={`px-4 py-2 text-sm font-medium transition-colors border-x border-slate-200 ${
-                view === "week" ? "bg-slate-100 text-[#111827]" : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Week
-            </button>
-            <button
-              onClick={() => setView("month")}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                view === "month" ? "bg-amber-400 text-slate-900" : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Month
-            </button>
-          </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors">
+          <button 
+            onClick={() => setShowAddEvent(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors"
+          >
             <Plus size={18} />
             Add Event
           </button>
@@ -261,6 +239,9 @@ export default function OfficeCalendar() {
 
       {/* Add Holiday Modal */}
       {showAddHoliday && <AddCompanyHoliday onClose={() => setShowAddHoliday(false)} />}
+      
+      {/* Add Event Modal */}
+      {showAddEvent && <AddCompanyEvent onClose={() => setShowAddEvent(false)} />}
     </div>
   );
 }
