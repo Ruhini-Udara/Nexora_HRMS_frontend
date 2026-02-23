@@ -88,7 +88,6 @@ export default function LeaveApprovalsPage() {
     const [hrRemarkInput, setHrRemarkInput] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
-    const [selectedForAdmin, setSelectedForAdmin] = useState<string[]>([]);
 
     const handleView = (req: typeof MOCK_REQUESTS[0]) => {
         setSelectedRequest(req);
@@ -112,21 +111,6 @@ export default function LeaveApprovalsPage() {
         handleCloseModal();
     };
 
-    const handleToggleSelection = (id: string) => {
-        setSelectedForAdmin(prev =>
-            prev.includes(id) ? prev.filter(reqId => reqId !== id) : [...prev, id]
-        );
-    };
-
-    const handleSubmitToAdmin = () => {
-        if (selectedForAdmin.length === 0) return;
-        setRequests(prev => prev.map(req =>
-            selectedForAdmin.includes(req.id)
-                ? { ...req, status: "Sent for Admin Approval" }
-                : req
-        ));
-        setSelectedForAdmin([]);
-    };
 
     const filteredRequests = requests.filter(req => {
         const matchesSearch = req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -179,27 +163,12 @@ export default function LeaveApprovalsPage() {
                             <option value="All">All Statuses</option>
                             <option value="Submitted for Overseas Leaves Verification">Pending Verification</option>
                             <option value="Submitted for Administrator Approvals">Verified</option>
-                            <option value="Sent for Admin Approval">Sent to Admin</option>
+
                             <option value="Rejected">Rejected</option>
                         </select>
                     </div>
                 </div>
 
-                {/* ActionBar for Admin Submission */}
-                {selectedForAdmin.length > 0 && (
-                    <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-between">
-                        <span className="text-sm font-semibold text-primary">
-                            {selectedForAdmin.length} request(s) selected for Admin Verification
-                        </span>
-                        <button
-                            onClick={handleSubmitToAdmin}
-                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">send</span>
-                            Submit List to Admin
-                        </button>
-                    </div>
-                )}
 
                 {/* Data Table */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -207,9 +176,7 @@ export default function LeaveApprovalsPage() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                                    <th className="py-4 px-4 w-12 text-center">
-                                        <span className="material-symbols-outlined text-[18px]">check_box</span>
-                                    </th>
+
                                     <th className="py-4 px-6">ID</th>
                                     <th className="py-4 px-6">Employee</th>
                                     <th className="py-4 px-6">Date Range</th>
@@ -219,17 +186,7 @@ export default function LeaveApprovalsPage() {
                             </thead>
                             <tbody className="text-sm">
                                 {filteredRequests.map((req) => (
-                                    <tr key={req.id} className={`border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${selectedForAdmin.includes(req.id) ? "bg-primary/5 dark:bg-primary/10" : ""}`}>
-                                        <td className="py-4 px-4 text-center">
-                                            <input
-                                                type="checkbox"
-                                                className="w-4 h-4 rounded text-primary focus:ring-primary/50 cursor-pointer"
-                                                disabled={req.status !== "Submitted for Administrator Approvals"}
-                                                checked={selectedForAdmin.includes(req.id)}
-                                                onChange={() => handleToggleSelection(req.id)}
-                                                title={req.status !== "Submitted for Administrator Approvals" ? "Only verified requests can be selected" : "Select for Admin Verification"}
-                                            />
-                                        </td>
+                                    <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
                                         <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">{req.id}</td>
                                         <td className="py-4 px-6">
                                             <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
