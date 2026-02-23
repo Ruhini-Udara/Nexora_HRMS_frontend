@@ -13,7 +13,7 @@ export default function WelfarePage() {
                 </p>
             </div>
 
-            <div className="max-w-4xl">
+            <div className="w-full">
                 {/* Welfare Certification & Approvals Card */}
                 <Link href="/hr/welfare/approvals" className="bg-white dark:bg-surface-dark rounded-[24px] border border-border-light dark:border-border-dark card-shadow overflow-hidden flex flex-col md:flex-row items-center p-12 gap-12 group hover:border-primary/30 transition-all duration-300">
                     <div className="w-40 h-40 flex-shrink-0 bg-primary/10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
@@ -29,7 +29,7 @@ export default function WelfarePage() {
                             Review and verify employee welfare benefit requests, healthcare
                             certifications, and official support documents.
                         </p>
-                        <span className="inline-flex items-center text-primary font-bold text-xl hover:translate-x-1 transition-transform">
+                        <span className="inline-flex items-center text-secondary font-bold text-xl hover:translate-x-1 transition-transform">
                             Open Module
                             <span className="material-icons-round ml-2 text-2xl">
                                 arrow_forward
@@ -38,7 +38,7 @@ export default function WelfarePage() {
                     </div>
                 </Link>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12 max-w-4xl">
                     {/* Request History Card */}
                     <Link href="/hr/welfare/history" className="bg-white dark:bg-surface-dark p-8 rounded-2xl border border-border-light dark:border-border-dark card-shadow hover:border-primary/40 transition-all cursor-pointer group">
                         <div className="flex items-center gap-5 mb-5">
@@ -55,7 +55,7 @@ export default function WelfarePage() {
                             View past processed applications and detailed audit trails for all
                             welfare actions.
                         </p>
-                        <span className="text-sm font-bold text-primary inline-flex items-center group-hover:underline">
+                        <span className="text-sm font-bold text-secondary inline-flex items-center group-hover:underline">
                             Manage History
                             <span className="material-icons-round text-base ml-1">
                                 chevron_right
@@ -79,7 +79,7 @@ export default function WelfarePage() {
                             Configure benefit limits, eligibility criteria, and customized
                             approval workflows.
                         </p>
-                        <span className="text-sm font-bold text-primary inline-flex items-center group-hover:underline">
+                        <span className="text-sm font-bold text-secondary inline-flex items-center group-hover:underline">
                             Configure
                             <span className="material-icons-round text-base ml-1">
                                 chevron_right

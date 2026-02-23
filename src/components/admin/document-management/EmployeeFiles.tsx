@@ -236,20 +236,18 @@ export default function EmployeeFiles() {
                 <ChevronDown className="h-4 w-4 rotate-90" />
               </button>
               <button
-                className={`px-3 py-1 rounded ${
-                  currentPage === 1
+                className={`px-3 py-1 rounded ${currentPage === 1
                     ? "bg-orange-500 text-white"
                     : "border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 1
               </button>
               <button
-                className={`px-3 py-1 rounded ${
-                  currentPage === 2
+                className={`px-3 py-1 rounded ${currentPage === 2
                     ? "bg-orange-500 text-white"
                     : "border border-gray-300 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 2
               </button>
@@ -266,11 +264,11 @@ export default function EmployeeFiles() {
 
       {/* Document Details Modal */}
       {showModal && selectedDocument && (
-        <div 
+        <div
           onClick={() => setShowModal(false)}
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
         >
-          <div 
+          <div
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
           >

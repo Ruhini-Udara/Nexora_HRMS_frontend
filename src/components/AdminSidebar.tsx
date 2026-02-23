@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BarChart2, Calendar, Clock, Contact, FileText, Users } from "lucide-react";
+import { BarChart2, Calendar, Clock, FileText, Users } from "lucide-react";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
 
 const menuItems = [

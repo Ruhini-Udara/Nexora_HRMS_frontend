@@ -2,21 +2,25 @@ import React from "react";
 import EmployeeTopbar from "@/components/EmployeeTopbar";
 import EmployeeSidebar from "@/components/EmployeeSidebar";
 
-
-const EmployeeLayout = ({ children }: { children: React.ReactNode }) => {
+export default function EmployeeLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex min-h-screen bg-[#F9FAFB]">
-      {/* Sidebar */}
-      {/* Sidebar */}
+    <div className="flex h-screen overflow-hidden">
       <EmployeeSidebar />
-      <div className="flex-1 ml-[260px] flex flex-col min-h-screen">
+      <main className="flex-1 flex flex-col overflow-y-auto">
         <EmployeeTopbar />
-        <main className="p-8 flex-1">
+
+        <div className="flex-1 p-8">
           {children}
-        </main>
-      </div>
+        </div>
+
+        <footer className="mt-auto px-8 py-6 border-t border-border-light dark:border-border-dark text-center text-sm text-gray-500 dark:text-gray-400">
+          Copyright 2026 - 2030 HR MATE All right reserved
+        </footer>
+      </main>
     </div>
   );
-};
-
-export default EmployeeLayout;
+}
