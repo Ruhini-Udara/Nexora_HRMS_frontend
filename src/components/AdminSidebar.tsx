@@ -42,9 +42,11 @@ export default function AdminSidebar() {
                 ? pathname.startsWith("/admin/leave-requests")
                 : item.view === "otherApprovals"
                   ? pathname.startsWith("/admin/other-approvals")
-                  : activeView === item.view && pathname === "/admin";
+                  : item.view === "training"
+                    ? pathname.startsWith("/admin/training")
+                    : activeView === item.view && pathname === "/admin";
 
-            return item.view === "leaveManagement" || item.view === "otherApprovals" ? (
+            return item.view === "leaveManagement" || item.view === "otherApprovals" || item.view === "training" ? (
               <Link
                 key={item.label}
                 href={item.href}
