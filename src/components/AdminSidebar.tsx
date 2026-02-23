@@ -22,7 +22,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleMenuClick = (view: any) => {
+  const handleMenuClick = (view: typeof menuItems[number]["view"]) => {
     setActiveView(view);
     if (pathname !== "/admin") {
       router.push("/admin");
