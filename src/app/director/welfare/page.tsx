@@ -1,5 +1,5 @@
-import WelfareStats from '@/components/manager/welfare/WelfareStats';
-import WelfareTable from '@/components/manager/welfare/WelfareTable';
+import WelfareStats from '@/components/director/welfare/WelfareStats';
+import WelfareTable from '@/components/director/welfare/WelfareTable';
 import { Plus } from 'lucide-react';
 
 export default function WelfareRequestsPage() {
@@ -25,3 +25,4 @@ export default function WelfareRequestsPage() {
         </div>
     );
 }
+

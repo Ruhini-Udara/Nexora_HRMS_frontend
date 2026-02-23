@@ -29,7 +29,7 @@ const allEmployees: Employee[] = [
     email: "sarah.s@hrmate.com",
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDURttzoY6PQtU6lRECoWc7rVhwE63NwlG9TNRUatsVZX4lek9dh3S7IUZCihwIUC2kv34I7jCRlYEpBu0EDg1i7gh3ziAQsSFCXgdab5c_d8cZvV7T4f_BQQzuWYS8SPmdHXMA8TEmzEvJ47WboIAJYvphaGsUL2yHnIsJJDqx7baeCBv_QMqpUq3tLq3LFUf6SChDBtyN9vtAZY6rQ3LkxhHTasFbmzLW1R92vQ4wwrcdIe_a8Yiq7cmzrBQFfs-0ES7Cmg-S30_2",
     department: "Human Resources",
-    designation: "HR Manager",
+    designation: "HR director",
     joiningDate: "Mar 22, 2022",
     employmentStatus: "Full-time",
   },
@@ -192,3 +192,4 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     </div>
   );
 }
+

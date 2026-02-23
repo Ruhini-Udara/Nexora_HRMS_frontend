@@ -1,5 +1,5 @@
-import TransferStats from '@/components/manager/transfer/TransferStats';
-import TransferTable from '@/components/manager/transfer/TransferTable';
+import TransferStats from '@/components/director/transfer/TransferStats';
+import TransferTable from '@/components/director/transfer/TransferTable';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -40,3 +40,4 @@ export default function TransferRequestsPage() {
         </div>
     );
 }
+

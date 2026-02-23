@@ -41,8 +41,8 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
     { id: "1", name: "Software Engineer" },
     { id: "2", name: "Senior Developer" },
     { id: "3", name: "Team Lead" },
-    { id: "4", name: "Project Manager" },
-    { id: "5", name: "HR Manager" },
+    { id: "4", name: "Project director" },
+    { id: "5", name: "HR director" },
     { id: "6", name: "Finance Officer" },
   ];
 
@@ -436,3 +436,4 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
     </div>
   );
 }
+

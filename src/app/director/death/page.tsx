@@ -1,5 +1,5 @@
-import DeathStats from '@/components/manager/death/DeathStats';
-import DeathTable from '@/components/manager/death/DeathTable';
+import DeathStats from '@/components/director/death/DeathStats';
+import DeathTable from '@/components/director/death/DeathTable';
 
 export default function DeathApplicationsPage() {
     return (
@@ -15,3 +15,4 @@ export default function DeathApplicationsPage() {
         </div>
     );
 }
+

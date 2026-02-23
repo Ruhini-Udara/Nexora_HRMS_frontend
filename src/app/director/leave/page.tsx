@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import LeaveStats from '@/components/manager/leave/LeaveStats';
-import LeaveRequestsTable from '@/components/manager/leave/LeaveRequestsTable';
+import LeaveStats from '@/components/director/leave/LeaveStats';
+import LeaveRequestsTable from '@/components/director/leave/LeaveRequestsTable';
 
 const LeaveRequestsPage = () => {
     return (
@@ -19,3 +19,4 @@ const LeaveRequestsPage = () => {
 };
 
 export default LeaveRequestsPage;
+

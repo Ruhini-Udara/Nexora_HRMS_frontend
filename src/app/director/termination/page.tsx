@@ -1,6 +1,6 @@
 
-import TerminationStats from '@/components/manager/termination/TerminationStats';
-import TerminationTable from '@/components/manager/termination/TerminationTable';
+import TerminationStats from '@/components/director/termination/TerminationStats';
+import TerminationTable from '@/components/director/termination/TerminationTable';
 
 export default function TerminationRequestsPage() {
     return (
@@ -16,3 +16,4 @@ export default function TerminationRequestsPage() {
         </div>
     );
 }
+

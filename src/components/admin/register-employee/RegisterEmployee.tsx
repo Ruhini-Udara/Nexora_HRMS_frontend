@@ -132,7 +132,7 @@ export default function RegisterEmployee() {
                   className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-[#111827] appearance-none cursor-pointer"
                 >
                   <option value="Employee">Employee</option>
-                  <option value="Manager">Manager</option>
+                  <option value="director">director</option>
                   <option value="HR Admin">HR Admin</option>
                   <option value="Super Admin">Super Admin</option>
                 </select>
@@ -244,3 +244,4 @@ export default function RegisterEmployee() {
     </div>
   );
 }
+

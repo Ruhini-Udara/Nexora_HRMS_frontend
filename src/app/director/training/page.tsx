@@ -1,5 +1,5 @@
-import TrainingStats from '@/components/manager/training/TrainingStats';
-import TrainingTable from '@/components/manager/training/TrainingTable';
+import TrainingStats from '@/components/director/training/TrainingStats';
+import TrainingTable from '@/components/director/training/TrainingTable';
 
 export default function TrainingRequestsPage() {
     return (
@@ -20,3 +20,4 @@ export default function TrainingRequestsPage() {
         </div>
     );
 }
+

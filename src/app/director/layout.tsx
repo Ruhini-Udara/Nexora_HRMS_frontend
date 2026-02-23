@@ -1,17 +1,17 @@
 
-import ManagerHeader from "@/components/ManagerHeader";
-import ManagerSidebar from "@/components/ManagerSidebar";
+import DirectorHeader from "@/components/DirectorHeader";
+import DirectorSidebar from "@/components/DirectorSidebar";
 
-export default function ManagerLayout({
+export default function DirectorLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
     return (
         <div className="flex min-h-screen bg-dashboard-bg">
-            <ManagerSidebar />
+            <DirectorSidebar />
             <main className="flex-1 ml-[260px] flex flex-col min-h-screen">
-                <ManagerHeader />
+                <DirectorHeader />
                 <div className="flex-1">
                     {children}
                 </div>
@@ -22,3 +22,4 @@ export default function ManagerLayout({
         </div>
     );
 }
+
