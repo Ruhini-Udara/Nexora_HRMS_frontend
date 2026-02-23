@@ -142,32 +142,32 @@ export default function TeamAttendancePage() {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-medium">
                     {[
-                        { label: "Total Present", value: "26", sub: "On schedule", icon: UserCheck, color: "text-orange-900", iconBg: "bg-orange-100/50", trend: "text-green-600" },
-                        { label: "Total Absent", value: "02", sub: "2 unplanned leaves", icon: UserMinus, color: "text-red-900", iconBg: "bg-red-100/50", trend: "text-red-500" },
-                        { label: "Late Arrivals", value: "02", sub: "After 09:15 AM", icon: Clock, color: "text-amber-900", iconBg: "bg-amber-100/50", trend: "text-amber-600" },
+                        { label: "Total Present", value: "26", sub: "On schedule", icon: UserCheck, color: "text-[#9e3f00]", iconBg: "bg-[#fff4ed]", trend: "text-green-600" },
+                        { label: "Total Absent", value: "02", sub: "2 unplanned leaves", icon: UserMinus, color: "text-red-900", iconBg: "bg-red-50", trend: "text-red-500" },
+                        { label: "Late Arrivals", value: "02", sub: "After 09:15 AM", icon: Clock, color: "text-amber-900", iconBg: "bg-amber-50", trend: "text-amber-600" },
                     ].map((stat, i) => (
-                        <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 p-6 rounded-2xl shadow-sm flex items-center justify-between">
+                        <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between">
                             <div>
-                                <p className="text-[13px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{stat.label}</p>
-                                <h3 className="text-4xl font-black text-slate-900 dark:text-white mt-1 leading-none">{stat.value}</h3>
-                                <div className={`flex items-center gap-1 mt-2 ${stat.trend}`}>
+                                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.1em]">{stat.label}</p>
+                                <h3 className="text-4xl font-black text-slate-800 dark:text-white mt-1 leading-none tracking-tight">{stat.value}</h3>
+                                <div className={`flex items-center gap-1 mt-3 ${stat.trend}`}>
                                     {stat.label === "Total Present" && <UserCheck className="w-3.5 h-3.5" />}
                                     {stat.label === "Total Absent" && <AlertCircle className="w-3.5 h-3.5" />}
                                     {stat.label === "Late Arrivals" && <Clock className="w-3.5 h-3.5" />}
-                                    <span className="text-[11px] font-bold">{stat.sub}</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">{stat.sub}</span>
                                 </div>
                             </div>
-                            <div className={`${stat.iconBg} p-4 rounded-xl`}>
-                                <stat.icon className={`w-6 h-6 ${stat.color.includes('orange') ? 'text-[#9e3f00]' : stat.color}`} />
+                            <div className={`${stat.iconBg} p-4 rounded-xl border border-white/50`}>
+                                <stat.icon className={`w-6 h-6 ${stat.color === 'text-[#9e3f00]' ? 'text-[#9e3f00]' : stat.color}`} />
                             </div>
                         </div>
                     ))}
                 </div>
 
                 {/* Filter Bar */}
-                <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center gap-4">
+                <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 p-4 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col md:flex-row items-center gap-4">
                     <div className="flex items-center gap-4 flex-1">
                         <div className="relative">
                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -246,18 +246,18 @@ export default function TeamAttendancePage() {
                                             <StatusBadge status={row.status} />
                                         </td>
                                         <td className="px-6 py-5">
-                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{row.checkIn}</p>
+                                            <p className="text-sm font-normal text-slate-600 dark:text-slate-400">{row.checkIn}</p>
                                         </td>
                                         <td className="px-6 py-5">
-                                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight">{row.checkOut}</p>
+                                            <p className="text-sm font-normal text-slate-500 dark:text-slate-500 tracking-tight">{row.checkOut}</p>
                                         </td>
                                         <td className="px-6 py-5 text-center">
-                                            <p className={`text-sm font-bold ${row.overtime.startsWith('+') ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                                            <p className={`text-sm font-normal ${row.overtime.startsWith('+') ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
                                                 {row.overtime}
                                             </p>
                                         </td>
                                         <td className="px-8 py-5 text-right whitespace-nowrap">
-                                            <button className="text-[12px] font-black text-[#9e3f00] hover:underline uppercase tracking-widest">
+                                            <button className="text-[12px] font-bold text-[#9e3f00] hover:text-[#7a3100] transition-colors uppercase tracking-widest">
                                                 Details
                                             </button>
                                         </td>
