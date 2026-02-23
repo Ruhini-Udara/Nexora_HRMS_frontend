@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, ChevronDown, Upload, Download, MoreVertical, Eye, Trash2, X } from "lucide-react";
+import { Search, ChevronDown, Upload, Download, MoreVertical, Eye, Trash2, X, FileText, FolderOpen, Calendar, HardDrive } from "lucide-react";
 
 interface Document {
   id: string;
@@ -297,87 +297,107 @@ export default function CompanyFiles() {
       {showModal && selectedDocument && (
         <div 
           onClick={() => setShowModal(false)}
-          className="fixed inset-0 flex items-center justify-center z-50"
-          style={{ backgroundColor: 'rgba(249, 250, 251, 0.6)' }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">Document Details</h2>
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Document Details</h2>
+                <p className="text-sm text-slate-500 mt-1">View company document information</p>
+              </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="text-slate-400 hover:text-slate-600 transition-colors"
               >
-                <X className="h-5 w-5 text-gray-500" />
+                <X size={24} />
               </button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6">
+            <div className="p-6 space-y-4">
               {/* Document Icon and Name */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center">
-                  <span className="text-3xl">{selectedDocument.icon}</span>
+              <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
+                <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center text-amber-700">
+                  <span className="text-4xl">{selectedDocument.icon}</span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{selectedDocument.name}</h3>
-                  <p className="text-sm text-gray-500">{selectedDocument.size}</p>
+                  <h3 className="text-2xl font-bold text-gray-900">{selectedDocument.name}</h3>
+                  <p className="text-amber-800 font-semibold">{selectedDocument.size}</p>
                 </div>
               </div>
 
               {/* Document Details Grid */}
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Category</label>
-                  <div className="mt-2">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getCategoryColor(selectedDocument.category)}`}>
-                      {selectedDocument.category}
-                    </span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FolderOpen className="text-purple-600" size={18} />
+                    <label className="block text-sm font-medium text-purple-900">
+                      Category
+                    </label>
                   </div>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${getCategoryColor(selectedDocument.category)}`}>
+                    {selectedDocument.category}
+                  </span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Version</label>
-                  <p className="mt-2 text-base text-gray-900">{selectedDocument.version}</p>
+                
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="text-blue-600" size={18} />
+                    <label className="block text-sm font-medium text-blue-900">
+                      Version
+                    </label>
+                  </div>
+                  <p className="text-base text-gray-900 font-semibold">{selectedDocument.version}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Upload Date</label>
-                  <p className="mt-2 text-base text-gray-900">{selectedDocument.uploaded.date}</p>
+                
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="text-green-600" size={18} />
+                    <label className="block text-sm font-medium text-green-900">
+                      Upload Date
+                    </label>
+                  </div>
+                  <p className="text-base text-gray-900 font-semibold">{selectedDocument.uploaded.date}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">File Size</label>
-                  <p className="mt-2 text-base text-gray-900">{selectedDocument.size}</p>
+                
+                <div className="bg-amber-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <HardDrive className="text-amber-600" size={18} />
+                    <label className="block text-sm font-medium text-amber-900">
+                      File Size
+                    </label>
+                  </div>
+                  <p className="text-base text-gray-900 font-semibold">{selectedDocument.size}</p>
                 </div>
               </div>
 
               {/* Remarks */}
-              <div className="mb-6">
-                <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Remarks</label>
-                <p className="mt-2 text-base text-gray-700 bg-gray-50 p-4 rounded-lg">{selectedDocument.remarks}</p>
+              <div className="bg-slate-50 p-4 rounded-lg">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Remarks</label>
+                <p className="text-base text-gray-900">{selectedDocument.remarks}</p>
               </div>
 
               {/* Document Preview Placeholder */}
-              <div className="mb-6">
-                <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Preview</label>
-                <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <div className="text-4xl mb-2">{selectedDocument.icon}</div>
-                  <p className="text-gray-500">Document preview not available</p>
-                  <p className="text-sm text-gray-400 mt-1">Download to view full content</p>
-                </div>
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center bg-slate-50">
+                <div className="text-4xl mb-2">{selectedDocument.icon}</div>
+                <p className="text-slate-600 font-medium">Document preview not available</p>
+                <p className="text-sm text-slate-400 mt-1">Download to view full content</p>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+            <div className="p-6 border-t border-slate-200 flex gap-3">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors font-medium"
+                className="flex-1 bg-gray-200 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium"
               >
                 Close
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
+              <button className="flex-1 flex items-center justify-center gap-2 bg-amber-900 text-white py-2.5 px-4 rounded-lg hover:bg-amber-800 transition-colors font-medium">
                 <Download className="h-4 w-4" />
                 Download
               </button>

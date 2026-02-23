@@ -16,14 +16,14 @@ export default function AdminTopbar() {
       </div>
       <div className="flex items-center gap-6">
         <Bell className="text-gray-400" size={20} />
+        <div className="h-8 border-l border-gray-200"></div>
         <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full">
-          <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/admin-profile.jpg" alt="Admin" className="w-full h-full object-cover" />
-          </div>
           <div className="text-right">
             <div className="font-semibold text-sm">Admin Profile</div>
             <div className="text-xs text-gray-500">HR Administrator</div>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center overflow-hidden">
+            <img src="/admin-profile.jpg" alt="Admin" className="w-full h-full object-cover" />
           </div>
         </div>
       </div>
