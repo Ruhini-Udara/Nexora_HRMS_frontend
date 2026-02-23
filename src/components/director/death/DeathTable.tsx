@@ -46,10 +46,7 @@ export default function DeathTable() {
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="font-bold text-lg text-gray-900">Recent Applications</h3>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold text-sm hover:bg-primary/90 rounded-lg transition-colors shadow-sm">
-                        <Download className="w-4 h-4" />
-                        Export CSV
-                    </button>
+
                     <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
                         <Filter className="w-[18px] h-[18px]" />
                         Filter
@@ -99,8 +96,8 @@ export default function DeathTable() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${app.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                            app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                                                'bg-orange-100 text-orange-800'
+                                        app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                            'bg-orange-100 text-orange-800'
                                         }`}>
                                         {app.status}
                                     </span>

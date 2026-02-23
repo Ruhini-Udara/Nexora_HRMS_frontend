@@ -69,10 +69,7 @@ export default function WelfareTable() {
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="font-bold text-lg text-gray-900">Active Requests</h3>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold text-sm hover:bg-primary/90 rounded-lg transition-colors shadow-sm">
-                        <Download className="w-4 h-4" />
-                        Export CSV
-                    </button>
+
                     <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
                         <Filter className="w-[18px] h-[18px]" />
                         Filter
