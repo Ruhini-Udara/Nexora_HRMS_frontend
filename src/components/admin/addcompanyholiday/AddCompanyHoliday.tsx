@@ -48,14 +48,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const availableDepartments = [
-    { id: "1", name: "Engineering" },
-    { id: "2", name: "Marketing" },
-    { id: "3", name: "HR" },
-    { id: "4", name: "Finance" },
-    { id: "5", name: "Operations" },
-    { id: "6", name: "Sales" },
-  ];
+
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -439,14 +432,12 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
               <button
                 type="button"
                 onClick={() => setRepeatYearly(!repeatYearly)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  repeatYearly ? "bg-blue-500" : "bg-slate-300"
-                }`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${repeatYearly ? "bg-blue-500" : "bg-slate-300"
+                  }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    repeatYearly ? "translate-x-6" : "translate-x-1"
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${repeatYearly ? "translate-x-6" : "translate-x-1"
+                    }`}
                 />
               </button>
               <span className="text-sm font-medium text-slate-700">Repeat Yearly</span>

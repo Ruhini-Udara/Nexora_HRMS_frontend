@@ -2,97 +2,78 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useLeaveDays } from "@/hooks/useLeaveDays";
+
+const maternitySchema = z.object({
+    epfNumber: z.string().min(1, "EPF Number is required"),
+    branch: z.string().min(1, "Branch is required"),
+    dateOfRequest: z.string().min(1),
+    employeeName: z.string().min(1, "Employee Name is required"),
+    employeeType: z.string().min(1, "Employee Type is required"),
+    designation: z.string().min(1, "Designation is required"),
+    leaveReason: z.string().min(1, "Leave Request Reason is required"),
+    startDate: z.string().min(1, "Start Date is required"),
+    endDate: z.string().min(1, "End Date is required"),
+    childNumber: z.string().min(1, "Child Number is required"),
+    contactNumber: z.string().min(1, "Contact Number is required"),
+    email: z.string().email("Invalid email address").min(1, "Email is required"),
+    specialRemark: z.string().optional(),
+    acknowledgement: z.boolean().refine(val => val === true, "You must acknowledge the terms to proceed.")
+}).refine((data) => {
+    if (!data.startDate || !data.endDate) return true;
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+    return end >= start;
+}, {
+    message: "End Date must be the same as or after Start Date.",
+    path: ["endDate"]
+});
+
+type MaternityFormValues = z.infer<typeof maternitySchema>;
 
 export default function MaternityLeaveRequestPage() {
-    // Form state
-    const [formData, setFormData] = useState({
-        epfNumber: "",
-        branch: "",
-        dateOfRequest: new Date().toISOString().split("T")[0],
-        employeeName: "",
-        employeeType: "",
-        designation: "",
-        leaveReason: "",
-        startDate: "",
-        endDate: "",
-        childNumber: "",
-        contactNumber: "",
-        email: "",
-        specialRemark: "",
-        acknowledgement: false,
+    const { register, handleSubmit, control, formState: { errors } } = useForm<MaternityFormValues>({
+        resolver: zodResolver(maternitySchema),
+        defaultValues: {
+            dateOfRequest: new Date().toISOString().split("T")[0],
+        }
     });
 
-    // File state
     const [files, setFiles] = useState({
         medicalCertificate: null as File | null,
         leaveLetter: null as File | null,
         supportingDocument: null as File | null,
     });
 
-    // Status state
     const [status, setStatus] = useState<"editing" | "draft" | "submitted">("editing");
-    const [error, setError] = useState("");
+    const [fileError, setFileError] = useState("");
 
-    // Derived: number of days (inclusive)
-    const noOfDays = useMemo(() => {
-        if (!formData.startDate || !formData.endDate) return "0";
+    const noOfDays = useLeaveDays(control, "startDate", "endDate").toString();
 
-        const start = new Date(formData.startDate);
-        const end = new Date(formData.endDate);
-
-        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return "0";
-        if (end < start) return "0";
-
-        const diffTime = end.getTime() - start.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // inclusive
-        return diffDays.toString();
-    }, [formData.startDate, formData.endDate]);
-
-    // Handle input changes
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    // Handle file changes
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof typeof files) => {
         if (e.target.files && e.target.files[0]) {
             setFiles((prev) => ({ ...prev, [fieldName]: e.target.files![0] }));
         }
     };
 
-    // Derived disabled state
     const isDisabled = status === "submitted";
 
     const handleSaveDraft = (e: React.MouseEvent) => {
         e.preventDefault();
-        setError("");
+        setFileError("");
         setStatus("draft");
-        // In a real app, make an API call here to save draft state
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
-
-        // Basic validation for date range
-        if (formData.startDate && formData.endDate) {
-            const start = new Date(formData.startDate);
-            const end = new Date(formData.endDate);
-            if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
-                setError("End Date must be the same as or after Start Date.");
-                return;
-            }
-        }
-
-        // Mandatory documents validation
+    const onSubmit = (data: MaternityFormValues) => {
+        setFileError("");
         if (!files.medicalCertificate || !files.leaveLetter) {
-            setError("Medical Certificate and Maternity Leave Request Letter are mandatory for submission.");
+            setFileError("Medical Certificate and Maternity Leave Request Letter are mandatory for submission.");
             return;
         }
-
         setStatus("submitted");
-        // In a real app, make an API call here to submit the final form
     };
 
     return (
@@ -130,10 +111,10 @@ export default function MaternityLeaveRequestPage() {
                         </div>
                     </div>
                 )}
-                {error && (
+                {fileError && (
                     <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-xl border border-red-200 dark:border-red-800/30 flex items-center gap-3 mb-6">
                         <span className="material-symbols-outlined text-red-500">error</span>
-                        <div className="text-sm font-medium">{error}</div>
+                        <div className="text-sm font-medium">{fileError}</div>
                     </div>
                 )}
             </div>
@@ -141,7 +122,7 @@ export default function MaternityLeaveRequestPage() {
             {/* Left Column - Form fields */}
             <div className="col-span-12 lg:col-span-8">
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                    <form className="space-y-8" onSubmit={handleSubmit}>
+                    <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
                         {/* 1. Employee Details Section */}
                         <section>
                             <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
@@ -153,102 +134,87 @@ export default function MaternityLeaveRequestPage() {
                                         EPF Number <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         disabled={isDisabled}
-                                        name="epfNumber"
-                                        value={formData.epfNumber}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60"
+                                        {...register("epfNumber")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.epfNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         placeholder="e.g. 12345"
                                         type="text"
                                     />
+                                    {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{errors.epfNumber.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         Employee Name <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         disabled={isDisabled}
-                                        name="employeeName"
-                                        value={formData.employeeName}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60"
+                                        {...register("employeeName")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.employeeName ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         placeholder="Full name"
                                         type="text"
                                     />
+                                    {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         Designation <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         disabled={isDisabled}
-                                        name="designation"
-                                        value={formData.designation}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60"
+                                        {...register("designation")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.designation ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         placeholder="Your role"
                                         type="text"
                                     />
+                                    {errors.designation && <p className="text-red-500 text-xs mt-1">{errors.designation.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         Branch <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         disabled={isDisabled}
-                                        name="branch"
-                                        value={formData.branch}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60"
+                                        {...register("branch")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.branch ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         placeholder="e.g. Head Office"
                                         type="text"
                                     />
+                                    {errors.branch && <p className="text-red-500 text-xs mt-1">{errors.branch.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         Contact Number <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         disabled={isDisabled}
-                                        name="contactNumber"
-                                        value={formData.contactNumber}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60"
+                                        {...register("contactNumber")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.contactNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         placeholder="+94 77 XXXXXXX"
                                         type="text"
                                     />
+                                    {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         E-mail Address <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         disabled={isDisabled}
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60"
+                                        {...register("email")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         placeholder="your.email@example.com"
                                         type="email"
                                     />
+                                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                                 </div>
                                 <div className="md:col-span-2">
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         Employee Type <span className="text-red-500">*</span>
                                     </label>
                                     <select
-                                        required
                                         disabled={isDisabled}
-                                        name="employeeType"
-                                        value={formData.employeeType}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 appearance-none"
+                                        {...register("employeeType")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 appearance-none ${errors.employeeType ? 'border-red-500 focus:ring-red-500' : ''}`}
                                     >
                                         <option value="" disabled>Select Type</option>
                                         <option value="Permanent">Permanent</option>
@@ -270,51 +236,44 @@ export default function MaternityLeaveRequestPage() {
                                         Leave Request Reason <span className="text-red-500">*</span>
                                     </label>
                                     <textarea
-                                        required
                                         disabled={isDisabled}
-                                        name="leaveReason"
-                                        value={formData.leaveReason}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60"
+                                        {...register("leaveReason")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60 ${errors.leaveReason ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         placeholder="Please elaborate on your leave request..."
                                         rows={3}
                                     />
+                                    {errors.leaveReason && <p className="text-red-500 text-xs mt-1">{errors.leaveReason.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         Start Date <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         disabled={isDisabled}
-                                        name="startDate"
-                                        value={formData.startDate}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60"
+                                        {...register("startDate")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         type="date"
                                     />
+                                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         End Date <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         disabled={isDisabled}
-                                        name="endDate"
-                                        value={formData.endDate}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60"
+                                        {...register("endDate")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         type="date"
                                     />
+                                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Date of Request</label>
                                     <input
                                         disabled
-                                        name="dateOfRequest"
-                                        value={formData.dateOfRequest}
-                                        className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 p-2.5 outline-none"
+                                        {...register("dateOfRequest")}
+                                        className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 p-2.5 outline-none cursor-not-allowed"
                                         type="date"
                                     />
                                 </div>
@@ -334,12 +293,9 @@ export default function MaternityLeaveRequestPage() {
                                         Child Number <span className="text-red-500">*</span>
                                     </label>
                                     <select
-                                        required
                                         disabled={isDisabled}
-                                        name="childNumber"
-                                        value={formData.childNumber}
-                                        onChange={handleChange}
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 appearance-none"
+                                        {...register("childNumber")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 appearance-none ${errors.childNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
                                     >
                                         <option value="" disabled>Select Child Number</option>
                                         <option value="1">1st Child</option>
@@ -444,9 +400,7 @@ export default function MaternityLeaveRequestPage() {
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Special Remark</label>
                             <textarea
                                 disabled={isDisabled}
-                                name="specialRemark"
-                                value={formData.specialRemark}
-                                onChange={handleChange}
+                                {...register("specialRemark")}
                                 className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60"
                                 placeholder="Any additional information..."
                                 rows={2}
@@ -460,12 +414,9 @@ export default function MaternityLeaveRequestPage() {
                                     <div className="relative flex items-center justify-center mt-0.5">
                                         <input
                                             type="checkbox"
-                                            required
                                             disabled={isDisabled}
-                                            name="acknowledgement"
-                                            checked={formData.acknowledgement || false}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, acknowledgement: e.target.checked }))}
-                                            className="appearance-none w-5 h-5 border-2 border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 checked:bg-primary checked:border-primary disabled:opacity-60 disabled:cursor-not-allowed transition-all peer"
+                                            {...register("acknowledgement")}
+                                            className={`appearance-none w-5 h-5 border-2 border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 checked:bg-primary checked:border-primary disabled:opacity-60 disabled:cursor-not-allowed transition-all peer ${errors.acknowledgement ? 'border-red-500 ring-2 ring-red-500/20' : ''}`}
                                         />
                                         <span className="material-symbols-outlined absolute text-white text-[14px] opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">
                                             check
@@ -476,6 +427,7 @@ export default function MaternityLeaveRequestPage() {
                                         I understand that <strong className="text-slate-800 dark:text-slate-200">once submitted, this maternity leave request cannot be edited</strong> or modified.
                                     </span>
                                 </label>
+                                {errors.acknowledgement && <p className="text-red-500 text-xs mt-2 font-medium">{errors.acknowledgement.message}</p>}
                             </div>
 
                             <div className="flex items-center gap-4">

@@ -1,30 +1,45 @@
 "use client";
 
 import React, { useState } from "react";
-import RegisterEmployeeStep1 from "./RegisterEmployeeStep1";
-import RegisterEmployeeStep2 from "./RegisterEmployeeStep2";
-import RegisterEmployeeStep3 from "./RegisterEmployeeStep3";
+import { ArrowLeft, Mail, Shield, Lock, Eye, EyeOff, CheckCircle2, Circle, Sparkles } from "lucide-react";
+import { useAdminNavigation } from "../AdminNavigationContext";
 
-export default function RegisterEmployee() {
-  const [currentStep, setCurrentStep] = useState(1);
+interface RegisterEmployeeStep3Props {
+  onPrevious: () => void;
+}
 
-  const handleNextStep = () => {
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
+export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeStep3Props) {
+  const { setActiveView } = useAdminNavigation();
+  const [currentStep, setCurrentStep] = useState(3);
+  const [showPassword, setShowPassword] = useState(false);
+  const [enableSystemAccess, setEnableSystemAccess] = useState(true);
+  
+  // Form states
+  const [email, setEmail] = useState("alex.morris@hrmate.com");
+  const [userRole, setUserRole] = useState("Employee");
+  const [password, setPassword] = useState("HRM_2024_P@ss");
+
+  const generateRandomPassword = () => {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let newPassword = "HRM_2024_";
+    for (let i = 0; i < length - 9; i++) {
+      newPassword += charset.charAt(Math.floor(Math.random() * charset.length));
     }
+    setPassword(newPassword);
   };
 
-  const handlePreviousStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+  const steps = [
+    { id: 1, label: "Personal Info", completed: true },
+    { id: 2, label: "Employment", completed: true },
+    { id: 3, label: "System Access", completed: false },
+  ];
 
   return (
     <div className="pt-20 p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#111827]">Register New Employee</h1>
+        <h1 className="text-3xl font-bold text-background-dark">Register New Employee</h1>
       </div>
 
       {/* Progress Steps */}
@@ -35,12 +50,13 @@ export default function RegisterEmployee() {
               {/* Step Circle */}
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all ${step.completed
+                  className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all ${
+                    step.completed
                       ? "bg-emerald-500 text-white"
                       : step.id === currentStep
-                        ? "bg-amber-400 text-slate-900"
-                        : "bg-slate-200 text-slate-400"
-                    }`}
+                      ? "bg-amber-400 text-slate-900"
+                      : "bg-slate-200 text-slate-400"
+                  }`}
                 >
                   {step.completed ? (
                     <CheckCircle2 size={24} />
@@ -51,8 +67,9 @@ export default function RegisterEmployee() {
                   )}
                 </div>
                 <p
-                  className={`mt-2 text-sm font-medium ${step.id === currentStep ? "text-[#111827]" : "text-slate-500"
-                    }`}
+                  className={`mt-2 text-sm font-medium ${
+                    step.id === currentStep ? "text-background-dark" : "text-slate-500"
+                  }`}
                 >
                   {step.label}
                 </p>
@@ -61,8 +78,9 @@ export default function RegisterEmployee() {
               {/* Connecting Line */}
               {index < steps.length - 1 && (
                 <div
-                  className={`flex-1 h-0.5 mx-4 -mt-10 transition-all ${step.completed ? "bg-emerald-500" : "bg-slate-200"
-                    }`}
+                  className={`flex-1 h-0.5 mx-4 -mt-10 transition-all ${
+                    step.completed ? "bg-emerald-500" : "bg-slate-200"
+                  }`}
                 />
               )}
             </div>
@@ -73,7 +91,7 @@ export default function RegisterEmployee() {
       {/* System Access Form */}
       <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-[#111827] mb-2">Configure System Access</h2>
+          <h2 className="text-xl font-bold text-background-dark mb-2">Configure System Access</h2>
           <p className="text-slate-500 text-sm">
             Set up the login credentials and permissions for the new employee.
           </p>
@@ -83,7 +101,7 @@ export default function RegisterEmployee() {
           {/* Official Business Email */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-[#111827] mb-2">
+              <label className="block text-sm font-semibold text-background-dark mb-2">
                 Official Business Email
               </label>
               <div className="relative">
@@ -94,7 +112,7 @@ export default function RegisterEmployee() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-[#111827]"
+                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-background-dark"
                   placeholder="employee@hrmate.com"
                 />
               </div>
@@ -105,7 +123,7 @@ export default function RegisterEmployee() {
 
             {/* User Role */}
             <div>
-              <label className="block text-sm font-semibold text-[#111827] mb-2">
+              <label className="block text-sm font-semibold text-background-dark mb-2">
                 User Role
               </label>
               <div className="relative">
@@ -115,10 +133,10 @@ export default function RegisterEmployee() {
                 <select
                   value={userRole}
                   onChange={(e) => setUserRole(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-[#111827] appearance-none cursor-pointer"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-background-dark appearance-none cursor-pointer"
                 >
                   <option value="Employee">Employee</option>
-                  <option value="director">director</option>
+                  <option value="Manager">Manager</option>
                   <option value="HR Admin">HR Admin</option>
                   <option value="Super Admin">Super Admin</option>
                 </select>
@@ -133,7 +151,7 @@ export default function RegisterEmployee() {
 
           {/* Temporary Password */}
           <div>
-            <label className="block text-sm font-semibold text-[#111827] mb-2">
+            <label className="block text-sm font-semibold text-background-dark mb-2">
               Temporary Password
             </label>
             <div className="flex gap-3">
@@ -145,7 +163,7 @@ export default function RegisterEmployee() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-[#111827]"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-background-dark"
                   placeholder="Enter password"
                 />
                 <button
@@ -171,19 +189,21 @@ export default function RegisterEmployee() {
           <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-[#111827]">Enable System Access</h3>
+                <h3 className="text-sm font-semibold text-background-dark">Enable System Access</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Allow the employee to log in immediately after registration.
                 </p>
               </div>
               <button
                 onClick={() => setEnableSystemAccess(!enableSystemAccess)}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${enableSystemAccess ? "bg-amber-400" : "bg-slate-300"
-                  }`}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                  enableSystemAccess ? "bg-amber-400" : "bg-slate-300"
+                }`}
               >
                 <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${enableSystemAccess ? "translate-x-6" : "translate-x-1"
-                    }`}
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                    enableSystemAccess ? "translate-x-6" : "translate-x-1"
+                  }`}
                 />
               </button>
             </div>
@@ -191,7 +211,7 @@ export default function RegisterEmployee() {
 
           {/* Info Message */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
                 <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path
@@ -228,4 +248,3 @@ export default function RegisterEmployee() {
     </div>
   );
 }
-

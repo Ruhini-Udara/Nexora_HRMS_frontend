@@ -7,38 +7,54 @@ import { zodResolver } from '@hookform/resolvers/zod';
 type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
 interface DocumentSlot {
-    key: 'justification_letter' | 'proof_documents';
+    key: 'resignation_letter' | 'clearance_letter' | 'handover_checklist';
     label: string;
     icon: string;
     mandatory: boolean;
     file: File | null;
-    existingName?: string;
+    existingName?: string; // For draft editing — previously uploaded filename
 }
 
-export interface TransferRequest {
+interface ResignationRequest {
     id: string;
     status: RequestStatus;
-    currentLocation: string;
-    targetLocation: string;
-    expectedDate: string;
-    validReason: string;
+    reason: string;
+    effectiveDate: string;
+    remarks: string;
     documents: {
-        justification_letter?: string;
-        proof_documents?: string;
+        resignation_letter?: string;
+        clearance_letter?: string;
+        handover_checklist?: string;
     };
     submittedAt?: string;
     createdAt: string;
 }
 
 // ── Zod Validation Schema ───────────────────────────────────────────
-const transferSchema = z.object({
-    currentLocation: z.string().min(1, 'Current location is required'),
-    targetLocation: z.string().min(1, 'Target location is required'),
-    expectedDate: z.string().min(1, 'Expected date is required'),
-    validReason: z.string().min(1, 'Valid reason is required'),
+const resignationSchema = z.object({
+    resignationReason: z.string().min(1, 'Reason for resignation is required'),
+    effectiveDate: z.string().min(1, 'Resignation effective date is required'),
+    remarks: z.string().optional(),
 });
 
-type TransferFormData = z.infer<typeof transferSchema>;
+type ResignationFormData = z.infer<typeof resignationSchema>;
+
+// ── Mock Leave Balance Data ─────────────────────────────────────────
+const leaveBalances = [
+    { type: 'Annual Leave', total: 14, used: 6, remaining: 8, color: '#8B3A00', bg: '#FEF3EB' },
+    { type: 'Sick Leave', total: 7, used: 2, remaining: 5, color: '#0D9488', bg: '#F0FDFA' },
+    { type: 'Casual Leave', total: 7, used: 4, remaining: 3, color: '#6366F1', bg: '#EEF2FF' },
+];
+
+// ── Resignation Reason Options ──────────────────────────────────────
+const resignationReasons = [
+    'Career Growth',
+    'Personal Reasons',
+    'Better Opportunity',
+    'Health Issues',
+    'Relocation',
+    'Other',
+];
 
 // ── Confirmation Modal ──────────────────────────────────────────────
 interface ConfirmModalProps {
@@ -177,7 +193,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
 };
 
 // ── Active Request Banner ───────────────────────────────────────────
-const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }) => {
+const ActiveRequestBanner: React.FC<{ request: ResignationRequest }> = ({ request }) => {
     const statusConfig: Record<RequestStatus, { label: string; color: string; bg: string }> = {
         DRAFT: { label: 'Draft', color: 'text-slate-600', bg: 'bg-slate-100' },
         SUBMITTED: { label: 'Pending Approval', color: 'text-yellow-600', bg: 'bg-yellow-50' },
@@ -190,7 +206,7 @@ const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#8B3A00] text-[20px]">info</span>
-                <h2 className="font-bold text-slate-800 text-sm">Active Transfer Request</h2>
+                <h2 className="font-bold text-slate-800 text-sm">Active Resignation Request</h2>
             </div>
             <div className="p-8">
                 <div className="flex items-center gap-4 p-6 bg-amber-50 border border-amber-200 rounded-xl">
@@ -198,7 +214,7 @@ const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }
                         <span className="material-symbols-outlined text-amber-600 text-2xl">pending_actions</span>
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-bold text-slate-800 text-sm">You already have an active transfer request</h3>
+                        <h3 className="font-bold text-slate-800 text-sm">You already have an active resignation request</h3>
                         <p className="text-xs text-slate-500 mt-1">
                             Request <span className="font-bold">{request.id}</span> is currently <span className={`font-bold ${cfg.color}`}>{cfg.label}</span>.
                             You cannot create a new request until the existing one is resolved.
@@ -211,35 +227,38 @@ const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }
 
                 <div className="mt-6 grid grid-cols-2 gap-6">
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Current Location</p>
-                        <p className="text-sm text-slate-700">{request.currentLocation}</p>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Reason</p>
+                        <p className="text-sm text-slate-700">{request.reason}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Target Location</p>
-                        <p className="text-sm text-slate-700">{request.targetLocation}</p>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Effective Date</p>
+                        <p className="text-sm text-slate-700">{request.effectiveDate}</p>
                     </div>
-                    <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Expected Date</p>
-                        <p className="text-sm text-slate-700">{request.expectedDate}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Valid Reason</p>
-                        <p className="text-sm text-slate-700">{request.validReason}</p>
-                    </div>
+                    {request.remarks && (
+                        <div className="col-span-2 space-y-1">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Remarks</p>
+                            <p className="text-sm text-slate-700">{request.remarks}</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Documents attached */}
                 <div className="mt-6 space-y-2">
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Documents Submitted</p>
                     <div className="flex flex-wrap gap-2">
-                        {request.documents.justification_letter && (
+                        {request.documents.resignation_letter && (
                             <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                                <span className="material-symbols-outlined text-xs">check_circle</span> Transfer Justification
+                                <span className="material-symbols-outlined text-xs">check_circle</span> Resignation Letter
                             </span>
                         )}
-                        {request.documents.proof_documents && (
+                        {request.documents.clearance_letter && (
                             <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                                <span className="material-symbols-outlined text-xs">check_circle</span> Proof Documents
+                                <span className="material-symbols-outlined text-xs">check_circle</span> Obligations Clearance
+                            </span>
+                        )}
+                        {request.documents.handover_checklist && (
+                            <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                                <span className="material-symbols-outlined text-xs">check_circle</span> Handover Checklist
                             </span>
                         )}
                     </div>
@@ -250,29 +269,26 @@ const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }
 };
 
 // ── Main Component ──────────────────────────────────────────────────
-interface TransferRequestPageProps {
-    requests: TransferRequest[];
-    onRequestChange: (requests: TransferRequest[]) => void;
+interface ResignationRequestPageProps {
+    requests: ResignationRequest[];
+    onRequestChange: (requests: ResignationRequest[]) => void;
 }
 
-const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onRequestChange }) => {
+const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ requests, onRequestChange }) => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     // ── Document slots state ────────────────────────────────────────
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
-        { key: 'justification_letter', label: 'Transfer Justification Letter', icon: 'description', mandatory: true, file: null },
-        { key: 'proof_documents', label: 'Proof Documents', icon: 'folder_open', mandatory: false, file: null },
+        { key: 'resignation_letter', label: 'Resignation Letter', icon: 'description', mandatory: true, file: null },
+        { key: 'clearance_letter', label: 'Obligations Clearance Letter', icon: 'fact_check', mandatory: true, file: null },
+        { key: 'handover_checklist', label: 'Employee Handover Checklist', icon: 'checklist', mandatory: false, file: null },
     ]);
 
     // ── Determine active request & form mode ────────────────────────
     const activeRequest = requests.find((r) => r.status !== 'REJECTED');
     const draftRequest = requests.find((r) => r.status === 'DRAFT');
     const isEditing = draftRequest !== undefined;
-    const showForm = !activeRequest || activeRequest.status === 'DRAFT';
     const submittedRequest = activeRequest && activeRequest.status !== 'DRAFT' ? activeRequest : null;
-
-    // ── Dynamic data ────────────────────────────────────────────────
-    const currentDepartment = "Operations Division - Level 4";
 
     // ── react-hook-form + Zod ───────────────────────────────────────
     const {
@@ -280,13 +296,12 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
         handleSubmit,
         getValues,
         formState: { errors },
-    } = useForm<TransferFormData>({
-        resolver: zodResolver(transferSchema),
+    } = useForm<ResignationFormData>({
+        resolver: zodResolver(resignationSchema),
         defaultValues: {
-            currentLocation: draftRequest?.currentLocation || '',
-            targetLocation: draftRequest?.targetLocation || '',
-            expectedDate: draftRequest?.expectedDate || '',
-            validReason: draftRequest?.validReason || '',
+            resignationReason: draftRequest?.reason || '',
+            effectiveDate: draftRequest?.effectiveDate || '',
+            remarks: draftRequest?.remarks || '',
         },
     });
 
@@ -325,18 +340,19 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
         .some((s) => s.file === null && s.existingName === undefined);
 
     // ── Build payload helper ────────────────────────────────────────
-    const buildPayload = (data: TransferFormData, status: RequestStatus): TransferRequest => ({
-        id: draftRequest?.id || `TRF-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
+    const buildPayload = (data: ResignationFormData, status: RequestStatus): ResignationRequest => ({
+        id: draftRequest?.id || `RES-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
         status,
-        currentLocation: data.currentLocation,
-        targetLocation: data.targetLocation,
-        expectedDate: data.expectedDate,
-        validReason: data.validReason,
+        reason: data.resignationReason,
+        effectiveDate: data.effectiveDate,
+        remarks: data.remarks || '',
         documents: {
-            justification_letter: docSlots.find((s) => s.key === 'justification_letter')?.file?.name
-                || docSlots.find((s) => s.key === 'justification_letter')?.existingName,
-            proof_documents: docSlots.find((s) => s.key === 'proof_documents')?.file?.name
-                || docSlots.find((s) => s.key === 'proof_documents')?.existingName,
+            resignation_letter: docSlots.find((s) => s.key === 'resignation_letter')?.file?.name
+                || docSlots.find((s) => s.key === 'resignation_letter')?.existingName,
+            clearance_letter: docSlots.find((s) => s.key === 'clearance_letter')?.file?.name
+                || docSlots.find((s) => s.key === 'clearance_letter')?.existingName,
+            handover_checklist: docSlots.find((s) => s.key === 'handover_checklist')?.file?.name
+                || docSlots.find((s) => s.key === 'handover_checklist')?.existingName,
         },
         createdAt: draftRequest?.createdAt || new Date().toISOString(),
         submittedAt: status === 'SUBMITTED' ? new Date().toISOString() : undefined,
@@ -348,13 +364,15 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
         const payload = buildPayload(values, 'DRAFT');
         // TODO: Replace with actual API call
         console.log('Draft saved:', payload);
+
+        // Update local state
         const updated = requests.filter((r) => r.id !== payload.id);
         updated.push(payload);
         onRequestChange(updated);
     };
 
     const onSubmitValid = () => {
-        if (mandatoryDocsMissing) return;
+        if (mandatoryDocsMissing) return; // safety guard
         setShowConfirmModal(true);
     };
 
@@ -363,6 +381,7 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
         const payload = buildPayload(values, 'SUBMITTED');
         // TODO: Replace with actual API call
         console.log('Submitted:', payload);
+
         const updated = requests.filter((r) => r.id !== payload.id);
         updated.push(payload);
         onRequestChange(updated);
@@ -372,16 +391,18 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
     // ── Render: Active submitted request banner ─────────────────────
     if (submittedRequest) {
         return (
-            <div className="max-w-7xl w-full mx-auto">
-                <h1 className="text-2xl font-bold text-[#8B3A00] mb-8">Transfer Request</h1>
+            <div className="space-y-8">
                 <div className="flex flex-col lg:flex-row gap-8">
                     <div className="flex-1">
                         <ActiveRequestBanner request={submittedRequest} />
                     </div>
+
+                    {/* Sidebar */}
                     <div className="w-full lg:w-80 space-y-6">
                         <SidebarPanel />
                     </div>
                 </div>
+
                 <ConfirmSubmitModal
                     isOpen={showConfirmModal}
                     onClose={() => setShowConfirmModal(false)}
@@ -393,103 +414,124 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
 
     // ── Render: Form (new or edit draft) ────────────────────────────
     return (
-        <div className="max-w-7xl w-full mx-auto">
-            <h1 className="text-2xl font-bold text-[#8B3A00] mb-8">Transfer Request</h1>
-
+        <div className="space-y-8">
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1">
                     <form onSubmit={handleSubmit(onSubmitValid)}>
                         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="p-8 space-y-10">
-
-                                {/* Transfer Request Details Header */}
-                                <div>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h2 className="text-xl font-bold text-slate-900">Transfer Request Details</h2>
-                                            <p className="text-sm text-slate-500 mt-1">Provide your transfer details and upload required documents.</p>
-                                        </div>
-                                        {isEditing && (
-                                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded uppercase tracking-wider">
-                                                Draft
-                                            </span>
-                                        )}
-                                    </div>
-                                    {/* Hidden — hardcoded General Transfer Request */}
-                                    <input type="hidden" name="transfer_type" value="General Transfer Request" />
+                            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[#8B3A00] text-[20px]">assignment_late</span>
+                                    <h2 className="font-bold text-slate-800 text-sm">
+                                        {isEditing ? 'Edit Draft — Resign Request' : 'Create Resign Request'}
+                                    </h2>
                                 </div>
+                                {isEditing && (
+                                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded uppercase tracking-wider">
+                                        Draft
+                                    </span>
+                                )}
+                            </div>
+                            <div className="p-8 space-y-8">
 
                                 {/* Form Fields */}
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Current Department
+                                            Reason for Resignation <span className="text-red-500">*</span>
                                         </label>
-                                        <input
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-700"
-                                            readOnly
-                                            value={currentDepartment}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Current Location <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            {...register('currentLocation')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.currentLocation ? 'border-red-400' : 'border-slate-200'}`}
-                                            placeholder="e.g. Colombo Branch"
-                                        />
-                                        {errors.currentLocation && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.currentLocation.message}</p>
+                                        <select
+                                            {...register('resignationReason')}
+                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 bg-white ${errors.resignationReason ? 'border-red-400' : 'border-slate-200'}`}
+                                        >
+                                            <option value="">Select Reason</option>
+                                            {resignationReasons.map((reason) => (
+                                                <option key={reason} value={reason}>{reason}</option>
+                                            ))}
+                                        </select>
+                                        {errors.resignationReason && (
+                                            <p className="text-xs text-red-500 mt-1">{errors.resignationReason.message}</p>
                                         )}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Target Location <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            {...register('targetLocation')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.targetLocation ? 'border-red-400' : 'border-slate-200'}`}
-                                            placeholder="e.g. Kandy Branch"
-                                        />
-                                        {errors.targetLocation && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.targetLocation.message}</p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Expected Date <span className="text-red-500">*</span>
+                                            Resignation Effective Date <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="date"
-                                            {...register('expectedDate')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.expectedDate ? 'border-red-400' : 'border-slate-200'}`}
+                                            {...register('effectiveDate')}
+                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.effectiveDate ? 'border-red-400' : 'border-slate-200'}`}
                                         />
-                                        {errors.expectedDate && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.expectedDate.message}</p>
+                                        {errors.effectiveDate && (
+                                            <p className="text-xs text-red-500 mt-1">{errors.effectiveDate.message}</p>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Valid Reason */}
-                                <div className="space-y-2">
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                        Valid Reason <span className="text-red-500">*</span>
-                                    </label>
-                                    <textarea
-                                        {...register('validReason')}
-                                        rows={4}
-                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 resize-none ${errors.validReason ? 'border-red-400' : 'border-slate-200'}`}
-                                        placeholder="Provide a detailed reason for your transfer request..."
-                                    />
-                                    {errors.validReason && (
-                                        <p className="text-xs text-red-500 mt-1">{errors.validReason.message}</p>
-                                    )}
+                                {/* Leave Balance Display */}
+                                <div className="space-y-3">
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Leave Balance Summary</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        {leaveBalances.map((leave) => (
+                                            <div
+                                                key={leave.type}
+                                                className="rounded-xl border border-slate-200 p-4"
+                                                style={{ backgroundColor: leave.bg }}
+                                            >
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <div
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                                                        style={{ backgroundColor: `${leave.color}15` }}
+                                                    >
+                                                        <span
+                                                            className="material-symbols-outlined text-base"
+                                                            style={{ color: leave.color }}
+                                                        >
+                                                            event_available
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs font-bold text-slate-700">{leave.type}</p>
+                                                </div>
+                                                <div className="flex items-end justify-between">
+                                                    <div>
+                                                        <p className="text-2xl font-bold" style={{ color: leave.color }}>{leave.remaining}</p>
+                                                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Remaining</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs text-slate-500">
+                                                            <span className="font-bold text-slate-600">{leave.used}</span> / {leave.total} used
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3 h-1.5 bg-white/60 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full rounded-full transition-all"
+                                                        style={{
+                                                            width: `${(leave.used / leave.total) * 100}%`,
+                                                            backgroundColor: leave.color,
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
-                                {/* Document Uploads */}
-                                <div className="space-y-4">
+                                {/* Remarks */}
+                                <div className="space-y-2">
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        Remarks <span className="text-slate-400 normal-case font-normal">(Optional — Exit Feedback)</span>
+                                    </label>
+                                    <textarea
+                                        {...register('remarks')}
+                                        rows={4}
+                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 resize-none"
+                                        placeholder="Please share any feedback or specific reasons for your departure..."
+                                    />
+                                </div>
+
+                                {/* Categorized Document Uploads */}
+                                <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                             Required Documents
@@ -501,7 +543,7 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
                                             </span>
                                         )}
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         {docSlots.map((slot) => (
                                             <DocUploadCard
                                                 key={slot.key}
@@ -532,8 +574,8 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
                                             type="submit"
                                             disabled={mandatoryDocsMissing}
                                             className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${mandatoryDocsMissing
-                                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                                    : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
+                                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                                : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
                                                 }`}
                                         >
                                             <span className="material-symbols-outlined text-[20px]">send</span>
@@ -541,7 +583,7 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
                                         </button>
                                         {mandatoryDocsMissing && (
                                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-[10px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                Upload Transfer Justification Letter to submit
+                                                Upload Resignation Letter & Obligations Clearance Letter to submit
                                             </div>
                                         )}
                                     </div>
@@ -551,7 +593,7 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
                     </form>
                 </div>
 
-                {/* Sidebar / Info Panel */}
+                {/* Sidebar */}
                 <div className="w-full lg:w-80 space-y-6">
                     <SidebarPanel />
                 </div>
@@ -566,7 +608,7 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
     );
 };
 
-// ── Sidebar Panel ───────────────────────────────────────────────────
+// ── Sidebar Panel (extracted to avoid duplication) ──────────────────
 const SidebarPanel = () => (
     <>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
@@ -574,21 +616,28 @@ const SidebarPanel = () => (
                 <div className="w-8 h-8 bg-[#FFF7F2] rounded-lg flex items-center justify-center">
                     <span className="material-symbols-outlined text-[#8B3A00] text-xl">info</span>
                 </div>
-                <h2 className="font-bold text-slate-800 text-sm">Transfer Policy</h2>
+                <h2 className="font-bold text-slate-800 text-sm">Resignation Policy</h2>
             </div>
             <ul className="space-y-4">
                 <li className="flex gap-3">
                     <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check_circle</span>
                     <div>
-                        <p className="text-xs font-bold text-slate-800">Minimum Tenure</p>
-                        <p className="text-[11px] text-slate-500 mt-1">Must have completed at least 12 months in the current role.</p>
+                        <p className="text-xs font-bold text-slate-800">Notice Period</p>
+                        <p className="text-[11px] text-slate-500 mt-1">A minimum of 30 days notice period is required for all resignations.</p>
                     </div>
                 </li>
                 <li className="flex gap-3">
                     <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check_circle</span>
                     <div>
-                        <p className="text-xs font-bold text-slate-800">Performance Rating</p>
-                        <p className="text-[11px] text-slate-500 mt-1">Require a rating of 3.5 or above in latest appraisal.</p>
+                        <p className="text-xs font-bold text-slate-800">Knowledge Transfer</p>
+                        <p className="text-[11px] text-slate-500 mt-1">Complete all assigned KT sessions before the last working day.</p>
+                    </div>
+                </li>
+                <li className="flex gap-3">
+                    <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check_circle</span>
+                    <div>
+                        <p className="text-xs font-bold text-slate-800">Exit Interview</p>
+                        <p className="text-[11px] text-slate-500 mt-1">An HR representative will schedule a mandatory exit interview.</p>
                     </div>
                 </li>
             </ul>
@@ -605,7 +654,7 @@ const SidebarPanel = () => (
                 <span className="material-symbols-outlined text-[100px] text-[#8B3A00]">help</span>
             </div>
             <h3 className="font-bold text-sm mb-3">Need Help?</h3>
-            <p className="text-xs text-slate-600 leading-relaxed mb-4">Contact HR Operations if you have questions regarding regional availability or relocation benefits.</p>
+            <p className="text-xs text-slate-600 leading-relaxed mb-4">Contact HR Operations for queries regarding notice period, final settlement, or exit clearance process.</p>
             <button className="w-full py-2 bg-[#FFC5C0] text-slate-800 font-bold rounded-lg text-xs hover:opacity-90 transition-colors">
                 Contact HR
             </button>
@@ -613,4 +662,4 @@ const SidebarPanel = () => (
     </>
 );
 
-export default TransferRequestPage;
+export default ResignationRequestPage;

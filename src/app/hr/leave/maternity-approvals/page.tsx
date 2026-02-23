@@ -96,7 +96,7 @@ export default function MaternityApprovalsPage() {
         setHrRemarkInput("");
     };
 
-    const handleVerifySubmit = (status: "Submitted for HR Approvals" | "Rejected") => {
+    const handleVerifySubmit = (status: "Submitted for Administrator Approval" | "Rejected") => {
         if (!selectedRequest) return;
 
         setRequests(prev => prev.map(req =>
@@ -159,7 +159,7 @@ export default function MaternityApprovalsPage() {
                         >
                             <option value="All">All Statuses</option>
                             <option value="Submitted for Maternity Leaves Verification">Pending Verification</option>
-                            <option value="Submitted for HR Approvals">Verified</option>
+                            <option value="Submitted for Administrator Approval">Verified</option>
                             <option value="Rejected">Rejected</option>
                         </select>
                     </div>
@@ -193,7 +193,7 @@ export default function MaternityApprovalsPage() {
                                         <td className="py-4 px-6">
                                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${req.status === "Submitted for Maternity Leaves Verification"
                                                 ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                                                : req.status === "Submitted for HR Approvals"
+                                                : req.status === "Submitted for Administrator Approval"
                                                     ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                                                     : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                                                 }`}>
@@ -322,11 +322,11 @@ export default function MaternityApprovalsPage() {
                                         Reject Request
                                     </button>
                                     <button
-                                        onClick={() => handleVerifySubmit("Submitted for HR Approvals")}
+                                        onClick={() => handleVerifySubmit("Submitted for Administrator Approval")}
                                         className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors"
                                     >
                                         <span className="material-symbols-outlined text-[18px]">verified</span>
-                                        Verify &amp; Submit for HR Approval
+                                        Verify &amp; Submit for Admin Approvals
                                     </button>
                                 </>
                             ) : (

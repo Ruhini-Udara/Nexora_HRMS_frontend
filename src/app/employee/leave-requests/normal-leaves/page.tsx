@@ -1,9 +1,50 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useLeaveDays } from "@/hooks/useLeaveDays";
+
+const normalLeaveSchema = z.object({
+    leaveType: z.enum(["Annual Leave", "Sick Leave", "Casual Leave"], {
+        error: "Please select a valid leave type"
+    }),
+    startDate: z.string().min(1, "Start Date is required"),
+    endDate: z.string().min(1, "End Date is required"),
+    reason: z.string().min(1, "Reason is required"),
+}).refine((data) => {
+    if (!data.startDate || !data.endDate) return true;
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+    return end >= start;
+}, {
+    message: "End Date must be the same as or after Start Date.",
+    path: ["endDate"]
+});
+
+type NormalLeaveValues = z.infer<typeof normalLeaveSchema>;
 
 export default function NormalLeaveRequestPage() {
+    const [isSubmitted, setIsSubmitted] = useState(false);
+
+    const {
+        register,
+        handleSubmit,
+        control,
+        formState: { errors, isValid }
+    } = useForm<NormalLeaveValues>({
+        resolver: zodResolver(normalLeaveSchema),
+    });
+
+    const totalDays = useLeaveDays(control, "startDate", "endDate");
+
+
+
+    const onSubmit = (data: NormalLeaveValues) => {
+        setIsSubmitted(true);
+    };
     return (
         <div className="max-w-7xl mx-auto w-full grid grid-cols-12 gap-8">
             <div className="col-span-12">
@@ -20,56 +61,85 @@ export default function NormalLeaveRequestPage() {
 
             <div className="col-span-12 lg:col-span-8">
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                    <form className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Leave Type</label>
-                            <select className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none">
-                                <option>Select leave type</option>
-                                <option>Annual Leave</option>
-                                <option>Sick Leave</option>
-                                <option>Casual Leave</option>
-                            </select>
+                    {isSubmitted ? (
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center justify-center gap-2 border border-emerald-100 dark:border-emerald-800/30 font-semibold mb-6">
+                            <span className="material-symbols-outlined">check_circle</span>
+                            Leave request submitted successfully!
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ) : (
+                        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Start Date</label>
-                                <div className="relative">
-                                    <input className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none" placeholder="mm/dd/yyyy" type="date" />
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Leave Type</label>
+                                <select
+                                    {...register("leaveType")}
+                                    className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none ${errors.leaveType ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                >
+                                    <option value="">Select leave type</option>
+                                    <option value="Annual Leave">Annual Leave</option>
+                                    <option value="Sick Leave">Sick Leave</option>
+                                    <option value="Casual Leave">Casual Leave</option>
+                                </select>
+                                {errors.leaveType && <p className="text-red-500 text-xs mt-1">{errors.leaveType.message}</p>}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Start Date</label>
+                                    <div className="relative">
+                                        <input
+                                            {...register("startDate")}
+                                            className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            placeholder="mm/dd/yyyy"
+                                            type="date"
+                                        />
+                                        {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message}</p>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">End Date</label>
+                                    <div className="relative">
+                                        <input
+                                            {...register("endDate")}
+                                            className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                            placeholder="mm/dd/yyyy"
+                                            type="date"
+                                        />
+                                        {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message}</p>}
+                                    </div>
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">End Date</label>
-                                <div className="relative">
-                                    <input className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none" placeholder="mm/dd/yyyy" type="date" />
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Total Days</label>
+                                <input className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 dark:text-slate-500 p-2.5 outline-none" disabled type="text" value={`${totalDays} Days`} />
+                                <p className="text-[11px] text-slate-400 mt-1.5">Automatically calculated based on date range.</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Reason</label>
+                                <textarea
+                                    {...register("reason")}
+                                    className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none ${errors.reason ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                    placeholder="Briefly describe your reason for leave..."
+                                    rows={4}
+                                />
+                                {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason.message}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Attachments</label>
+                                <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center bg-slate-50 dark:bg-slate-800/30">
+                                    <span className="material-symbols-outlined text-slate-400 text-4xl mb-3">cloud_upload</span>
+                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300"><span className="text-primary cursor-pointer">Click to upload</span> or drag and drop</p>
+                                    <p className="text-xs text-slate-400 mt-1">PDF, JPG or PNG (max. 10MB)</p>
                                 </div>
                             </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Total Days</label>
-                            <input className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 dark:text-slate-500 p-2.5 outline-none" disabled type="text" value="0 Days" />
-                            <p className="text-[11px] text-slate-400 mt-1.5">Automatically calculated based on date range.</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Reason</label>
-                            <textarea className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none" placeholder="Briefly describe your reason for leave..." rows={4}></textarea>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Attachments</label>
-                            <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center bg-slate-50 dark:bg-slate-800/30">
-                                <span className="material-symbols-outlined text-slate-400 text-4xl mb-3">cloud_upload</span>
-                                <p className="text-sm font-medium text-slate-600 dark:text-slate-300"><span className="text-primary cursor-pointer">Click to upload</span> or drag and drop</p>
-                                <p className="text-xs text-slate-400 mt-1">PDF, JPG or PNG (max. 10MB)</p>
+                            <div className="flex items-center gap-4 pt-4">
+                                <button className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all" type="submit">
+                                    Submit Request
+                                </button>
+                                <button className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4" type="button">
+                                    Cancel
+                                </button>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-4 pt-4">
-                            <button className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all" type="submit">
-                                Submit Request
-                            </button>
-                            <button className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4" type="button">
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
+                        </form>
+                    )}
                 </div>
             </div>
 
@@ -116,18 +186,7 @@ export default function NormalLeaveRequestPage() {
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden bg-gradient-to-br from-[#E9C46A] via-[#F4A261] to-[#E76F51] p-6 rounded-xl text-amber-950 shadow-lg">
-                    <div className="relative z-10">
-                        <h3 className="font-bold text-lg mb-2">Leave Policy Update</h3>
-                        <p className="text-xs font-medium mb-6 leading-relaxed opacity-90">
-                            Medical certificates are now mandatory for sick leaves exceeding 2 consecutive days.
-                        </p>
-                        <Link href="#" className="inline-flex items-center gap-1.5 text-xs font-bold hover:underline">
-                            Read Policy <span className="material-symbols-outlined text-sm">open_in_new</span>
-                        </Link>
-                    </div>
-                    <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/20 rounded-full blur-2xl"></div>
-                </div>
+
             </div>
         </div>
     );

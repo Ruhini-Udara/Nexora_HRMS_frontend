@@ -25,6 +25,7 @@ const DirectorHeader = () => {
                         <p className="text-sm font-semibold text-gray-800">Sarah Wilson</p>
                         <p className="text-xs text-gray-500 font-medium">Director</p>
                     </div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         alt="User Avatar"
                         className="h-10 w-10 rounded-full border border-gray-200 object-cover"
