@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BarChart2, Calendar, Clock, FileText, Users } from "lucide-react";
+import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays } from "lucide-react";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
 
 const menuItems = [
@@ -11,6 +11,9 @@ const menuItems = [
   { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const },
   { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const },
   { label: "Reports", icon: <BarChart2 size={18} />, view: "reports" as const },
+  { label: "Employees", icon: <Users size={18} />, view: "employees" as const },
+  { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const },
+  { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const },
 ];
 
 export default function AdminSidebar() {
@@ -28,11 +31,10 @@ export default function AdminSidebar() {
             <div
               key={item.label}
               onClick={() => setActiveView(item.view)}
-              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${
-                activeView === item.view
+              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${activeView === item.view
                   ? "bg-primary-light text-primary border-r-4 border-primary"
                   : "text-sidebar-text hover:bg-gray-50"
-              }`}
+                }`}
             >
               {item.icon}
               <span>{item.label}</span>
