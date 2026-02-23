@@ -10,7 +10,7 @@ const MOCK_REQUESTS = [
         epfNumber: "EMP-092",
         employeeName: "Sarah Jenkins",
         employeeType: "Permanent",
-        designation: "Product Manager",
+        designation: "Product director",
         branch: "Head Office",
         leaveReason: "First Child Maternity Leave",
         startDate: "2024-06-01",
@@ -344,3 +344,4 @@ export default function MaternityApprovalsPage() {
         </div>
     );
 }
+

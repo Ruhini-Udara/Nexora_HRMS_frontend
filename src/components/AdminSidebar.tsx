@@ -4,17 +4,17 @@ import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDay
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
+import { useRouter, usePathname } from "next/navigation";
 
 const menuItems = [
-  { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const },
-  { label: "Employee Master", icon: <Users size={18} />, view: "employeeMaster" as const },
-  { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const },
-  { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const },
-  { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const },
-  { label: "Reports", icon: <BarChart2 size={18} />, view: "reports" as const },
-  { label: "Employees", icon: <Users size={18} />, view: "employees" as const },
-  { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const },
-  { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const },
+  { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const, href: "/admin" },
+  { label: "Employee Master", icon: <Users size={18} />, view: "employeeMaster" as const, href: "/admin" },
+  { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const, href: "/admin" },
+  { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const, href: "/admin" },
+  { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const, href: "/admin" },
+  { label: "Employees", icon: <Users size={18} />, view: "employees" as const, href: "/admin" },
+  { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const, href: "/admin/training" },
+  { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const, href: "/admin" },
 ];
 
 export default function AdminSidebar() {
