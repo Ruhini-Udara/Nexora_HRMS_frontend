@@ -18,7 +18,7 @@ export default function ProfileCard() {
             </div>
 
             <h2 className="mt-6 text-xl font-bold text-gray-900">Admin Profile</h2>
-            <p className="text-gray-500 text-sm font-medium">HR Manager</p>
+            <p className="text-gray-500 text-sm font-medium">HR director</p>
 
             <button className="mt-6 w-full py-2.5 bg-secondary text-white font-semibold rounded-lg hover:bg-secondary/90 transition-colors shadow-sm">
                 Change Photo
@@ -27,7 +27,7 @@ export default function ProfileCard() {
             <div className="w-full mt-8 pt-6 border-t border-gray-100 space-y-4">
                 <div className="flex items-center gap-3 text-gray-600">
                     <Mail className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm">manager@hrmate.com</span>
+                    <span className="text-sm">director@hrmate.com</span>
                 </div>
                 <div className="flex items-center gap-3 text-gray-600">
                     <Phone className="w-5 h-5 text-gray-400" />
@@ -37,3 +37,4 @@ export default function ProfileCard() {
         </div>
     );
 }
+

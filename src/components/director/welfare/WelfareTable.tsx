@@ -41,7 +41,7 @@ export default function WelfareTable() {
         {
             id: 4,
             employee: "Emily Davis",
-            role: "Project Manager",
+            role: "Project director",
             initials: "ED",
             type: "Financial Aid",
             date: "05 Oct 2023",
@@ -149,3 +149,4 @@ export default function WelfareTable() {
         </div>
     );
 }
+

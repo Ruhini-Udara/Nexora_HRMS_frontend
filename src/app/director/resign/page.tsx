@@ -1,10 +1,10 @@
 "use client";
 
 import React from 'react';
-import ResignationStats from '@/components/manager/resign/ResignationStats';
-import ResignationTable from '@/components/manager/resign/ResignationTable';
+import ResignationStats from '@/components/director/resign/ResignationStats';
+import ResignationTable from '@/components/director/resign/ResignationTable';
 
-const ManagerResignationPage = () => {
+const directorResignationPage = () => {
     return (
         <div className="p-8 space-y-6">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6">Resignation Requests</h2>
@@ -18,4 +18,5 @@ const ManagerResignationPage = () => {
     );
 };
 
-export default ManagerResignationPage;
+export default directorResignationPage;
+

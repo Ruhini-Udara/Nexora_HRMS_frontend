@@ -23,7 +23,7 @@
   --color-border-light: #E5E7EB;
   --color-border-dark: #374151;
 
-  /* Manager Dashboard Custom Colors */
+  /* director Dashboard Custom Colors */
   --color-primary: #9e3f00;
   --color-primary-light: #fef2f2;
   --color-dashboard-bg: #f9fafb;
@@ -68,3 +68,4 @@ body {
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
+

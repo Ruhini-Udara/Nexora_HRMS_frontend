@@ -1,5 +1,5 @@
-import ProfileCard from '@/components/manager/profile/ProfileCard';
-import ProfileForms from '@/components/manager/profile/ProfileForms';
+import ProfileCard from '@/components/director/profile/ProfileCard';
+import ProfileForms from '@/components/director/profile/ProfileForms';
 
 export default function ProfilePage() {
     return (
@@ -23,3 +23,4 @@ export default function ProfilePage() {
         </div>
     );
 }
+

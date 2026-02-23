@@ -1,7 +1,7 @@
 import { Search, Bell } from 'lucide-react';
 import Link from 'next/link';
 
-const ManagerHeader = () => {
+const DirectorHeader = () => {
     return (
         <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between sticky top-0 z-40">
             <div className="relative w-full max-w-lg">
@@ -20,10 +20,10 @@ const ManagerHeader = () => {
                     <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
                 </button>
                 <div className="h-8 border-l border-gray-200"></div>
-                <Link href="/manager/profile" className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors">
+                <Link href="/director/profile" className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors">
                     <div className="text-right">
                         <p className="text-sm font-semibold text-gray-800">Sarah Wilson</p>
-                        <p className="text-xs text-gray-500 font-medium">Department Manager</p>
+                        <p className="text-xs text-gray-500 font-medium">Director</p>
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -37,4 +37,5 @@ const ManagerHeader = () => {
     );
 };
 
-export default ManagerHeader;
+export default DirectorHeader;
+

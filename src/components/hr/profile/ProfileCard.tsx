@@ -18,7 +18,7 @@ export default function ProfileCard() {
                 </button>
             </div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">HR User</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">HR Manager</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">HR director</p>
             <button className="w-full py-2.5 px-4 bg-secondary text-primary font-bold rounded-lg hover:opacity-90 transition-opacity">
                 Change Photo
             </button>
@@ -36,3 +36,4 @@ export default function ProfileCard() {
         </div>
     );
 }
+

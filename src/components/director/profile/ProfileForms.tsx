@@ -20,7 +20,7 @@ export default function ProfileForms() {
                             <input
                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
                                 type="text"
-                                defaultValue="Manager Profile"
+                                defaultValue="director Profile"
                             />
                         </div>
                         <div className="space-y-1.5">
@@ -28,7 +28,7 @@ export default function ProfileForms() {
                             <input
                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
                                 type="email"
-                                defaultValue="manager@hrmate.com"
+                                defaultValue="director@hrmate.com"
                             />
                         </div>
                         <div className="space-y-1.5">
@@ -99,3 +99,4 @@ export default function ProfileForms() {
         </div>
     );
 }
+

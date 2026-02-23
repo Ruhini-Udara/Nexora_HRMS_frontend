@@ -34,7 +34,7 @@ const MOCK_REQUESTS = [
         id: "REQ-002",
         epfNumber: "87654",
         employeeName: "Kasun Perera",
-        designation: "Marketing Manager",
+        designation: "Marketing director",
         branch: "Colombo Branch",
         leaveReason: "Attending International Marketing Conference in Dubai",
         startDate: "2024-06-15",
@@ -392,3 +392,4 @@ export default function LeaveApprovalsPage() {
         </div>
     );
 }
+

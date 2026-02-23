@@ -4,18 +4,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, ArrowLeftRight, UserX, Heart, UserMinus, ShieldQuestion, GraduationCap, Calendar } from 'lucide-react';
 
-const ManagerSidebar = () => {
+const DirectorSidebar = () => {
     const pathname = usePathname();
 
     const navLinks = [
-        { label: "Dashboard", href: "/manager", icon: Home },
-        { label: "Transfer Requests", href: "/manager/transfer", icon: ArrowLeftRight },
-        { label: "Termination Requests", href: "/manager/termination", icon: UserMinus },
-        { label: "Death Applications", href: "/manager/death", icon: UserX },
-        { label: "Resignation Requests", href: "/manager/resign", icon: ShieldQuestion },
-        { label: "Welfare Requests", href: "/manager/welfare", icon: Heart },
-        { label: "Training Requests", href: "/manager/training", icon: GraduationCap },
-        { label: "Leave Requests", href: "/manager/leave", icon: Calendar },
+        { label: "Dashboard", href: "/director", icon: Home },
+        { label: "Transfer Requests", href: "/director/transfer", icon: ArrowLeftRight },
+        { label: "Termination Requests", href: "/director/termination", icon: UserMinus },
+        { label: "Death Applications", href: "/director/death", icon: UserX },
+        { label: "Resignation Requests", href: "/director/resign", icon: ShieldQuestion },
+        { label: "Welfare Requests", href: "/director/welfare", icon: Heart },
+        { label: "Training Requests", href: "/director/training", icon: GraduationCap },
+        { label: "Leave Requests", href: "/director/leave", icon: Calendar },
     ];
 
     return (
@@ -54,4 +54,5 @@ const ManagerSidebar = () => {
     );
 };
 
-export default ManagerSidebar;
+export default DirectorSidebar;
+

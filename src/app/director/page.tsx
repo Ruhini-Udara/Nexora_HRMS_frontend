@@ -3,12 +3,12 @@ import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, Heart, Gr
 import SummaryCard from '@/components/dashboard/SummaryCard';
 import ModuleCard from '@/components/dashboard/ModuleCard';
 
-export default function ManagerDashboard() {
+export default function DirectorDashboard() {
     return (
         <div className="p-8 max-w-7xl mx-auto">
             {/* Page Title */}
             <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900">Manager Dashboard</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Director Dashboard</h1>
                 <p className="text-gray-500 mt-1">Manage your team&apos;s requests and monitor department performance.</p>
             </div>
 
@@ -63,46 +63,47 @@ export default function ManagerDashboard() {
                         title="Transfer Requests"
                         description="Review and approve employee requests for internal department transfers or location changes."
                         icon={<ArrowLeftRight className="w-5 h-5" />}
-                        href="/manager/transfer"
+                        href="/director/transfer"
                     />
                     <ModuleCard
                         title="Termination Requests"
                         description="Manage offboarding procedures and resignation notices for department staff."
                         icon={<UserMinus className="w-5 h-5" />}
-                        href="/manager/termination"
+                        href="/director/termination"
                     />
                     <ModuleCard
                         title="Resignation Requests"
                         description="Review and process employee resignation letters and exit interviews."
                         icon={<LogOut className="w-5 h-5" />}
-                        href="/manager/resign"
+                        href="/director/resign"
                     />
                     <ModuleCard
                         title="Death Application"
                         description="Process compassionate leave and insurance benefit claims for bereaved employees."
                         icon={<UserX className="w-5 h-5" />}
-                        href="/manager/death"
+                        href="/director/death"
                     />
                     <ModuleCard
                         title="Welfare Requests"
                         description="Handle employee benefit claims, health insurance inquiries, and wellness program enrollments."
                         icon={<Heart className="w-5 h-5" />}
-                        href="/manager/welfare"
+                        href="/director/welfare"
                     />
                     <ModuleCard
                         title="Training Requests"
                         description="Approve skill development courses and external certification requests for your team."
                         icon={<GraduationCap className="w-5 h-5" />}
-                        href="/manager/training"
+                        href="/director/training"
                     />
                     <ModuleCard
                         title="Leave Requests"
                         description="Review and approve annual leave, sick leave, and other time-off applications."
                         icon={<Calendar className="w-5 h-5" />}
-                        href="/manager/leave"
+                        href="/director/leave"
                     />
                 </div>
             </section>
         </div>
     );
 }
+
