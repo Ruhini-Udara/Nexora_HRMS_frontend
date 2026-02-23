@@ -91,13 +91,6 @@ export default function TrainingRequestPage() {
                 <TrainingStatusTable onFeedbackClick={() => setIsFeedbackModalOpen(true)} />
             </section>
 
-            {/* Footer Info - Optional if you want it inside the page or global footer */}
-            <footer className="mt-auto py-8 border-t border-[var(--color-training-primary)]/10 text-center">
-                <p className="text-xs text-stone-400 font-medium">
-                    © 2023 HR MATE - Unified Employee Experience Portal. All Rights Reserved.
-                </p>
-            </footer>
-
             <TrainingFeedbackModal
                 isOpen={isFeedbackModalOpen}
                 onClose={() => setIsFeedbackModalOpen(false)}
