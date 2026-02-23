@@ -42,12 +42,12 @@ export default function TrainingEventCard({
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <button className="flex-1 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:bg-[#853500] transition-colors flex items-center justify-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm">edit</span>
+                    <button className="flex-1 py-1.5 bg-primary text-white rounded-lg font-bold text-xs hover:bg-[#853500] transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-primary/20">
+                        <span className="material-symbols-outlined text-[14px]">edit</span>
                         Edit
                     </button>
-                    <button className="flex-1 py-2.5 bg-red-100 text-red-700 rounded-lg font-bold text-sm hover:bg-red-200 transition-colors flex items-center justify-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm">delete</span>
+                    <button className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5 border border-red-100">
+                        <span className="material-symbols-outlined text-[14px]">delete</span>
                         Delete
                     </button>
                 </div>
