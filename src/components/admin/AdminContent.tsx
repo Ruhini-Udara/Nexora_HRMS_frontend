@@ -114,13 +114,6 @@ export default function AdminContent() {
           onClick={() => setActiveView("documents")}
           className="lg:col-span-3"
         />
-        <ModuleCard
-          title="Reports & Analytics"
-          description="Generate detailed insights on payroll, turnover, and performance metrics instantly."
-          icon={<BarChart2 className="w-6 h-6" />}
-          href="/admin/reports"
-          className="lg:col-span-3"
-        />
       </div>
     </div>
   );
