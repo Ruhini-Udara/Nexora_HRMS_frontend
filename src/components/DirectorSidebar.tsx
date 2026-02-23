@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ArrowLeftRight, UserX, Heart, UserMinus, ShieldQuestion, GraduationCap, Calendar } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, UserX, Heart, UserMinus, ShieldQuestion, GraduationCap, Calendar } from 'lucide-react';
 
 const DirectorSidebar = () => {
     const pathname = usePathname();
 
     const navLinks = [
-        { label: "Dashboard", href: "/director", icon: Home },
+        { label: "Dashboard", href: "/director", icon: LayoutDashboard },
         { label: "Transfer Requests", href: "/director/transfer", icon: ArrowLeftRight },
         { label: "Termination Requests", href: "/director/termination", icon: UserMinus },
         { label: "Death Applications", href: "/director/death", icon: UserX },

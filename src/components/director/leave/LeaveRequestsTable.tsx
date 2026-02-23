@@ -89,10 +89,7 @@ const LeaveRequestsTable = () => {
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="font-bold text-lg text-gray-900">Recent Applications</h3>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold text-sm hover:bg-primary/90 rounded-lg transition-colors shadow-sm">
-                        <Download className="w-4 h-4" />
-                        Export CSV
-                    </button>
+
                     <select
                         value={boardFilter}
                         onChange={(e) => setBoardFilter(e.target.value)}

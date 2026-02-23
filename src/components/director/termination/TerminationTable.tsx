@@ -50,10 +50,7 @@ export default function TerminationTable() {
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="font-bold text-gray-900">Recent Requests</h3>
                 <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-bold text-sm hover:bg-primary/90 rounded-lg transition-colors shadow-sm">
-                        <Download className="w-4 h-4" />
-                        Export CSV
-                    </button>
+
                     <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
                         <Filter className="w-[18px] h-[18px]" />
                         Filter
@@ -104,8 +101,8 @@ export default function TerminationTable() {
                                 <td className="px-6 py-4">
                                     <div className="flex justify-center">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                                req.status === 'Declined' ? 'bg-red-100 text-red-800' :
-                                                    'bg-orange-100 text-orange-800'
+                                            req.status === 'Declined' ? 'bg-red-100 text-red-800' :
+                                                'bg-orange-100 text-orange-800'
                                             }`}>
                                             {req.status}
                                         </span>
