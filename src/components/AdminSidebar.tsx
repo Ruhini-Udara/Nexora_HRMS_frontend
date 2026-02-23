@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
 import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
 
 const menuItems = [
@@ -18,6 +19,15 @@ const menuItems = [
 
 export default function AdminSidebar() {
   const { activeView, setActiveView } = useAdminNavigation();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleMenuClick = (view: any) => {
+    setActiveView(view);
+    if (pathname !== "/admin") {
+      router.push("/admin");
+    }
+  };
 
   return (
     <aside className="fixed top-0 left-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col justify-between z-30">
@@ -27,19 +37,38 @@ export default function AdminSidebar() {
           <span className="font-bold text-xl text-orange-900">HR MATE</span>
         </div>
         <nav className="mt-4">
-          {menuItems.map((item) => (
-            <div
-              key={item.label}
-              onClick={() => setActiveView(item.view)}
-              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${activeView === item.view
+          {menuItems.map((item) => {
+            const isActive =
+              item.view === "leaveManagement"
+                ? pathname.startsWith("/admin/leave-requests")
+                : activeView === item.view && pathname === "/admin";
+
+            return item.view === "leaveManagement" ? (
+              <Link
+                key={item.label}
+                href="/admin/leave-requests"
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isActive
                   ? "bg-primary-light text-primary border-r-4 border-primary"
                   : "text-sidebar-text hover:bg-gray-50"
-                }`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </div>
-          ))}
+                  }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            ) : (
+              <div
+                key={item.label}
+                onClick={() => handleMenuClick(item.view)}
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isActive
+                  ? "bg-primary-light text-primary border-r-4 border-primary"
+                  : "text-sidebar-text hover:bg-gray-50"
+                  }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </div>
+            );
+          })}
         </nav>
       </div>
       <div className="px-6 py-4 border-t border-gray-200">
