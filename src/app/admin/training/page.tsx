@@ -1,9 +1,9 @@
-import TrainingStats from '@/components/director/training/TrainingStats';
-import TrainingTable from '@/components/director/training/TrainingTable';
+import TrainingStats from '@/components/admin/training/TrainingStats';
+import TrainingTable from '@/components/admin/training/TrainingTable';
 
 export default function TrainingRequestsPage() {
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-8 pt-20 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>

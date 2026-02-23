@@ -3,20 +3,37 @@
 import React from "react";
 import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays } from "lucide-react";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
+import { useRouter, usePathname } from "next/navigation";
 
 const menuItems = [
-  { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const },
-  { label: "Employee Master", icon: <Users size={18} />, view: "employeeMaster" as const },
-  { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const },
-  { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const },
-  { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const },
-  { label: "Employees", icon: <Users size={18} />, view: "employees" as const },
-  { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const },
-  { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const },
+  { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const, href: "/admin" },
+  { label: "Employee Master", icon: <Users size={18} />, view: "employeeMaster" as const, href: "/admin" },
+  { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const, href: "/admin" },
+  { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const, href: "/admin" },
+  { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const, href: "/admin" },
+  { label: "Employees", icon: <Users size={18} />, view: "employees" as const, href: "/admin" },
+  { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const, href: "/admin/training" },
+  { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const, href: "/admin" },
 ];
 
 export default function AdminSidebar() {
   const { activeView, setActiveView } = useAdminNavigation();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleItemClick = (item: typeof menuItems[0]) => {
+    setActiveView(item.view);
+    if (item.href) {
+      router.push(item.href);
+    }
+  };
+
+  const isItemActive = (item: typeof menuItems[0]) => {
+    if (item.href === "/admin/training") {
+      return pathname.startsWith("/admin/training");
+    }
+    return pathname === "/admin" && activeView === item.view;
+  };
 
   return (
     <aside className="fixed top-0 left-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col justify-between z-30">
@@ -29,10 +46,10 @@ export default function AdminSidebar() {
           {menuItems.map((item) => (
             <div
               key={item.label}
-              onClick={() => setActiveView(item.view)}
-              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${activeView === item.view
-                  ? "bg-primary-light text-primary border-r-4 border-primary"
-                  : "text-sidebar-text hover:bg-gray-50"
+              onClick={() => handleItemClick(item)}
+              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isItemActive(item)
+                ? "bg-primary-light text-primary border-r-4 border-primary"
+                : "text-sidebar-text hover:bg-gray-50"
                 }`}
             >
               {item.icon}
