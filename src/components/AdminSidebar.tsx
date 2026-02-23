@@ -40,12 +40,16 @@ export default function AdminSidebar() {
             const isActive =
               item.view === "leaveManagement"
                 ? pathname.startsWith("/admin/leave-requests")
-                : activeView === item.view && pathname === "/admin";
+                : item.view === "training"
+                  ? pathname.startsWith("/admin/training")
+                  : activeView === item.view && pathname === "/admin";
 
-            return item.view === "leaveManagement" ? (
+            const isLinkItem = item.view === "leaveManagement" || item.view === "training";
+
+            return isLinkItem ? (
               <Link
                 key={item.label}
-                href="/admin/leave-requests"
+                href={item.view === "leaveManagement" ? "/admin/leave-requests" : "/admin/training"}
                 className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isActive
                   ? "bg-primary-light text-primary border-r-4 border-primary"
                   : "text-sidebar-text hover:bg-gray-50"
