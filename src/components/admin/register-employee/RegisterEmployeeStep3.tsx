@@ -36,7 +36,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
   ];
 
   return (
-    <div className="pt-20 p-8 max-w-6xl mx-auto">
+    <div className="p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-background-dark">Register New Employee</h1>

@@ -15,7 +15,7 @@ export default function EmployeeMaster() {
   };
 
   return (
-    <div className="pt-20 p-8">
+    <div className="p-8">
       <EmployeeMasterHeader />
       <EmployeeFilters
         department={department}

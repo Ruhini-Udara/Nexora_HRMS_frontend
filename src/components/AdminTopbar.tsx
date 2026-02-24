@@ -3,7 +3,7 @@ import { Bell, Search } from "lucide-react";
 
 export default function AdminTopbar() {
   return (
-    <header className="fixed top-0 left-64 right-0 bg-white border-b border-slate-200 flex items-center justify-between px-8 py-4 z-40">
+    <header className="sticky top-0 bg-white border-b border-slate-200 flex items-center justify-between px-8 py-4 z-40">
       <div className="flex-1 max-w-md">
         <div className="relative">
           <input
@@ -19,7 +19,7 @@ export default function AdminTopbar() {
         <div className="h-8 border-l border-gray-200"></div>
         <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full">
           <div className="text-right">
-            <div className="font-semibold text-sm">Admin Profile</div>
+            <div className="font-semibold text-sm">Kenu Bandara</div>
             <div className="text-xs text-gray-500">HR Administrator</div>
           </div>
           <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center overflow-hidden">

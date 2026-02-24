@@ -111,7 +111,7 @@ export default function OfficeCalendar() {
   const weekDays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
   return (
-    <div className="pt-20 p-8">
+    <div className="p-8">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
