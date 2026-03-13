@@ -31,7 +31,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
         type: 'Approve' | 'Reject' | null;
     }>({ isOpen: false, type: null });
 
-    const handleViewList = (req: any) => {
+    const handleViewList = (req: RequestModel) => {
         setSelectedTraining({
             id: req.id,
             title: req.title,
