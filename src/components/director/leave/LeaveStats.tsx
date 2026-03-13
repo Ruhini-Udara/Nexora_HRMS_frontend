@@ -5,8 +5,8 @@ const LeaveStats = () => {
     const stats = [
         {
             label: "Pending Requests",
-            value: "24",
-            subtext: "+3 since yesterday",
+            value: "5",
+            subtext: "+2 since yesterday",
             icon: Clock,
             color: "text-secondary",
             bgColor: "bg-secondary/10",
@@ -14,7 +14,7 @@ const LeaveStats = () => {
         },
         {
             label: "Approved Today",
-            value: "12",
+            value: "1",
             subtext: "Ready for payroll",
             icon: CheckCircle,
             color: "text-emerald-600",
@@ -31,9 +31,9 @@ const LeaveStats = () => {
             subTextColor: "text-red-600"
         },
         {
-            label: "Total Balance",
-            value: "1,240",
-            subtext: "Days remaining company-wide",
+            label: "All Requests",
+            value: "320",
+            subtext: "Total lifetime requests",
             icon: Wallet,
             color: "text-primary",
             bgColor: "bg-primary/10",

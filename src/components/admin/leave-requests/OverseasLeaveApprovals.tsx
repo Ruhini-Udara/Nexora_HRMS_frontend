@@ -128,6 +128,55 @@ const MOCK_REQUESTS = [
             confirmationLetter: "",
             leaveLetter: "leave_req_priyanka.pdf"
         },
+    },
+    {
+        id: "REQ-006",
+        epfNumber: "45566",
+        employeeName: "Dilshan Jayasinghe",
+        designation: "Systems Administrator",
+        branch: "Head Office",
+        leaveReason: "Attending AWS re:Invent tech conference",
+        startDate: "2024-11-20",
+        endDate: "2024-11-28",
+        noOfDays: 9,
+        passportNumber: "N45566778",
+        passportExpDate: "2029-08-30",
+        contactNumber: "+94 77 000 1122",
+        email: "dilshan.j@example.com",
+        specialRemark: "Conference tickets and flight itinerary attached.",
+        status: "Sent for Admin Approval",
+        requestDate: "2024-06-25",
+        documents: {
+            passportCopy: "passport_dilshan.pdf",
+            visaCopy: "us_visa_dilshan.pdf",
+            confirmationLetter: "aws_reinvent.pdf",
+            leaveLetter: "leave_req_dilshan.pdf"
+        },
+        adminRemark: ""
+    },
+    {
+        id: "REQ-007",
+        epfNumber: "78899",
+        employeeName: "Shenali Perera",
+        designation: "HR Executive",
+        branch: "Colombo Branch",
+        leaveReason: "Personal holiday trip to Thailand",
+        startDate: "2024-12-05",
+        endDate: "2024-12-19",
+        noOfDays: 15,
+        passportNumber: "N78899001",
+        passportExpDate: "2031-02-14",
+        contactNumber: "+94 71 555 6677",
+        email: "shenali.p@example.com",
+        specialRemark: "",
+        status: "Sent for Admin Approval",
+        requestDate: "2024-06-28",
+        documents: {
+            passportCopy: "passport_shenali.pdf",
+            visaCopy: "",
+            confirmationLetter: "",
+            leaveLetter: "leave_req_shenali.pdf"
+        },
         adminRemark: ""
     }
 ];
