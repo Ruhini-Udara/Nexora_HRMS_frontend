@@ -1,6 +1,12 @@
 import { Clock, XCircle, CheckCircle, AlertCircle } from 'lucide-react';
 
-export default function TrainingStats() {
+interface TrainingStatsProps {
+    pendingCount: number;
+    rejectedCount: number;
+    approvedCount: number;
+}
+
+export default function TrainingStats({ pendingCount, rejectedCount, approvedCount }: TrainingStatsProps) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {/* Card 1: Pending Requests */}
@@ -11,7 +17,7 @@ export default function TrainingStats() {
                         <Clock className="w-5 h-5" />
                     </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">08</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{String(pendingCount).padStart(2, '0')}</p>
                 <div className="flex items-center gap-1 mt-1 text-secondary">
                     <AlertCircle className="w-3.5 h-3.5" />
                     <span className="text-xs font-bold">Action Required</span>
@@ -26,7 +32,7 @@ export default function TrainingStats() {
                         <XCircle className="w-5 h-5" />
                     </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">12</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{String(rejectedCount).padStart(2, '0')}</p>
                 <div className="flex items-center gap-1 mt-1 text-red-600">
                     <span className="text-xs font-bold">Updates available</span>
                 </div>
@@ -40,7 +46,7 @@ export default function TrainingStats() {
                         <CheckCircle className="w-5 h-5" />
                     </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">45</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{String(approvedCount).padStart(2, '0')}</p>
                 <div className="flex items-center gap-1 mt-1 text-emerald-600">
                     <CheckCircle className="w-3.5 h-3.5" />
                     <span className="text-xs font-bold">On track</span>
