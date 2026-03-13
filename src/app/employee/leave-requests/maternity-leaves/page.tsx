@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLeaveDays } from "@/hooks/useLeaveDays";
+import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprovalTracker";
+import Confetti from "react-confetti";
 
 const maternitySchema = z.object({
     epfNumber: z.string().min(1, "EPF Number is required"),
@@ -51,6 +53,18 @@ export default function MaternityLeaveRequestPage() {
     const [status, setStatus] = useState<"editing" | "draft" | "submitted">("editing");
     const [fileError, setFileError] = useState("");
 
+    // Tracker State Simulation
+    const [trackerStep, setTrackerStep] = useState(0);
+    const [showConfetti, setShowConfetti] = useState(false);
+    const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+
+    useEffect(() => {
+        setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+        const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const noOfDays = useLeaveDays(control, "startDate", "endDate").toString();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof typeof files) => {
@@ -74,6 +88,48 @@ export default function MaternityLeaveRequestPage() {
             return;
         }
         setStatus("submitted");
+        setTrackerStep(0); // Start at first step (HR review)
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Define the approval steps for Maternity Leave (Employee -> HR User -> Admin)
+    const approvalSteps: ApprovalStep[] = [
+        {
+            id: 'hr_review',
+            label: 'HR Verification',
+            description: 'Checking documents and leave balances',
+            icon: 'fact_check',
+            status: trackerStep > 0 ? 'completed' : trackerStep === 0 ? 'current' : 'pending',
+            date: trackerStep > 0 ? new Date().toLocaleDateString() : undefined,
+            approverName: trackerStep > 0 ? 'Sarah Jenkins (HR)' : undefined
+        },
+        {
+            id: 'admin_approval',
+            label: 'Admin Approval',
+            description: 'Final review by System Administrator',
+            icon: 'admin_panel_settings',
+            status: trackerStep > 1 ? 'completed' : trackerStep === 1 ? 'current' : 'pending',
+            date: trackerStep > 1 ? new Date().toLocaleDateString() : undefined,
+            approverName: trackerStep > 1 ? 'Michael Chen (Admin)' : undefined
+        },
+        {
+            id: 'approved',
+            label: 'Request Approved',
+            description: 'Leave confirmed',
+            icon: 'verified',
+            status: trackerStep > 1 ? 'completed' : 'pending' // Last step is only active when completed
+        }
+    ];
+
+    const simulateNextStep = () => {
+        if (trackerStep < approvalSteps.length - 1) {
+            setTrackerStep(prev => prev + 1);
+            if (trackerStep === approvalSteps.length - 2) {
+                // If moving to the final 'approved' step
+                setShowConfetti(true);
+                setTimeout(() => setShowConfetti(false), 5000);
+            }
+        }
     };
 
     return (
@@ -103,14 +159,57 @@ export default function MaternityLeaveRequestPage() {
                         </div>
                     </div>
                 )}
+
                 {status === "submitted" && (
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/30 flex items-center gap-3 mb-6">
-                        <span className="material-symbols-outlined text-emerald-500">check_circle</span>
-                        <div className="text-sm font-medium">
-                            Status: <strong className="font-bold">&quot;Submitted for Maternity Leaves Verification&quot;</strong>. Your request is pending verification and editing is now disabled.
+                    <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 mb-8 overflow-hidden relative">
+                        {showConfetti && (
+                            <div className="absolute inset-0 pointer-events-none z-50">
+                                <Confetti
+                                    width={windowSize.width}
+                                    height={windowSize.height}
+                                    recycle={false}
+                                    numberOfPieces={400}
+                                    gravity={0.15}
+                                />
+                            </div>
+                        )}
+                        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 pb-6 border-b border-slate-100 dark:border-slate-800 gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-2xl">track_changes</span>
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Live Tracking Status</h2>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Track the approval progress of your maternity request.</p>
+                                </div>
+                            </div>
+
+                            {/* Simulation Controls (For presentation purposes only) */}
+                            {trackerStep < approvalSteps.length - 1 && (
+                                <button
+                                    onClick={simulateNextStep}
+                                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors animate-pulse"
+                                >
+                                    <span className="material-symbols-outlined text-sm">fast_forward</span>
+                                    Simulate Approval ({trackerStep === 0 ? 'Admin' : 'Complete'})
+                                </button>
+                            )}
+                            {trackerStep === approvalSteps.length - 1 && (
+                                <div className="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
+                                    <span className="material-symbols-outlined">celebration</span>
+                                    Fully Approved
+                                </div>
+                            )}
                         </div>
+
+                        <LeaveApprovalTracker
+                            steps={approvalSteps}
+                            currentStepIndex={trackerStep}
+                            className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-6 border border-slate-100 dark:border-slate-700/50"
+                        />
                     </div>
                 )}
+
                 {fileError && (
                     <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-xl border border-red-200 dark:border-red-800/30 flex items-center gap-3 mb-6">
                         <span className="material-symbols-outlined text-red-500">error</span>
