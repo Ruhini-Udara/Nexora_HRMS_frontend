@@ -59,10 +59,16 @@ export default function MaternityLeaveRequestPage() {
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
     useEffect(() => {
-        setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+        // Run after mount to avoid setting state synchronously during render
+        const timer = setTimeout(() => {
+            setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+        }, 0);
         const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', handleResize);
+        }
     }, []);
 
     const noOfDays = useLeaveDays(control, "startDate", "endDate").toString();
