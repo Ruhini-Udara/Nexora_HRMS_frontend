@@ -22,19 +22,13 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
     imageAlt,
 }) => {
     return (
-        <div className="bg-white rounded-xl border border-stone-200 hover:border-[var(--color-training-primary)] transition-all hover:shadow-lg group overflow-hidden">
-            <div className="h-32 bg-[var(--color-training-primary-light)] relative">
-                <Image
-                    src={imageSrc}
-                    alt={imageAlt}
-                    fill
-                    className="object-cover opacity-80 group-hover:scale-105 transition-transform"
-                />
-                <span className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-black text-[var(--color-training-primary)] uppercase shadow-sm">
+        <div className="bg-white rounded-xl border border-stone-200 hover:border-[var(--color-training-primary)] transition-all hover:shadow-lg flex flex-col group">
+            <div className="bg-[var(--color-training-primary)]/5 rounded-t-xl p-4 flex justify-end">
+                <span className="bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-black text-[var(--color-training-primary)] uppercase shadow-sm">
                     {category}
                 </span>
             </div>
-            <div className="p-5">
+            <div className="p-5 flex-1 flex flex-col">
                 <h3 className="font-bold text-lg mb-2 text-stone-800">{title}</h3>
                 <div className="space-y-2 mb-6">
                     <div className="flex items-center gap-2 text-xs text-stone-500">
