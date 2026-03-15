@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import ModuleCard from "@/components/ui/ModuleCard";
-import { TravelExplore, ChildCare } from "@mui/icons-material";
 
 export default function AdminLeaveModules() {
     return (
@@ -20,7 +19,7 @@ export default function AdminLeaveModules() {
                 <Link href="/admin/leave-requests/overseas" className="block h-full group">
                     <div className="bg-white dark:bg-slate-900 rounded-xl p-8 h-full border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/50 transition-all flex flex-col">
                         <div className="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                            <TravelExplore className="w-7 h-7 text-primary" />
+                            <span className="material-symbols-outlined text-[28px] text-primary">flight_takeoff</span>
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                             Overseas Leave Approvals
@@ -37,7 +36,7 @@ export default function AdminLeaveModules() {
                 <Link href="/admin/leave-requests/maternity" className="block h-full group">
                     <div className="bg-white dark:bg-slate-900 rounded-xl p-8 h-full border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/50 transition-all flex flex-col">
                         <div className="w-14 h-14 bg-primary/10 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                            <ChildCare className="w-7 h-7 text-primary" />
+                            <span className="material-symbols-outlined text-[28px] text-primary">child_care</span>
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                             Maternity Leave Approvals

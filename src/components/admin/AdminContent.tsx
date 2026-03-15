@@ -11,6 +11,7 @@ import {
   Calendar,
   FileText,
   BarChart2,
+  GraduationCap
 } from "lucide-react";
 import EmployeeMaster from "@/components/admin/employee-master/EmployeeMaster";
 import RegisterEmployee from "@/components/admin/register-employee/RegisterEmployee";
@@ -30,7 +31,7 @@ export default function AdminContent() {
     return <RegisterEmployee />;
   }
 
-  if (activeView === "officeCalendar") {  
+  if (activeView === "officeCalendar") {
     return <OfficeCalendar />;
   }
 
@@ -112,6 +113,13 @@ export default function AdminContent() {
           description="Securely store and track employee contracts, policies, and certifications in one place."
           icon={<FileText className="w-6 h-6" />}
           onClick={() => setActiveView("documents")}
+          className="lg:col-span-3"
+        />
+        <ModuleCard
+          title="Training & Development"
+          description="Manage and review all pending training applications and monitor employee skill development."
+          icon={<GraduationCap className="w-6 h-6" />}
+          href="/admin/training"
           className="lg:col-span-3"
         />
       </div>

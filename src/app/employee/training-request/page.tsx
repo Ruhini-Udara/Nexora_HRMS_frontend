@@ -114,8 +114,6 @@ export default function TrainingRequestPage() {
                 />
             </section>
 
-
-
             <TrainingFeedbackModal
                 isOpen={isFeedbackModalOpen}
                 onClose={() => setIsFeedbackModalOpen(false)}
