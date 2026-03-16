@@ -37,8 +37,8 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                             <span className="material-symbols-outlined text-primary">groups</span>
                             Approved Training List
                         </h3>
-                        <p className="text-sm font-medium text-slate-500 mt-1">
-                            Participants for <span className="text-primary font-bold">"{eventName}"</span>
+                       <p className="text-sm font-medium text-slate-500 mt-1">
+                        Participants for <span className="text-primary font-bold">&quot;{eventName}&quot;</span>
                         </p>
                     </div>
                     <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">

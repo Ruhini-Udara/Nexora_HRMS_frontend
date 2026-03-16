@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import TrainingRequestDetailsModal from "@/components/hr/training/TrainingRequestDetailsModal";
 import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTrainingListModal";
+import { TrainingRequest } from '@/types/training';
+
 
 const trainingEvents = [
     {
@@ -16,7 +18,7 @@ const trainingEvents = [
     {
         id: 2,
         title: "Leadership 101: Core Basics",
-        date: "November 02, 2023",
+        date: "No@vember 02, 2023",
         time: "02:00 PM - 05:00 PM",
         category: "Leadership",
     },
@@ -105,7 +107,7 @@ export default function TrainingRequestsTable() {
     const [requests, setRequests] = useState(initialMockRequests);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedRequest, setSelectedRequest] = useState<any>(null);
+    const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
 
     const [isListModalOpen, setIsListModalOpen] = useState(false);
 
