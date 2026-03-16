@@ -10,7 +10,7 @@ export type ActiveView =
   | "shifts"
   | "documents"
   | "reports"
-  | "employees"
+  | "otherApprovals"
   | "training"
   | "leaveManagement";
 
