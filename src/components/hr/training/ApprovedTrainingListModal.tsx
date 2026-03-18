@@ -41,9 +41,18 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                         Participants for <span className="text-primary font-bold">&quot;{eventName}&quot;</span>
                         </p>
                     </div>
-                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
-                        <span className="material-symbols-outlined">close</span>
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => alert("Add Employee feature to be implemented")}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">person_add</span>
+                            Add Employee
+                        </button>
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body (Scrollable) */}
