@@ -83,7 +83,7 @@ export default function FeedbackDetailsModal({ isOpen, onClose, feedback }: Feed
                             <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wider">Suggestions for Improvement</h4>
                             <div className="bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800 p-4 rounded-xl">
                                 <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">
-                                    "{feedback.suggestions}"
+                                    &quot;{feedback.suggestions}&quot;
                                 </p>
                             </div>
                         </div>

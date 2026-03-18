@@ -67,7 +67,7 @@ const mockAttendanceData = [
 export default function AttendanceFeedbackTable() {
     const [selectedEventId, setSelectedEventId] = useState<number | null>(trainingEvents[0].id);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
-    const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
+    const [selectedFeedback, setSelectedFeedback] = useState<typeof mockAttendanceData[0] | null>(null);
 
     const filteredEvents = selectedCategory === "All"
         ? trainingEvents
