@@ -1,65 +1,111 @@
-import Link from 'next/link';
-import { SlidersHorizontal, ChevronDown } from 'lucide-react';
+"use client";
 
-export default function TrainingTable() {
-    const requests = [
-        {
-            id: 1,
-            title: "Sales Tactics Optimization",
-            requester: "Sarah Jenkins",
-            type: "Soft Skills",
-            typeColor: "bg-green-100 text-green-700",
-            date: "Oct 12, 2023",
-            status: "Pending",
-        },
-        {
-            id: 2,
-            title: "Cybersecurity Fundamentals 101",
-            requester: "Michael Chen",
-            type: "Technical",
-            typeColor: "bg-blue-100 text-blue-700",
-            date: "Oct 11, 2023",
-            status: "Approved",
-        },
-        {
-            id: 3,
-            title: "Executive Leadership Coaching",
-            requester: "Elena Rodriguez",
-            type: "Leadership",
-            typeColor: "bg-purple-100 text-purple-700",
-            date: "Oct 10, 2023",
-            status: "Rejected",
-        },
-        {
-            id: 4,
-            title: "Workplace Safety & Compliance",
-            requester: "David Park",
-            type: "Safety",
-            typeColor: "bg-red-100 text-red-700",
-            date: "Oct 09, 2023",
-            status: "Pending",
-        },
-        {
-            id: 5,
-            title: "Advanced UI Design Systems",
-            requester: "Jamie Smith",
-            type: "Technical",
-            typeColor: "bg-blue-100 text-blue-700",
-            date: "Oct 08, 2023",
-            status: "Approved",
-        },
-    ];
+import React, { useState } from 'react';
+import { SlidersHorizontal, ChevronDown } from 'lucide-react';
+import TrainingListModal from './viewlist/TrainingListModal';
+
+interface RequestModel {
+    id: number;
+    title: string;
+    requester: string;
+    type: string;
+    typeColor: string;
+    date: string;
+    status: string;
+}
+
+interface TrainingTableProps {
+    requests: RequestModel[];
+    setRequests: React.Dispatch<React.SetStateAction<RequestModel[]>>;
+}
+
+export default function TrainingTable({ requests, setRequests }: TrainingTableProps) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTraining, setSelectedTraining] = useState<{id: number, title: string, type: string, date: string, status: string} | null>(null);
+    const [filterType, setFilterType] = useState("All");
+    const [filterStatus, setFilterStatus] = useState("Pending");
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        type: 'Approve' | 'Reject' | null;
+    }>({ isOpen: false, type: null });
+
+    const handleViewList = (req: RequestModel) => {
+        setSelectedTraining({
+            id: req.id,
+            title: req.title,
+            type: req.type,
+            date: req.date,
+            status: req.status
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleApproveClick = () => {
+        if (!selectedTraining) return;
+        setConfirmModal({ isOpen: true, type: 'Approve' });
+    };
+
+    const handleRejectClick = () => {
+        if (!selectedTraining) return;
+        setConfirmModal({ isOpen: true, type: 'Reject' });
+    };
+
+    const confirmAction = () => {
+        if (!selectedTraining || !confirmModal.type) return;
+
+        setRequests(prev => prev.map(req => 
+            req.id === selectedTraining.id 
+                ? { ...req, status: confirmModal.type === 'Approve' ? "Approved" as const : "Rejected" as const } 
+                : req
+        ));
+        
+        setConfirmModal({ isOpen: false, type: null });
+        setIsModalOpen(false);
+    };
+
+    const uniqueTypes = ["All", ...Array.from(new Set(requests.map(req => req.type)))];
+    const uniqueStatuses = ["All Statuses", ...Array.from(new Set(requests.map(req => req.status)))];
+
+    const filteredRequests = requests.filter(req => 
+        (filterType === "All" || req.type === filterType) &&
+        (filterStatus === "All Statuses" || req.status === filterStatus)
+    );
 
     return (
         <>
             {/* Filters */}
             <div className="flex flex-col md:flex-row md:items-center mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm gap-4">
-                <div className="flex items-center gap-4">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-primary/5 text-primary text-sm font-semibold rounded-lg hover:bg-primary/10 transition-colors">
-                        <SlidersHorizontal className="w-4 h-4" />
-                        <span>Filter by Training Type</span>
-                        <ChevronDown className="w-4 h-4" />
-                    </button>
+                <div className="relative inline-flex items-center">
+                    <SlidersHorizontal className="w-4 h-4 text-gray-500 absolute left-4 pointer-events-none" />
+                    <select
+                        className="appearance-none w-full flex items-center gap-2 pl-10 pr-10 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                    >
+                        {uniqueTypes.map(type => (
+                            <option key={type} value={type}>
+                                {type === "All" ? "All Types" : type}
+                            </option>
+                        ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 pointer-events-none" />
+                </div>
+                
+                <div className="relative inline-flex items-center">
+                    <select
+                        className="appearance-none w-full flex items-center gap-2 pl-4 pr-10 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                    >
+                        {uniqueStatuses.map(status => (
+                            <option key={status} value={status}>
+                                {status}
+                            </option>
+                        ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 pointer-events-none" />
                 </div>
             </div>
 
@@ -77,7 +123,7 @@ export default function TrainingTable() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {requests.map((req) => (
+                            {filteredRequests.map((req) => (
                                 <tr key={req.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
@@ -97,12 +143,12 @@ export default function TrainingTable() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <Link
-                                            href="/admin/training/view-list"
+                                        <button
+                                            onClick={() => handleViewList(req)}
                                             className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm inline-block"
                                         >
                                             View List
-                                        </Link>
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -122,6 +168,49 @@ export default function TrainingTable() {
                     </div>
                 </div>
             </div>
+
+            <TrainingListModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                training={selectedTraining}
+                onApprove={handleApproveClick}
+                onReject={handleRejectClick}
+            />
+
+            {/* Custom Confirmation Modal */}
+            {confirmModal.isOpen && selectedTraining && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col p-6 text-center border border-gray-100 dark:border-gray-800">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                            {confirmModal.type === 'Approve' ? 'Confirm Approval' : 'Confirm Rejection'}
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-6">
+                            {confirmModal.type === 'Approve' 
+                                ? `Are you sure you want to approve and send emails for the "${selectedTraining.title}" training list? This action cannot be undone.`
+                                : `Are you sure you want to reject the "${selectedTraining.title}" training list? This action cannot be undone.`
+                            }
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setConfirmModal({ isOpen: false, type: null })}
+                                className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmAction}
+                                className={`flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm ${
+                                    confirmModal.type === 'Approve' 
+                                        ? 'bg-primary hover:bg-primary/90' 
+                                        : 'bg-red-500 hover:bg-red-600'
+                                }`}
+                            >
+                                {confirmModal.type === 'Approve' ? 'Yes, Approve' : 'Yes, Reject'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

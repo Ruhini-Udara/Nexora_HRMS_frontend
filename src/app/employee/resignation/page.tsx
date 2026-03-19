@@ -2,26 +2,11 @@
 
 import React, { useState } from "react";
 import ResignationRequestPage from "@/components/ResignationRequestPage";
-
-// ── Type matching the component ─────────────────────────────────────
-type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
-
-interface ResignationRequest {
-    id: string;
-    status: RequestStatus;
-    reason: string;
-    effectiveDate: string;
-    remarks: string;
-    documents: {
-        resignation_letter?: string;
-        clearance_letter?: string;
-        handover_checklist?: string;
-    };
-    submittedAt?: string;
-    createdAt: string;
-}
+import type { ResignationRequest } from "@/components/ResignationRequestPage";
 
 // ── Status badge config ─────────────────────────────────────────────
+type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+
 const statusStyles: Record<RequestStatus, { label: string; classes: string }> = {
     DRAFT: { label: 'Draft', classes: 'bg-slate-100 text-slate-600' },
     SUBMITTED: { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' },

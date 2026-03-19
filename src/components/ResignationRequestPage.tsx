@@ -15,12 +15,14 @@ interface DocumentSlot {
     existingName?: string; // For draft editing — previously uploaded filename
 }
 
-interface ResignationRequest {
+export interface ResignationRequest {
     id: string;
     status: RequestStatus;
     reason: string;
+    initiationDate: string;
     effectiveDate: string;
-    remarks: string;
+    obligationDetails: string;
+    specialRemark: string;
     documents: {
         resignation_letter?: string;
         clearance_letter?: string;
@@ -33,8 +35,10 @@ interface ResignationRequest {
 // ── Zod Validation Schema ───────────────────────────────────────────
 const resignationSchema = z.object({
     resignationReason: z.string().min(1, 'Reason for resignation is required'),
+    initiationDate: z.string().min(1, 'Resignation initiation date is required'),
     effectiveDate: z.string().min(1, 'Resignation effective date is required'),
-    remarks: z.string().optional(),
+    obligationDetails: z.string().min(1, 'Direct and indirect obligation details are required'),
+    specialRemark: z.string().optional(),
 });
 
 type ResignationFormData = z.infer<typeof resignationSchema>;
@@ -227,17 +231,27 @@ const ActiveRequestBanner: React.FC<{ request: ResignationRequest }> = ({ reques
 
                 <div className="mt-6 grid grid-cols-2 gap-6">
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Reason</p>
-                        <p className="text-sm text-slate-700">{request.reason}</p>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Initiation Date</p>
+                        <p className="text-sm text-slate-700">{request.initiationDate}</p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Effective Date</p>
                         <p className="text-sm text-slate-700">{request.effectiveDate}</p>
                     </div>
-                    {request.remarks && (
+                    <div className="space-y-1">
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Reason</p>
+                        <p className="text-sm text-slate-700">{request.reason}</p>
+                    </div>
+                    {request.obligationDetails && (
                         <div className="col-span-2 space-y-1">
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Remarks</p>
-                            <p className="text-sm text-slate-700">{request.remarks}</p>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Obligation Details</p>
+                            <p className="text-sm text-slate-700 whitespace-pre-wrap">{request.obligationDetails}</p>
+                        </div>
+                    )}
+                    {request.specialRemark && (
+                        <div className="col-span-2 space-y-1">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Special Remark</p>
+                            <p className="text-sm text-slate-700">{request.specialRemark}</p>
                         </div>
                     )}
                 </div>
@@ -290,6 +304,9 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
     const isEditing = draftRequest !== undefined;
     const submittedRequest = activeRequest && activeRequest.status !== 'DRAFT' ? activeRequest : null;
 
+    // ── Today's date helper ─────────────────────────────────────────
+    const todayISO = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
     // ── react-hook-form + Zod ───────────────────────────────────────
     const {
         register,
@@ -300,8 +317,10 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
         resolver: zodResolver(resignationSchema),
         defaultValues: {
             resignationReason: draftRequest?.reason || '',
+            initiationDate: draftRequest?.initiationDate || todayISO,
             effectiveDate: draftRequest?.effectiveDate || '',
-            remarks: draftRequest?.remarks || '',
+            obligationDetails: draftRequest?.obligationDetails || '',
+            specialRemark: draftRequest?.specialRemark || '',
         },
     });
 
@@ -344,8 +363,10 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
         id: draftRequest?.id || `RES-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
         status,
         reason: data.resignationReason,
+        initiationDate: data.initiationDate,
         effectiveDate: data.effectiveDate,
-        remarks: data.remarks || '',
+        obligationDetails: data.obligationDetails,
+        specialRemark: data.specialRemark || '',
         documents: {
             resignation_letter: docSlots.find((s) => s.key === 'resignation_letter')?.file?.name
                 || docSlots.find((s) => s.key === 'resignation_letter')?.existingName,
@@ -434,7 +455,37 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
                             </div>
                             <div className="p-8 space-y-8">
 
-                                {/* Form Fields */}
+                                {/* Form Fields — Row 1: Initiation Date + Effective Date */}
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                            Resignation Initiation Date <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            {...register('initiationDate')}
+                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.initiationDate ? 'border-red-400' : 'border-slate-200'}`}
+                                        />
+                                        {errors.initiationDate && (
+                                            <p className="text-xs text-red-500 mt-1">{errors.initiationDate.message}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                            Resignation Effective Date <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            {...register('effectiveDate')}
+                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.effectiveDate ? 'border-red-400' : 'border-slate-200'}`}
+                                        />
+                                        {errors.effectiveDate && (
+                                            <p className="text-xs text-red-500 mt-1">{errors.effectiveDate.message}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Form Fields — Row 2: Reason for Resignation */}
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -453,24 +504,27 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
                                             <p className="text-xs text-red-500 mt-1">{errors.resignationReason.message}</p>
                                         )}
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Resignation Effective Date <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="date"
-                                            {...register('effectiveDate')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.effectiveDate ? 'border-red-400' : 'border-slate-200'}`}
-                                        />
-                                        {errors.effectiveDate && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.effectiveDate.message}</p>
-                                        )}
-                                    </div>
+                                </div>
+
+                                {/* Direct and Indirect Obligation Details */}
+                                <div className="space-y-2">
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        Direct and Indirect Obligation Details <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                        {...register('obligationDetails')}
+                                        rows={4}
+                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 resize-none ${errors.obligationDetails ? 'border-red-400' : 'border-slate-200'}`}
+                                        placeholder="Describe your direct and indirect obligations, pending tasks, responsibilities, and handover plans..."
+                                    />
+                                    {errors.obligationDetails && (
+                                        <p className="text-xs text-red-500 mt-1">{errors.obligationDetails.message}</p>
+                                    )}
                                 </div>
 
                                 {/* Leave Balance Display */}
                                 <div className="space-y-3">
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Leave Balance Summary</label>
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Leave Balance Details</label>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         {leaveBalances.map((leave) => (
                                             <div
@@ -517,16 +571,16 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
                                     </div>
                                 </div>
 
-                                {/* Remarks */}
+                                {/* Special Remark */}
                                 <div className="space-y-2">
                                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                        Remarks <span className="text-slate-400 normal-case font-normal">(Optional — Exit Feedback)</span>
+                                        Special Remark <span className="text-slate-400 normal-case font-normal">(Optional)</span>
                                     </label>
                                     <textarea
-                                        {...register('remarks')}
+                                        {...register('specialRemark')}
                                         rows={4}
                                         className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 resize-none"
-                                        placeholder="Please share any feedback or specific reasons for your departure..."
+                                        placeholder="Any special remarks or additional notes for HR..."
                                     />
                                 </div>
 

@@ -128,6 +128,55 @@ const MOCK_REQUESTS = [
             confirmationLetter: "",
             leaveLetter: "leave_req_priyanka.pdf"
         },
+    },
+    {
+        id: "REQ-006",
+        epfNumber: "45566",
+        employeeName: "Dilshan Jayasinghe",
+        designation: "Systems Administrator",
+        branch: "Head Office",
+        leaveReason: "Attending AWS re:Invent tech conference",
+        startDate: "2024-11-20",
+        endDate: "2024-11-28",
+        noOfDays: 9,
+        passportNumber: "N45566778",
+        passportExpDate: "2029-08-30",
+        contactNumber: "+94 77 000 1122",
+        email: "dilshan.j@example.com",
+        specialRemark: "Conference tickets and flight itinerary attached.",
+        status: "Sent for Admin Approval",
+        requestDate: "2024-06-25",
+        documents: {
+            passportCopy: "passport_dilshan.pdf",
+            visaCopy: "us_visa_dilshan.pdf",
+            confirmationLetter: "aws_reinvent.pdf",
+            leaveLetter: "leave_req_dilshan.pdf"
+        },
+        adminRemark: ""
+    },
+    {
+        id: "REQ-007",
+        epfNumber: "78899",
+        employeeName: "Shenali Perera",
+        designation: "HR Executive",
+        branch: "Colombo Branch",
+        leaveReason: "Personal holiday trip to Thailand",
+        startDate: "2024-12-05",
+        endDate: "2024-12-19",
+        noOfDays: 15,
+        passportNumber: "N78899001",
+        passportExpDate: "2031-02-14",
+        contactNumber: "+94 71 555 6677",
+        email: "shenali.p@example.com",
+        specialRemark: "",
+        status: "Sent for Admin Approval",
+        requestDate: "2024-06-28",
+        documents: {
+            passportCopy: "passport_shenali.pdf",
+            visaCopy: "",
+            confirmationLetter: "",
+            leaveLetter: "leave_req_shenali.pdf"
+        },
         adminRemark: ""
     }
 ];
@@ -136,6 +185,10 @@ export default function OverseasLeaveApprovals() {
     const [requests, setRequests] = useState(MOCK_REQUESTS);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
+
+    // Board Meeting features
+    const [activeTab, setActiveTab] = useState<"pending" | "board">("pending");
+    const [boardMeetingDate, setBoardMeetingDate] = useState("");
 
     // Selection state for Bulk and Print
     const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
@@ -147,12 +200,19 @@ export default function OverseasLeaveApprovals() {
 
     const filteredRequests = useMemo(() => {
         return requests.filter(req => {
+            const matchesTab = activeTab === "pending"
+                ? req.status !== "Submitted for Committee / Board Approvals"
+                : req.status === "Submitted for Committee / Board Approvals";
+
             const matchesSearch = req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 req.id.toLowerCase().includes(searchTerm.toLowerCase());
+
+            // Adjust the status filter options dynamically or just process it
             const matchesStatus = statusFilter === "All" || req.status === statusFilter;
-            return matchesSearch && matchesStatus;
+
+            return matchesTab && matchesSearch && matchesStatus;
         });
-    }, [requests, searchTerm, statusFilter]);
+    }, [requests, searchTerm, statusFilter, activeTab]);
 
     // Derived states for Action Bar
     const selectedPending = requests.filter(r => selectedRequests.includes(r.id) && r.status === "Sent for Admin Approval");
@@ -219,8 +279,9 @@ export default function OverseasLeaveApprovals() {
         return (
             <div className="fixed inset-0 z-[9999] bg-white text-black p-10 overflow-auto print:block">
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl font-bold uppercase underline mb-2">Notice of Board Meeting</h1>
-                    <h2 className="text-xl">Overseas Leave Requests for Committee Approval</h2>
+                    <h1 className="text-3xl font-bold uppercase underline mb-2">Urgent Approved Requests</h1>
+                    <h2 className="text-xl font-semibold">Overseas Leave Requests for Board Meeting</h2>
+                    {boardMeetingDate && <h3 className="text-lg mt-1 font-bold text-red-700">Scheduled Date: {boardMeetingDate}</h3>}
                     <p className="mt-2 text-gray-600">Generated on: {new Date().toLocaleDateString()}</p>
                 </div>
 
@@ -287,6 +348,29 @@ export default function OverseasLeaveApprovals() {
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 mb-6">
+
+                {/* Tabs */}
+                <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 mb-6 px-1">
+                    <button
+                        onClick={() => { setActiveTab("pending"); setSelectedRequests([]); }}
+                        className={`pb-4 text-sm font-semibold transition-colors relative ${activeTab === "pending" ? "text-primary" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"}`}
+                    >
+                        Pending Actions
+                        {activeTab === "pending" && (
+                            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => { setActiveTab("board"); setSelectedRequests([]); }}
+                        className={`pb-4 text-sm font-semibold transition-colors relative ${activeTab === "board" ? "text-primary" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"}`}
+                    >
+                        Board Meeting Agenda
+                        {activeTab === "board" && (
+                            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
+                        )}
+                    </button>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="relative md:col-span-2">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
@@ -311,6 +395,21 @@ export default function OverseasLeaveApprovals() {
                         </select>
                     </div>
                 </div>
+
+                {/* Board Meeting Toolbar */}
+                {activeTab === "board" && (
+                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Set Board Meeting Date:</span>
+                            <input
+                                type="date"
+                                value={boardMeetingDate}
+                                onChange={(e) => setBoardMeetingDate(e.target.value)}
+                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Bulk Action Bar */}
@@ -334,8 +433,17 @@ export default function OverseasLeaveApprovals() {
                         )}
 
                         {selectedForBoard.length > 0 && selectedPending.length === 0 && (
-                            <button onClick={handlePrintBoardList} className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-900 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[18px]">print</span> Print Board List
+                            <button
+                                onClick={() => {
+                                    if (!boardMeetingDate) {
+                                        alert("Please select a Next Board Meeting Date before printing the Urgent list.");
+                                        return;
+                                    }
+                                    handlePrintBoardList();
+                                }}
+                                className="px-4 py-2 bg-slate-800 text-white hover:bg-slate-900 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">print</span> Print Urgent Requests List
                             </button>
                         )}
 
