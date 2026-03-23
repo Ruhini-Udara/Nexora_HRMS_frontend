@@ -56,10 +56,15 @@ export default function EmployeeFilters({
             className={`${selectBase} ${jobTitle === "" ? placeholderClass : selectedClass}`}>
             <option value="">All Roles</option>
             <option value="Senior Engineer">Senior Engineer</option>
-            <option value="HR director">HR director</option>
-            <option value="Backend Lead">Backend Lead</option>
-            <option value="Marketing Head">Marketing Head</option>
-            <option value="Operations Lead">Operations Lead</option>
+            <option value="Engineer">Engineer</option>
+            <option value="HR Manager">HR Manager</option>
+            <option value="HR Executive">HR Executive</option> 
+            <option value="Sales Executive">Sales Executive</option>
+            <option value="Product Manager">Product Manager</option>
+            <option value="Driver">Driver</option>
+            <option value="Support Staff">Support Staff</option>
+
+            
           </select>
         </div>
 

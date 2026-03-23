@@ -36,7 +36,7 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
   ];
 
   return (
-    <div className="pt-20 p-8 max-w-6xl mx-auto">
+    <div className="p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-background-dark">Register New Employee</h1>
@@ -136,9 +136,10 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
                   className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-background-dark appearance-none cursor-pointer"
                 >
                   <option value="Employee">Employee</option>
-                  <option value="Manager">Manager</option>
-                  <option value="HR Admin">HR Admin</option>
-                  <option value="Super Admin">Super Admin</option>
+                  <option value="Admin">Admin</option>
+                  <option value="HR">HR</option>
+                  <option value="Supervisor">Supervisor</option>
+                  <option value="Director">Director</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                   <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

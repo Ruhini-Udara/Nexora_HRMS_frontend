@@ -8,7 +8,7 @@ export default function DocumentManagement() {
   const [activeTab, setActiveTab] = useState<"company" | "employee">("company");
 
   return (
-    <div className="pt-20 p-8">
+    <div className="p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
