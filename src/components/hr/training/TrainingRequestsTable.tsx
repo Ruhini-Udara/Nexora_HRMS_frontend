@@ -31,11 +31,7 @@ const trainingEvents = [
     },
 ];
 
-<<<<<<< HEAD
-const mockRequests = [
-=======
 const initialMockRequests = [
->>>>>>> 05b9b4349e6d7e1aec36593be7522209aa3dc6b8
     {
         id: 1,
         eventId: 1,
