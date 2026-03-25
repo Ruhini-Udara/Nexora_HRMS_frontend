@@ -8,6 +8,9 @@ import * as z from "zod";
 import { useLeaveDays } from "@/hooks/useLeaveDays";
 import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprovalTracker";
 import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
+import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
+import dynamic from 'next/dynamic';
+const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
 import Confetti from "react-confetti";
 
 const maternitySchema = z.object({
@@ -61,6 +64,7 @@ export default function MaternityLeaveRequestPage() {
     const [trackerStep, setTrackerStep] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+    const [previewFile, setPreviewFile] = useState<File | null>(null);
 
     useEffect(() => {
         // Run after mount to avoid setting state synchronously during render
@@ -88,21 +92,20 @@ export default function MaternityLeaveRequestPage() {
 
     const noOfDays = useLeaveDays(control, "startDate", "endDate").toString();
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof typeof files) => {
+    const handleFileChange = (file: File | null, fieldName: keyof typeof files) => {
         setFileError("");
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
+        if (file) {
             if (file.size > 5 * 1024 * 1024) {
                 setFileError(`File is too large. Maximum size is 5MB.`);
-                e.target.value = '';
                 return;
             }
             if (!file.type.match(/(pdf|jpeg|jpg|png)$/i)) {
                 setFileError(`File must be a PDF, JPG, or PNG.`);
-                e.target.value = '';
                 return;
             }
             setFiles((prev) => ({ ...prev, [fieldName]: file }));
+        } else {
+            setFiles((prev) => ({ ...prev, [fieldName]: null }));
         }
     };
 
@@ -115,7 +118,7 @@ export default function MaternityLeaveRequestPage() {
         setStatus("draft");
     };
 
-    const onSubmit = (data: MaternityFormValues) => {
+    const onSubmit = (_data: MaternityFormValues) => {
         setFileError("");
         if (!files.medicalCertificate || !files.leaveLetter) {
             setFileError("Medical Certificate and Maternity Leave Request Letter are mandatory for submission.");
@@ -493,14 +496,16 @@ export default function MaternityLeaveRequestPage() {
                                     </div>
                                     <div>
                                         {!isDisabled && (
-                                            <label className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-sm">upload</span>
-                                                {files.leaveLetter ? "Change File" : "Upload File"}
-                                                <input type="file" className="hidden" onChange={(e) => handleFileChange(e, "leaveLetter")} />
-                                            </label>
+                                            <FileUploadDropzone 
+                                                onFileAccepted={(f) => handleFileChange(f, "leaveLetter")}
+                                                currentFile={files.leaveLetter}
+                                                label="Request Letter"
+                                            />
                                         )}
                                         {files.leaveLetter && (
-                                            <div className="mt-2 text-[10px] text-blue-600 text-right truncate max-w-[150px]">{files.leaveLetter.name}</div>
+                                            <button type="button" onClick={() => setPreviewFile(files.leaveLetter)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview Letter
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -520,14 +525,16 @@ export default function MaternityLeaveRequestPage() {
                                     </div>
                                     <div>
                                         {!isDisabled && (
-                                            <label className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-sm">upload</span>
-                                                {files.medicalCertificate ? "Change File" : "Upload File"}
-                                                <input type="file" className="hidden" onChange={(e) => handleFileChange(e, "medicalCertificate")} />
-                                            </label>
+                                            <FileUploadDropzone 
+                                                onFileAccepted={(f) => handleFileChange(f, "medicalCertificate")}
+                                                currentFile={files.medicalCertificate}
+                                                label="Medical Certificate"
+                                            />
                                         )}
                                         {files.medicalCertificate && (
-                                            <div className="mt-2 text-[10px] text-rose-600 text-right truncate max-w-[150px]">{files.medicalCertificate.name}</div>
+                                            <button type="button" onClick={() => setPreviewFile(files.medicalCertificate)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview Certificate
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -545,14 +552,16 @@ export default function MaternityLeaveRequestPage() {
                                     </div>
                                     <div>
                                         {!isDisabled && (
-                                            <label className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-sm">upload</span>
-                                                {files.supportingDocument ? "Change File" : "Upload File"}
-                                                <input type="file" className="hidden" onChange={(e) => handleFileChange(e, "supportingDocument")} />
-                                            </label>
+                                            <FileUploadDropzone 
+                                                onFileAccepted={(f) => handleFileChange(f, "supportingDocument")}
+                                                currentFile={files.supportingDocument}
+                                                label="Supporting Doc"
+                                            />
                                         )}
                                         {files.supportingDocument && (
-                                            <div className="mt-2 text-[10px] text-slate-600 text-right truncate max-w-[150px]">{files.supportingDocument.name}</div>
+                                            <button type="button" onClick={() => setPreviewFile(files.supportingDocument)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview Doc
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -666,6 +675,8 @@ export default function MaternityLeaveRequestPage() {
                     </ul>
                 </div>
             </div>
+ 
+            <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
     );
 }

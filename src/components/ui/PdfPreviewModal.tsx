@@ -14,8 +14,22 @@ interface PdfPreviewModalProps {
 export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ file, isOpen, onClose }) => {
   const [numPages, setNumPages] = useState<number>();
   const [pageNumber, setPageNumber] = useState<number>(1);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen && file && file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        setImageUrl(url);
+        return () => URL.revokeObjectURL(url);
+    } else {
+        setImageUrl(null);
+    }
+  }, [isOpen, file]);
 
   if (!isOpen || !file) return null;
+
+  const isImage = file.type.startsWith('image/');
+  const isPdf = file.type === 'application/pdf';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 transition-opacity">
@@ -27,27 +41,43 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ file, isOpen, 
           </button>
         </div>
         <div className="p-4 overflow-auto flex-1 flex justify-center bg-slate-100/50 dark:bg-slate-950/50 relative min-h-[500px]">
-          <Document
-            file={file}
-            onLoadSuccess={({ numPages }: { numPages: number }) => setNumPages(numPages)}
-            loading={
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="animate-pulse flex flex-col items-center text-primary">
-                        <span className="material-symbols-outlined text-4xl mb-2 animate-bounce">description</span>
-                        <span className="font-medium">Loading PDF...</span>
+          {isImage && imageUrl ? (
+            <div className="flex items-center justify-center w-full">
+                <img 
+                    src={imageUrl} 
+                    alt={file.name} 
+                    className="max-w-full max-h-full object-contain shadow-md rounded-lg"
+                />
+            </div>
+          ) : isPdf ? (
+            <Document
+                file={file}
+                onLoadSuccess={({ numPages }: { numPages: number }) => setNumPages(numPages)}
+                loading={
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="animate-pulse flex flex-col items-center text-primary">
+                            <span className="material-symbols-outlined text-4xl mb-2 animate-bounce">description</span>
+                            <span className="font-medium">Loading PDF...</span>
+                        </div>
                     </div>
-                </div>
-            }
-            error={
-                <div className="absolute inset-0 flex items-center justify-center text-red-500">
-                    <span className="material-symbols-outlined mr-2">error</span>
-                    Failed to load PDF.
-                </div>
-            }
-            className="shadow-md"
-          >
-            <Page pageNumber={pageNumber} width={500} renderTextLayer={false} renderAnnotationLayer={false} />
-          </Document>
+                }
+                error={
+                    <div className="absolute inset-0 flex items-center justify-center text-red-500">
+                        <span className="material-symbols-outlined mr-2">error</span>
+                        Failed to load PDF.
+                    </div>
+                }
+                className="shadow-md"
+            >
+                <Page pageNumber={pageNumber} width={500} renderTextLayer={false} renderAnnotationLayer={false} />
+            </Document>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-slate-500">
+                <span className="material-symbols-outlined text-4xl mb-2">draft</span>
+                <p>Preview not available for this file type.</p>
+                <p className="text-xs uppercase mt-1 opacity-60">({file.type || "unknown"})</p>
+            </div>
+          )}
         </div>
         {numPages && numPages > 1 && (
           <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-center gap-6 items-center bg-slate-50 dark:bg-slate-800/50">
@@ -74,3 +104,6 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ file, isOpen, 
     </div>
   );
 };
+
+// Alias for backwards compatibility
+export const FilePreviewModal = PdfPreviewModal;
