@@ -302,7 +302,7 @@ export default function WelfareRequestPage() {
     const submittedRequest = activeRequest && activeRequest.status === 'Submitted for Certification' ? activeRequest : null;
 
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
-        { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null },
+        { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null, existingName: draftRequest?.documents['supporting_document'] },
     ]);
 
     const todayISO = new Date().toISOString().split('T')[0];
@@ -312,7 +312,6 @@ export default function WelfareRequestPage() {
         handleSubmit,
         getValues,
         formState: { errors },
-        setValue,
     } = useForm<WelfareFormData>({
         resolver: zodResolver(welfareSchema),
         defaultValues: {
@@ -324,16 +323,7 @@ export default function WelfareRequestPage() {
         },
     });
 
-    useEffect(() => {
-        if (draftRequest) {
-            setDocSlots((prev) =>
-                prev.map((slot) => ({
-                    ...slot,
-                    existingName: draftRequest.documents[slot.key] || undefined,
-                }))
-            );
-        }
-    }, [draftRequest]);
+
 
     const handleDocUpload = useCallback((key: DocumentSlot['key'], file: File) => {
         setDocSlots((prev) =>
