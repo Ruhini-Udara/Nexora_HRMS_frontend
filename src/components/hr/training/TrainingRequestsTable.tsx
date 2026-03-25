@@ -104,29 +104,19 @@ const initialMockRequests = [
 export default function TrainingRequestsTable() {
     const [selectedEventId, setSelectedEventId] = useState<number | null>(trainingEvents[0].id);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
-<<<<<<< HEAD
-=======
     const [requests, setRequests] = useState(initialMockRequests);
-<<<<<<< HEAD
->>>>>>> 05b9b4349e6d7e1aec36593be7522209aa3dc6b8
-=======
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
 
     const [isListModalOpen, setIsListModalOpen] = useState(false);
->>>>>>> 1f61b5845bfaf3a3f6ded52a3475f787c8e2fd3c
 
     const filteredEvents = selectedCategory === "All"
         ? trainingEvents
         : trainingEvents.filter(e => e.category === selectedCategory);
 
     const filteredRequests = selectedEventId
-<<<<<<< HEAD
-        ? mockRequests.filter(req => req.eventId === selectedEventId)
-=======
         ? requests.filter(req => req.eventId === selectedEventId)
->>>>>>> 05b9b4349e6d7e1aec36593be7522209aa3dc6b8
         : [];
 
     const selectedEvent = trainingEvents.find(e => e.id === selectedEventId);
@@ -297,12 +287,6 @@ export default function TrainingRequestsTable() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
-<<<<<<< HEAD
-                                                <button className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Approve">
-                                                    <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                                                </button>
-                                                <button className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Reject">
-=======
                                                 <button 
                                                     onClick={() => {
                                                         setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
@@ -315,7 +299,6 @@ export default function TrainingRequestsTable() {
                                                         setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Rejected" } : r));
                                                     }}
                                                     className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Reject">
->>>>>>> 05b9b4349e6d7e1aec36593be7522209aa3dc6b8
                                                     <span className="material-symbols-outlined text-[20px]">cancel</span>
                                                 </button>
                                             </div>
