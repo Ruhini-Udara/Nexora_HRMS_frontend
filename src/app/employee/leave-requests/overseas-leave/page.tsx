@@ -122,7 +122,6 @@ export default function OverseasLeaveRequestPage() {
             // Smart Parsing for Flight Tickets
             if (fieldName === "flightTickets") {
                 setIsParsingFlight(true);
-                setIsAIExtracted(false);
                 setTimeout(() => {
                     const departDate = new Date();
                     departDate.setDate(departDate.getDate() + 14); // Next 14 days
