@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLeaveDays } from "@/hooks/useLeaveDays";
 import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprovalTracker";
+import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
 import Confetti from "react-confetti";
 
 const overseasSchema = z.object({
@@ -278,11 +279,18 @@ export default function OverseasLeaveRequestPage() {
                             )}
                         </div>
 
-                        <LeaveApprovalTracker
-                            steps={approvalSteps}
+                        <LeaveApprovalTracker 
+                            steps={approvalSteps} 
                             currentStepIndex={trackerStep}
-                            className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-6 border border-slate-100 dark:border-slate-700/50"
+                            className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-6 border border-slate-100 dark:border-slate-700/50 mb-8"
                         />
+
+                        {/* Handover Checklist - Only show when fully approved */}
+                        {trackerStep === approvalSteps.length - 1 && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <HandoverChecklist />
+                            </div>
+                        )}
                     </div>
                 )}
 
