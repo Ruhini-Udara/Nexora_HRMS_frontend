@@ -10,17 +10,20 @@ import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprova
 import Confetti from "react-confetti";
 
 const maternitySchema = z.object({
-    epfNumber: z.string().min(1, "EPF Number is required"),
+    epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
     branch: z.string().min(1, "Branch is required"),
     dateOfRequest: z.string().min(1),
     employeeName: z.string().min(1, "Employee Name is required"),
     employeeType: z.string().min(1, "Employee Type is required"),
     designation: z.string().min(1, "Designation is required"),
     leaveReason: z.string().min(1, "Leave Request Reason is required"),
-    startDate: z.string().min(1, "Start Date is required"),
+    startDate: z.string().min(1, "Start Date is required").refine((val) => {
+        const today = new Date().toISOString().split("T")[0];
+        return val >= today;
+    }, "Start Date cannot be in the past"),
     endDate: z.string().min(1, "End Date is required"),
     childNumber: z.string().min(1, "Child Number is required"),
-    contactNumber: z.string().min(1, "Contact Number is required"),
+    contactNumber: z.string().regex(/^\+?[0-9\s\-]{9,15}$/, "Invalid phone format"),
     email: z.string().email("Invalid email address").min(1, "Email is required"),
     specialRemark: z.string().optional(),
     acknowledgement: z.boolean().refine(val => val === true, "You must acknowledge the terms to proceed.")
@@ -37,7 +40,7 @@ const maternitySchema = z.object({
 type MaternityFormValues = z.infer<typeof maternitySchema>;
 
 export default function MaternityLeaveRequestPage() {
-    const { register, handleSubmit, control, formState: { errors } } = useForm<MaternityFormValues>({
+    const { register, handleSubmit, control, getValues, reset, formState: { errors } } = useForm<MaternityFormValues>({
         resolver: zodResolver(maternitySchema),
         defaultValues: {
             dateOfRequest: new Date().toISOString().split("T")[0],
@@ -65,17 +68,40 @@ export default function MaternityLeaveRequestPage() {
         }, 0);
         const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         window.addEventListener('resize', handleResize);
+        
+        const draft = localStorage.getItem("maternityLeaveDraft");
+        if (draft) {
+            try {
+                reset(JSON.parse(draft));
+                setStatus("draft");
+            } catch (e) {
+                console.error("Failed to parse draft", e);
+            }
+        }
+
         return () => {
             clearTimeout(timer);
             window.removeEventListener('resize', handleResize);
         }
-    }, []);
+    }, [reset]);
 
     const noOfDays = useLeaveDays(control, "startDate", "endDate").toString();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof typeof files) => {
-        if (e.target.files && e.target.files[0]) {
-            setFiles((prev) => ({ ...prev, [fieldName]: e.target.files![0] }));
+        setFileError("");
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                setFileError(`File is too large. Maximum size is 5MB.`);
+                e.target.value = '';
+                return;
+            }
+            if (!file.type.match(/(pdf|jpeg|jpg|png)$/i)) {
+                setFileError(`File must be a PDF, JPG, or PNG.`);
+                e.target.value = '';
+                return;
+            }
+            setFiles((prev) => ({ ...prev, [fieldName]: file }));
         }
     };
 
@@ -83,6 +109,7 @@ export default function MaternityLeaveRequestPage() {
 
     const handleSaveDraft = (e: React.MouseEvent) => {
         e.preventDefault();
+        localStorage.setItem("maternityLeaveDraft", JSON.stringify(getValues()));
         setFileError("");
         setStatus("draft");
     };
@@ -96,6 +123,19 @@ export default function MaternityLeaveRequestPage() {
         setStatus("submitted");
         setTrackerStep(0); // Start at first step (HR review)
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleSubmitAnother = () => {
+        reset();
+        setFiles({
+            medicalCertificate: null,
+            leaveLetter: null,
+            supportingDocument: null,
+        });
+        setStatus("editing");
+        setTrackerStep(0);
+        setShowConfetti(false);
+        localStorage.removeItem("maternityLeaveDraft");
     };
 
     // Define the approval steps for Maternity Leave (Employee -> HR User -> Admin)
@@ -201,9 +241,18 @@ export default function MaternityLeaveRequestPage() {
                                 </button>
                             )}
                             {trackerStep === approvalSteps.length - 1 && (
-                                <div className="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
-                                    <span className="material-symbols-outlined">celebration</span>
-                                    Fully Approved
+                                <div className="flex gap-3">
+                                    <div className="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
+                                        <span className="material-symbols-outlined">celebration</span>
+                                        Fully Approved
+                                    </div>
+                                    <button
+                                        onClick={handleSubmitAnother}
+                                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">add</span>
+                                        New Request
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -356,6 +405,7 @@ export default function MaternityLeaveRequestPage() {
                                     <input
                                         disabled={isDisabled}
                                         {...register("startDate")}
+                                        min={new Date().toISOString().split("T")[0]}
                                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         type="date"
                                     />
@@ -368,6 +418,7 @@ export default function MaternityLeaveRequestPage() {
                                     <input
                                         disabled={isDisabled}
                                         {...register("endDate")}
+                                        min={new Date().toISOString().split("T")[0]}
                                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         type="date"
                                     />
