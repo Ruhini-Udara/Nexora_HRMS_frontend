@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useQuery } from '@tanstack/react-query';
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 
 // Mock Data for pending requests (Admin view)
 const MOCK_REQUESTS = [
@@ -181,8 +188,25 @@ const MOCK_REQUESTS = [
     }
 ];
 
+const columnHelper = createColumnHelper<typeof MOCK_REQUESTS[0]>();
+
 export default function OverseasLeaveApprovals() {
-    const [requests, setRequests] = useState(MOCK_REQUESTS);
+    const { data: fetchedRequests, isLoading } = useQuery({
+        queryKey: ['overseas-approvals'],
+        queryFn: async () => {
+            await new Promise(resolve => setTimeout(resolve, 600));
+            return MOCK_REQUESTS;
+        },
+        staleTime: Infinity,
+    });
+
+    const [requests, setRequests] = useState<typeof MOCK_REQUESTS>([]);
+
+    useEffect(() => {
+        if (fetchedRequests && requests.length === 0) {
+            setRequests(fetchedRequests);
+        }
+    }, [fetchedRequests, requests.length]);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
 
@@ -218,19 +242,19 @@ export default function OverseasLeaveApprovals() {
     const selectedPending = requests.filter(r => selectedRequests.includes(r.id) && r.status === "Sent for Admin Approval");
     const selectedForBoard = requests.filter(r => selectedRequests.includes(r.id) && r.status === "Submitted for Committee / Board Approvals");
 
-    const handleToggleSelection = (id: string) => {
+    const handleToggleSelection = React.useCallback((id: string) => {
         setSelectedRequests(prev =>
             prev.includes(id) ? prev.filter(reqId => reqId !== id) : [...prev, id]
         );
-    };
+    }, []);
 
-    const handleToggleAll = () => {
+    const handleToggleAll = React.useCallback(() => {
         if (selectedRequests.length === filteredRequests.length) {
             setSelectedRequests([]);
         } else {
             setSelectedRequests(filteredRequests.map(r => r.id));
         }
-    };
+    }, [filteredRequests, selectedRequests.length]);
 
     const handleView = (req: typeof MOCK_REQUESTS[0]) => {
         setSelectedRequest(req);
@@ -274,6 +298,104 @@ export default function OverseasLeaveApprovals() {
             setSelectedRequests([]);
         }, 300);
     };
+
+    // Moved outside component to avoid re-creation
+    // const columnHelper = createColumnHelper<typeof MOCK_REQUESTS[0]>();
+
+    const columns = useMemo(() => [
+        columnHelper.display({
+            id: 'select',
+            header: () => (
+                <div className="text-center w-full">
+                    <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded text-primary focus:ring-primary/50 cursor-pointer"
+                        checked={filteredRequests.length > 0 && selectedRequests.length === filteredRequests.length}
+                        onChange={handleToggleAll}
+                    />
+                </div>
+            ),
+            cell: info => (
+                <div className="text-center w-full">
+                    <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded text-primary focus:ring-primary/50 cursor-pointer"
+                        checked={selectedRequests.includes(info.row.original.id)}
+                        onChange={() => handleToggleSelection(info.row.original.id)}
+                    />
+                </div>
+            )
+        }),
+        columnHelper.accessor('id', {
+            header: 'ID',
+            cell: info => <span className="font-medium text-slate-900 dark:text-white">{info.getValue() as string}</span>
+        }),
+        columnHelper.accessor('employeeName', {
+            header: 'Employee',
+            cell: info => {
+                const req = info.row.original;
+                return (
+                    <div>
+                        <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
+                        <div className="text-xs text-slate-500">{req.epfNumber} • {req.designation}</div>
+                    </div>
+                );
+            }
+        }),
+        columnHelper.display({
+            id: 'dateRange',
+            header: 'Date Range',
+            cell: info => {
+                const req = info.row.original;
+                return (
+                    <div className="text-slate-600 dark:text-slate-300">
+                        {req.startDate} to {req.endDate} <br />
+                        <span className="text-xs text-slate-400">({req.noOfDays} Days)</span>
+                    </div>
+                );
+            }
+        }),
+        columnHelper.accessor('status', {
+            header: 'Status',
+            cell: info => {
+                const status = info.getValue() as string;
+                return (
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold text-center leading-tight ${
+                        status === "Sent for Admin Approval" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                        status === "Submitted for Committee / Board Approvals" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+                        status === "Approved" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                        "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                    }`}>
+                        {status}
+                    </span>
+                );
+            }
+        }),
+        columnHelper.display({
+            id: 'actions',
+            header: () => <div className="text-right w-full">Actions</div>,
+            cell: info => {
+                const req = info.row.original;
+                return (
+                    <div className="text-right w-full">
+                        <button
+                            onClick={() => handleView(req)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">visibility</span>
+                            Review
+                        </button>
+                    </div>
+                );
+            }
+        })
+    ], [filteredRequests, selectedRequests, handleToggleAll, handleToggleSelection]); // Only tracking minimum necessary deps
+
+    const table = useReactTable({
+        data: filteredRequests,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+    });
 
     if (isPrinting) {
         return (
@@ -459,74 +581,42 @@ export default function OverseasLeaveApprovals() {
             {/* Data Table */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <div className="overflow-x-auto">
+                    {isLoading ? (
+                        <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center">
+                            <span className="material-symbols-outlined text-4xl animate-spin text-primary mb-4">progress_activity</span>
+                            <p>Loading requests with React Query...</p>
+                        </div>
+                    ) : (
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                                <th className="py-4 px-4 w-12 text-center">
-                                    <input
-                                        type="checkbox"
-                                        className="w-4 h-4 rounded text-primary focus:ring-primary/50 cursor-pointer"
-                                        checked={filteredRequests.length > 0 && selectedRequests.length === filteredRequests.length}
-                                        onChange={handleToggleAll}
-                                    />
-                                </th>
-                                <th className="py-4 px-6">ID</th>
-                                <th className="py-4 px-6">Employee</th>
-                                <th className="py-4 px-6">Date Range</th>
-                                <th className="py-4 px-6">Status</th>
-                                <th className="py-4 px-6 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="text-sm">
-                            {filteredRequests.map((req) => (
-                                <tr key={req.id} className={`border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${selectedRequests.includes(req.id) ? "bg-primary/5 dark:bg-primary/10" : ""}`}>
-                                    <td className="py-4 px-4 text-center">
-                                        <input
-                                            type="checkbox"
-                                            className="w-4 h-4 rounded text-primary focus:ring-primary/50 cursor-pointer"
-                                            checked={selectedRequests.includes(req.id)}
-                                            onChange={() => handleToggleSelection(req.id)}
-                                        />
-                                    </td>
-                                    <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">{req.id}</td>
-                                    <td className="py-4 px-6">
-                                        <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
-                                        <div className="text-xs text-slate-500">{req.epfNumber} • {req.designation}</div>
-                                    </td>
-                                    <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
-                                        {req.startDate} to {req.endDate} <br />
-                                        <span className="text-xs text-slate-400">({req.noOfDays} Days)</span>
-                                    </td>
-                                    <td className="py-4 px-6">
-                                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold text-center leading-tight ${req.status === "Sent for Admin Approval"
-                                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                                            : req.status === "Submitted for Committee / Board Approvals"
-                                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                                                : req.status === "Approved" // Kept for backwards compatibility if needed
-                                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                                                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                                            }`}>
-                                            {req.status}
-                                        </span>
-                                    </td>
-                                    <td className="py-4 px-6 text-right">
-                                        <button
-                                            onClick={() => handleView(req)}
-                                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors"
-                                        >
-                                            <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                            Review
-                                        </button>
-                                    </td>
+                            {table.getHeaderGroups().map(headerGroup => (
+                                <tr key={headerGroup.id} className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                                    {headerGroup.headers.map(header => (
+                                        <th key={header.id} className={`py-4 px-6 ${header.id === 'select' ? 'w-12 px-4' : ''}`}>
+                                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                                        </th>
+                                    ))}
                                 </tr>
                             ))}
-                            {filteredRequests.length === 0 && (
+                        </thead>
+                        <tbody className="text-sm">
+                            {table.getRowModel().rows.map(row => (
+                                <tr key={row.id} className={`border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${selectedRequests.includes(row.original.id) ? "bg-primary/5 dark:bg-primary/10" : ""}`}>
+                                    {row.getVisibleCells().map(cell => (
+                                        <td key={cell.id} className={`py-4 px-6 ${cell.column.id === 'select' ? 'px-4' : ''}`}>
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                            {table.getRowModel().rows.length === 0 && (
                                 <tr>
                                     <td colSpan={6} className="py-8 text-center text-slate-500">No requests found matching your filters.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
+                    )}
                 </div>
             </div>
 

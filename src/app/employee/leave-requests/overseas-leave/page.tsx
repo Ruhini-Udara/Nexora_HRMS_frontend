@@ -8,6 +8,9 @@ import * as z from "zod";
 import { useLeaveDays } from "@/hooks/useLeaveDays";
 import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprovalTracker";
 import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
+import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
+import dynamic from 'next/dynamic';
+const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
 import Confetti from "react-confetti";
 
 const overseasSchema = z.object({
@@ -74,8 +77,9 @@ export default function OverseasLeaveRequestPage() {
     const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
     
-    // Smart Parser States
+    // Smart Parser & Preview States
     const [isParsingFlight, setIsParsingFlight] = useState(false);
+    const [previewFile, setPreviewFile] = useState<File | null>(null);
 
     useEffect(() => {
         // Run after mount to avoid setting state synchronously during render
@@ -103,18 +107,15 @@ export default function OverseasLeaveRequestPage() {
 
     const noOfDays = useLeaveDays(control, "startDate", "endDate").toString();
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof typeof files) => {
+    const handleFileChange = (file: File | null, fieldName: keyof typeof files) => {
         setFileError("");
-        if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
+        if (file) {
             if (file.size > 5 * 1024 * 1024) {
                 setFileError(`File is too large. Maximum size is 5MB.`);
-                e.target.value = '';
                 return;
             }
             if (!file.type.match(/(pdf|jpeg|jpg|png)$/i)) {
                 setFileError(`File must be a PDF, JPG, or PNG.`);
-                e.target.value = '';
                 return;
             }
             setFiles((prev) => ({ ...prev, [fieldName]: file }));
@@ -539,18 +540,18 @@ export default function OverseasLeaveRequestPage() {
                                     <div>
                                         {isDisabled ? (
                                             <span className="text-xs font-semibold text-slate-400">Locked</span>
-                                        ) : isParsingFlight ? (
-                                            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
-                                                Processing
-                                            </span>
                                         ) : (
-                                            <label className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary transition-colors text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold shadow-sm">
-                                                {files.flightTickets ? "Change File" : "Upload File"}
-                                                <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png" onChange={(e) => handleFileChange(e, "flightTickets")} />
-                                            </label>
+                                            <FileUploadDropzone 
+                                                onFileAccepted={(f) => handleFileChange(f, "flightTickets")}
+                                                currentFile={files.flightTickets}
+                                                label="Itinerary (PDF)"
+                                                isParsing={isParsingFlight}
+                                            />
                                         )}
                                         {files.flightTickets && !isParsingFlight && (
-                                            <div className="mt-2 text-[10px] text-orange-600 text-right truncate max-w-[150px]">{files.flightTickets.name}</div>
+                                            <button type="button" onClick={() => setPreviewFile(files.flightTickets)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview File
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -572,13 +573,16 @@ export default function OverseasLeaveRequestPage() {
                                         {isDisabled ? (
                                             <span className="text-xs font-semibold text-slate-400">Locked</span>
                                         ) : (
-                                            <label className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary transition-colors text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold shadow-sm">
-                                                {files.passportCopy ? "Change File" : "Upload File"}
-                                                <input type="file" className="hidden" onChange={(e) => handleFileChange(e, "passportCopy")} />
-                                            </label>
+                                            <FileUploadDropzone 
+                                                onFileAccepted={(f) => handleFileChange(f, "passportCopy")}
+                                                currentFile={files.passportCopy}
+                                                label="Passport Copy"
+                                            />
                                         )}
                                         {files.passportCopy && (
-                                            <div className="mt-2 text-[10px] text-emerald-600 text-right truncate max-w-[150px]">{files.passportCopy.name}</div>
+                                            <button type="button" onClick={() => setPreviewFile(files.passportCopy)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -600,13 +604,16 @@ export default function OverseasLeaveRequestPage() {
                                         {isDisabled ? (
                                             <span className="text-xs font-semibold text-slate-400">Locked</span>
                                         ) : (
-                                            <label className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary transition-colors text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold shadow-sm">
-                                                {files.visaCopy ? "Change File" : "Upload File"}
-                                                <input type="file" className="hidden" onChange={(e) => handleFileChange(e, "visaCopy")} />
-                                            </label>
+                                            <FileUploadDropzone 
+                                                onFileAccepted={(f) => handleFileChange(f, "visaCopy")}
+                                                currentFile={files.visaCopy}
+                                                label="Visa Copy"
+                                            />
                                         )}
                                         {files.visaCopy && (
-                                            <div className="mt-2 text-[10px] text-blue-600 text-right truncate max-w-[150px]">{files.visaCopy.name}</div>
+                                            <button type="button" onClick={() => setPreviewFile(files.visaCopy)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -628,15 +635,16 @@ export default function OverseasLeaveRequestPage() {
                                         {isDisabled ? (
                                             <span className="text-xs font-semibold text-slate-400">Locked</span>
                                         ) : (
-                                            <label className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary transition-colors text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold shadow-sm">
-                                                {files.confirmationLetter ? "Change File" : "Upload File"}
-                                                <input type="file" className="hidden" onChange={(e) => handleFileChange(e, "confirmationLetter")} />
-                                            </label>
+                                            <FileUploadDropzone 
+                                                onFileAccepted={(f) => handleFileChange(f, "confirmationLetter")}
+                                                currentFile={files.confirmationLetter}
+                                                label="Confirmation Letter"
+                                            />
                                         )}
                                         {files.confirmationLetter && (
-                                            <div className="mt-2 text-[10px] text-purple-600 text-right truncate max-w-[150px]">
-                                                {files.confirmationLetter.name}
-                                            </div>
+                                            <button type="button" onClick={() => setPreviewFile(files.confirmationLetter)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -656,13 +664,16 @@ export default function OverseasLeaveRequestPage() {
                                         {isDisabled ? (
                                             <span className="text-xs font-semibold text-slate-400">Locked</span>
                                         ) : (
-                                            <label className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary transition-colors text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold shadow-sm">
-                                                {files.leaveLetter ? "Change File" : "Upload File"}
-                                                <input type="file" className="hidden" onChange={(e) => handleFileChange(e, "leaveLetter")} />
-                                            </label>
+                                            <FileUploadDropzone 
+                                                onFileAccepted={(f) => handleFileChange(f, "leaveLetter")}
+                                                currentFile={files.leaveLetter}
+                                                label="Leave Letter"
+                                            />
                                         )}
                                         {files.leaveLetter && (
-                                            <div className="mt-2 text-[10px] text-slate-600 text-right truncate max-w-[150px]">{files.leaveLetter.name}</div>
+                                            <button type="button" onClick={() => setPreviewFile(files.leaveLetter)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -765,6 +776,8 @@ export default function OverseasLeaveRequestPage() {
                     </ul>
                 </div>
             </div>
+
+            <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
     );
-}
+}
