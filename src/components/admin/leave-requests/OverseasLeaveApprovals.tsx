@@ -327,7 +327,7 @@ export default function OverseasLeaveApprovals() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto w-full pt-20">
+        <div className="max-w-7xl mx-auto w-full">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pt-2">
                 <div className="flex items-center gap-4">
                     <Link

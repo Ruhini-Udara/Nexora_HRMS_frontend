@@ -4,7 +4,7 @@ import ModuleCard from "@/components/ui/ModuleCard";
 
 export default function AdminLeaveModules() {
     return (
-        <div className="max-w-7xl mx-auto w-full pt-20">
+        <div className="max-w-7xl mx-auto w-full">
             {/* Page Header */}
             <div className="mb-8 pt-2">
                 <h1 className="text-3xl font-bold text-gray-900 mb-1">

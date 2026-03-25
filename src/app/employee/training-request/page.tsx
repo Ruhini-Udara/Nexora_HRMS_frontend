@@ -7,6 +7,8 @@ import TrainingFeedbackModal from "@/components/employee/training/TrainingFeedba
 
 export default function TrainingRequestPage() {
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+    const [selectedFeedbackCourse, setSelectedFeedbackCourse] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("All");
 
     const trainingEvents = [
         {
@@ -35,15 +37,21 @@ export default function TrainingRequestPage() {
         },
     ];
 
+    const categories = ["All", ...Array.from(new Set(trainingEvents.map(event => event.category)))];
+
+    const filteredEvents = selectedCategory === "All"
+        ? trainingEvents
+        : trainingEvents.filter(event => event.category === selectedCategory);
+
     return (
         <div className="space-y-10 max-w-7xl mx-auto w-full">
             {/* Hero Title */}
-            <div className="flex items-end justify-between border-b border-[var(--color-training-primary)]/10 pb-6">
+            <div className="flex items-end justify-between border-b border-[var(--color-training-primary)]/10 pb-6 mb-8">
                 <div>
-                    <h1 className="text-3xl font-black text-[#1d130c] tracking-tight">
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
                         Professional Development
                     </h1>
-                    <p className="text-stone-500 mt-1">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
                         Elevate your skills with our curated corporate training programs.
                     </p>
                 </div>
@@ -66,13 +74,23 @@ export default function TrainingRequestPage() {
                         </span>
                         Available Training Events
                     </h2>
-                    <button className="text-sm font-bold text-[var(--color-training-primary)] hover:underline flex items-center gap-1 cursor-pointer">
-                        View All Events{" "}
-                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-stone-500">Filter by Type:</span>
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            className="bg-white border border-stone-200 text-stone-800 text-sm font-medium rounded-lg focus:ring-[var(--color-training-primary)] focus:border-[var(--color-training-primary)] block p-2 outline-none cursor-pointer"
+                        >
+                            {categories.map((category) => (
+                                <option key={category} value={category}>
+                                    {category === "All" ? "All Types" : category}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {trainingEvents.map((event, index) => (
+                    {filteredEvents.map((event, index) => (
                         <TrainingEventCard key={index} {...event} />
                     ))}
                 </div>
@@ -88,19 +106,18 @@ export default function TrainingRequestPage() {
                         My Training Status
                     </h2>
                 </div>
-                <TrainingStatusTable onFeedbackClick={() => setIsFeedbackModalOpen(true)} />
+                <TrainingStatusTable 
+                    onFeedbackClick={(request) => {
+                        setSelectedFeedbackCourse(request.name);
+                        setIsFeedbackModalOpen(true);
+                    }} 
+                />
             </section>
-
-            {/* Footer Info - Optional if you want it inside the page or global footer */}
-            <footer className="mt-auto py-8 border-t border-[var(--color-training-primary)]/10 text-center">
-                <p className="text-xs text-stone-400 font-medium">
-                    © 2023 HR MATE - Unified Employee Experience Portal. All Rights Reserved.
-                </p>
-            </footer>
 
             <TrainingFeedbackModal
                 isOpen={isFeedbackModalOpen}
                 onClose={() => setIsFeedbackModalOpen(false)}
+                courseName={selectedFeedbackCourse}
             />
         </div>
     );

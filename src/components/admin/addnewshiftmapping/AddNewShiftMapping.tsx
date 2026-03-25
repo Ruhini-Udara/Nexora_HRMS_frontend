@@ -38,19 +38,20 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
   }, []);
 
   const designations: Designation[] = [
-    { id: "1", name: "Software Engineer" },
-    { id: "2", name: "Senior Developer" },
-    { id: "3", name: "Team Lead" },
-    { id: "4", name: "Project director" },
-    { id: "5", name: "HR director" },
-    { id: "6", name: "Finance Officer" },
+    { id: "1", name: "Senior Engineer" },
+    { id: "2", name: "Engineer" },
+    { id: "3", name: "HR Manager" },
+    { id: "4", name: "HR Executive" },
+    { id: "5", name: "Sales Executive" },
+    { id: "6", name: "Product Manager" },
+    { id: "7", name: "Driver" },
+    { id: "8", name: "Support Staff" },
   ];
 
   const shiftTypes: ShiftType[] = [
-    { id: "1", name: "Morning Shift", startTime: "08:30 AM", endTime: "04:30 PM", duration: "8 Hours" },
-    { id: "2", name: "Evening Shift", startTime: "02:00 PM", endTime: "10:00 PM", duration: "8 Hours" },
-    { id: "3", name: "Night Shift", startTime: "10:00 PM", endTime: "06:00 AM", duration: "8 Hours" },
-    { id: "4", name: "General Shift", startTime: "09:00 AM", endTime: "05:00 PM", duration: "8 Hours" },
+    { id: "1", name: "Normal Shift", startTime: "08:30 AM", endTime: "04:30 PM", duration: "8 Hours" },
+    { id: "2", name: "Temporary Shift", startTime: "08:15 AM", endTime: "04:45 PM", duration: "8.5 Hours" },
+    { id: "3", name: "Drivers Shift", startTime: "08:00 AM", endTime: "05:00 PM", duration: "9 Hours" },
   ];
 
   const getSelectedShiftDetails = () => {

@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 
 const trainingEvents = [
@@ -8,7 +9,6 @@ const trainingEvents = [
         date: "October 24, 2023",
         time: "09:00 AM - 12:00 PM",
         category: "Sales",
-        image: "https://lh3.googleusercontent.com/aida-public/AB6AXuD8kev8B1LHYhdvJyun1RzU5HW-NDFoJcDXqV7wdhsVReP40kpwOtbuxDty4O6mfetRRD_QTIJIJSjSp4mw1fNCpwFqjfcIreTGSOTOKsEsO3MBcrz-WlwuTzupbrmc-o_v6Lgu__qD6QWbyDyeRJ26EJtz2nzEoUITC4819iWyi4NrePIRCsW_8OUJE_mnttj7P1ijejfnRuikHbdDkWXZWlQ4qOTfWlwrNsWBCheAV2_OupK08EcTN9TGNdugoXWibnpud_0qhBI",
     },
     {
         id: 2,
@@ -16,7 +16,6 @@ const trainingEvents = [
         date: "November 02, 2023",
         time: "02:00 PM - 05:00 PM",
         category: "Leadership",
-        image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCeomj4FV-xTtl2q-eZoLucnP8oW2QvbeBuvy5Jy4SlB02M4bG-Lbm02kxsJMCKLnPwdIFc1imWvEFWqzereZgUBki7sf7CcgjvgFmglNSiSSuT2BuDhCBsU4QwSi8ropV70Fz77jye_NG8hb7xtEtutziJY23stOGe9XUQOTSuRlKsk995DZ6T7PvLqBG2T8IeN_hFvHPoQGIFCCqIdKOI2yqDouhUviARKhhCgVmw4f-bqAygPiLqG6iDvmwSIUbifK7oRoCHWzM",
     },
     {
         id: 3,
@@ -24,7 +23,6 @@ const trainingEvents = [
         date: "November 15, 2023",
         time: "11:00 AM - 12:30 PM",
         category: "Product",
-        image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCCAiE3w4C5N0fAAb27Exc4cON_BPrwP423cWY51Z5bAwzqP4nOzSTulKsfKLMmmNnL9d9WrqSIScUMPHNCBR3p9o0HUFnsXt9qSJy52kRa0m2dIlnLwnzkLhxUXZxmx7tY1C3kmdjAiBEjevmQsROHz-bkkrsvt_a92zGS9emts4J3NeWW31g9Nf6HdXTjKZl5zBLwuwrKVYbHQdFRCm8nqWPpp9B9fEY6YhuDFZP9LLl6CPD_0tjGaul5Q-BWhhMKHmEE4U2dS48",
     },
 ];
 
@@ -45,10 +43,10 @@ export default function CreateTrainingPlanPage() {
                     <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
                         3 Available Courses
                     </span>
-                    <button className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-full flex items-center gap-1 hover:bg-[#853500] transition-colors shadow-sm shadow-primary/20">
+                    <Link href="/hr/training/create-plan/new" className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-full flex items-center gap-1 hover:bg-[#853500] transition-colors shadow-sm shadow-primary/20">
                         <span className="material-symbols-outlined text-sm">add</span>
                         Create New Training Event
-                    </button>
+                    </Link>
                 </div>
             </div>
 
@@ -70,7 +68,6 @@ export default function CreateTrainingPlanPage() {
                             date={event.date}
                             time={event.time}
                             category={event.category}
-                            image={event.image}
                         />
                     ))}
                 </div>

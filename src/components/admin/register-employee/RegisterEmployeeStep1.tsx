@@ -157,7 +157,7 @@ export default function RegisterEmployeeStep1({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 pb-10">
+    <div className="min-h-screen bg-gray-50 pb-10">
       <div className="max-w-5xl mx-auto px-6">
         {/* Header */}
         <div className="mb-8">

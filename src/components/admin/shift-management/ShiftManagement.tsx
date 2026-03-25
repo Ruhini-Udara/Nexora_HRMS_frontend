@@ -64,7 +64,7 @@ export default function ShiftManagement() {
     {
       id: 3,
       name: "Drivers Shift",
-      description: "Transport & Logistics",
+      description: "Transport & Logistics ",
       startTime: "08:00",
       endTime: "17:00",
       duration: "9h Work Duration",
@@ -77,8 +77,8 @@ export default function ShiftManagement() {
   const [shiftMappings, setShiftMappings] = useState<ShiftMapping[]>([
     {
       id: 1,
-      role: "Management Assistant",
-      department: "Admin Dept",
+      role: "HR Executive",
+      department: "Human Resources",
       assignedShift: "Normal Shift",
       timeRange: "08:30 - 16:30",
       gracePeriod: "15 mins",
@@ -87,8 +87,8 @@ export default function ShiftManagement() {
     },
     {
       id: 2,
-      role: "Executive",
-      department: "Multiple Depts",
+      role: "Sales Executive",
+      department: "Sales & Marketing",
       assignedShift: "Normal Shift",
       timeRange: "08:30 - 16:30",
       gracePeriod: "10 mins",
@@ -97,7 +97,7 @@ export default function ShiftManagement() {
     },
     {
       id: 3,
-      role: "Staff Assistant",
+      role: "Support Staff",
       department: "Operations",
       assignedShift: "Temporary Shift",
       timeRange: "08:15 - 16:45",
@@ -220,7 +220,7 @@ export default function ShiftManagement() {
   };
 
   return (
-    <div className="pt-20 p-8">
+    <div className="p-8">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -348,9 +348,14 @@ export default function ShiftManagement() {
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
             >
               <option value="">All Designations</option>
-              <option value="Management Assistant">Management Assistant</option>
-              <option value="Executive">Executive</option>
-              <option value="Staff Assistant">Staff Assistant</option>
+              <option value="Senior Engineer">Senior Engineer</option>
+              <option value="Engineer">Engineer</option>
+              <option value="HR Manager">HR Manager</option>
+              <option value="HR Executive">HR Executive</option>
+              <option value="Sales Executive">Sales Executive</option>
+              <option value="Product Manager">Product Manager</option>
+              <option value="Driver">Driver</option>
+              <option value="Support Staff">Support Staff</option>
             </select>
           </div>
           <div>

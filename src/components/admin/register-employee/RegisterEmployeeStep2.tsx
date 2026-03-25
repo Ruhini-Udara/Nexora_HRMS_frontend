@@ -54,7 +54,7 @@ export default function RegisterEmployeeStep2({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 pb-10">
+    <div className="min-h-screen bg-gray-50 pb-10">
       <div className="max-w-5xl mx-auto px-6">
         {/* Header */}
         <div className="mb-8">
@@ -126,14 +126,14 @@ export default function RegisterEmployeeStep2({
                       <SelectValue placeholder="Select Designation" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="software-engineer">Software Engineer</SelectItem>
-                      <SelectItem value="senior-developer">Senior Developer</SelectItem>
-                      <SelectItem value="team-lead">Team Lead</SelectItem>
-                      <SelectItem value="project-manager">Project Manager</SelectItem>
-                      <SelectItem value="hr-manager">HR Manager</SelectItem>
-                      <SelectItem value="finance-officer">Finance Officer</SelectItem>
-                      <SelectItem value="accountant">Accountant</SelectItem>
-                      <SelectItem value="business-analyst">Business Analyst</SelectItem>
+                      <SelectItem value="Senior Engineer">Senior Engineer</SelectItem>
+                      <SelectItem value="Engineer">Engineer</SelectItem>
+                      <SelectItem value="HR Manager">HR Manager</SelectItem>
+                      <SelectItem value="HR Executive">HR Executive</SelectItem>
+                      <SelectItem value="Sales Executive">Sales Executive</SelectItem>
+                      <SelectItem value="Product Manager">Product Manager</SelectItem>
+                      <SelectItem value="Driver">Driver</SelectItem>
+                      <SelectItem value="Support Staff">Support Staff</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -179,14 +179,11 @@ export default function RegisterEmployeeStep2({
                     <SelectValue placeholder="Select Department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="engineering">Engineering</SelectItem>
-                    <SelectItem value="human-resources">Human Resources</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                    <SelectItem value="operations">Operations</SelectItem>
-                    <SelectItem value="marketing">Marketing</SelectItem>
-                    <SelectItem value="sales">Sales</SelectItem>
-                    <SelectItem value="it">IT</SelectItem>
-                    <SelectItem value="admin">Administration</SelectItem>
+                    <SelectItem value="Engineering">Engineering</SelectItem>
+                    <SelectItem value="Human Resources">Human Resources</SelectItem>
+                    <SelectItem value="Sales & Marketing">Sales & Marketing</SelectItem>
+                    <SelectItem value="Product Development">Product Development</SelectItem>
+                    <SelectItem value="Operations">Operations</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

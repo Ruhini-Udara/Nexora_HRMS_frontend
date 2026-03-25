@@ -282,7 +282,7 @@ export default function MaternityLeaveApprovals() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto w-full pt-20 relative">
+        <div className="max-w-7xl mx-auto w-full relative">
 
             {/* Toast Notification */}
             {showNotification && (

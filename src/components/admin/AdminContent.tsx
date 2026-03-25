@@ -44,9 +44,9 @@ export default function AdminContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto w-full pt-20">
+    <div className="max-w-7xl mx-auto w-full">
       {/* Page Header */}
-      <div className="mb-8 pt-2">
+      <div className="mb-8">
         <h1 className="text-4xl font-extrabold text-gray-900 mb-1">
           Admin Dashboard
         </h1>
