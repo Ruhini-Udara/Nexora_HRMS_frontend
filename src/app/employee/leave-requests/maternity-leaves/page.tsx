@@ -73,7 +73,7 @@ export default function MaternityLeaveRequestPage() {
         if (draft) {
             try {
                 reset(JSON.parse(draft));
-                setStatus("draft");
+                setTimeout(() => setStatus("draft"), 0);
             } catch (e) {
                 console.error("Failed to parse draft", e);
             }
