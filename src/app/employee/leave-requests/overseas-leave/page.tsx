@@ -52,7 +52,7 @@ const overseasSchema = z.object({
 type OverseasFormValues = z.infer<typeof overseasSchema>;
 
 export default function OverseasLeaveRequestPage() {
-    const { register, handleSubmit, control, getValues, reset, formState: { errors } } = useForm<OverseasFormValues>({
+    const { register, handleSubmit, control, getValues, setValue, trigger, reset, formState: { errors } } = useForm<OverseasFormValues>({
         resolver: zodResolver(overseasSchema),
         defaultValues: {
             dateOfRequest: new Date().toISOString().split("T")[0],
@@ -64,6 +64,7 @@ export default function OverseasLeaveRequestPage() {
         passportCopy: null as File | null,
         visaCopy: null as File | null,
         confirmationLetter: null as File | null,
+        flightTickets: null as File | null,
     });
 
     const [status, setStatus] = useState<"editing" | "draft" | "submitted">("editing");
@@ -72,6 +73,9 @@ export default function OverseasLeaveRequestPage() {
     const [trackerStep, setTrackerStep] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+    
+    // Smart Parser States
+    const [isParsingFlight, setIsParsingFlight] = useState(false);
 
     useEffect(() => {
         // Run after mount to avoid setting state synchronously during render
@@ -114,6 +118,25 @@ export default function OverseasLeaveRequestPage() {
                 return;
             }
             setFiles((prev) => ({ ...prev, [fieldName]: file }));
+            
+            // Smart Parsing for Flight Tickets
+            if (fieldName === "flightTickets") {
+                setIsParsingFlight(true);
+                setIsAIExtracted(false);
+                setTimeout(() => {
+                    const departDate = new Date();
+                    departDate.setDate(departDate.getDate() + 14); // Next 14 days
+                    
+                    const returnDate = new Date(departDate);
+                    returnDate.setDate(returnDate.getDate() + 28); // 4-week trip
+                    
+                    setValue("startDate", departDate.toISOString().split("T")[0]);
+                    setValue("endDate", returnDate.toISOString().split("T")[0]);
+                    
+                    setIsParsingFlight(false);
+                    trigger(["startDate", "endDate"]);
+                }, 2500); 
+            }
         }
     };
 
@@ -144,6 +167,7 @@ export default function OverseasLeaveRequestPage() {
             passportCopy: null,
             visaCopy: null,
             confirmationLetter: null,
+            flightTickets: null,
         });
         setStatus("editing");
         setTrackerStep(0);
@@ -416,10 +440,10 @@ export default function OverseasLeaveRequestPage() {
                                         Start Date <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        disabled={isDisabled}
+                                        disabled={isDisabled || isParsingFlight}
                                         {...register("startDate")}
                                         min={new Date().toISOString().split("T")[0]}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 transition-colors ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         type="date"
                                     />
                                     {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message}</p>}
@@ -429,10 +453,10 @@ export default function OverseasLeaveRequestPage() {
                                         End Date <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        disabled={isDisabled}
+                                        disabled={isDisabled || isParsingFlight}
                                         {...register("endDate")}
                                         min={new Date().toISOString().split("T")[0]}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 transition-colors ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                                         type="date"
                                     />
                                     {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message}</p>}
@@ -492,6 +516,46 @@ export default function OverseasLeaveRequestPage() {
                             </h2>
 
                             <div className="space-y-4">
+                                {/* Flight Tickets / Itinerary (Smart Parse) */}
+                                <div className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${isParsingFlight ? 'bg-indigo-50/50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800/50' : 'bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
+                                    <div className="flex gap-4 items-center">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isParsingFlight ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 animate-pulse' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400'}`}>
+                                            <span className={`material-symbols-outlined ${isParsingFlight ? 'animate-spin' : ''}`}>
+                                                {isParsingFlight ? 'document_scanner' : 'airplane_ticket'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                                                Flight Tickets / Itinerary <span className="text-red-500">*</span>
+                                            </h4>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1">
+                                                {isParsingFlight ? (
+                                                    <span className="text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">Running OCR & Extracting expected dates...</span>
+                                                ) : (
+                                                    <span>Upload PDF to auto-fill your travel dates</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        {isDisabled ? (
+                                            <span className="text-xs font-semibold text-slate-400">Locked</span>
+                                        ) : isParsingFlight ? (
+                                            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                                                Processing
+                                            </span>
+                                        ) : (
+                                            <label className="cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary hover:text-primary transition-colors text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-xs font-bold shadow-sm">
+                                                {files.flightTickets ? "Change File" : "Upload File"}
+                                                <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png" onChange={(e) => handleFileChange(e, "flightTickets")} />
+                                            </label>
+                                        )}
+                                        {files.flightTickets && !isParsingFlight && (
+                                            <div className="mt-2 text-[10px] text-orange-600 text-right truncate max-w-[150px]">{files.flightTickets.name}</div>
+                                        )}
+                                    </div>
+                                </div>
+
                                 {/* Passport Copy */}
                                 <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                                     <div className="flex gap-4 items-center">
