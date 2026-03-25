@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-
+import Link from "next/link";
 
 // ── Types ───────────────────────────────────────────────────────────
-type WelfareStatus = "SUBMITTED" | "APPROVED" | "REJECTED";
+type WelfareStatus = "PENDING_BRANCH" | "PENDING_HO" | "PENDING_GM" | "APPROVED" | "REJECTED";
+type Role = "Branch DGM" | "HO DGM" | "Final GM/AO";
 
 interface WelfareDocument {
     key: string;
@@ -41,7 +42,7 @@ const MOCK_REQUESTS: WelfareApprovalRequest[] = [
         adjustedAmount: 50000,
         specialRemark: "Immediate requirement for funeral expenses.",
         requestDate: "2024-10-01",
-        status: "SUBMITTED",
+        status: "PENDING_BRANCH",
         documents: [
             { key: "cert", label: "Supporting Document", filename: "death_certificate.pdf" },
         ],
@@ -58,9 +59,9 @@ const MOCK_REQUESTS: WelfareApprovalRequest[] = [
         adjustedAmount: 25000,
         specialRemark: "Sinhala and Tamil New Year advance.",
         requestDate: "2024-10-05",
-        status: "SUBMITTED",
+        status: "PENDING_HO",
         documents: [],
-        hrRemarks: "",
+        hrRemarks: "Branch DGM certified.",
     },
     {
         id: "WLF-2024-884",
@@ -70,28 +71,31 @@ const MOCK_REQUESTS: WelfareApprovalRequest[] = [
         branch: "Head Office",
         welfareType: "Accident Claims",
         amount: 150000,
-        adjustedAmount: 150000,
+        adjustedAmount: 140000,
         specialRemark: "Vehicle accident while on duty. Original bills attached.",
         requestDate: "2024-09-28",
-        status: "SUBMITTED",
+        status: "PENDING_GM",
         documents: [
             { key: "police", label: "Police Report", filename: "police_report_345.pdf" },
             { key: "medical", label: "Medical Bills", filename: "hospital_bills.pdf" },
         ],
-        hrRemarks: "",
+        hrRemarks: "HO DGM certified, amount adjusted to max policy limit (140,000).",
     },
 ];
 
-// ── Status Configs ───────────────────────────────────────────
+// ── Role & Status Configs ───────────────────────────────────────────
 const statusConfig: Record<WelfareStatus, { label: string; classes: string }> = {
-    SUBMITTED: { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+    PENDING_BRANCH: { label: "Pending Branch DGM", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+    PENDING_HO: { label: "Pending HO DGM", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+    PENDING_GM: { label: "Pending Final GM", classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
     APPROVED: { label: "Approved", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
     REJECTED: { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
 };
 
-export default function WelfarePage() {
+export default function WelfareApprovalsPage() {
     const [requests, setRequests] = useState<WelfareApprovalRequest[]>(MOCK_REQUESTS);
     const [selectedRequest, setSelectedRequest] = useState<WelfareApprovalRequest | null>(null);
+    const [currentRole, setCurrentRole] = useState<Role>("Branch DGM");
     const [searchTerm, setSearchTerm] = useState("");
 
     // Modal Form State
@@ -104,18 +108,23 @@ export default function WelfarePage() {
         const matchesSearch =
             req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             req.id.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Show all in the list initially, or filter by role? Let's show all, but visually distinguish actionable ones.
         return matchesSearch;
     });
 
     const isActionable = (req: WelfareApprovalRequest) => {
-        return req.status === "SUBMITTED";
+        if (currentRole === "Branch DGM" && req.status === "PENDING_BRANCH") return true;
+        if (currentRole === "HO DGM" && req.status === "PENDING_HO") return true;
+        if (currentRole === "Final GM/AO" && req.status === "PENDING_GM") return true;
+        return false;
     };
 
     // ── Event Handlers ──────────────────────────────────────────────
     const handleView = (req: WelfareApprovalRequest) => {
         setSelectedRequest(req);
         setAdjustedAmountStr(req.adjustedAmount.toString());
-        setHrRemarksStr(req.hrRemarks || "");
+        setHrRemarksStr("");
         setActionError("");
     };
 
@@ -123,7 +132,7 @@ export default function WelfarePage() {
         setSelectedRequest(null);
     };
 
-    const processAction = (action: "APPROVE" | "REJECT") => {
+    const processAction = (action: "CERTIFY" | "REJECT") => {
         if (!selectedRequest) return;
         
         // Validation
@@ -134,17 +143,37 @@ export default function WelfarePage() {
 
         const numericAmount = parseFloat(adjustedAmountStr) || selectedRequest.adjustedAmount;
 
-        const newStatus = action === "APPROVE" ? "APPROVED" : "REJECTED";
+        let newStatus = selectedRequest.status;
+        if (action === "REJECT") {
+            newStatus = "REJECTED";
+        } else if (action === "CERTIFY") {
+            if (currentRole === "Branch DGM") newStatus = "PENDING_HO";
+            else if (currentRole === "HO DGM") newStatus = "PENDING_GM";
+            else if (currentRole === "Final GM/AO") newStatus = "APPROVED";
+        }
+
+        const combinedRemarks = hrRemarksStr.trim() 
+            ? `${selectedRequest.hrRemarks ? selectedRequest.hrRemarks + '\n' : ''}[${currentRole}]: ${hrRemarksStr.trim()}`
+            : selectedRequest.hrRemarks;
 
         setRequests((prev) =>
             prev.map((r) =>
                 r.id === selectedRequest.id
-                    ? { ...r, status: newStatus, adjustedAmount: numericAmount, hrRemarks: hrRemarksStr.trim() }
+                    ? { ...r, status: newStatus, adjustedAmount: numericAmount, hrRemarks: combinedRemarks }
                     : r
             )
         );
 
-
+        if (newStatus === "APPROVED") {
+            // Post-Approval Webhook/API Stub
+            console.log("PAYMENT_HOOK_STUB_TRIGERRED:", {
+                id: selectedRequest.id,
+                epf: selectedRequest.epfNumber,
+                amountApproved: numericAmount,
+                type: selectedRequest.welfareType
+            });
+            alert(`API Hook Triggered: Sent LKR ${numericAmount} payment instruction to Finance Dept.`);
+        }
 
         handleCloseModal();
     };
@@ -156,13 +185,35 @@ export default function WelfarePage() {
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
+                            <Link href="/hr/welfare" className="text-slate-400 hover:text-primary transition-colors">
+                                <span className="material-symbols-outlined">arrow_back</span>
+                            </Link>
                             <h2 className="text-3xl font-bold text-slate-800 dark:text-white">
-                                HR Welfare Approvals
+                                Welfare Certification & Approvals
                             </h2>
                         </div>
-                        <p className="text-slate-500 dark:text-slate-400">
-                            Review and approve pending employee welfare requests systematically.
+                        <p className="text-slate-500 dark:text-slate-400 ml-9">
+                            Review and approve pending employee welfare requests.
                         </p>
+                    </div>
+
+                    {/* Role Simulator Header Action */}
+                    <div className="bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-900/50 p-2 rounded-xl shadow-sm flex items-center gap-3">
+                        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-2 rounded-lg text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
+                        </div>
+                        <div className="flex flex-col pr-2">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Role Simulator</span>
+                            <select 
+                                value={currentRole}
+                                onChange={(e) => setCurrentRole(e.target.value as Role)}
+                                className="bg-transparent text-sm font-semibold text-slate-800 dark:text-white outline-none cursor-pointer"
+                            >
+                                <option value="Branch DGM">Branch DGM</option>
+                                <option value="HO DGM">Head Office DGM</option>
+                                <option value="Final GM/AO">Final GM / AO</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -179,6 +230,12 @@ export default function WelfarePage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                         />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-slate-400">info</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                            Actionable requests for your role are highlighted in the table.
+                        </span>
                     </div>
                 </div>
 
@@ -208,7 +265,7 @@ export default function WelfarePage() {
                                             className={`border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${canAct ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : ''}`}
                                         >
                                             <td className="py-4 px-6 font-medium text-slate-900 dark:text-white flex items-center gap-2">
-                                                {canAct && <span className="w-2 h-2 rounded-full bg-primary" title="Needs Action"></span>}
+                                                {canAct && <span className="w-2 h-2 rounded-full bg-primary" title="Actionable by you"></span>}
                                                 {req.id}
                                             </td>
                                             <td className="py-4 px-6">
@@ -230,9 +287,13 @@ export default function WelfarePage() {
                                             <td className="py-4 px-6 text-right">
                                                 <button
                                                     onClick={() => handleView(req)}
-                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+                                                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${
+                                                        canAct 
+                                                            ? 'bg-primary text-white hover:bg-primary/90 shadow-sm'
+                                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                                    }`}
                                                 >
-                                                    <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                                    <span className="material-symbols-outlined text-[18px]">{canAct ? 'fact_check' : 'visibility'}</span>
                                                     {canAct ? 'Review' : 'View'}
                                                 </button>
                                             </td>
@@ -260,7 +321,7 @@ export default function WelfarePage() {
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
                             <div>
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                                    {isActionable(selectedRequest) ? "Final Approval Review" : "View Welfare Request"}
+                                    {isActionable(selectedRequest) ? "Certify Welfare Request" : "View Welfare Request"}
                                 </h3>
                                 <p className="text-sm text-slate-500 mt-1">Request ID: {selectedRequest.id}</p>
                             </div>
@@ -380,7 +441,7 @@ export default function WelfarePage() {
                                                         }`}
                                                     />
                                                     {isActionable(selectedRequest) && (
-                                                        <p className="text-[10px] text-slate-500 mt-1">You may adjust this amount before final approval.</p>
+                                                        <p className="text-[10px] text-slate-500 mt-1">You may adjust this amount before certification based on Hexa Co. allocation policies.</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -390,7 +451,12 @@ export default function WelfarePage() {
                                                 <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                                     Approval/Rejection Remarks
                                                 </label>
-                                                {isActionable(selectedRequest) ? (
+                                                {selectedRequest.hrRemarks && (
+                                                    <div className="mb-2 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                                                        {selectedRequest.hrRemarks}
+                                                    </div>
+                                                )}
+                                                {isActionable(selectedRequest) && (
                                                     <textarea
                                                         value={hrRemarksStr}
                                                         onChange={(e) => { setHrRemarksStr(e.target.value); setActionError(""); }}
@@ -398,10 +464,6 @@ export default function WelfarePage() {
                                                         className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-900 dark:text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
                                                         rows={3}
                                                     />
-                                                ) : (
-                                                    <div className="mb-2 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
-                                                        {selectedRequest.hrRemarks || "No remarks provided."}
-                                                    </div>
                                                 )}
                                                 {actionError && (
                                                     <p className="text-xs text-red-500 font-semibold">{actionError}</p>
@@ -425,10 +487,14 @@ export default function WelfarePage() {
                                         Reject Request
                                     </button>
                                     <button
-                                        onClick={() => processAction("APPROVE")}
+                                        onClick={() => processAction("CERTIFY")}
                                         className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm transition-colors cursor-pointer flex items-center gap-2"
                                     >
-                                        <span className="material-symbols-outlined text-[18px]">verified</span> Approve Request
+                                        {currentRole === "Final GM/AO" ? (
+                                            <><span className="material-symbols-outlined text-[18px]">verified</span> Approve &amp; Trigger Payment</>
+                                        ) : (
+                                            <><span className="material-symbols-outlined text-[18px]">forward</span> Certify &amp; Push Forward</>
+                                        )}
                                     </button>
                                 </>
                             ) : (
