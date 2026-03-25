@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="2d23eeba-3ac1-4b3d-9db4-e4392de50ae6" name="Changes" comment="" />
+    <list default="true" id="2d23eeba-3ac1-4b3d-9db4-e4392de50ae6" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/employee/leave-requests/overseas-leave/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/employee/leave-requests/overseas-leave/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/admin/leave-requests/MaternityLeaveApprovals.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/admin/leave-requests/MaternityLeaveApprovals.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/admin/leave-requests/OverseasLeaveApprovals.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/admin/leave-requests/OverseasLeaveApprovals.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -10,21 +21,21 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "rashmibimashaa"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;rashmibimashaa&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Ruhini-Udara/Nexora_HRMS_frontend.git",
-    "accountId": "2de4b129-c258-4285-80c9-552cdd15be73"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Ruhini-Udara/Nexora_HRMS_frontend.git&quot;,
+    &quot;accountId&quot;: &quot;2de4b129-c258-4285-80c9-552cdd15be73&quot;
   }
-}]]></component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 5
-}]]></component>
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
   <component name="ProjectId" id="39lWVaYIdnJH3VccfCEsaEekrV2" />
   <component name="ProjectViewState">
     <option name="showLibraryContents" value="true" />
@@ -33,8 +44,9 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "feature/admin-maternityapprovals",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/Rash/Documents/HRMS Project/Nexora_HRMS_frontend"
   }
