@@ -195,8 +195,13 @@ export function TerminationRequestForm({ onSave, onCancel, initialData, isReadOn
 
     const mandatoryDocsMissing = docSlots.filter(s => s.mandatory).some(s => s.file === null);
 
+    const generateRequestId = () => {
+        const timestamp = Date.now().toString().slice(-6);
+        return `TRM-${new Date().getFullYear()}-${timestamp}`;
+    };
+
     const buildPayload = (data: TerminationFormData, status: TerminationStatus): TerminationRequest => ({
-        id: initialData?.id || `TRM-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
+        id: initialData?.id || generateRequestId(),
         employeeName: data.employeeName,
         epfNumber: data.epfNumber,
         branch: data.branch,

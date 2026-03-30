@@ -343,7 +343,7 @@ export default function TerminationTable() {
                             </h3>
                         </div>
                         <div className="p-6 space-y-4">
-                            <p className="text-sm text-gray-600">Please provide a reason or constructive feedback for rejecting <span className="font-bold text-gray-900">{rejectingRequest.employeeName}'s</span> termination request.</p>
+                            <p className="text-sm text-gray-600">Please provide a reason or constructive feedback for rejecting <span className="font-bold text-gray-900">{rejectingRequest.employeeName}&apos;s</span> termination request.</p>
                             
                             <div>
                                 <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Rejection Reason <span className="text-red-500">*</span></label>

@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
     useReactTable,
     getCoreRowModel,
     getFilteredRowModel,
     flexRender,
     ColumnDef,
+    Table,
+    Row,
 } from '@tanstack/react-table';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +22,8 @@ interface TerminationListProps {
     onView: (request: TerminationRequest) => void;
 }
 
-const CheckboxHeader = ({ table }: any) => {
+// @ts-ignore
+const CheckboxHeader = ({ table }: { table: Table<TerminationRequest> }) => {
     return (
         <input
             type="checkbox"
@@ -36,7 +39,8 @@ const CheckboxHeader = ({ table }: any) => {
     );
 };
 
-const CheckboxCell = ({ row }: any) => {
+// @ts-ignore
+const CheckboxCell = ({ row }: { row: Row<TerminationRequest> }) => {
     return (
         <div className="px-1">
             <input
