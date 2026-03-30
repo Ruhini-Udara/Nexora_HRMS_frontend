@@ -22,7 +22,6 @@ interface TerminationListProps {
     onView: (request: TerminationRequest) => void;
 }
 
-// @ts-ignore
 const CheckboxHeader = ({ table }: { table: Table<TerminationRequest> }) => {
     return (
         <input
@@ -39,7 +38,6 @@ const CheckboxHeader = ({ table }: { table: Table<TerminationRequest> }) => {
     );
 };
 
-// @ts-ignore
 const CheckboxCell = ({ row }: { row: Row<TerminationRequest> }) => {
     return (
         <div className="px-1">

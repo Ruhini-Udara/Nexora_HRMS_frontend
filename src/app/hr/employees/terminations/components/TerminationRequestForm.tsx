@@ -137,6 +137,11 @@ interface TerminationRequestFormProps {
     isReadOnly?: boolean;
 }
 
+const generateRequestId = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    return `TRM-${new Date().getFullYear()}-${timestamp}`;
+};
+
 export function TerminationRequestForm({ onSave, onCancel, initialData, isReadOnly = false }: TerminationRequestFormProps) {
     const [showAckPopup, setShowAckPopup] = useState(false);
     const [pendingPayload, setPendingPayload] = useState<TerminationRequest | null>(null);
@@ -194,11 +199,6 @@ export function TerminationRequestForm({ onSave, onCancel, initialData, isReadOn
     }, []);
 
     const mandatoryDocsMissing = docSlots.filter(s => s.mandatory).some(s => s.file === null);
-
-    const generateRequestId = () => {
-        const timestamp = Date.now().toString().slice(-6);
-        return `TRM-${new Date().getFullYear()}-${timestamp}`;
-    };
 
     const buildPayload = (data: TerminationFormData, status: TerminationStatus): TerminationRequest => ({
         id: initialData?.id || generateRequestId(),
