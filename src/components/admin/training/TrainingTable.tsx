@@ -12,6 +12,7 @@ interface RequestModel {
     typeColor: string;
     date: string;
     status: string;
+    rejectionReason?: string;
 }
 
 interface TrainingTableProps {
@@ -21,9 +22,10 @@ interface TrainingTableProps {
 
 export default function TrainingTable({ requests, setRequests }: TrainingTableProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedTraining, setSelectedTraining] = useState<{id: number, title: string, type: string, date: string, status: string} | null>(null);
+    const [selectedTraining, setSelectedTraining] = useState<{ id: number, title: string, type: string, date: string, status: string } | null>(null);
     const [filterType, setFilterType] = useState("All");
     const [filterStatus, setFilterStatus] = useState("Pending");
+    const [rejectionReason, setRejectionReason] = useState("");
 
     // Confirmation Modal State
     const [confirmModal, setConfirmModal] = useState<{
@@ -55,20 +57,25 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
     const confirmAction = () => {
         if (!selectedTraining || !confirmModal.type) return;
 
-        setRequests(prev => prev.map(req => 
-            req.id === selectedTraining.id 
-                ? { ...req, status: confirmModal.type === 'Approve' ? "Approved" as const : "Rejected" as const } 
+        setRequests(prev => prev.map(req =>
+            req.id === selectedTraining.id
+                ? {
+                    ...req,
+                    status: confirmModal.type === 'Approve' ? "Approved" as const : "Rejected" as const,
+                    ...(confirmModal.type === 'Reject' ? { rejectionReason } : {})
+                }
                 : req
         ));
-        
+
         setConfirmModal({ isOpen: false, type: null });
+        setRejectionReason("");
         setIsModalOpen(false);
     };
 
     const uniqueTypes = ["All", ...Array.from(new Set(requests.map(req => req.type)))];
     const uniqueStatuses = ["All Statuses", ...Array.from(new Set(requests.map(req => req.status)))];
 
-    const filteredRequests = requests.filter(req => 
+    const filteredRequests = requests.filter(req =>
         (filterType === "All" || req.type === filterType) &&
         (filterStatus === "All Statuses" || req.status === filterStatus)
     );
@@ -92,7 +99,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                     </select>
                     <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 pointer-events-none" />
                 </div>
-                
+
                 <div className="relative inline-flex items-center">
                     <select
                         className="appearance-none w-full flex items-center gap-2 pl-4 pr-10 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
@@ -120,6 +127,9 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Submitted</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                {filterStatus === "Rejected" && (
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-48">Rejection Reason</th>
+                                )}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -150,6 +160,13 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                             View List
                                         </button>
                                     </td>
+                                    {filterStatus === "Rejected" && (
+                                        <td className="px-6 py-4 w-48">
+                                            <p className="text-sm text-gray-600 break-words line-clamp-3" title={req.rejectionReason || "No reason provided."}>
+                                                {req.rejectionReason || "No reason provided."}
+                                            </p>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
@@ -169,9 +186,9 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                 </div>
             </div>
 
-            <TrainingListModal 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
+            <TrainingListModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
                 training={selectedTraining}
                 onApprove={handleApproveClick}
                 onReject={handleRejectClick}
@@ -185,25 +202,41 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                             {confirmModal.type === 'Approve' ? 'Confirm Approval' : 'Confirm Rejection'}
                         </h3>
                         <p className="text-gray-500 text-sm mb-6">
-                            {confirmModal.type === 'Approve' 
+                            {confirmModal.type === 'Approve'
                                 ? `Are you sure you want to approve and send emails for the "${selectedTraining.title}" training list? This action cannot be undone.`
                                 : `Are you sure you want to reject the "${selectedTraining.title}" training list? This action cannot be undone.`
                             }
                         </p>
+                        {confirmModal.type === 'Reject' && (
+                            <div className="mb-6 text-left">
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    Reason for Rejection *
+                                </label>
+                                <textarea
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    className="w-full h-24 p-3 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                                    placeholder="Enter the reason for rejecting this training list..."
+                                />
+                            </div>
+                        )}
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setConfirmModal({ isOpen: false, type: null })}
+                                onClick={() => {
+                                    setConfirmModal({ isOpen: false, type: null });
+                                    setRejectionReason("");
+                                }}
                                 className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={confirmAction}
-                                className={`flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm ${
-                                    confirmModal.type === 'Approve' 
-                                        ? 'bg-primary hover:bg-primary/90' 
+                                disabled={confirmModal.type === 'Reject' && !rejectionReason.trim()}
+                                className={`flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${confirmModal.type === 'Approve'
+                                        ? 'bg-primary hover:bg-primary/90'
                                         : 'bg-red-500 hover:bg-red-600'
-                                }`}
+                                    }`}
                             >
                                 {confirmModal.type === 'Approve' ? 'Yes, Approve' : 'Yes, Reject'}
                             </button>
