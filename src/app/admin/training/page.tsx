@@ -31,6 +31,7 @@ export const initialRequests = [
         typeColor: "bg-purple-100 text-purple-700",
         date: "Oct 10, 2023",
         status: "Rejected",
+        rejectionReason: "Budget constraints for leadership training this quarter.",
     },
     {
         id: 4,

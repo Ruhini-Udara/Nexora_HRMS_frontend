@@ -7,20 +7,22 @@ import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTraining
 import { TrainingRequest } from '@/types/training';
 
 
-const trainingEvents = [
+const initialTrainingEvents = [
     {
         id: 1,
         title: "Advanced Sales Tactics",
         date: "October 24, 2023",
         time: "09:00 AM - 12:00 PM",
         category: "Sales",
+        status: "Approved",
     },
     {
         id: 2,
         title: "Leadership 101: Core Basics",
-        date: "No@vember 02, 2023",
+        date: "November 02, 2023",
         time: "02:00 PM - 05:00 PM",
         category: "Leadership",
+        status: "Pending",
     },
     {
         id: 3,
@@ -28,6 +30,8 @@ const trainingEvents = [
         date: "November 15, 2023",
         time: "11:00 AM - 12:30 PM",
         category: "Product",
+        status: "Rejected",
+        reason: "Does not align with Q4 objectives."
     },
 ];
 
@@ -95,6 +99,7 @@ const initialMockRequests = [
         dateSubmitted: "Oct 05, 2023",
         status: "Rejected",
         justification: "Interested in understanding the product roadmap to align operational processes.",
+        rejectionReason: "Limited availability of seats in the current session. Please request for the next quarter.",
         attachments: [
             { name: "operations_alignment_proposal.pdf", url: "#" }
         ]
@@ -102,24 +107,29 @@ const initialMockRequests = [
 ];
 
 export default function TrainingRequestsTable() {
-    const [selectedEventId, setSelectedEventId] = useState<number | null>(trainingEvents[0].id);
+    const [events, setEvents] = useState(initialTrainingEvents);
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(initialTrainingEvents[0].id);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
-    const [requests, setRequests] = useState(initialMockRequests);
+    const [requests, setRequests] = useState<TrainingRequest[]>(initialMockRequests as TrainingRequest[]);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
 
     const [isListModalOpen, setIsListModalOpen] = useState(false);
+    
+    // Rejection Modal State
+    const [rejectionModal, setRejectionModal] = useState<{isOpen: boolean, requestId: number | null}>({isOpen: false, requestId: null});
+    const [rejectionReason, setRejectionReason] = useState("");
 
     const filteredEvents = selectedCategory === "All"
-        ? trainingEvents
-        : trainingEvents.filter(e => e.category === selectedCategory);
+        ? events
+        : events.filter(e => e.category === selectedCategory);
 
     const filteredRequests = selectedEventId
         ? requests.filter(req => req.eventId === selectedEventId)
         : [];
 
-    const selectedEvent = trainingEvents.find(e => e.id === selectedEventId);
+    const selectedEvent = events.find(e => e.id === selectedEventId);
 
     // Calculate dynamic stats
     const totalPending = requests.filter(r => r.status === 'Pending').length;
@@ -164,6 +174,68 @@ export default function TrainingRequestsTable() {
                     </div>
                 </div>
             </div>
+
+            {/* Section: Training Event Lists Table */}
+            <section className="mb-10">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary">
+                            list_alt
+                        </span>
+                        Rejected Training Event Lists
+                    </h2>
+                </div>
+                <div className="bg-white dark:bg-background-dark/30 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-primary/5 border-b border-primary/10">
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Programme Name</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Training Type</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-primary/5">
+                                {events.filter(evt => evt.status === 'Rejected').map((evt) => (
+                                    <tr key={evt.id} className="hover:bg-primary/5 transition-colors">
+                                        <td className="px-6 py-4 text-sm font-semibold">{evt.title}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600">{evt.category}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                                evt.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                                                evt.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                                                'bg-orange-100 text-orange-700'
+                                            }`}>
+                                                {evt.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button 
+                                                onClick={() => {
+                                                    setSelectedEventId(evt.id);
+                                                    setIsListModalOpen(true);
+                                                }}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-white text-primary rounded-lg text-xs font-semibold hover:bg-primary/5 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-[16px]">visibility</span> View List
+                                            </button>
+                                        </td>
+                                        <td className="px-6 py-4 w-48">
+                                            {evt.status === 'Rejected' && evt.reason && (
+                                                <p className="text-sm text-slate-600 break-words line-clamp-2" title={evt.reason}>
+                                                    {evt.reason}
+                                                </p>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
             {/* Section: Available Training Events */}
             <section className="mb-10">
@@ -236,10 +308,10 @@ export default function TrainingRequestsTable() {
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Employee Name</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Programe name</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date Submitted</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Proposed Start Date</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Request Form</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Reason</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-primary/5">
@@ -265,7 +337,6 @@ export default function TrainingRequestsTable() {
                                             <p className="text-sm font-medium">{selectedEvent?.title}</p>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-600">{request.dateSubmitted}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">{selectedEvent?.date}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600 font-medium">
                                             <button 
                                                 onClick={() => {
@@ -296,12 +367,19 @@ export default function TrainingRequestsTable() {
                                                 </button>
                                                 <button 
                                                     onClick={() => {
-                                                        setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Rejected" } : r));
+                                                        setRejectionModal({ isOpen: true, requestId: request.id });
                                                     }}
                                                     className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Reject">
                                                     <span className="material-symbols-outlined text-[20px]">cancel</span>
                                                 </button>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4 w-48">
+                                            {request.status === 'Rejected' && request.rejectionReason && (
+                                                <p className="text-sm text-slate-600 break-words line-clamp-3" title={request.rejectionReason}>
+                                                    {request.rejectionReason}
+                                                </p>
+                                            )}
                                         </td>
                                     </tr>
                                 ))
@@ -345,6 +423,54 @@ export default function TrainingRequestsTable() {
                 requests={filteredRequests}
                 eventName={selectedEvent?.title || "Selected Training"}
             />
+
+            {rejectionModal.isOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#1a1c23] rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col p-6 text-center border border-primary/10">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                            Confirm Rejection
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-6">
+                            Please provide a reason for rejecting this training request.
+                        </p>
+                        <div className="mb-6 text-left">
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Reason for Rejection *
+                            </label>
+                            <textarea
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                className="w-full h-24 p-3 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                                placeholder="Enter reason here..."
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setRejectionModal({ isOpen: false, requestId: null });
+                                    setRejectionReason("");
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (rejectionModal.requestId) {
+                                        setRequests(requests.map(r => r.id === rejectionModal.requestId ? { ...r, status: "Rejected", rejectionReason } : r));
+                                    }
+                                    setRejectionModal({ isOpen: false, requestId: null });
+                                    setRejectionReason("");
+                                }}
+                                disabled={!rejectionReason.trim()}
+                                className="flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Yes, Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
