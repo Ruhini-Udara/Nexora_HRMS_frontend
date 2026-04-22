@@ -18,7 +18,6 @@ const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
         "Instructor": 0,
         "Overall Experience": 0,
     });
-    const [takeaways, setTakeaways] = useState("");
     const [suggestions, setSuggestions] = useState("");
     const [isConfirming, setIsConfirming] = useState(false);
 
@@ -33,12 +32,10 @@ const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
     const handleFinalSubmit = () => {
         console.log("Submitting feedback for:", courseName);
         console.log("Ratings:", ratings);
-        console.log("Takeaways:", takeaways);
         console.log("Suggestions:", suggestions);
         
         // Reset form and close
         setRatings({ "Course Content": 0, "Instructor": 0, "Overall Experience": 0 });
-        setTakeaways("");
         setSuggestions("");
         setIsConfirming(false);
         onClose();
@@ -123,17 +120,6 @@ const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
                         ))}
                     </div>
                     <div className="space-y-3 pt-2">
-                        <div>
-                            <label className="block text-sm font-bold text-stone-700 mb-2">
-                                Key Takeaways
-                            </label>
-                            <textarea
-                                value={takeaways}
-                                onChange={(e) => setTakeaways(e.target.value)}
-                                className="w-full rounded-lg border border-stone-200 focus:border-[var(--color-training-primary)] focus:ring-[var(--color-training-primary)] text-sm h-24 p-3"
-                                placeholder="What was your biggest learning?"
-                            ></textarea>
-                        </div>
                         <div>
                             <label className="block text-sm font-bold text-stone-700 mb-2">
                                 Suggestions for Improvement

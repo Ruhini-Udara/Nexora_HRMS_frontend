@@ -14,4 +14,5 @@ export interface TrainingRequest {
     status: string;
     justification: string;
     attachments: { name: string; url: string }[];
+    rejectionReason?: string;
 }

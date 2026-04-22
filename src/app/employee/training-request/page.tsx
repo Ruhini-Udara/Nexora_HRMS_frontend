@@ -18,6 +18,7 @@ export default function TrainingRequestPage() {
             title: "Advanced Sales Tactics",
             date: "October 24, 2023",
             time: "09:00 AM - 12:00 PM",
+            applyBefore: "October 18, 2023",
         },
         {
             category: "Leadership",
@@ -26,6 +27,7 @@ export default function TrainingRequestPage() {
             title: "Leadership 101: Core Basics",
             date: "November 02, 2023",
             time: "02:00 PM - 05:00 PM",
+            applyBefore: "October 28, 2023",
         },
         {
             category: "Product",
@@ -34,6 +36,7 @@ export default function TrainingRequestPage() {
             title: "2024 Product Roadmap",
             date: "November 15, 2023",
             time: "11:00 AM - 12:30 PM",
+            applyBefore: "November 10, 2023",
         },
     ];
 

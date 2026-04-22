@@ -31,6 +31,7 @@ export const initialRequests = [
         typeColor: "bg-purple-100 text-purple-700",
         date: "Oct 10, 2023",
         status: "Rejected",
+        rejectionReason: "Budget constraints for leadership training this quarter.",
     },
     {
         id: 4,
@@ -60,7 +61,7 @@ export default function TrainingRequestsPage() {
     const approvedCount = requests.filter(r => r.status === 'Approved').length;
 
     return (
-        <div className="p-8 pt-20 max-w-7xl mx-auto">
+        <div className="p-8 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
@@ -70,16 +71,16 @@ export default function TrainingRequestsPage() {
             </div>
 
             {/* Stats */}
-            <TrainingStats 
+            <TrainingStats
                 pendingCount={pendingCount}
                 rejectedCount={rejectedCount}
                 approvedCount={approvedCount}
             />
 
             {/* Content */}
-            <TrainingTable 
-                requests={requests} 
-                setRequests={setRequests} 
+            <TrainingTable
+                requests={requests}
+                setRequests={setRequests}
             />
         </div>
     );

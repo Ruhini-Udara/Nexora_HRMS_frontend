@@ -6,10 +6,11 @@ interface TrainingRequest {
     id: number;
     name: string;
     category: string;
-    status: "Approved" | "Sent for Admin Approval" | "Rejected";
+    status: "Approved" | "Pending" | "Rejected";
     date: string;
     time: string;
     canReview: boolean;
+    rejectionReason?: string;
 }
 
 const requests: TrainingRequest[] = [
@@ -26,7 +27,7 @@ const requests: TrainingRequest[] = [
         id: 2,
         name: "Advanced Negotiation Skills",
         category: "Sales",
-        status: "Sent for Admin Approval",
+        status: "Pending",
         date: "Oct 30, 2023",
         time: "09:00 AM - 12:00 PM",
         canReview: false,
@@ -39,6 +40,7 @@ const requests: TrainingRequest[] = [
         date: "Nov 05, 2023",
         time: "All Day Session",
         canReview: false,
+        rejectionReason: "Does not align with current project requirements.",
     },
 ];
 
@@ -50,6 +52,8 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
     const [isConfirmingAttendance, setIsConfirmingAttendance] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
     const [confirmedAttendanceIds, setConfirmedAttendanceIds] = useState<number[]>([]);
+    const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
+    const [selectedRejection, setSelectedRejection] = useState<string | null>(null);
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 lg:p-8">
@@ -82,14 +86,14 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
                                     request.status === "Approved"
                                         ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                        : request.status === "Sent for Admin Approval"
+                                        : request.status === "Pending"
                                             ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                                             : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
                                 }`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${
                                         request.status === "Approved"
                                             ? "bg-emerald-500"
-                                            : request.status === "Sent for Admin Approval"
+                                            : request.status === "Pending"
                                                 ? "bg-blue-500"
                                                 : "bg-red-500"
                                     }`}></span>
@@ -125,7 +129,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                             </button>
                                         </div>
                                     )
-                                ) : request.status === "Sent for Admin Approval" ? (
+                                ) : request.status === "Pending" ? (
                                     <div className="flex items-center justify-center gap-2">
                                         <span className="text-[11px] font-semibold text-slate-400 px-3 py-1.5 border border-dashed border-slate-200 rounded-lg">
                                             Waiting...
@@ -133,7 +137,13 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-center">
-                                        <button className="text-slate-400 text-[11px] font-semibold hover:text-slate-600 hover:underline cursor-pointer transition-colors">
+                                        <button 
+                                            onClick={() => {
+                                                setSelectedRejection(request.rejectionReason || "No reason provided.");
+                                                setIsRejectionModalOpen(true);
+                                            }}
+                                            className="text-slate-400 text-[11px] font-semibold hover:text-slate-600 hover:underline cursor-pointer transition-colors"
+                                        >
                                             View Reason
                                         </button>
                                     </div>
@@ -217,6 +227,39 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                 className="px-5 py-2.5 rounded-xl bg-[var(--color-training-primary)] text-white font-semibold hover:bg-[#853500] transition-colors shadow-sm cursor-pointer"
                             >
                                 Yes, Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Rejection Reason Modal */}
+            {isRejectionModalOpen && selectedRejection && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200 border border-slate-100">
+                        <div className="flex items-start gap-4 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                    error
+                                </span>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Rejection Reason</h3>
+                                <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">
+                                    {selectedRejection}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 mt-6">
+                            <button
+                                onClick={() => {
+                                    setIsRejectionModalOpen(false);
+                                    setSelectedRejection(null);
+                                }}
+                                className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                                Close
                             </button>
                         </div>
                     </div>
