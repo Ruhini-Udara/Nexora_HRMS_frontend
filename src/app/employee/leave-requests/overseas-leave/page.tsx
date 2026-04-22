@@ -9,6 +9,7 @@ import { useLeaveDays } from "@/hooks/useLeaveDays";
 import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprovalTracker";
 import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
 import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
+import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
 import Confetti from "react-confetti";
@@ -55,7 +56,7 @@ const overseasSchema = z.object({
 type OverseasFormValues = z.infer<typeof overseasSchema>;
 
 export default function OverseasLeaveRequestPage() {
-    const { register, handleSubmit, control, getValues, setValue, trigger, reset, formState: { errors } } = useForm<OverseasFormValues>({
+    const { register, handleSubmit, control, getValues, reset, formState: { errors } } = useForm<OverseasFormValues>({
         resolver: zodResolver(overseasSchema),
         defaultValues: {
             dateOfRequest: new Date().toISOString().split("T")[0],
@@ -77,8 +78,7 @@ export default function OverseasLeaveRequestPage() {
     const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
     
-    // Smart Parser & Preview States
-    const [isParsingFlight, setIsParsingFlight] = useState(false);
+    // Preview State
     const [previewFile, setPreviewFile] = useState<File | null>(null);
 
     useEffect(() => {
@@ -119,24 +119,6 @@ export default function OverseasLeaveRequestPage() {
                 return;
             }
             setFiles((prev) => ({ ...prev, [fieldName]: file }));
-            
-            // Smart Parsing for Flight Tickets
-            if (fieldName === "flightTickets") {
-                setIsParsingFlight(true);
-                setTimeout(() => {
-                    const departDate = new Date();
-                    departDate.setDate(departDate.getDate() + 14); // Next 14 days
-                    
-                    const returnDate = new Date(departDate);
-                    returnDate.setDate(returnDate.getDate() + 28); // 4-week trip
-                    
-                    setValue("startDate", departDate.toISOString().split("T")[0]);
-                    setValue("endDate", returnDate.toISOString().split("T")[0]);
-                    
-                    setIsParsingFlight(false);
-                    trigger(["startDate", "endDate"]);
-                }, 2500); 
-            }
         }
     };
 
@@ -147,15 +129,72 @@ export default function OverseasLeaveRequestPage() {
         setFileError("");
     };
 
-    const onSubmit = (data: OverseasFormValues) => {
+    const onSubmit = async (data: OverseasFormValues) => {
         setFileError("");
-        if (!files.passportCopy || !files.visaCopy || !files.confirmationLetter) {
-            setFileError("Passport Copy, Visa Copy, and Confirmation Letter are mandatory for submission.");
+        if (!files.passportCopy || !files.visaCopy || !files.confirmationLetter || !files.flightTickets) {
+            setFileError("Flight Tickets, Passport Copy, Visa Copy, and Confirmation Letter are mandatory for submission.");
             return;
         }
-        setStatus("submitted");
-        setTrackerStep(0);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        try {
+            setFileError("Uploading documents to secure storage...");
+
+            // Upload all documents to Supabase Storage in parallel
+            const [leaveLetterUrl, passportCopyUrl, visaCopyUrl, confirmationLetterUrl, flightTicketsUrl] = await Promise.all([
+                files.leaveLetter ? uploadDocument(files.leaveLetter, "overseas-leave") : Promise.resolve(null),
+                uploadDocument(files.passportCopy, "overseas-leave"),
+                uploadDocument(files.visaCopy, "overseas-leave"),
+                uploadDocument(files.confirmationLetter, "overseas-leave"),
+                uploadDocument(files.flightTickets, "overseas-leave"),
+            ]);
+
+            if (!passportCopyUrl || !visaCopyUrl || !confirmationLetterUrl || !flightTicketsUrl) {
+                throw new Error("One or more files failed to upload. Please check your internet connection and try again.");
+            }
+
+            setFileError("Documents uploaded! Submitting your request...");
+
+            const payload = {
+                employee: { id: 1 },
+                leaveType: { id: 1 },
+                fromDate: data.startDate,
+                endDate: data.endDate,
+                totalDays: Number(noOfDays),
+                reason: data.leaveReason,
+                passportNumber: data.passportNumber,
+                passportExpDate: data.passportExpDate,
+                branch: data.branch,
+                contactNumber: data.contactNumber,
+                email: data.email,
+                specialRemark: data.specialRemark,
+                // Secure file paths stored in Supabase Storage (signed URLs generated on demand)
+                leaveLetterPath: leaveLetterUrl,
+                passportCopyPath: passportCopyUrl,
+                visaCopyPath: visaCopyUrl,
+                confirmationLetterPath: confirmationLetterUrl,
+                flightTicketsPath: flightTicketsUrl,
+            };
+
+            const response = await fetch("http://localhost:8080/api/v1/leaves/overseas", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || "Failed to submit to backend");
+            }
+
+            setFileError("");
+            setStatus("submitted");
+            setTrackerStep(0);
+            localStorage.removeItem("overseasLeaveDraft");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+            console.error("Submission error:", error);
+            setFileError(error instanceof Error ? error.message : "Submission failed. Please try again.");
+        }
     };
 
     const isDisabled = status === "submitted";
@@ -440,7 +479,7 @@ export default function OverseasLeaveRequestPage() {
                                         Start Date <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        disabled={isDisabled || isParsingFlight}
+                                        disabled={isDisabled}
                                         {...register("startDate")}
                                         min={new Date().toISOString().split("T")[0]}
                                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 transition-colors ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
@@ -453,7 +492,7 @@ export default function OverseasLeaveRequestPage() {
                                         End Date <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        disabled={isDisabled || isParsingFlight}
+                                        disabled={isDisabled}
                                         {...register("endDate")}
                                         min={new Date().toISOString().split("T")[0]}
                                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 transition-colors ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
@@ -516,25 +555,17 @@ export default function OverseasLeaveRequestPage() {
                             </h2>
 
                             <div className="space-y-4">
-                                {/* Flight Tickets / Itinerary (Smart Parse) */}
-                                <div className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${isParsingFlight ? 'bg-indigo-50/50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800/50' : 'bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
+                                {/* Flight Tickets / Itinerary */}
+                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                                     <div className="flex gap-4 items-center">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isParsingFlight ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 animate-pulse' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400'}`}>
-                                            <span className={`material-symbols-outlined ${isParsingFlight ? 'animate-spin' : ''}`}>
-                                                {isParsingFlight ? 'document_scanner' : 'airplane_ticket'}
-                                            </span>
+                                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                                            <span className="material-symbols-outlined">airplane_ticket</span>
                                         </div>
                                         <div>
                                             <h4 className="text-sm font-bold text-slate-800 dark:text-white">
                                                 Flight Tickets / Itinerary <span className="text-red-500">*</span>
                                             </h4>
-                                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-1">
-                                                {isParsingFlight ? (
-                                                    <span className="text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">Running OCR & Extracting expected dates...</span>
-                                                ) : (
-                                                    <span>Upload PDF to auto-fill your travel dates</span>
-                                                )}
-                                            </div>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Upload your confirmed flight booking.</p>
                                         </div>
                                     </div>
                                     <div>
@@ -545,10 +576,9 @@ export default function OverseasLeaveRequestPage() {
                                                 onFileAccepted={(f) => handleFileChange(f, "flightTickets")}
                                                 currentFile={files.flightTickets}
                                                 label="Itinerary (PDF)"
-                                                isParsing={isParsingFlight}
                                             />
                                         )}
-                                        {files.flightTickets && !isParsingFlight && (
+                                        {files.flightTickets && (
                                             <button type="button" onClick={() => setPreviewFile(files.flightTickets)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
                                                 <span className="material-symbols-outlined text-[14px]">visibility</span> Preview File
                                             </button>
