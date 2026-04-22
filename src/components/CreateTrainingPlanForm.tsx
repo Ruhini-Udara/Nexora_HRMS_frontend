@@ -23,17 +23,19 @@ export default function CreateTrainingPlanForm() {
             const stored = localStorage.getItem('trainingEvents');
             if (stored) {
                 const events = JSON.parse(stored);
-                const eventToEdit = events.find((e: any) => e.id.toString() === editId);
+                const eventToEdit = events.find((e: { id: number | string, title?: string, category?: string, date?: string, participants?: string, description?: string, applyBefore?: string, location?: string, budget?: string, instructor?: string }) => e.id.toString() === editId);
                 if (eventToEdit) {
-                    setTitle(eventToEdit.title || '');
-                    setCategory(eventToEdit.category || 'Soft Skills');
-                    setDate(eventToEdit.date || '');
-                    setParticipants(eventToEdit.participants || '');
-                    setDescription(eventToEdit.description || '');
-                    setApplyBefore(eventToEdit.applyBefore || '');
-                    setLocation(eventToEdit.location || '');
-                    setBudget(eventToEdit.budget || '');
-                    setInstructor(eventToEdit.instructor || '');
+                    setTimeout(() => {
+                        setTitle(eventToEdit.title || '');
+                        setCategory(eventToEdit.category || 'Soft Skills');
+                        setDate(eventToEdit.date || '');
+                        setParticipants(eventToEdit.participants || '');
+                        setDescription(eventToEdit.description || '');
+                        setApplyBefore(eventToEdit.applyBefore || '');
+                        setLocation(eventToEdit.location || '');
+                        setBudget(eventToEdit.budget || '');
+                        setInstructor(eventToEdit.instructor || '');
+                    }, 0);
                 }
             }
         }
@@ -245,7 +247,7 @@ export default function CreateTrainingPlanForm() {
                                     }
                                     
                                     if (editId) {
-                                        const index = eventsList.findIndex((e: any) => e.id.toString() === editId);
+                                        const index = eventsList.findIndex((e: { id: number | string }) => e.id.toString() === editId);
                                         if (index !== -1) {
                                             eventsList[index] = newEvent;
                                         } else {

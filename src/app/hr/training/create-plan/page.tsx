@@ -47,10 +47,24 @@ const INITIAL_TRAINING_EVENTS = [
     },
 ];
 
+type TrainingEvent = {
+    id: number;
+    title: string;
+    date: string;
+    time: string;
+    category: string;
+    participants?: string;
+    description?: string;
+    applyBefore?: string;
+    location?: string;
+    budget?: string;
+    instructor?: string;
+};
+
 export default function CreateTrainingPlanPage() {
     const [events, setEvents] = useState(INITIAL_TRAINING_EVENTS);
     const [selectedCategory, setSelectedCategory] = useState("All");
-    const [selectedViewEvent, setSelectedViewEvent] = useState<any>(null);
+    const [selectedViewEvent, setSelectedViewEvent] = useState<TrainingEvent | null>(null);
     const router = useRouter();
 
     const categories = ["All", ...Array.from(new Set(INITIAL_TRAINING_EVENTS.map(e => e.category)))];
