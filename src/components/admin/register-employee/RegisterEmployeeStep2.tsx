@@ -226,13 +226,19 @@ export default function RegisterEmployeeStep2({
               </div>
             </div>
 
+
+
+
+
             {/* Info Alert */}
             <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
               <p className="text-sm text-blue-800 leading-relaxed">
                 The EPF and ETF numbers can be updated later by HR Admin if they are not yet assigned.
               </p>
             </div>
+
+
           </div>
         </div>
 
