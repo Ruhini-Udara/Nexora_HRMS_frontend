@@ -7,7 +7,7 @@ import Link from "next/link";
 type ResignationStatus =
     | "SUBMITTED"
     | "VERIFIED_BY_HR"
-    | "PENDING_DIRECTOR"
+    | "PENDING_ADMIN"
     | "REJECTED";
 
 interface ResignationDocument {
@@ -155,8 +155,8 @@ const statusConfig: Record<ResignationStatus, { label: string; classes: string }
         label: "Verified",
         classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
     },
-    PENDING_DIRECTOR: {
-        label: "Pending Director",
+    PENDING_ADMIN: {
+        label: "Pending Admin",
         classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
     },
     REJECTED: {
@@ -268,16 +268,16 @@ export default function EmployeeResignations() {
         setShowConfirmDialog(false);
     };
 
-    const handleConfirmSubmitToDirector = () => {
+    const handleConfirmSubmitToAdmin = () => {
         const verifiedIds = requests
             .filter((r) => r.status === "VERIFIED_BY_HR")
             .map((r) => r.id);
-        // TODO: POST /api/resignations/bulk-submit-director with verifiedIds
-        console.log("Submit to Director, IDs:", verifiedIds);
+        // TODO: POST /api/resignations/bulk-submit-admin with verifiedIds
+        console.log("Submit to Admin, IDs:", verifiedIds);
         setRequests((prev) =>
             prev.map((req) =>
                 verifiedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_DIRECTOR" as ResignationStatus }
+                    ? { ...req, status: "PENDING_ADMIN" as ResignationStatus }
                     : req
             )
         );
@@ -341,7 +341,7 @@ export default function EmployeeResignations() {
                         </div>
                         <p className="text-slate-500 dark:text-slate-400 ml-9">
                             {showVerifiedList
-                                ? "Review verified requests below. Submit this list for Director approval."
+                                ? "Review verified requests below. Submit this list for Admin approval."
                                 : "Review, verify eligibility, and manage employee resignation requests across all branches."}
                         </p>
                     </div>
@@ -379,7 +379,7 @@ export default function EmployeeResignations() {
                                         <option value="All">All Statuses</option>
                                         <option value="SUBMITTED">Submitted</option>
                                         <option value="VERIFIED_BY_HR">Verified</option>
-                                        <option value="PENDING_DIRECTOR">Pending Director</option>
+                                        <option value="PENDING_ADMIN">Pending Admin</option>
                                         <option value="REJECTED">Rejected</option>
                                     </select>
                                 </div>
@@ -389,7 +389,7 @@ export default function EmployeeResignations() {
                                         className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
                                     >
                                         <span className="material-symbols-outlined text-[18px]">checklist</span>
-                                        Prepare for Director Approval ({verifiedCount})
+                                        Submit List for Admin ({verifiedCount})
                                     </button>
                                 )}
                             </>
@@ -404,7 +404,7 @@ export default function EmployeeResignations() {
                             [
                                 { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
                                 { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-                                { label: "Pending Director", status: "PENDING_DIRECTOR", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
+                                { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
                                 { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
                             ] as const
                         ).map(({ label, status, icon, color, bg }) => (
@@ -498,10 +498,10 @@ export default function EmployeeResignations() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                    {filteredRequests.length} verified request(s) ready for Director approval
+                                    {filteredRequests.length} verified request(s) ready for Admin approval
                                 </h4>
                                 <p className="text-xs text-slate-500 mt-1">
-                                    All verified resignation requests will be compiled and submitted for Board / Director approval.
+                                    All verified resignation requests will be compiled and submitted for Admin approval.
                                 </p>
                             </div>
                             <button
@@ -509,7 +509,7 @@ export default function EmployeeResignations() {
                                 className="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
                             >
                                 <span className="material-symbols-outlined text-[18px]">send</span>
-                                Confirm &amp; Submit to Director
+                                Confirm &amp; Submit to Admin
                             </button>
                         </div>
                     </div>
@@ -709,7 +709,7 @@ export default function EmployeeResignations() {
                                                 }`}
                                         >
                                             <span className="material-symbols-outlined text-[18px]">verified</span>
-                                            Verify &amp; Add to Director List
+                                            Verify &amp; Add to Admin List
                                         </button>
                                         {!canVerify && (
                                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-[10px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
@@ -753,7 +753,7 @@ export default function EmployeeResignations() {
                                 <span className="font-bold text-slate-800 dark:text-white">
                                     {verifiedCount} verified resignation request(s)
                                 </span>{" "}
-                                and submit them for Board / Director approval.
+                                and submit them for Admin approval.
                             </p>
                             <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg">
                                 <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold flex items-start gap-2">
@@ -770,11 +770,11 @@ export default function EmployeeResignations() {
                                 Cancel
                             </button>
                             <button
-                                onClick={handleConfirmSubmitToDirector}
+                                onClick={handleConfirmSubmitToAdmin}
                                 className="px-8 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all cursor-pointer flex items-center gap-2"
                             >
                                 <span className="material-symbols-outlined text-[18px]">send</span>
-                                Yes, Submit to Director
+                                Yes, Submit to Admin
                             </button>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Filter, Check, X, Send } from 'lucide-react';
+import { Filter, Check, X, Send, Eye } from 'lucide-react';
 
 const mockRequests = [
     {
@@ -58,6 +58,9 @@ export default function TransferTable() {
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [requestToReject, setRequestToReject] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState("");
+
+    // View Modal State
+    const [viewingRequest, setViewingRequest] = useState<typeof mockRequests[0] | null>(null);
 
     // Toast State for simulating SMS/Email
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -160,26 +163,35 @@ export default function TransferTable() {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
-                                    {req.status === 'Submitted to Director' ? (
-                                        <div className="flex justify-center gap-2">
-                                            <button
-                                                onClick={() => handleApprove(req.id, req.employee, req.email)}
-                                                disabled={tabFilter === "Upcoming"}
-                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all title='Approve' ${tabFilter === "Upcoming" ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
-                                            >
-                                                <Check className="w-5 h-5" />
-                                            </button>
-                                            <button
-                                                onClick={() => openRejectModal(req.id)}
-                                                disabled={tabFilter === "Upcoming"}
-                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all title='Reject' ${tabFilter === "Upcoming" ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
-                                            >
-                                                <X className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Decision Final</span>
-                                    )}
+                                    <div className="flex justify-center gap-2">
+                                        <button
+                                            onClick={() => setViewingRequest(req)}
+                                            className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors"
+                                            title="View Details"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                        {req.status === 'Submitted to Director' && (
+                                            <>
+                                                <button
+                                                    onClick={() => handleApprove(req.id, req.employee, req.email)}
+                                                    disabled={tabFilter === "Upcoming"}
+                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${tabFilter === "Upcoming" ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                                                    title="Approve"
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => openRejectModal(req.id)}
+                                                    disabled={tabFilter === "Upcoming"}
+                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${tabFilter === "Upcoming" ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                                                    title="Reject"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -193,6 +205,34 @@ export default function TransferTable() {
                     </tbody>
                 </table>
             </div>
+
+            {/* View Details Modal */}
+            {viewingRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Transfer Request Details</h3>
+                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id}</p>
+                            </div>
+                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900">{viewingRequest.employee}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Email</p><p className="font-semibold text-gray-900">{viewingRequest.email}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">From</p><p className="font-semibold text-gray-900">{viewingRequest.currentDept}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">To</p><p className="font-semibold text-blue-600">{viewingRequest.targetDept}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Request Date</p><p className="font-semibold text-gray-900">{viewingRequest.date}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting Date</p><p className="font-semibold text-primary">{viewingRequest.boardMeetingDate}</p></div>
+                            </div>
+                        </div>
+                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 cursor-pointer">Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Reject Modal */}
             {rejectModalOpen && (
