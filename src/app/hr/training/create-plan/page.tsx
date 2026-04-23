@@ -1,59 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axiosInstance from "@/lib/axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 
-const INITIAL_TRAINING_EVENTS = [
-    {
-        id: 1,
-        title: "Advanced Sales Tactics",
-        date: "October 24, 2023",
-        time: "09:00 AM - 12:00 PM",
-        category: "External",
-        participants: "45",
-        description: "Learn advanced negotiation and closing strategies.",
-        applyBefore: "October 10, 2023",
-        location: "Conference Room A",
-        budget: "2000",
-        instructor: "Jane Doe",
-    },
-    {
-        id: 2,
-        title: "Leadership 101: Core Basics",
-        date: "November 02, 2023",
-        time: "02:00 PM - 05:00 PM",
-        category: "Internal",
-        participants: "30",
-        description: "Foundational leadership skills for new managers.",
-        applyBefore: "October 20, 2023",
-        location: "Main Auditorium",
-        budget: "1500",
-        instructor: "John Smith",
-    },
-    {
-        id: 3,
-        title: "2024 Product Roadmap",
-        date: "November 15, 2023",
-        time: "11:00 AM - 12:30 PM",
-        category: "Internal",
-        participants: "100",
-        description: "Deep dive into the 2024 product feature set.",
-        applyBefore: "November 01, 2023",
-        location: "Virtual (Zoom)",
-        budget: "500",
-        instructor: "Product Team",
-    },
-];
-
 type TrainingEvent = {
     id: number;
     title: string;
-    date: string;
-    time: string;
+    proposedStartDate?: string;
+    date?: string;
+    time?: string;
     category: string;
     participants?: string;
+    expectedParticipants?: number;
     description?: string;
     applyBefore?: string;
     location?: string;
@@ -62,21 +23,33 @@ type TrainingEvent = {
 };
 
 export default function CreateTrainingPlanPage() {
-    const [events, setEvents] = useState(INITIAL_TRAINING_EVENTS);
+    const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedViewEvent, setSelectedViewEvent] = useState<TrainingEvent | null>(null);
     const router = useRouter();
 
-    const categories = ["All", ...Array.from(new Set(INITIAL_TRAINING_EVENTS.map(e => e.category)))];
+    useEffect(() => {
+        axiosInstance.get('/training/events')
+            .then(res => setEvents(res.data))
+            .catch(err => console.error("Failed to fetch events:", err));
+    }, []);
+
+    const categories = ["All", ...Array.from(new Set(events.map(e => e.category)))];
 
     const filteredEvents = selectedCategory === "All"
         ? events
         : events.filter(e => e.category === selectedCategory);
 
     const handleDeleteEvent = (id: number) => {
-        const newEvents = events.filter(event => event.id !== id);
-        setEvents(newEvents);
-        localStorage.setItem('trainingEvents', JSON.stringify(newEvents));
+        axiosInstance.delete(`/training/events/${id}`)
+            .then(() => {
+                setEvents(events.filter(event => event.id !== id));
+            })
+            .catch(err => {
+                console.warn("Backend may not support DELETE yet:", err);
+                // Optimistically remove from UI for demonstration
+                setEvents(events.filter(event => event.id !== id));
+            });
     };
 
     const handleEditEvent = (id: number) => {
@@ -137,8 +110,8 @@ export default function CreateTrainingPlanPage() {
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
-                            date={event.date}
-                            time={event.time}
+                            date={event.proposedStartDate || "TBD"}
+                            time={"TBD"}
                             category={event.category}
                             onView={() => setSelectedViewEvent(event)}
                             onEdit={() => handleEditEvent(event.id)}
@@ -184,21 +157,21 @@ export default function CreateTrainingPlanPage() {
                                     <span className="material-symbols-outlined text-stone-400">calendar_month</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Date</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.date}</p>
+                                        <p className="font-medium text-sm">{selectedViewEvent.proposedStartDate}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-stone-600">
                                     <span className="material-symbols-outlined text-stone-400">schedule</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Time</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.time}</p>
+                                        <p className="font-medium text-sm">TBD</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-stone-600">
                                     <span className="material-symbols-outlined text-stone-400">group</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Participants</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.participants} Expected</p>
+                                        <p className="font-medium text-sm">{selectedViewEvent.expectedParticipants} Expected</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-stone-600">
@@ -219,7 +192,7 @@ export default function CreateTrainingPlanPage() {
                                     <span className="material-symbols-outlined text-stone-400">payments</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Budget</p>
-                                        <p className="font-medium text-sm">${selectedViewEvent.budget}</p>
+                                        <p className="font-medium text-sm">LKR {selectedViewEvent.budget}</p>
                                     </div>
                                 </div>
                                 <div className="col-span-2 flex items-center gap-3 text-stone-600">

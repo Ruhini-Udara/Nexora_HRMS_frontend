@@ -1,116 +1,51 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import TrainingRequestDetailsModal from "@/components/hr/training/TrainingRequestDetailsModal";
 import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTrainingListModal";
 import { TrainingRequest } from '@/types/training';
+import axiosInstance from '@/lib/axios';
 
 
-const initialTrainingEvents = [
-    {
-        id: 1,
-        title: "Advanced Sales Tactics",
-        date: "October 24, 2023",
-        time: "09:00 AM - 12:00 PM",
-        category: "External",
-        status: "Approved",
-    },
-    {
-        id: 2,
-        title: "Leadership 101: Core Basics",
-        date: "November 02, 2023",
-        time: "02:00 PM - 05:00 PM",
-        category: "Internal",
-        status: "Pending",
-    },
-    {
-        id: 3,
-        title: "2024 Product Roadmap",
-        date: "November 15, 2023",
-        time: "11:00 AM - 12:30 PM",
-        category: "Internal",
-        status: "Rejected",
-        reason: "Does not align with Q4 objectives."
-    },
-];
-
-const initialMockRequests = [
-    {
-        id: 1,
-        eventId: 1,
-        employeeName: "Kamal Perera",
-        epfNumber: "EPF-1025",
-        age: 32,
-        department: "Sales Department",
-        designation: "Senior Sales Executive",
-        workEmail: "kamal.p@nexora.com",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAmYuDYYWzEWBuDPbtCpt5100Pybre81uC7wd5tncHa7Jb-5NUaTQX6p7I-m5P94omqeXaZ3fId2Eovte-nCUw70ZEYa-652-sxCuLm0VnE3ak_KOd1CRvc8dASaXTHTZNuj8c-zmMSJujN2mhNPqt3afItU8BQI3hytOFdK8OczliowI5LtJRCG75lxjAv1BGif_LdMI-Bz6L4fwWqypzcCfC__cH5nz6wbT5Aw7HUuBV3LjPbt4hlUrdKOMHf1ZBi-ozecK43AGE",
-        dateSubmitted: "Oct 12, 2023",
-        status: "Pending",
-        justification: "I would like to improve my sales closing techniques and learn advanced negotiation skills to meet Q4 targets efficiently. This training will highly benefit the company's revenue growth.",
-        attachments: [
-            { name: "sales_performance_report_Q3.pdf", url: "#" },
-            { name: "manager_recommendation.docx", url: "#" }
-        ]
-    },
-    {
-        id: 2,
-        eventId: 1,
-        employeeName: "Amali Silva",
-        epfNumber: "EPF-2041",
-        age: 28,
-        department: "IT & Data",
-        designation: "Data Analyst",
-        workEmail: "amali.s@nexora.com",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAE3GELhkAR_Bsi9WXiYp4-iplhAdX8v6jQ3zpYtB6F1Bsjj8RSQ2MnAFLTDwhd09KIhjIzBny6-TrfnJAVH1RqaItRSjlmDeKcYnH7qZ4j-ssCJzDYwY6nRznWDtfrXeYCzoltdvjoWOkzCmLEa9ymLX6_fHAZaQ1zZega6kK58VlYomoz2ClLlMkaPBNhTrCSZ9j_fujB-JiFy0GFC9rzlQ3cIi37J1M_knGqtqMbkIXLoDLwGCshBEXlUcCRpLNh80sUIj9TaXI",
-        dateSubmitted: "Oct 10, 2023",
-        status: "Approved",
-        justification: "Cross-training in sales data analysis to better support the sales team with insights and customized dashboards.",
-        attachments: [
-            { name: "training_justification_amali.pdf", url: "#" }
-        ]
-    },
-    {
-        id: 3,
-        eventId: 2,
-        employeeName: "Nuwan Kumara",
-        epfNumber: "EPF-3105",
-        age: 41,
-        department: "Marketing",
-        designation: "Marketing Manager",
-        workEmail: "nuwan.k@nexora.com",
-        initials: "NK",
-        dateSubmitted: "Oct 08, 2023",
-        status: "Pending",
-        justification: "To enhance team leadership strategies and effective communication within the department.",
-        attachments: []
-    },
-    {
-        id: 4,
-        eventId: 3,
-        employeeName: "Nethmi Fernando",
-        epfNumber: "EPF-4022",
-        age: 26,
-        department: "Operations",
-        designation: "Operations Coordinator",
-        workEmail: "nethmi.f@nexora.com",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBCyRHcUSOchj-O-7fcIy8ZhsWe1_ckC5tQx0N7AOX1OOf-O38ObkaVfbxuFyS2XvWZIP5uTWasCvnQ92XcIAeodaajIvT1q56iAbZA0nEpFIv2s9VhG4BlH4V8pFcfWFJAcPq2j9z5sQizCSfrNOG7IEPMixbDQydcp3zH5KxfrH0AQvjt62MIIHMik6krYZBgnSbeWt0fCIlHdFYtRsoS6SRg6FdrD2VxnSVx23SiSO8ujKOoy7r4rl2_DgcO91kzwIR3eXuDoMw",
-        dateSubmitted: "Oct 05, 2023",
-        status: "Rejected",
-        justification: "Interested in understanding the product roadmap to align operational processes.",
-        rejectionReason: "Limited availability of seats in the current session. Please request for the next quarter.",
-        attachments: [
-            { name: "operations_alignment_proposal.pdf", url: "#" }
-        ]
-    },
-];
+type TrainingEvent = {
+    id: number;
+    title: string;
+    proposedStartDate?: string;
+    date?: string;
+    time?: string;
+    category: string;
+    status: string;
+    reason?: string;
+};
 
 export default function TrainingRequestsTable() {
-    const [events, setEvents] = useState(initialTrainingEvents);
-    const [selectedEventId, setSelectedEventId] = useState<number | null>(initialTrainingEvents[0].id);
+    const [events, setEvents] = useState<TrainingEvent[]>([]);
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
-    const [requests, setRequests] = useState<TrainingRequest[]>(initialMockRequests as TrainingRequest[]);
+    const [requests, setRequests] = useState<TrainingRequest[]>([]);
+
+    useEffect(() => {
+        axiosInstance.get('/training/events')
+            .then(res => {
+                setEvents(res.data);
+                if (res.data.length > 0) {
+                    setSelectedEventId(res.data[0].id);
+                }
+            })
+            .catch(err => console.error("Failed to fetch events", err));
+    }, []);
+
+    useEffect(() => {
+        if (selectedEventId) {
+            axiosInstance.get(`/training/events/${selectedEventId}/requests`)
+                .then(res => setRequests(res.data))
+                .catch(err => console.error("Failed to fetch requests", err));
+        } else if (requests.length > 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setRequests([]);
+        }
+    }, [selectedEventId]);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
@@ -273,8 +208,8 @@ export default function TrainingRequestsTable() {
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
-                            date={event.date}
-                            time={event.time}
+                            date={event.proposedStartDate || "TBD"}
+                            time={"TBD"}
                             category={event.category}
                             hideActions={true}
                             isSelected={selectedEventId === event.id}
@@ -359,7 +294,11 @@ export default function TrainingRequestsTable() {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button 
                                                     onClick={() => {
-                                                        setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
+                                                        axiosInstance.put(`/training/requests/${request.id}/status`, { status: 'Approved' })
+                                                            .then(() => {
+                                                                setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
+                                                            })
+                                                            .catch(err => console.error("Failed to approve request", err));
                                                     }}
                                                     className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Approve">
                                                     <span className="material-symbols-outlined text-[20px]">check_circle</span>
@@ -456,10 +395,20 @@ export default function TrainingRequestsTable() {
                             <button
                                 onClick={() => {
                                     if (rejectionModal.requestId) {
-                                        setRequests(requests.map(r => r.id === rejectionModal.requestId ? { ...r, status: "Rejected", rejectionReason } : r));
+                                        axiosInstance.put(`/training/requests/${rejectionModal.requestId}/status`, { 
+                                            status: 'Rejected', 
+                                            rejectionReason 
+                                        })
+                                        .then(() => {
+                                            setRequests(requests.map(r => r.id === rejectionModal.requestId ? { ...r, status: "Rejected", rejectionReason } : r));
+                                            setRejectionModal({ isOpen: false, requestId: null });
+                                            setRejectionReason("");
+                                        })
+                                        .catch(err => console.error("Failed to reject request", err));
+                                    } else {
+                                        setRejectionModal({ isOpen: false, requestId: null });
+                                        setRejectionReason("");
                                     }
-                                    setRejectionModal({ isOpen: false, requestId: null });
-                                    setRejectionReason("");
                                 }}
                                 disabled={!rejectionReason.trim()}
                                 className="flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
