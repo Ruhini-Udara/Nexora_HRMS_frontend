@@ -12,33 +12,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Briefcase, Hash, Info, Building2, UserCog, ChevronLeft } from "lucide-react";
+import type { EmployeeFormData } from "./RegisterEmployee";
 
 interface RegisterEmployeeStep2Props {
+  formData: EmployeeFormData;
+  updateFormData: (fields: Partial<EmployeeFormData>) => void;
   onNext?: () => void;
   onPrevious?: () => void;
 }
 
 export default function RegisterEmployeeStep2({
+  formData,
+  updateFormData,
   onNext,
   onPrevious,
 }: RegisterEmployeeStep2Props) {
-  const [formData, setFormData] = useState({
-    designation: "",
-    employeeType: "",
-    department: "",
-    epfNumber: "",
-    etfNumber: "",
-  });
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    updateFormData({ [name]: value });
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    updateFormData({ [name]: value });
   };
 
   const handleNextStep = () => {
@@ -74,10 +72,10 @@ export default function RegisterEmployeeStep2({
               </div>
               <span className="text-sm font-semibold text-gray-900">Personal Info</span>
             </div>
-            
+
             {/* Connector */}
             <div className="flex-1 h-0.5 bg-gray-300 mx-4 mb-8"></div>
-            
+
             {/* Step 2 - Active */}
             <div className="flex flex-col items-center flex-1">
               <div className="w-14 h-14 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg mb-3 shadow-md">
@@ -85,10 +83,10 @@ export default function RegisterEmployeeStep2({
               </div>
               <span className="text-sm font-semibold text-gray-900">Employment</span>
             </div>
-            
+
             {/* Connector */}
             <div className="flex-1 h-0.5 bg-gray-300 mx-4 mb-8"></div>
-            
+
             {/* Step 3 - Inactive */}
             <div className="flex flex-col items-center flex-1">
               <div className="w-14 h-14 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold text-lg mb-3">
@@ -226,13 +224,19 @@ export default function RegisterEmployeeStep2({
               </div>
             </div>
 
+
+
+
+
             {/* Info Alert */}
             <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
               <p className="text-sm text-blue-800 leading-relaxed">
                 The EPF and ETF numbers can be updated later by HR Admin if they are not yet assigned.
               </p>
             </div>
+
+
           </div>
         </div>
 
