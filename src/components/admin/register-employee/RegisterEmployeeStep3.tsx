@@ -5,6 +5,7 @@ import { ArrowLeft, Mail, Shield, Lock, Eye, EyeOff, CheckCircle2, Circle, Spark
 import { useAdminNavigation } from "../AdminNavigationContext";
 import type { EmployeeFormData } from "./RegisterEmployee";
 import axios from "@/lib/axios";
+import type { AxiosError } from "axios";
 
 interface RegisterEmployeeStep3Props {
   formData: EmployeeFormData;
@@ -252,9 +253,10 @@ export default function RegisterEmployeeStep3({ formData, onPrevious }: Register
               setTimeout(() => {
                 setActiveView("employeeMaster");
               }, 2000);
-            } catch (err: any) {
+            } catch (err: unknown) {
+              const axiosErr = err as AxiosError<{ message?: string }>;
               setSubmitError(
-                err.response?.data?.message || "Failed to register employee. Please try again."
+                axiosErr.response?.data?.message || "Failed to register employee. Please try again."
               );
             } finally {
               setIsSubmitting(false);
