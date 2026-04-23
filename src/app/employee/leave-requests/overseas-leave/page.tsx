@@ -167,12 +167,6 @@ export default function OverseasLeaveRequestPage() {
                 contactNumber: data.contactNumber,
                 email: data.email,
                 specialRemark: data.specialRemark,
-                // Secure file paths stored in Supabase Storage (signed URLs generated on demand)
-                leaveLetterPath: leaveLetterUrl,
-                passportCopyPath: passportCopyUrl,
-                visaCopyPath: visaCopyUrl,
-                confirmationLetterPath: confirmationLetterUrl,
-                flightTicketsPath: flightTicketsUrl,
             };
 
             const response = await fetch("http://localhost:8080/api/v1/leaves/overseas", {
@@ -185,6 +179,36 @@ export default function OverseasLeaveRequestPage() {
                 const text = await response.text();
                 throw new Error(text || "Failed to submit to backend");
             }
+
+            const savedLeave = await response.json();
+            const leaveId: number = savedLeave.id;
+
+            // Save each uploaded document as a row in the documents table
+            const docEntries: { path: string | null; type: string; description: string }[] = [
+                { path: flightTicketsUrl, type: "FLIGHT_TICKETS",       description: "Flight Tickets / Itinerary" },
+                { path: passportCopyUrl, type: "PASSPORT_COPY",         description: "Passport Copy" },
+                { path: visaCopyUrl,     type: "VISA_COPY",             description: "Visa Copy" },
+                { path: confirmationLetterUrl, type: "CONFIRMATION_LETTER", description: "Confirmation Letter" },
+                { path: leaveLetterUrl,  type: "LEAVE_LETTER",          description: "Leave Letter" },
+            ];
+
+            await Promise.all(
+                docEntries
+                    .filter(d => d.path !== null)
+                    .map(d =>
+                        fetch("http://localhost:8080/api/v1/documents", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                refId: leaveId,
+                                refType: "OVERSEAS_LEAVE",
+                                documentType: d.type,
+                                filePathUrl: d.path,
+                                description: d.description,
+                            }),
+                        })
+                    )
+            );
 
             setFileError("");
             setStatus("submitted");
