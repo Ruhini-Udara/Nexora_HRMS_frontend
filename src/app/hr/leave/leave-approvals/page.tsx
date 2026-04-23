@@ -5,6 +5,13 @@ import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+interface LeaveDocument {
+    id: number;
+    documentType: string;
+    filePathUrl: string;
+    description: string;
+}
+
 interface OverseasLeave {
     id: number;
     reason: string;
@@ -27,15 +34,10 @@ interface OverseasLeave {
     contactNumber: string;
     email: string;
     specialRemark: string;
-    leaveLetterPath: string | null;
-    passportCopyPath: string | null;
-    visaCopyPath: string | null;
-    confirmationLetterPath: string | null;
-    flightTicketsPath: string | null;
 }
 
 // ─── Document viewer helper ───────────────────────────────────────────────────
-function DocumentCard({ label, path }: { label: string; path: string | null }) {
+function DocumentCard({ label, path }: { label: string; path: string }) {
     const [loading, setLoading] = useState(false);
 
     const handleView = async () => {
@@ -101,6 +103,8 @@ export default function LeaveApprovalsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [selectedRequest, setSelectedRequest] = useState<OverseasLeave | null>(null);
+    const [documents, setDocuments] = useState<LeaveDocument[]>([]);
+    const [docsLoading, setDocsLoading] = useState(false);
     const [hrRemark, setHrRemark] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -125,6 +129,27 @@ export default function LeaveApprovalsPage() {
     }, [statusFilter]);
 
     useEffect(() => { fetchLeaves(); }, [fetchLeaves]);
+
+    // ── Open modal and load documents ─────────────────────────────────────
+    const handleOpenReview = async (req: OverseasLeave) => {
+        setSelectedRequest(req);
+        setHrRemark("");
+        setDocuments([]);
+        setDocsLoading(true);
+        try {
+            const res = await fetch(
+                `http://localhost:8080/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`
+            );
+            if (res.ok) {
+                const docs: LeaveDocument[] = await res.json();
+                setDocuments(docs);
+            }
+        } catch {
+            // non-critical — just show empty documents
+        } finally {
+            setDocsLoading(false);
+        }
+    };
 
     // ── Approve / Reject ───────────────────────────────────────────────────
     const handleDecision = async (decision: "APPROVE" | "REJECT") => {
@@ -268,7 +293,7 @@ export default function LeaveApprovalsPage() {
                                             </td>
                                             <td className="py-4 px-6 text-right">
                                                 <button
-                                                    onClick={() => { setSelectedRequest(req); setHrRemark(""); }}
+                                                    onClick={() => handleOpenReview(req)}
                                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors"
                                                 >
                                                     <span className="material-symbols-outlined text-[18px]">visibility</span>
@@ -342,18 +367,26 @@ export default function LeaveApprovalsPage() {
                                     Uploaded Documents
                                     <span className="ml-2 text-xs font-normal text-slate-500">(Secure links expire in 1 hour)</span>
                                 </h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                    <DocumentCard label="Flight Tickets" path={selectedRequest.flightTicketsPath} />
-                                    <DocumentCard label="Passport Copy" path={selectedRequest.passportCopyPath} />
-                                    <DocumentCard label="Visa Copy" path={selectedRequest.visaCopyPath} />
-                                    <DocumentCard label="Confirmation Letter" path={selectedRequest.confirmationLetterPath} />
-                                    <DocumentCard label="Leave Letter" path={selectedRequest.leaveLetterPath} />
-                                </div>
-                                {!selectedRequest.passportCopyPath && !selectedRequest.visaCopyPath && (
-                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-3 flex items-center gap-1">
+                                {docsLoading ? (
+                                    <div className="flex items-center gap-2 text-slate-500 text-sm">
+                                        <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                                        Loading documents...
+                                    </div>
+                                ) : documents.length === 0 ? (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
                                         <span className="material-symbols-outlined text-[14px]">warning</span>
                                         No documents were uploaded with this request.
                                     </p>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                        {documents.map(doc => (
+                                            <DocumentCard
+                                                key={doc.id}
+                                                label={doc.description || doc.documentType}
+                                                path={doc.filePathUrl}
+                                            />
+                                        ))}
+                                    </div>
                                 )}
                             </div>
 
