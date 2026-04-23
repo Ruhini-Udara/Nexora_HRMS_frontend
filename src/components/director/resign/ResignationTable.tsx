@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { Check, X, Send, Printer } from "lucide-react";
+import { Check, X, Send, Printer, Eye } from "lucide-react";
 import ResignationStats from "./ResignationStats";
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -126,6 +126,9 @@ export default function ResignationTable() {
 
     // Letter preview
     const [letterPreviewReq, setLetterPreviewReq] = useState<ResignationRequest | null>(null);
+
+    // View modal
+    const [viewingRequest, setViewingRequest] = useState<ResignationRequest | null>(null);
 
     // Detail expand
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -268,43 +271,45 @@ export default function ResignationTable() {
                                             </td>
                                             {/* Actions */}
                                             <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                                                {isPending ? (
-                                                    <div className="flex justify-center gap-2">
-                                                        <button
-                                                            title="Approve"
-                                                            onClick={() => handleApprove(req.id)}
-                                                            disabled={actionsDisabled}
-                                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${actionsDisabled
-                                                                ? "bg-gray-100 text-gray-300 cursor-not-allowed dark:bg-zinc-800"
-                                                                : "bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer"
-                                                                }`}
-                                                        >
-                                                            <Check className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            title="Reject"
-                                                            onClick={() => openRejectPopup(req.id)}
-                                                            disabled={actionsDisabled}
-                                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${actionsDisabled
-                                                                ? "bg-gray-100 text-gray-300 cursor-not-allowed dark:bg-zinc-800"
-                                                                : "bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
-                                                                }`}
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                ) : req.status === "Board Approved" ? (
+                                                <div className="flex justify-center gap-2">
                                                     <button
-                                                        title="Preview Resignation Letter"
-                                                        onClick={() => setLetterPreviewReq(req)}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold transition-all cursor-pointer mx-auto"
+                                                        title="View Details"
+                                                        onClick={() => setViewingRequest(req)}
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer transition-all"
                                                     >
-                                                        <Printer className="w-3.5 h-3.5" />
-                                                        Letter
+                                                        <Eye className="w-4 h-4" />
                                                     </button>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Decision Final</span>
-                                                )}
+                                                    {isPending && (
+                                                        <>
+                                                            <button
+                                                                title="Approve"
+                                                                onClick={() => handleApprove(req.id)}
+                                                                disabled={actionsDisabled}
+                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${actionsDisabled ? "bg-gray-100 text-gray-300 cursor-not-allowed dark:bg-zinc-800" : "bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer"}`}
+                                                            >
+                                                                <Check className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                title="Reject"
+                                                                onClick={() => openRejectPopup(req.id)}
+                                                                disabled={actionsDisabled}
+                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${actionsDisabled ? "bg-gray-100 text-gray-300 cursor-not-allowed dark:bg-zinc-800" : "bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"}`}
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {req.status === "Board Approved" && (
+                                                        <button
+                                                            title="Preview Resignation Letter"
+                                                            onClick={() => setLetterPreviewReq(req)}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold transition-all cursor-pointer"
+                                                        >
+                                                            <Printer className="w-3.5 h-3.5" />
+                                                            Letter
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
 
@@ -353,6 +358,33 @@ export default function ResignationTable() {
                     </table>
                 </div>
             </div>
+
+            {/* ── View Details Modal ───────────────────────────────────────── */}
+            {viewingRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-zinc-700">
+                        <div className="p-6 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Resignation Details</h3>
+                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id} · {viewingRequest.employee}</p>
+                            </div>
+                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
+                        </div>
+                        <div className="p-6 grid grid-cols-2 gap-4 text-sm">
+                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.employee}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Designation</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.designation}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Branch</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.branch}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Reason</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.reason}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Effective Date</p><p className="font-semibold text-gray-900 dark:text-white">{fmt(viewingRequest.effectiveDate)}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Date</p><p className="font-semibold text-primary">{fmt(viewingRequest.boardMeetingDate)}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg col-span-2"><p className="text-xs font-bold text-gray-500 uppercase mb-1">HR Remark</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.hrRemark || '—'}</p></div>
+                        </div>
+                        <div className="p-6 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 flex justify-end">
+                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 cursor-pointer">Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── Reject Popup ─────────────────────────────────────────────── */}
             {rejectId && (

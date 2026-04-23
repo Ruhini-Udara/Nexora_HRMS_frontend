@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { X, Send, Eye } from 'lucide-react';
+import { X, Send, Eye, Check } from 'lucide-react';
 
 const mockRequests = [
     {
@@ -164,17 +164,33 @@ const ResignationRequestsTable = () => {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
-                                    {request.status === 'Pending Board Approval' ? (
-                                        <div className="flex justify-center gap-2">
-                                            <button onClick={() => openViewModal(request)} className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-all title='View Details'">
-                                                <Eye className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button onClick={() => handleShareStatus(request)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-all">
-                                            <Send className="w-3.5 h-3.5" /> Share
+                                    <div className="flex justify-center gap-2">
+                                        <button
+                                            onClick={() => openViewModal(request)}
+                                            className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors"
+                                            title="View Details"
+                                        >
+                                            <Eye className="w-4 h-4" />
                                         </button>
-                                    )}
+                                        {request.status === 'Pending Board Approval' && isActionable(request.boardMeetingDate) && (
+                                            <>
+                                                <button
+                                                    onClick={() => handleApprove(request.id)}
+                                                    className="w-8 h-8 rounded-md bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-colors"
+                                                    title="Approve"
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => openRejectModal(request.id)}
+                                                    className="w-8 h-8 rounded-md bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors"
+                                                    title="Reject"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}

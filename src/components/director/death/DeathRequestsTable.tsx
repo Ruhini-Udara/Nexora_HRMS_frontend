@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { X, Send, Eye } from 'lucide-react';
+import { X, Send, Eye, Check } from 'lucide-react';
 
 const mockRequests = [
     {
@@ -51,10 +51,11 @@ const DeathRequestsTable = () => {
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     const handleApprove = (id: string) => {
-        setRequests(prev => prev.map(req => req.id === id ? { ...req, status: "Approved" } : req));
+        const req = requests.find(r => r.id === id);
+        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "Approved" } : r));
         setViewModalOpen(false);
-        setToastMessage("Request approved successfully.");
-        setTimeout(() => setToastMessage(null), 3000);
+        setToastMessage(`✅ Approved — email sent to ${req?.requester} (${req?.email})`);
+        setTimeout(() => setToastMessage(null), 4000);
     };
 
     const openRejectModal = (id: string) => {
@@ -66,11 +67,12 @@ const DeathRequestsTable = () => {
 
     const handleRejectSubmit = () => {
         if (!rejectReason.trim()) return;
-        setRequests(prev => prev.map(req => req.id === requestToReject ? { ...req, status: "Rejected" } : req));
+        const req = requests.find(r => r.id === requestToReject);
+        setRequests(prev => prev.map(r => r.id === requestToReject ? { ...r, status: "Rejected" } : r));
         setRejectModalOpen(false);
         setRequestToReject(null);
-        setToastMessage("Request rejected.");
-        setTimeout(() => setToastMessage(null), 3000);
+        setToastMessage(`❌ Rejected — email sent to ${req?.requester} (${req?.email})`);
+        setTimeout(() => setToastMessage(null), 4000);
     };
 
     const handleShareStatus = (req: typeof mockRequests[0]) => {
@@ -141,17 +143,21 @@ const DeathRequestsTable = () => {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
-                                    {request.status === 'Pending Board Approval' ? (
-                                        <div className="flex justify-center gap-2">
-                                            <button onClick={() => openViewModal(request)} className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-all title='View Details'">
-                                                <Eye className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button onClick={() => handleShareStatus(request)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-all">
-                                            <Send className="w-3.5 h-3.5" /> Share
+                                    <div className="flex justify-center gap-2">
+                                        <button onClick={() => openViewModal(request)} className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors" title="View Details">
+                                            <Eye className="w-4 h-4" />
                                         </button>
-                                    )}
+                                        {request.status === 'Pending Board Approval' && (
+                                            <>
+                                                <button onClick={() => handleApprove(request.id)} className="w-8 h-8 rounded-md bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-colors" title="Approve">
+                                                    <Check className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => openRejectModal(request.id)} className="w-8 h-8 rounded-md bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors" title="Reject">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -166,67 +172,51 @@ const DeathRequestsTable = () => {
                 </table>
             </div>
 
-            {/* View Details Modal */}
+
+            {/* View Details Modal — Read-only popup */}
             {viewModalOpen && selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                             <div>
-                                <h3 className="text-xl font-bold text-gray-900">Death Benefit Verification</h3>
-                                <p className="text-sm text-gray-500 mt-1">Review application details before taking action.</p>
+                                <h3 className="text-lg font-bold text-gray-900">Death Benefit Application</h3>
+                                <p className="text-sm text-gray-500 mt-0.5">{selectedRequest.id} · View-only</p>
                             </div>
-                            <button onClick={() => setViewModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                <X className="w-6 h-6" />
+                            <button onClick={() => setViewModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="p-6 overflow-y-auto space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase">Employee</p>
-                                    <p className="font-bold text-gray-900 mt-1">{selectedRequest.name}</p>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase">Date of Death</p>
-                                    <p className="font-bold text-gray-900 mt-1">{selectedRequest.dateOfDeath}</p>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase">Nature</p>
-                                    <p className="font-bold text-gray-900 mt-1">{selectedRequest.natureOfDeath}</p>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <p className="text-xs font-semibold text-gray-500 uppercase">Requester (Beneficiary)</p>
-                                    <p className="font-bold text-gray-900 mt-1">{selectedRequest.requester}</p>
+                        <div className="p-6 overflow-y-auto space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee Name</p><p className="font-semibold text-gray-900">{selectedRequest.name}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Date of Death</p><p className="font-semibold text-gray-900">{selectedRequest.dateOfDeath}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Nature of Death</p><p className="font-semibold text-gray-900">{selectedRequest.natureOfDeath}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Requester / Beneficiary</p><p className="font-semibold text-gray-900">{selectedRequest.requester}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Contact Email</p><p className="font-semibold text-gray-900">{selectedRequest.email}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Contact Phone</p><p className="font-semibold text-gray-900">{selectedRequest.phone}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting</p><p className="font-semibold text-primary">{selectedRequest.boardMeeting}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Status</p>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${selectedRequest.status === 'Approved' ? 'bg-green-100 text-green-800' : selectedRequest.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>{selectedRequest.status}</span>
                                 </div>
                             </div>
-                            
-                            <div>
-                                <h4 className="font-bold text-gray-900 mb-3 border-b pb-2">Provided Documents</h4>
-                                <ul className="space-y-2">
-                                    {Object.entries(selectedRequest.documents).map(([key, value]) => (
-                                        <li key={key} className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg">
-                                            <span className="material-symbols-outlined text-red-500">picture_as_pdf</span>
-                                            <span className="text-sm font-medium text-gray-700">{value}</span>
-                                            <button className="ml-auto text-blue-600 hover:text-blue-800 text-xs font-bold">
-                                                Preview
-                                            </button>
-                                        </li>
-                                    ))}
-                                    {Object.keys(selectedRequest.documents).length === 0 && (
-                                        <li className="text-sm text-gray-500">No documents attached.</li>
-                                    )}
-                                </ul>
-                            </div>
+                            {Object.keys(selectedRequest.documents).length > 0 && (
+                                <div>
+                                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Provided Documents</p>
+                                    <div className="space-y-2">
+                                        {Object.entries(selectedRequest.documents).map(([key, value]) => (
+                                            <div key={key} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                                <span className="material-symbols-outlined text-red-500 text-lg">picture_as_pdf</span>
+                                                <span className="text-sm font-medium text-gray-700 flex-1">{value}</span>
+                                                <button className="text-blue-600 hover:text-blue-800 text-xs font-bold">Preview</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        {selectedRequest.status === 'Pending Board Approval' && (
-                            <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
-                                <button onClick={() => openRejectModal(selectedRequest.id)} className="px-6 py-2.5 bg-red-50 text-red-600 font-bold rounded-lg text-sm hover:bg-red-100 transition-colors">
-                                    Reject Application
-                                </button>
-                                <button onClick={() => handleApprove(selectedRequest.id)} className="px-6 py-2.5 bg-green-600 text-white font-bold rounded-lg text-sm hover:bg-green-700 transition-colors">
-                                    Approve Verification
-                                </button>
-                            </div>
-                        )}
+                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+                            <button onClick={() => setViewModalOpen(false)} className="px-5 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors cursor-pointer">Close</button>
+                        </div>
                     </div>
                 </div>
             )}
