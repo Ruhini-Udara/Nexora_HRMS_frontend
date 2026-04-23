@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import axiosInstance from '@/lib/axios';
 
 export default function CreateTrainingPlanForm() {
     const [isConfirmingPublish, setIsConfirmingPublish] = useState(false);
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState('');
     const [date, setDate] = useState('');
+    const [time, setTime] = useState('');
     const [participants, setParticipants] = useState('');
     const [description, setDescription] = useState('');
     const [applyBefore, setApplyBefore] = useState('');
@@ -20,24 +22,25 @@ export default function CreateTrainingPlanForm() {
 
     useEffect(() => {
         if (editId) {
-            const stored = localStorage.getItem('trainingEvents');
-            if (stored) {
-                const events = JSON.parse(stored);
-                const eventToEdit = events.find((e: { id: number | string, title?: string, category?: string, date?: string, participants?: string, description?: string, applyBefore?: string, location?: string, budget?: string, instructor?: string }) => e.id.toString() === editId);
-                if (eventToEdit) {
-                    setTimeout(() => {
+            axiosInstance.get(`/training/events/${editId}`)
+                .then(response => {
+                    const eventToEdit = response.data;
+                    if (eventToEdit) {
                         setTitle(eventToEdit.title || '');
                         setCategory(eventToEdit.category || '');
-                        setDate(eventToEdit.date || '');
-                        setParticipants(eventToEdit.participants || '');
+                        setDate(eventToEdit.proposedStartDate || '');
+                        setTime(eventToEdit.time || '');
+                        setParticipants(eventToEdit.expectedParticipants?.toString() || '');
                         setDescription(eventToEdit.description || '');
                         setApplyBefore(eventToEdit.applyBefore || '');
                         setLocation(eventToEdit.location || '');
-                        setBudget(eventToEdit.budget || '');
+                        setBudget(eventToEdit.budget?.toString() || '');
                         setInstructor(eventToEdit.instructor || '');
-                    }, 0);
-                }
-            }
+                    }
+                })
+                .catch(error => {
+                    console.error("Failed to fetch training event", error);
+                });
         }
     }, [editId]);
 
@@ -133,6 +136,15 @@ export default function CreateTrainingPlanForm() {
                                 />
                             </div>
                             <div>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proposed Time</label>
+                                <input
+                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    type="time"
+                                    value={time}
+                                    onChange={(e) => setTime(e.target.value)}
+                                />
+                            </div>
+                            <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Apply Before (Date) <span className="text-red-500">*</span></label>
                                 <input
                                     className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
@@ -166,9 +178,9 @@ export default function CreateTrainingPlanForm() {
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Budget Allocation</label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">$</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium text-xs">LKR</span>
                                     <input
-                                        className="w-full pl-8 pr-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm"
+                                        className="w-full pl-12 pr-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm"
                                         placeholder="5,000"
                                         type="number"
                                         value={budget}
@@ -227,42 +239,35 @@ export default function CreateTrainingPlanForm() {
                             <button
                                 onClick={() => {
                                     setIsConfirmingPublish(false);
-                                    // Build new event
-                                    const newEvent = {
-                                        id: editId ? parseInt(editId) : Date.now(),
+                                    // Build payload
+                                    const payload = {
                                         title: title || "New Training Event",
-                                        date: date || new Date().toISOString().split('T')[0],
-                                        time: "09:00 AM - 05:00 PM",
-                                        category: category,
-                                        participants: participants || "50",
+                                        category: category || "Internal",
+                                        expectedParticipants: parseInt(participants) || 50,
                                         description: description || "No description provided.",
+                                        proposedStartDate: date || new Date().toISOString().split('T')[0],
                                         applyBefore: applyBefore || new Date().toISOString().split('T')[0],
                                         location: location || "TBA",
-                                        budget: budget || "0",
+                                        budget: parseFloat(budget) || 0.0,
                                         instructor: instructor || "TBA",
+                                        status: "Published"
                                     };
 
-                                    // Save to localStorage
-                                    const stored = localStorage.getItem('trainingEvents');
-                                    let eventsList = [];
-                                    if (stored) {
-                                        eventsList = JSON.parse(stored);
-                                    }
-
                                     if (editId) {
-                                        const index = eventsList.findIndex((e: { id: number | string }) => e.id.toString() === editId);
-                                        if (index !== -1) {
-                                            eventsList[index] = newEvent;
-                                        } else {
-                                            eventsList.push(newEvent);
-                                        }
+                                        // TODO: Add PUT endpoint to backend to handle updates.
+                                        // For now, if editing is unsupported by the backend, we console log.
+                                        console.warn("Backend does not currently support updating training events via PUT");
+                                        router.push('/hr/training/create-plan');
                                     } else {
-                                        eventsList.push(newEvent);
+                                        axiosInstance.post('/training/events', payload)
+                                            .then(() => {
+                                                router.push('/hr/training/create-plan');
+                                            })
+                                            .catch(error => {
+                                                console.error("Failed to create training event", error);
+                                                // Consider adding error toast here
+                                            });
                                     }
-
-                                    localStorage.setItem('trainingEvents', JSON.stringify(eventsList));
-
-                                    router.push('/hr/training/create-plan');
                                 }}
                                 className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
                             >

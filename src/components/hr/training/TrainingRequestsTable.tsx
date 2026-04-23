@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import TrainingRequestDetailsModal from "@/components/hr/training/TrainingRequestDetailsModal";
 import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTrainingListModal";
 import { TrainingRequest } from '@/types/training';
+import axiosInstance from '@/lib/axios';
 
 
 const initialTrainingEvents = [
@@ -107,10 +108,31 @@ const initialMockRequests = [
 ];
 
 export default function TrainingRequestsTable() {
-    const [events, setEvents] = useState(initialTrainingEvents);
-    const [selectedEventId, setSelectedEventId] = useState<number | null>(initialTrainingEvents[0].id);
+    const [events, setEvents] = useState<any[]>([]);
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
-    const [requests, setRequests] = useState<TrainingRequest[]>(initialMockRequests as TrainingRequest[]);
+    const [requests, setRequests] = useState<any[]>([]);
+
+    useEffect(() => {
+        axiosInstance.get('/training/events')
+            .then(res => {
+                setEvents(res.data);
+                if (res.data.length > 0) {
+                    setSelectedEventId(res.data[0].id);
+                }
+            })
+            .catch(err => console.error("Failed to fetch events", err));
+    }, []);
+
+    useEffect(() => {
+        if (selectedEventId) {
+            axiosInstance.get(`/training/events/${selectedEventId}/requests`)
+                .then(res => setRequests(res.data))
+                .catch(err => console.error("Failed to fetch requests", err));
+        } else {
+            setRequests([]);
+        }
+    }, [selectedEventId]);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
@@ -273,8 +295,8 @@ export default function TrainingRequestsTable() {
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
-                            date={event.date}
-                            time={event.time}
+                            date={event.proposedStartDate}
+                            time={"TBD"}
                             category={event.category}
                             hideActions={true}
                             isSelected={selectedEventId === event.id}
@@ -359,7 +381,11 @@ export default function TrainingRequestsTable() {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button 
                                                     onClick={() => {
-                                                        setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
+                                                        axiosInstance.put(`/training/requests/${request.id}/status`, { status: 'Approved' })
+                                                            .then(() => {
+                                                                setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
+                                                            })
+                                                            .catch(err => console.error("Failed to approve request", err));
                                                     }}
                                                     className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Approve">
                                                     <span className="material-symbols-outlined text-[20px]">check_circle</span>
@@ -456,10 +482,20 @@ export default function TrainingRequestsTable() {
                             <button
                                 onClick={() => {
                                     if (rejectionModal.requestId) {
-                                        setRequests(requests.map(r => r.id === rejectionModal.requestId ? { ...r, status: "Rejected", rejectionReason } : r));
+                                        axiosInstance.put(`/training/requests/${rejectionModal.requestId}/status`, { 
+                                            status: 'Rejected', 
+                                            rejectionReason 
+                                        })
+                                        .then(() => {
+                                            setRequests(requests.map(r => r.id === rejectionModal.requestId ? { ...r, status: "Rejected", rejectionReason } : r));
+                                            setRejectionModal({ isOpen: false, requestId: null });
+                                            setRejectionReason("");
+                                        })
+                                        .catch(err => console.error("Failed to reject request", err));
+                                    } else {
+                                        setRejectionModal({ isOpen: false, requestId: null });
+                                        setRejectionReason("");
                                     }
-                                    setRejectionModal({ isOpen: false, requestId: null });
-                                    setRejectionReason("");
                                 }}
                                 disabled={!rejectionReason.trim()}
                                 className="flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
