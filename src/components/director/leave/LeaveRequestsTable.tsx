@@ -1,208 +1,387 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Download, Check, X, Send } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Download, Check, X, Send, Eye, FileText } from 'lucide-react';
+import { getSignedUrl } from "@/lib/supabaseClient";
 
-const mockRequests = [
-    {
-        id: "REQ-001",
-        name: "Johnathan Doe",
-        initials: "JD",
-        type: "Overseas Leave",
-        startDate: "Oct 12, 2023",
-        endDate: "Oct 15, 2023",
-        duration: "4 Days",
-        status: "Pending Board Approval",
-        boardMeeting: "August 2024 Board",
-        email: "johnathan@example.com",
-        phone: "+94771234567"
-    },
-    {
-        id: "REQ-002",
-        name: "Jane Smith",
-        initials: "JS",
-        type: "Overseas Leave",
-        startDate: "Oct 14, 2023",
-        endDate: "Oct 14, 2023",
-        duration: "1 Day",
-        status: "Approved",
-        boardMeeting: "August 2024 Board",
-        email: "jane@example.com",
-        phone: "+94771234568"
-    },
-    {
-        id: "REQ-003",
-        name: "Robert Brown",
-        initials: "RB",
-        type: "Overseas Leave",
-        startDate: "Nov 01, 2023",
-        endDate: "Nov 14, 2023",
-        duration: "14 Days",
-        status: "Pending Board Approval",
-        boardMeeting: "September 2024 Board",
-        email: "robert@example.com",
-        phone: "+94771234569"
-    }
-];
+// ─── Types ───────────────────────────────────────────────────────────────────
+interface LeaveDocument {
+    id: number;
+    documentType: string;
+    filePathUrl: string;
+    description: string;
+}
+
+interface OverseasLeave {
+    id: number;
+    reason: string;
+    fromDate: string;
+    endDate: string;
+    totalDays: number;
+    status: string;
+    branch: string;
+    contactNumber: string;
+    email: string;
+    specialRemark: string;
+    passportNumber: string;
+    passportExpDate: string;
+    employee: {
+        id: number;
+        employeeCode: string;
+        firstName: string;
+        lastName: string;
+    };
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+    const map: Record<string, string> = {
+        PENDING_HR_APPROVAL: "bg-amber-100 text-amber-700",
+        PENDING_ADMIN_APPROVAL: "bg-blue-100 text-blue-700",
+        ADMIN_APPROVED: "bg-indigo-100 text-indigo-700",
+        PENDING_DIRECTOR_REVIEW: "bg-purple-100 text-purple-700",
+        APPROVED: "bg-emerald-100 text-emerald-800",
+        REJECTED: "bg-red-100 text-red-800",
+    };
+    const label: Record<string, string> = {
+        PENDING_HR_APPROVAL: "HR Review",
+        PENDING_ADMIN_APPROVAL: "Admin Review",
+        ADMIN_APPROVED: "Board Agenda",
+        PENDING_DIRECTOR_REVIEW: "Director Review",
+        APPROVED: "Approved",
+        REJECTED: "Rejected",
+    };
+    return (
+        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] ?? "bg-gray-100 text-gray-800"}`}>
+            {label[status] ?? status}
+        </span>
+    );
+}
 
 const LeaveRequestsTable = () => {
-    const [requests, setRequests] = useState(mockRequests);
-    const [boardFilter, setBoardFilter] = useState("All");
+    const [requests, setRequests] = useState<OverseasLeave[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
 
     // Modal State
-    const [rejectModalOpen, setRejectModalOpen] = useState(false);
-    const [requestToReject, setRequestToReject] = useState<string | null>(null);
-    const [rejectReason, setRejectReason] = useState("");
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState<OverseasLeave | null>(null);
+    const [documents, setDocuments] = useState<LeaveDocument[]>([]);
+    const [docsLoading, setDocsLoading] = useState(false);
+    const [directorRemark, setDirectorRemark] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
-    // Toast State for simulating SMS/Email
-    const [toastMessage, setToastMessage] = useState<string | null>(null);
+    // Fetch Requests
+    const fetchRequests = useCallback(async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const res = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/PENDING_DIRECTOR_REVIEW`);
+            if (!res.ok) throw new Error("Failed to fetch requests");
+            const data = await res.json();
+            setRequests(data);
+        } catch (err) {
+            setError("Could not connect to the backend. Please ensure the server is running.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    const handleApprove = (id: string) => {
-        setRequests(prev => prev.map(req => req.id === id ? { ...req, status: "Approved" } : req));
+    useEffect(() => {
+        fetchRequests();
+    }, [fetchRequests]);
+
+    const handleOpenReview = async (req: OverseasLeave) => {
+        setSelectedRequest(req);
+        setDirectorRemark("");
+        setReviewModalOpen(true);
+        setDocuments([]);
+        setDocsLoading(true);
+        try {
+            const res = await fetch(`http://localhost:8080/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`);
+            if (res.ok) {
+                const docs = await res.json();
+                setDocuments(docs);
+            }
+        } catch (err) {
+            console.error("Error fetching documents", err);
+        } finally {
+            setDocsLoading(false);
+        }
     };
 
-    const openRejectModal = (id: string) => {
-        setRequestToReject(id);
-        setRejectReason("");
-        setRejectModalOpen(true);
+    const handleDecision = async (decision: "APPROVED" | "REJECTED") => {
+        if (!selectedRequest) return;
+        setSubmitting(true);
+        try {
+            const res = await fetch("http://localhost:8080/api/v1/approvals", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    refId: selectedRequest.id,
+                    refType: "OVERSEAS_LEAVE",
+                    decision: decision,
+                    remark: directorRemark,
+                    approvedBy: { id: 1 }, // TODO: use actual director id
+                }),
+            });
+            if (!res.ok) throw new Error("Approval failed");
+            
+            setReviewModalOpen(false);
+            setSelectedRequest(null);
+            
+            // Show Success Toast
+            setToast({ 
+                message: decision === "APPROVED" 
+                    ? "Final Approval Successful. E-mailed the status to the employee!" 
+                    : "Request Rejected. Notification sent to the employee.", 
+                type: 'success' 
+            });
+            setTimeout(() => setToast(null), 5000);
+
+            fetchRequests();
+        } catch (err) {
+            alert("Something went wrong. Please try again.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const handleRejectSubmit = () => {
-        if (!rejectReason.trim()) return;
-        setRequests(prev => prev.map(req => req.id === requestToReject ? { ...req, status: "Rejected" } : req));
-        setRejectModalOpen(false);
-        setRequestToReject(null);
+    const handleViewDocument = async (path: string) => {
+        const url = await getSignedUrl(path, 3600);
+        if (url) window.open(url, "_blank");
+        else alert("Could not generate secure link.");
     };
 
-    const handleShareStatus = (req: typeof mockRequests[0]) => {
-        setToastMessage(`Status update sent to ${req.name} (${req.email} & ${req.phone})`);
-        setTimeout(() => setToastMessage(null), 3000);
-    };
-
-    const filteredRequests = requests.filter(req =>
-        boardFilter === "All" || req.boardMeeting === boardFilter
-    );
-
+    const filteredRequests = requests.filter(req => {
+        const fullName = `${req.employee?.firstName} ${req.employee?.lastName}`.toLowerCase();
+        return fullName.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
+    });
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-gray-900">Recent Applications</h3>
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+                <h3 className="font-bold text-lg text-gray-900 dark:text-white">Pending Board Approvals</h3>
                 <div className="flex items-center gap-3">
-
-                    <select
-                        value={boardFilter}
-                        onChange={(e) => setBoardFilter(e.target.value)}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm outline-none focus:border-primary"
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Search requests..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-4 pr-10 py-2 border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium outline-none focus:border-primary"
+                        />
+                    </div>
+                    <button 
+                        onClick={fetchRequests}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                        title="Refresh"
                     >
-                        <option value="All">All Boards</option>
-                        <option value="August 2024 Board">August 2024 Board</option>
-                        <option value="September 2024 Board">September 2024 Board</option>
-                    </select>
+                        <Send className="w-4 h-4 text-gray-500 rotate-180" />
+                    </button>
                 </div>
             </div>
+
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-gray-50 dark:bg-zinc-800/50 border-b border-gray-200 dark:border-zinc-800">
                         <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Employee Name</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Leave Type</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Start Date</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">End Date</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 text-center">Duration</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 text-center">Actions</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Employee</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Type</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Dates</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Days</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {filteredRequests.map((request, i) => (
-                            <tr key={i} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                                            {request.initials}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">{request.name}</p>
-                                            <p className="text-xs text-gray-500">{request.boardMeeting}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <p className="text-sm text-gray-600">{request.type}</p>
-                                </td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500">{request.startDate}</td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500">{request.endDate}</td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-600">{request.duration}</span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                        request.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                                            'bg-orange-100 text-orange-800'
-                                        }`}>
-                                        {request.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    {request.status === 'Pending Board Approval' ? (
-                                        <div className="flex justify-center gap-2">
-                                            <button onClick={() => handleApprove(request.id)} className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-all title='Approve'">
-                                                <Check className="w-5 h-5" />
-                                            </button>
-                                            <button onClick={() => openRejectModal(request.id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-all title='Reject'">
-                                                <X className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button onClick={() => handleShareStatus(request)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-all">
-                                            <Send className="w-3.5 h-3.5" /> Share
-                                        </button>
-                                    )}
-                                </td>
+                    <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+                        {loading ? (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">Loading requests...</td>
                             </tr>
-                        ))}
+                        ) : error ? (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-12 text-center text-red-500">{error}</td>
+                            </tr>
+                        ) : filteredRequests.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">No pending board approvals found.</td>
+                            </tr>
+                        ) : (
+                            filteredRequests.map((request) => (
+                                <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase">
+                                                {request.employee?.firstName?.[0] || ""}{request.employee?.lastName?.[0] || (request.employee?.firstName ? "" : "?")}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {request.employee?.firstName} {request.employee?.lastName}
+                                                </p>
+                                                <p className="text-xs text-gray-500">{request.employee?.employeeCode} • {request.branch}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">Overseas Leave</p>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                                            {request.fromDate} to {request.endDate}
+                                        </p>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400">
+                                            {request.totalDays}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <StatusBadge status={request.status} />
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button 
+                                            onClick={() => handleOpenReview(request)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-all"
+                                        >
+                                            <Eye className="w-3.5 h-3.5" /> Review
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>
 
-            {/* Reject Modal */}
-            {rejectModalOpen && (
+            {/* Review Modal */}
+            {reviewModalOpen && selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-900">Reject Application</h3>
-                            <p className="text-sm text-gray-500 mt-1">Please provide a mandatory reason for this rejection.</p>
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center shrink-0">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Review Board Application</h3>
+                            <button onClick={() => setReviewModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-6 h-6" />
+                            </button>
                         </div>
-                        <div className="p-6">
-                            <textarea
-                                value={rejectReason}
-                                onChange={(e) => setRejectReason(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400"
-                                rows={4}
-                                placeholder="State the reason for rejection..."
-                            />
+                        
+                        <div className="p-6 overflow-y-auto space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Employee Details</h4>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedRequest.employee?.firstName} {selectedRequest.employee?.lastName}</p>
+                                        <p className="text-xs text-gray-500">EPF: {selectedRequest.employee?.employeeCode}</p>
+                                        <p className="text-xs text-gray-500">Branch: {selectedRequest.branch}</p>
+                                        <p className="text-xs text-gray-500">Email: {selectedRequest.email}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Leave Info</h4>
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedRequest.fromDate} to {selectedRequest.endDate}</p>
+                                        <p className="text-xs text-gray-500">Duration: {selectedRequest.totalDays} Days</p>
+                                        <p className="text-xs text-gray-500">Passport: {selectedRequest.passportNumber}</p>
+                                        <p className="text-xs text-gray-500">Expiry: {selectedRequest.passportExpDate}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Reason & Remarks</h4>
+                                <div className="bg-gray-50 dark:bg-zinc-800/50 rounded-lg p-4 space-y-3">
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-medium">Reason for Leave</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{selectedRequest.reason}</p>
+                                    </div>
+                                    {selectedRequest.specialRemark && (
+                                        <div>
+                                            <p className="text-xs text-gray-500 font-medium">Special Remark</p>
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{selectedRequest.specialRemark}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Attached Documents</h4>
+                                {docsLoading ? (
+                                    <p className="text-sm text-gray-500">Loading documents...</p>
+                                ) : documents.length === 0 ? (
+                                    <p className="text-sm text-gray-500">No documents attached.</p>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {documents.map(doc => (
+                                            <div 
+                                                key={doc.id}
+                                                onClick={() => handleViewDocument(doc.filePathUrl)}
+                                                className="flex items-center gap-3 p-3 border border-gray-200 dark:border-zinc-800 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
+                                            >
+                                                <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                                                    <FileText className="w-5 h-5" />
+                                                </div>
+                                                <div className="flex-1 overflow-hidden">
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{doc.description || doc.documentType}</p>
+                                                    <p className="text-[10px] text-primary group-hover:underline">Click to View</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Board Final Review Remark</h4>
+                                <textarea
+                                    value={directorRemark}
+                                    onChange={(e) => setDirectorRemark(e.target.value)}
+                                    className="w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-sm text-gray-700 dark:text-gray-200 outline-none focus:border-primary focus:ring-1 focus:ring-primary h-24 resize-none"
+                                    placeholder="Enter any final comments for this board approval..."
+                                />
+                            </div>
                         </div>
-                        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                            <button onClick={() => setRejectModalOpen(false)} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors">
+
+                        <div className="p-6 border-t border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 flex justify-end gap-3 shrink-0">
+                            <button 
+                                onClick={() => setReviewModalOpen(false)} 
+                                className="px-6 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                            >
                                 Cancel
                             </button>
                             <button
-                                onClick={handleRejectSubmit}
-                                disabled={!rejectReason.trim()}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => handleDecision("REJECTED")}
+                                disabled={submitting}
+                                className="px-6 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
                             >
-                                Confirm Rejection
+                                Reject
+                            </button>
+                            <button
+                                onClick={() => handleDecision("APPROVED")}
+                                disabled={submitting}
+                                className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {submitting ? "Processing..." : <><Check className="w-4 h-4" /> Final Approve</>}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
-
             {/* Toast Notification */}
-            {toastMessage && (
-                <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg font-medium text-sm animate-in slide-in-from-bottom-5">
-                    {toastMessage}
+            {toast && (
+                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
+                    toast.type === 'success' ? 'bg-zinc-900 text-white' : 'bg-red-600 text-white'
+                }`}>
+                    <div className={`size-8 rounded-full flex items-center justify-center shrink-0 ${
+                        toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                    }`}>
+                        {toast.type === 'success' ? <Check className="w-5 h-5 text-white" /> : <X className="w-5 h-5 text-white" />}
+                    </div>
+                    <p className="text-sm font-bold tracking-tight">{toast.message}</p>
+                    <button onClick={() => setToast(null)} className="ml-4 text-white/50 hover:text-white transition-colors">
+                        <X className="w-4 h-4" />
+                    </button>
                 </div>
             )}
         </div>

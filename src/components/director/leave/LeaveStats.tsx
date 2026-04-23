@@ -1,21 +1,65 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle, XCircle, Wallet } from 'lucide-react';
 
 const LeaveStats = () => {
+    const [statsData, setStatsData] = useState({
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        total: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                // In a real app, we'd have a summary endpoint. 
+                // For now, we'll fetch the main list to get the pending count.
+                const res = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/PENDING_DIRECTOR_REVIEW`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setStatsData(prev => ({ ...prev, pending: data.length }));
+                }
+
+                // Fetch total approved (final state)
+                const appRes = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/APPROVED`);
+                if (appRes.ok) {
+                    const appData = await appRes.json();
+                    setStatsData(prev => ({ ...prev, approved: appData.length }));
+                }
+
+                // Fetch total rejected
+                const rejRes = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/REJECTED`);
+                if (rejRes.ok) {
+                    const rejData = await rejRes.json();
+                    setStatsData(prev => ({ ...prev, rejected: rejData.length }));
+                }
+            } catch (err) {
+                console.error("Error fetching stats", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
     const stats = [
         {
-            label: "Pending Requests",
-            value: "5",
-            subtext: "+2 since yesterday",
+            label: "Pending Board",
+            value: loading ? "..." : statsData.pending,
+            subtext: "Waiting for your review",
             icon: Clock,
             color: "text-secondary",
             bgColor: "bg-secondary/10",
             subTextColor: "text-secondary"
         },
         {
-            label: "Approved Today",
-            value: "1",
-            subtext: "Ready for payroll",
+            label: "Approved",
+            value: loading ? "..." : statsData.approved,
+            subtext: "Finalized records",
             icon: CheckCircle,
             color: "text-emerald-600",
             bgColor: "bg-emerald-100",
@@ -23,17 +67,17 @@ const LeaveStats = () => {
         },
         {
             label: "Rejected",
-            value: "05",
-            subtext: "This month",
+            value: loading ? "..." : statsData.rejected,
+            subtext: "Not authorized",
             icon: XCircle,
             color: "text-red-600",
             bgColor: "bg-red-100",
             subTextColor: "text-red-600"
         },
         {
-            label: "All Requests",
-            value: "320",
-            subtext: "Total lifetime requests",
+            label: "Total Overseas",
+            value: loading ? "..." : (statsData.pending + statsData.approved + statsData.rejected),
+            subtext: "Cumulative history",
             icon: Wallet,
             color: "text-primary",
             bgColor: "bg-primary/10",
