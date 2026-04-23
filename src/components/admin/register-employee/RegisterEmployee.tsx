@@ -5,8 +5,43 @@ import RegisterEmployeeStep1 from "./RegisterEmployeeStep1";
 import RegisterEmployeeStep2 from "./RegisterEmployeeStep2";
 import RegisterEmployeeStep3 from "./RegisterEmployeeStep3";
 
+export interface EmployeeFormData {
+  // Step 1: Personal Info
+  nicNumber: string;
+  sex: string;
+  fullName: string;
+  surname: string;
+  dateOfBirth: string;
+  dateJoined: string;
+  email: string;
+  homeAddress: string;
+  maritalStatus: string;
+  // Step 2: Employment Info
+  designation: string;
+  employeeType: string;
+  department: string;
+  epfNumber: string;
+  etfNumber: string;
+}
+
 export default function RegisterEmployee() {
   const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState<EmployeeFormData>({
+    nicNumber: "",
+    sex: "",
+    fullName: "",
+    surname: "",
+    dateOfBirth: "",
+    dateJoined: "",
+    email: "",
+    homeAddress: "",
+    maritalStatus: "Single",
+    designation: "",
+    employeeType: "",
+    department: "",
+    epfNumber: "",
+    etfNumber: "",
+  });
 
   const handleNextStep = () => {
     if (currentStep < 3) {
@@ -20,16 +55,33 @@ export default function RegisterEmployee() {
     }
   };
 
+  const updateFormData = (fields: Partial<EmployeeFormData>) => {
+    setFormData((prev) => ({ ...prev, ...fields }));
+  };
+
   return (
     <>
-      {currentStep === 1 && <RegisterEmployeeStep1 onNext={handleNextStep} />}
+      {currentStep === 1 && (
+        <RegisterEmployeeStep1
+          formData={formData}
+          updateFormData={updateFormData}
+          onNext={handleNextStep}
+        />
+      )}
       {currentStep === 2 && (
         <RegisterEmployeeStep2
+          formData={formData}
+          updateFormData={updateFormData}
           onNext={handleNextStep}
           onPrevious={handlePreviousStep}
         />
       )}
-      {currentStep === 3 && <RegisterEmployeeStep3 onPrevious={handlePreviousStep} />}
+      {currentStep === 3 && (
+        <RegisterEmployeeStep3
+          formData={formData}
+          onPrevious={handlePreviousStep}
+        />
+      )}
     </>
   );
 }

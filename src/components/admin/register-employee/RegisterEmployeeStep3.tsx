@@ -1,19 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowLeft, Mail, Shield, Lock, Eye, EyeOff, CheckCircle2, Circle, Sparkles } from "lucide-react";
+import { ArrowLeft, Mail, Shield, Lock, Eye, EyeOff, CheckCircle2, Circle, Sparkles, Loader2 } from "lucide-react";
 import { useAdminNavigation } from "../AdminNavigationContext";
+import type { EmployeeFormData } from "./RegisterEmployee";
+import axios from "@/lib/axios";
 
 interface RegisterEmployeeStep3Props {
+  formData: EmployeeFormData;
   onPrevious: () => void;
 }
 
-export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeStep3Props) {
+export default function RegisterEmployeeStep3({ formData, onPrevious }: RegisterEmployeeStep3Props) {
   const { setActiveView } = useAdminNavigation();
   const [currentStep, setCurrentStep] = useState(3);
   const [showPassword, setShowPassword] = useState(false);
   const [enableSystemAccess, setEnableSystemAccess] = useState(true);
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   // Form states
   const [email, setEmail] = useState("alex.morris@hrmate.com");
   const [userRole, setUserRole] = useState("Employee");
@@ -50,13 +56,12 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
               {/* Step Circle */}
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all ${
-                    step.completed
+                  className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all ${step.completed
                       ? "bg-emerald-500 text-white"
                       : step.id === currentStep
-                      ? "bg-amber-400 text-slate-900"
-                      : "bg-slate-200 text-slate-400"
-                  }`}
+                        ? "bg-amber-400 text-slate-900"
+                        : "bg-slate-200 text-slate-400"
+                    }`}
                 >
                   {step.completed ? (
                     <CheckCircle2 size={24} />
@@ -67,9 +72,8 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
                   )}
                 </div>
                 <p
-                  className={`mt-2 text-sm font-medium ${
-                    step.id === currentStep ? "text-background-dark" : "text-slate-500"
-                  }`}
+                  className={`mt-2 text-sm font-medium ${step.id === currentStep ? "text-background-dark" : "text-slate-500"
+                    }`}
                 >
                   {step.label}
                 </p>
@@ -78,9 +82,8 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
               {/* Connecting Line */}
               {index < steps.length - 1 && (
                 <div
-                  className={`flex-1 h-0.5 mx-4 -mt-10 transition-all ${
-                    step.completed ? "bg-emerald-500" : "bg-slate-200"
-                  }`}
+                  className={`flex-1 h-0.5 mx-4 -mt-10 transition-all ${step.completed ? "bg-emerald-500" : "bg-slate-200"
+                    }`}
                 />
               )}
             </div>
@@ -197,14 +200,12 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
               </div>
               <button
                 onClick={() => setEnableSystemAccess(!enableSystemAccess)}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                  enableSystemAccess ? "bg-amber-400" : "bg-slate-300"
-                }`}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${enableSystemAccess ? "bg-amber-400" : "bg-slate-300"
+                  }`}
               >
                 <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                    enableSystemAccess ? "translate-x-6" : "translate-x-1"
-                  }`}
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${enableSystemAccess ? "translate-x-6" : "translate-x-1"
+                    }`}
                 />
               </button>
             </div>
@@ -235,17 +236,62 @@ export default function RegisterEmployeeStep3({ onPrevious }: RegisterEmployeeSt
       {/* Action Buttons */}
       <div className="flex items-center justify-between mt-8">
         <button
-          onClick={() => setActiveView("employeeMaster")}
+          onClick={() => onPrevious()}
           className="flex items-center gap-2 px-6 py-2.5 text-slate-600 font-medium hover:text-slate-900 transition-colors"
         >
           <ArrowLeft size={18} />
           Back
         </button>
-        <button className="flex items-center gap-2 px-8 py-3 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold rounded-lg shadow-sm transition-all active:scale-95">
-          Complete Registration
-          <CheckCircle2 size={18} />
+        <button
+          onClick={async () => {
+            setIsSubmitting(true);
+            setSubmitError(null);
+            try {
+              await axios.post("/employees", formData);
+              setSubmitSuccess(true);
+              setTimeout(() => {
+                setActiveView("employeeMaster");
+              }, 2000);
+            } catch (err: any) {
+              setSubmitError(
+                err.response?.data?.message || "Failed to register employee. Please try again."
+              );
+            } finally {
+              setIsSubmitting(false);
+            }
+          }}
+          disabled={isSubmitting || submitSuccess}
+          className={`flex items-center gap-2 px-8 py-3 font-bold rounded-lg shadow-sm transition-all active:scale-95 ${
+            submitSuccess
+              ? "bg-green-500 text-white"
+              : "bg-amber-400 hover:bg-amber-500 text-slate-900"
+          } disabled:opacity-70 disabled:cursor-not-allowed`}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              Registering...
+            </>
+          ) : submitSuccess ? (
+            <>
+              <CheckCircle2 size={18} />
+              Registered Successfully!
+            </>
+          ) : (
+            <>
+              Complete Registration
+              <CheckCircle2 size={18} />
+            </>
+          )}
         </button>
       </div>
+
+      {/* Error Message */}
+      {submitError && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {submitError}
+        </div>
+      )}
     </div>
   );
 }

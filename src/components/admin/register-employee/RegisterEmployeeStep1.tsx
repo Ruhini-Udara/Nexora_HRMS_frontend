@@ -13,31 +13,25 @@ import {
 } from "@/components/ui/select";
 import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { EmployeeFormData } from "./RegisterEmployee";
 
 interface RegisterEmployeeStep1Props {
+  formData: EmployeeFormData;
+  updateFormData: (fields: Partial<EmployeeFormData>) => void;
   onNext?: () => void;
 }
 
 export default function RegisterEmployeeStep1({
+  formData,
+  updateFormData,
   onNext,
 }: RegisterEmployeeStep1Props) {
-  const [formData, setFormData] = useState({
-    nicNumber: "",
-    sex: "",
-    fullName: "",
-    surname: "",
-    dateOfBirth: "",
-    dateJoined: "",
-    email: "",
-    homeAddress: "",
-    maritalStatus: "Single",
-  });
 
   const [showDateOfBirthCalendar, setShowDateOfBirthCalendar] = useState(false);
   const [showDateJoinedCalendar, setShowDateJoinedCalendar] = useState(false);
   const [currentMonthDOB, setCurrentMonthDOB] = useState(new Date());
   const [currentMonthDJ, setCurrentMonthDJ] = useState(new Date());
-  
+
   const dobCalendarRef = useRef<HTMLDivElement>(null);
   const djCalendarRef = useRef<HTMLDivElement>(null);
 
@@ -59,11 +53,11 @@ export default function RegisterEmployeeStep1({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    updateFormData({ [name]: value });
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    updateFormData({ [name]: value });
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -75,7 +69,7 @@ export default function RegisterEmployeeStep1({
     const startingDayOfWeek = firstDay.getDay();
 
     const days = [];
-    
+
     // Previous month days
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
@@ -116,7 +110,7 @@ export default function RegisterEmployeeStep1({
   };
 
   const handleDateSelect = (date: Date, field: 'dateOfBirth' | 'dateJoined') => {
-    setFormData((prev) => ({ ...prev, [field]: formatDate(date) }));
+    updateFormData({ [field]: formatDate(date) });
     if (field === 'dateOfBirth') {
       setShowDateOfBirthCalendar(false);
     } else {
@@ -175,10 +169,10 @@ export default function RegisterEmployeeStep1({
               </div>
               <span className="text-sm font-semibold text-gray-900">Personal Info</span>
             </div>
-            
+
             {/* Connector */}
             <div className="flex-1 h-0.5 bg-gray-300 mx-4 mb-8"></div>
-            
+
             {/* Step 2 - Inactive */}
             <div className="flex flex-col items-center flex-1">
               <div className="w-14 h-14 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold text-lg mb-3">
@@ -186,10 +180,10 @@ export default function RegisterEmployeeStep1({
               </div>
               <span className="text-sm text-gray-500">Employment</span>
             </div>
-            
+
             {/* Connector */}
             <div className="flex-1 h-0.5 bg-gray-300 mx-4 mb-8"></div>
-            
+
             {/* Step 3 - Inactive */}
             <div className="flex flex-col items-center flex-1">
               <div className="w-14 h-14 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold text-lg mb-3">
@@ -308,7 +302,7 @@ export default function RegisterEmployeeStep1({
                     name="dateOfBirth"
                     className="w-full pl-11 pr-4 h-12 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
-                  
+
                   {/* Calendar Dropdown */}
                   {showDateOfBirthCalendar && (
                     <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4 w-80">
@@ -344,12 +338,12 @@ export default function RegisterEmployeeStep1({
                             {day}
                           </div>
                         ))}
-                        
+
                         {/* Calendar Days */}
                         {getDaysInMonth(currentMonthDOB).map((dayObj, idx) => {
                           const isPast = isPastDate(dayObj.date);
                           const isDisabled = !dayObj.isCurrentMonth;
-                          
+
                           return (
                             <button
                               key={idx}
@@ -390,7 +384,7 @@ export default function RegisterEmployeeStep1({
                     name="dateJoined"
                     className="w-full pl-11 pr-4 h-12 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
-                  
+
                   {/* Calendar Dropdown */}
                   {showDateJoinedCalendar && (
                     <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4 w-80">
@@ -426,11 +420,11 @@ export default function RegisterEmployeeStep1({
                             {day}
                           </div>
                         ))}
-                        
+
                         {/* Calendar Days */}
                         {getDaysInMonth(currentMonthDJ).map((dayObj, idx) => {
                           const isDisabled = !dayObj.isCurrentMonth;
-                          
+
                           return (
                             <button
                               key={idx}
