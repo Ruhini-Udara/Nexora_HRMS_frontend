@@ -6,55 +6,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 
-const INITIAL_TRAINING_EVENTS = [
-    {
-        id: 1,
-        title: "Advanced Sales Tactics",
-        date: "October 24, 2023",
-        time: "09:00 AM - 12:00 PM",
-        category: "External",
-        participants: "45",
-        description: "Learn advanced negotiation and closing strategies.",
-        applyBefore: "October 10, 2023",
-        location: "Conference Room A",
-        budget: "2000",
-        instructor: "Jane Doe",
-    },
-    {
-        id: 2,
-        title: "Leadership 101: Core Basics",
-        date: "November 02, 2023",
-        time: "02:00 PM - 05:00 PM",
-        category: "Internal",
-        participants: "30",
-        description: "Foundational leadership skills for new managers.",
-        applyBefore: "October 20, 2023",
-        location: "Main Auditorium",
-        budget: "1500",
-        instructor: "John Smith",
-    },
-    {
-        id: 3,
-        title: "2024 Product Roadmap",
-        date: "November 15, 2023",
-        time: "11:00 AM - 12:30 PM",
-        category: "Internal",
-        participants: "100",
-        description: "Deep dive into the 2024 product feature set.",
-        applyBefore: "November 01, 2023",
-        location: "Virtual (Zoom)",
-        budget: "500",
-        instructor: "Product Team",
-    },
-];
-
 type TrainingEvent = {
     id: number;
     title: string;
-    date: string;
-    time: string;
+    proposedStartDate?: string;
+    date?: string;
+    time?: string;
     category: string;
     participants?: string;
+    expectedParticipants?: number;
     description?: string;
     applyBefore?: string;
     location?: string;
@@ -63,9 +23,9 @@ type TrainingEvent = {
 };
 
 export default function CreateTrainingPlanPage() {
-    const [events, setEvents] = useState<any[]>([]);
+    const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [selectedCategory, setSelectedCategory] = useState("All");
-    const [selectedViewEvent, setSelectedViewEvent] = useState<any | null>(null);
+    const [selectedViewEvent, setSelectedViewEvent] = useState<TrainingEvent | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -150,7 +110,7 @@ export default function CreateTrainingPlanPage() {
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
-                            date={event.proposedStartDate}
+                            date={event.proposedStartDate || "TBD"}
                             time={"TBD"}
                             category={event.category}
                             onView={() => setSelectedViewEvent(event)}
