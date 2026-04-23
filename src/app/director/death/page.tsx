@@ -1,5 +1,4 @@
-import DeathStats from '@/components/director/death/DeathStats';
-import DeathTable from '@/components/director/death/DeathTable';
+import DeathRequestsTable from '@/components/director/death/DeathRequestsTable';
 
 export default function DeathApplicationsPage() {
     return (
@@ -9,10 +8,7 @@ export default function DeathApplicationsPage() {
                 <p className="text-gray-500 mt-1">Review and process employee death benefit claims and documentation.</p>
             </div>
 
-            <DeathStats />
-
-            <DeathTable />
+            <DeathRequestsTable />
         </div>
     );
 }
-
