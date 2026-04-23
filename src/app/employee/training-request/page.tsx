@@ -12,7 +12,7 @@ export default function TrainingRequestPage() {
 
     const trainingEvents = [
         {
-            category: "Sales",
+            category: "External",
             imageSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuD8kev8B1LHYhdvJyun1RzU5HW-NDFoJcDXqV7wdhsVReP40kpwOtbuxDty4O6mfetRRD_QTIJIJSjSp4mw1fNCpwFqjfcIreTGSOTOKsEsO3MBcrz-WlwuTzupbrmc-o_v6Lgu__qD6QWbyDyeRJ26EJtz2nzEoUITC4819iWyi4NrePIRCsW_8OUJE_mnttj7P1ijejfnRuikHbdDkWXZWlQ4qOTfWlwrNsWBCheAV2_OupK08EcTN9TGNdugoXWibnpud_0qhBI",
             imageAlt: "Team collaborating in a modern office workshop setting",
             title: "Advanced Sales Tactics",
@@ -21,7 +21,7 @@ export default function TrainingRequestPage() {
             applyBefore: "October 18, 2023",
         },
         {
-            category: "Leadership",
+            category: "Internal",
             imageSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuCeomj4FV-xTtl2q-eZoLucnP8oW2QvbeBuvy5Jy4SlB02M4bG-Lbm02kxsJMCKLnPwdIFc1imWvEFWqzereZgUBki7sf7CcgjvgFmglNSiSSuT2BuDhCBsU4QwSi8ropV70Fz77jye_NG8hb7xtEtutziJY23stOGe9XUQOTSuRlKsk995DZ6T7PvLqBG2T8IeN_hFvHPoQGIFCCqIdKOI2yqDouhUviARKhhCgVmw4f-bqAygPiLqG6iDvmwSIUbifK7oRoCHWzM",
             imageAlt: "Corporate meeting room with leadership presentation",
             title: "Leadership 101: Core Basics",
@@ -30,7 +30,7 @@ export default function TrainingRequestPage() {
             applyBefore: "October 28, 2023",
         },
         {
-            category: "Product",
+            category: "Internal",
             imageSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuCCAiE3w4C5N0fAAb27Exc4cON_BPrwP423cWY51Z5bAwzqP4nOzSTulKsfKLMmmNnL9d9WrqSIScUMPHNCBR3p9o0HUFnsXt9qSJy52kRa0m2dIlnLwnzkLhxUXZxmx7tY1C3kmdjAiBEjevmQsROHz-bkkrsvt_a92zGS9emts4J3NeWW31g9Nf6HdXTjKZl5zBLwuwrKVYbHQdFRCm8nqWPpp9B9fEY6YhuDFZP9LLl6CPD_0tjGaul5Q-BWhhMKHmEE4U2dS48",
             imageAlt: "Laptop displaying data analytics charts and graphs",
             title: "2024 Product Roadmap",

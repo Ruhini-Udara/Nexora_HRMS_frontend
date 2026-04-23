@@ -1,145 +1,223 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { getSignedUrl } from "@/lib/supabaseClient";
 
-// Mock Data for pending requests
-const MOCK_REQUESTS = [
-    {
-        id: "REQ-001",
-        epfNumber: "12345",
-        employeeName: "John Doe",
-        designation: "Software Engineer",
-        branch: "Head Office",
-        leaveReason: "Family Vacation to Europe",
-        startDate: "2024-05-10",
-        endDate: "2024-05-25",
-        noOfDays: 16,
-        passportNumber: "N12345678",
-        passportExpDate: "2028-10-15",
-        contactNumber: "+94 77 123 4567",
-        email: "john.doe@example.com",
-        specialRemark: "All flights booked.",
-        status: "Submitted for Overseas Leaves Verification",
-        requestDate: "2024-04-01",
-        documents: {
-            passportCopy: "passport_johndoe.pdf",
-            visaCopy: "schengen_visa.pdf",
-            confirmationLetter: "hr_confirmation.pdf",
-            leaveLetter: "leave_request.pdf"
-        },
-        hrRemark: ""
-    },
-    {
-        id: "REQ-002",
-        epfNumber: "87654",
-        employeeName: "Kasun Perera",
-        designation: "Marketing director",
-        branch: "Colombo Branch",
-        leaveReason: "Attending International Marketing Conference in Dubai",
-        startDate: "2024-06-15",
-        endDate: "2024-06-20",
-        noOfDays: 6,
-        passportNumber: "N98765432",
-        passportExpDate: "2029-05-20",
-        contactNumber: "+94 71 987 6543",
-        email: "kasun.p@example.com",
-        specialRemark: "Conference registration confirmed. Company sponsored trip.",
-        status: "Submitted for Overseas Leaves Verification",
-        requestDate: "2024-05-02",
-        documents: {
-            passportCopy: "passport_kasun.pdf",
-            visaCopy: "dubai_visa.pdf",
-            confirmationLetter: "conference_invite.pdf",
-            leaveLetter: "leave_req_kasun.pdf"
-        },
-        hrRemark: ""
-    },
-    {
-        id: "REQ-003",
-        epfNumber: "45678",
-        employeeName: "Nimali Silva",
-        designation: "Senior Accountant",
-        branch: "Kandy Branch",
-        leaveReason: "Personal travel to Australia to visit family",
-        startDate: "2024-08-01",
-        endDate: "2024-08-21",
-        noOfDays: 21,
-        passportNumber: "N45678901",
-        passportExpDate: "2027-11-10",
-        contactNumber: "+94 76 543 2109",
-        email: "nimali.s@example.com",
-        specialRemark: "Visa application in progress. Will upload once received.",
-        status: "Submitted for Overseas Leaves Verification",
-        requestDate: "2024-06-25",
-        documents: {
-            passportCopy: "passport_nimali.pdf",
-            visaCopy: "",
-            confirmationLetter: "",
-            leaveLetter: "overseas_leave_nimali.pdf"
-        },
-        hrRemark: ""
-    }
-];
+// ─── Types ───────────────────────────────────────────────────────────────────
+interface LeaveDocument {
+    id: number;
+    documentType: string;
+    filePathUrl: string;
+    description: string;
+}
 
+interface OverseasLeave {
+    id: number;
+    reason: string;
+    fromDate: string;
+    endDate: string;
+    totalDays: number;
+    status: string;
+    createdAt: string;
+    employee: {
+        id: number;
+        employeeCode: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        phoneNo: string;
+    };
+    passportNumber: string;
+    passportExpDate: string;
+    branch: string;
+    contactNumber: string;
+    email: string;
+    specialRemark: string;
+}
+
+// ─── Document viewer helper ───────────────────────────────────────────────────
+function DocumentCard({ label, path }: { label: string; path: string }) {
+    const [loading, setLoading] = useState(false);
+
+    const handleView = async () => {
+        if (!path) return;
+        setLoading(true);
+        const url = await getSignedUrl(path, 3600);
+        setLoading(false);
+        if (url) {
+            window.open(url, "_blank");
+        } else {
+            alert("Could not generate a secure link for this document. Please try again.");
+        }
+    };
+
+    if (!path) return null;
+
+    return (
+        <div
+            onClick={handleView}
+            className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 group hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer"
+        >
+            <div className="w-8 h-8 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                {loading
+                    ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                    : <span className="material-symbols-outlined text-[18px]">description</span>
+                }
+            </div>
+            <div className="overflow-hidden flex-1">
+                <div className="text-xs font-bold text-slate-700 dark:text-slate-200 capitalize">{label}</div>
+                <div className="text-[10px] text-primary group-hover:underline">Click to view (1-hr secure link)</div>
+            </div>
+            <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-primary">open_in_new</span>
+        </div>
+    );
+}
+
+// ─── Status badge helper ──────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+    const map: Record<string, string> = {
+        PENDING_HR_APPROVAL: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+        PENDING_ADMIN_APPROVAL: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        PENDING_DIRECTOR_REVIEW: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+        APPROVED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        REJECTED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    };
+    const label: Record<string, string> = {
+        PENDING_HR_APPROVAL: "Pending HR Review",
+        PENDING_ADMIN_APPROVAL: "Pending Admin Approval",
+        PENDING_DIRECTOR_REVIEW: "Pending Director Review",
+        APPROVED: "Approved",
+        REJECTED: "Rejected",
+    };
+    return (
+        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${map[status] ?? "bg-slate-100 text-slate-600"}`}>
+            {label[status] ?? status}
+        </span>
+    );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function LeaveApprovalsPage() {
-    const [requests, setRequests] = useState(MOCK_REQUESTS);
-    const [selectedRequest, setSelectedRequest] = useState<typeof MOCK_REQUESTS[0] | null>(null);
-    const [hrRemarkInput, setHrRemarkInput] = useState("");
+    const [requests, setRequests] = useState<OverseasLeave[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [selectedRequest, setSelectedRequest] = useState<OverseasLeave | null>(null);
+    const [documents, setDocuments] = useState<LeaveDocument[]>([]);
+    const [docsLoading, setDocsLoading] = useState(false);
+    const [hrRemark, setHrRemark] = useState("");
+    const [submitting, setSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
+    const [statusFilter, setStatusFilter] = useState("PENDING_HR_APPROVAL");
 
-    const handleView = (req: typeof MOCK_REQUESTS[0]) => {
+    // ── Fetch leaves from backend ──────────────────────────────────────────
+    const fetchLeaves = useCallback(async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const res = await fetch(
+                `http://localhost:8080/api/v1/leaves/overseas/status/${statusFilter}`
+            );
+            if (!res.ok) throw new Error("Failed to fetch leave requests.");
+            const data: OverseasLeave[] = await res.json();
+            setRequests(data);
+        } catch {
+            setError("Could not connect to the backend. Make sure the server is running.");
+        } finally {
+            setLoading(false);
+        }
+    }, [statusFilter]);
+
+    useEffect(() => { fetchLeaves(); }, [fetchLeaves]);
+
+    // ── Open modal and load documents ─────────────────────────────────────
+    const handleOpenReview = async (req: OverseasLeave) => {
         setSelectedRequest(req);
-        setHrRemarkInput(req.hrRemark || "");
+        setHrRemark("");
+        setDocuments([]);
+        setDocsLoading(true);
+        try {
+            const res = await fetch(
+                `http://localhost:8080/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`
+            );
+            if (res.ok) {
+                const docs: LeaveDocument[] = await res.json();
+                setDocuments(docs);
+            }
+        } catch {
+            // non-critical — just show empty documents
+        } finally {
+            setDocsLoading(false);
+        }
     };
 
-    const handleCloseModal = () => {
-        setSelectedRequest(null);
-        setHrRemarkInput("");
-    };
-
-    const handleVerifySubmit = (status: "Submitted for Administrator Approvals" | "Rejected") => {
+    // ── Approve / Reject ───────────────────────────────────────────────────
+    const handleDecision = async (decision: "APPROVE" | "REJECT") => {
         if (!selectedRequest) return;
-
-        setRequests(prev => prev.map(req =>
-            req.id === selectedRequest.id
-                ? { ...req, status, hrRemark: hrRemarkInput }
-                : req
-        ));
-
-        handleCloseModal();
+        setSubmitting(true);
+        try {
+            const res = await fetch("http://localhost:8080/api/v1/approvals", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    refId: selectedRequest.id,
+                    refType: "OVERSEAS_LEAVE",
+                    decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
+                    remark: hrRemark,
+                    approvedBy: { id: 1 }, // TODO: replace with logged-in HR user's employee id
+                }),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || "Decision submission failed.");
+            }
+            setSelectedRequest(null);
+            setHrRemark("");
+            await fetchLeaves(); // Refresh the list
+        } catch (err) {
+            console.error("Decision error:", err);
+            alert("Something went wrong. Please try again.");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-
-    const filteredRequests = requests.filter(req => {
-        const matchesSearch = req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            req.id.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === "All" || req.status === statusFilter;
-        return matchesSearch && matchesStatus;
+    // ── Filter ─────────────────────────────────────────────────────────────
+    const filtered = requests.filter(req => {
+        const name = `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.toLowerCase();
+        const id = String(req.id);
+        return name.includes(searchTerm.toLowerCase()) || id.includes(searchTerm);
     });
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-
             <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
+
+                {/* Header */}
                 <div className="mb-8 flex items-center justify-between">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <Link href="/hr/leave" className="text-slate-400 hover:text-primary transition-colors">
                                 <span className="material-symbols-outlined">arrow_back</span>
                             </Link>
-                            <h2 className="text-3xl font-bold text-slate-800 dark:text-white">
+                            <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
                                 Overseas Leave Verification
-                            </h2>
+                            </h1>
                         </div>
                         <p className="text-slate-500 dark:text-slate-400 ml-9">
                             Review, verify documents, and approve overseas leave requests from employees.
                         </p>
                     </div>
+                    <button
+                        onClick={fetchLeaves}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary transition-colors shadow-sm"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">refresh</span>
+                        Refresh
+                    </button>
                 </div>
 
-                {/* Filter & Search Bar */}
+                {/* Filter Bar */}
                 <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
                     <div className="relative w-full sm:w-96">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -147,9 +225,9 @@ export default function LeaveApprovalsPage() {
                         </span>
                         <input
                             type="text"
-                            placeholder="Search by ID or Name..."
+                            placeholder="Search by ID or name..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={e => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                         />
                     </div>
@@ -157,96 +235,105 @@ export default function LeaveApprovalsPage() {
                         <span className="material-symbols-outlined text-slate-400">filter_list</span>
                         <select
                             value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
+                            onChange={e => setStatusFilter(e.target.value)}
                             className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
                         >
-                            <option value="All">All Statuses</option>
-                            <option value="Submitted for Overseas Leaves Verification">Pending Verification</option>
-                            <option value="Submitted for Administrator Approvals">Verified</option>
-
-                            <option value="Rejected">Rejected</option>
+                            <option value="PENDING_HR_APPROVAL">Pending My Review</option>
+                            <option value="PENDING_ADMIN_APPROVAL">Sent to Admin</option>
+                            <option value="PENDING_DIRECTOR_REVIEW">Sent to Director</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
                         </select>
                     </div>
                 </div>
 
-
-                {/* Data Table */}
+                {/* Table */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
-
-                                    <th className="py-4 px-6">ID</th>
-                                    <th className="py-4 px-6">Employee</th>
-                                    <th className="py-4 px-6">Date Range</th>
-                                    <th className="py-4 px-6">Status</th>
-                                    <th className="py-4 px-6 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm">
-                                {filteredRequests.map((req) => (
-                                    <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
-                                        <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">{req.id}</td>
-                                        <td className="py-4 px-6">
-                                            <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
-                                            <div className="text-xs text-slate-500">{req.epfNumber} • {req.designation}</div>
-                                        </td>
-                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
-                                            {req.startDate} to {req.endDate} <br />
-                                            <span className="text-xs text-slate-400">({req.noOfDays} Days)</span>
-                                        </td>
-                                        <td className="py-4 px-6">
-                                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${req.status === "Submitted for Overseas Leaves Verification"
-                                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                                                : req.status === "Submitted for Administrator Approvals"
-                                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                                                    : req.status === "Sent for Admin Approval"
-                                                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                                                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                                                }`}>
-                                                {req.status}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 px-6 text-right">
-                                            <button
-                                                onClick={() => handleView(req)}
-                                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors"
-                                            >
-                                                <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                Review
-                                            </button>
-                                        </td>
+                    {loading ? (
+                        <div className="flex items-center justify-center py-16 gap-3 text-slate-500">
+                            <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                            Loading leave requests...
+                        </div>
+                    ) : error ? (
+                        <div className="flex items-center justify-center py-16 gap-3 text-red-500">
+                            <span className="material-symbols-outlined">error</span>
+                            {error}
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                                        <th className="py-4 px-6">ID</th>
+                                        <th className="py-4 px-6">Employee</th>
+                                        <th className="py-4 px-6">Date Range</th>
+                                        <th className="py-4 px-6">Status</th>
+                                        <th className="py-4 px-6 text-right">Actions</th>
                                     </tr>
-                                ))}
-                                {filteredRequests.length === 0 && (
-                                    <tr>
-                                        <td colSpan={6} className="py-8 text-center text-slate-500">No requests found matching your filters.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {filtered.map(req => (
+                                        <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
+                                            <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">#{req.id}</td>
+                                            <td className="py-4 px-6">
+                                                <div className="font-semibold text-slate-800 dark:text-white">
+                                                    {req.employee?.firstName} {req.employee?.lastName}
+                                                </div>
+                                                <div className="text-xs text-slate-500">
+                                                    {req.employee?.employeeCode} • {req.branch}
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
+                                                {req.fromDate} → {req.endDate}
+                                                <br />
+                                                <span className="text-xs text-slate-400">({req.totalDays} days)</span>
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <StatusBadge status={req.status} />
+                                            </td>
+                                            <td className="py-4 px-6 text-right">
+                                                <button
+                                                    onClick={() => handleOpenReview(req)}
+                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors"
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                                    Review
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filtered.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="py-12 text-center text-slate-500">
+                                                <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">inbox</span>
+                                                No leave requests found.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Verification Modal */}
+            {/* ── Review Modal ───────────────────────────────────────────────── */}
             {selectedRequest && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 h-screen max-h-screen">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-full">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
 
-                        {/* Header */}
+                        {/* Modal Header */}
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
                             <div>
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Verify Overseas Leave Request</h3>
-                                <p className="text-sm text-slate-500 mt-1">Request ID: {selectedRequest.id}</p>
+                                <p className="text-sm text-slate-500 mt-1">Request ID: #{selectedRequest.id}</p>
                             </div>
-                            <button onClick={handleCloseModal} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+                            <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
 
-                        {/* Body (Scrollable) */}
+                        {/* Modal Body */}
                         <div className="p-6 overflow-y-auto space-y-8 flex-1">
 
                             {/* Details Grid */}
@@ -254,10 +341,9 @@ export default function LeaveApprovalsPage() {
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Employee Info</h4>
                                     <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employeeName}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">EPF No:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.epfNumber}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.firstName} {selectedRequest.employee?.lastName}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">EPF No:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.employeeCode}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Branch:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.branch}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Designation:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.designation}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Contact:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.contactNumber}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Email:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
                                     </div>
@@ -265,78 +351,85 @@ export default function LeaveApprovalsPage() {
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Leave & Travel Info</h4>
                                     <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Status:</span> <span className="font-bold text-primary">{selectedRequest.status}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Dates:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.startDate} to {selectedRequest.endDate}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Total Days:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.noOfDays}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Status:</span> <StatusBadge status={selectedRequest.status} /></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Dates:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.fromDate} → {selectedRequest.endDate}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Total Days:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.totalDays}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Passport No:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.passportNumber}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Passport Exp:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.passportExpDate}</span></div>
-                                        <div className="mt-2"><span className="text-slate-500 block mb-1">Reason:</span> <p className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded text-slate-700 dark:text-slate-300">{selectedRequest.leaveReason}</p></div>
+                                        <div className="mt-2"><span className="text-slate-500 block mb-1">Reason:</span><p className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded text-slate-700 dark:text-slate-300">{selectedRequest.reason}</p></div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Documents Section */}
+                            {/* Documents */}
                             <div>
-                                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Uploaded Documents</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                    {Object.entries(selectedRequest.documents).map(([key, filename]) => (
-                                        filename ? (
-                                            <div key={key} className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 group hover:border-primary transition-colors cursor-pointer">
-                                                <div className="w-8 h-8 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                                    <span className="material-symbols-outlined text-[18px]">description</span>
-                                                </div>
-                                                <div className="overflow-hidden">
-                                                    <div className="text-xs font-bold text-slate-700 dark:text-slate-200 capitalize truncate">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
-                                                    <div className="text-[10px] text-slate-500 truncate">{filename}</div>
-                                                </div>
-                                            </div>
-                                        ) : null
-                                    ))}
-
-                                    {/* Adhoc Upload */}
-                                    <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 hover:text-primary transition-colors cursor-pointer">
-                                        <span className="material-symbols-outlined text-[18px]">upload</span>
-                                        <span className="text-xs font-semibold">Upload Override Doc</span>
-                                        <input type="file" className="hidden" />
-                                    </label>
-                                </div>
+                                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+                                    Uploaded Documents
+                                    <span className="ml-2 text-xs font-normal text-slate-500">(Secure links expire in 1 hour)</span>
+                                </h4>
+                                {docsLoading ? (
+                                    <div className="flex items-center gap-2 text-slate-500 text-sm">
+                                        <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                                        Loading documents...
+                                    </div>
+                                ) : documents.length === 0 ? (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[14px]">warning</span>
+                                        No documents were uploaded with this request.
+                                    </p>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                        {documents.map(doc => (
+                                            <DocumentCard
+                                                key={doc.id}
+                                                label={doc.description || doc.documentType}
+                                                path={doc.filePathUrl}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* HR Remarks */}
                             <div>
                                 <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">HR Remarks</h4>
                                 <textarea
-                                    value={hrRemarkInput}
-                                    onChange={(e) => setHrRemarkInput(e.target.value)}
-                                    placeholder="Add any verification notes or rejection reasons here..."
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                    value={hrRemark}
+                                    onChange={e => setHrRemark(e.target.value)}
+                                    disabled={selectedRequest.status !== "PENDING_HR_APPROVAL"}
+                                    placeholder="Add verification notes or rejection reason..."
+                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300 outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
                                     rows={3}
                                 />
                             </div>
-
                         </div>
 
-                        {/* Footer Actions */}
+                        {/* Modal Footer */}
                         <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex items-center justify-end gap-3 rounded-b-2xl">
-                            {selectedRequest.status === "Submitted for Overseas Leaves Verification" ? (
+                            {selectedRequest.status === "PENDING_HR_APPROVAL" ? (
                                 <>
                                     <button
-                                        onClick={() => handleVerifySubmit("Rejected")}
-                                        className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-bold text-sm transition-colors"
+                                        onClick={() => handleDecision("REJECT")}
+                                        disabled={submitting}
+                                        className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-bold text-sm transition-colors disabled:opacity-50"
                                     >
                                         Reject Request
                                     </button>
                                     <button
-                                        onClick={() => handleVerifySubmit("Submitted for Administrator Approvals")}
-                                        className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors"
+                                        onClick={() => handleDecision("APPROVE")}
+                                        disabled={submitting}
+                                        className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors disabled:opacity-50"
                                     >
-                                        <span className="material-symbols-outlined text-[18px]">verified</span>
-                                        Verify &amp; Submit for Admin Approval
+                                        {submitting
+                                            ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                                            : <span className="material-symbols-outlined text-[18px]">verified</span>
+                                        }
+                                        Verify & Forward to Admin
                                     </button>
                                 </>
                             ) : (
                                 <button
-                                    onClick={handleCloseModal}
+                                    onClick={() => setSelectedRequest(null)}
                                     className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg font-bold text-sm transition-colors"
                                 >
                                     Close
@@ -349,4 +442,3 @@ export default function LeaveApprovalsPage() {
         </div>
     );
 }
-
