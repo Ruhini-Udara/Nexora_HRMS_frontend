@@ -17,7 +17,7 @@ const requests: TrainingRequest[] = [
     {
         id: 1,
         name: "Customer Success Workshop",
-        category: "Soft Skills",
+        category: "Internal",
         status: "Approved",
         date: "Oct 18, 2023",
         time: "10:00 AM - 01:00 PM",
@@ -26,7 +26,7 @@ const requests: TrainingRequest[] = [
     {
         id: 2,
         name: "Advanced Negotiation Skills",
-        category: "Sales",
+        category: "External",
         status: "Pending",
         date: "Oct 30, 2023",
         time: "09:00 AM - 12:00 PM",
@@ -35,7 +35,7 @@ const requests: TrainingRequest[] = [
     {
         id: 3,
         name: "Python for Sales Automation",
-        category: "Technical",
+        category: "Internal",
         status: "Rejected",
         date: "Nov 05, 2023",
         time: "All Day Session",

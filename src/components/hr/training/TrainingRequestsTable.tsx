@@ -13,7 +13,7 @@ const initialTrainingEvents = [
         title: "Advanced Sales Tactics",
         date: "October 24, 2023",
         time: "09:00 AM - 12:00 PM",
-        category: "Sales",
+        category: "External",
         status: "Approved",
     },
     {
@@ -21,7 +21,7 @@ const initialTrainingEvents = [
         title: "Leadership 101: Core Basics",
         date: "November 02, 2023",
         time: "02:00 PM - 05:00 PM",
-        category: "Leadership",
+        category: "Internal",
         status: "Pending",
     },
     {
@@ -29,7 +29,7 @@ const initialTrainingEvents = [
         title: "2024 Product Roadmap",
         date: "November 15, 2023",
         time: "11:00 AM - 12:30 PM",
-        category: "Product",
+        category: "Internal",
         status: "Rejected",
         reason: "Does not align with Q4 objectives."
     },
@@ -259,9 +259,8 @@ export default function TrainingRequestsTable() {
                                 className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
                             >
                                 <option value="All">All Types</option>
-                                <option value="Sales">Sales</option>
-                                <option value="Leadership">Leadership</option>
-                                <option value="Product">Product</option>
+                                <option value="Internal">Internal</option>
+                                <option value="External">External</option>
                             </select>
                             <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">
                                 arrow_drop_down

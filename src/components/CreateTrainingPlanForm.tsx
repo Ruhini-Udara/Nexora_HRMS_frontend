@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 export default function CreateTrainingPlanForm() {
     const [isConfirmingPublish, setIsConfirmingPublish] = useState(false);
     const [title, setTitle] = useState('');
-    const [category, setCategory] = useState('Soft Skills');
+    const [category, setCategory] = useState('');
     const [date, setDate] = useState('');
     const [participants, setParticipants] = useState('');
     const [description, setDescription] = useState('');
@@ -27,7 +27,7 @@ export default function CreateTrainingPlanForm() {
                 if (eventToEdit) {
                     setTimeout(() => {
                         setTitle(eventToEdit.title || '');
-                        setCategory(eventToEdit.category || 'Soft Skills');
+                        setCategory(eventToEdit.category || '');
                         setDate(eventToEdit.date || '');
                         setParticipants(eventToEdit.participants || '');
                         setDescription(eventToEdit.description || '');
@@ -64,43 +64,46 @@ export default function CreateTrainingPlanForm() {
                     <div className="grid grid-cols-2 gap-6">
                         <div className="col-span-2">
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Training Programe Name <span className="text-red-500">*</span></label>
-                            <input 
-                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4" 
-                                placeholder="e.g. Q3 Leadership Excellence Workshop" 
-                                type="text" 
+                            <input
+                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                placeholder="e.g. Q3 Leadership Excellence Workshop"
+                                type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Training Type <span className="text-red-500">*</span></label>
-                            <select 
-                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 appearance-none"
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                            >
-                                <option>Soft Skills</option>
-                                <option>Technical Training</option>
-                                <option>Compliance &amp; Safety</option>
-                                <option>Leadership Development</option>
-                                <option>Onboarding</option>
-                            </select>
+                            <div className="relative">
+                                <select 
+                                    className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 pr-10 appearance-none ${category === '' ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                >
+                                    <option value="" disabled hidden>Choose External or Internal</option>
+                                    <option value="Internal" className="text-gray-900 dark:text-white">Internal</option>
+                                    <option value="External" className="text-gray-900 dark:text-white">External</option>
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                    expand_more
+                                </span>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Expected Participants <span className="text-red-500">*</span></label>
-                            <input 
-                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4" 
-                                placeholder="50" 
-                                type="number" 
+                            <input
+                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                placeholder="50"
+                                type="number"
                                 value={participants}
                                 onChange={(e) => setParticipants(e.target.value)}
                             />
                         </div>
                         <div className="col-span-2">
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</label>
-                            <textarea 
-                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4" 
-                                placeholder="Briefly describe the purpose of this training..." 
+                            <textarea
+                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                placeholder="Briefly describe the purpose of this training..."
                                 rows={4}
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -121,30 +124,30 @@ export default function CreateTrainingPlanForm() {
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proposed Start Date <span className="text-red-500">*</span></label>
-                                <input 
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4" 
-                                    type="date" 
-                                    min={new Date().toISOString().split('T')[0]} 
+                                <input
+                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    type="date"
+                                    min={new Date().toISOString().split('T')[0]}
                                     value={date}
                                     onChange={(e) => setDate(e.target.value)}
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Apply Before (Date) <span className="text-red-500">*</span></label>
-                                <input 
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4" 
-                                    type="date" 
-                                    min={new Date().toISOString().split('T')[0]} 
+                                <input
+                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    type="date"
+                                    min={new Date().toISOString().split('T')[0]}
                                     value={applyBefore}
                                     onChange={(e) => setApplyBefore(e.target.value)}
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location</label>
-                                <input 
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4" 
-                                    placeholder="Enter location..." 
-                                    type="text" 
+                                <input
+                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    placeholder="Enter location..."
+                                    type="text"
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
                                 />
@@ -164,10 +167,10 @@ export default function CreateTrainingPlanForm() {
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Budget Allocation</label>
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">$</span>
-                                    <input 
-                                        className="w-full pl-8 pr-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm" 
-                                        placeholder="5,000" 
-                                        type="number" 
+                                    <input
+                                        className="w-full pl-8 pr-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm"
+                                        placeholder="5,000"
+                                        type="number"
                                         value={budget}
                                         onChange={(e) => setBudget(e.target.value)}
                                     />
@@ -176,10 +179,10 @@ export default function CreateTrainingPlanForm() {
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Lead Instructor/Coach</label>
-                                <input 
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4" 
-                                    placeholder="External consultant or Dept Head" 
-                                    type="text" 
+                                <input
+                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    placeholder="External consultant or Dept Head"
+                                    type="text"
                                     value={instructor}
                                     onChange={(e) => setInstructor(e.target.value)}
                                 />
@@ -238,14 +241,14 @@ export default function CreateTrainingPlanForm() {
                                         budget: budget || "0",
                                         instructor: instructor || "TBA",
                                     };
-                                    
+
                                     // Save to localStorage
                                     const stored = localStorage.getItem('trainingEvents');
                                     let eventsList = [];
                                     if (stored) {
                                         eventsList = JSON.parse(stored);
                                     }
-                                    
+
                                     if (editId) {
                                         const index = eventsList.findIndex((e: { id: number | string }) => e.id.toString() === editId);
                                         if (index !== -1) {
@@ -256,9 +259,9 @@ export default function CreateTrainingPlanForm() {
                                     } else {
                                         eventsList.push(newEvent);
                                     }
-                                    
+
                                     localStorage.setItem('trainingEvents', JSON.stringify(eventsList));
-                                    
+
                                     router.push('/hr/training/create-plan');
                                 }}
                                 className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
