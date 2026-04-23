@@ -1,10 +1,36 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react"; // Or use Material Symbols if preferred
+import React, { useState } from "react";
+import ResignationRequestPage from "@/components/ResignationRequestPage";
+import type { ResignationRequest } from "@/components/ResignationRequestPage";
 
-export default function ResignationRequestPage() {
+// ── Status badge config ─────────────────────────────────────────────
+type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+
+const statusStyles: Record<RequestStatus, { label: string; classes: string }> = {
+    DRAFT: { label: 'Draft', classes: 'bg-slate-100 text-slate-600' },
+    SUBMITTED: { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' },
+    APPROVED: { label: 'Approved', classes: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
+    REJECTED: { label: 'Rejected', classes: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
+};
+
+export default function Page() {
+    // ── Mock request state (API-ready) ──────────────────────────────
+    const [requests, setRequests] = useState<ResignationRequest[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Only show SUBMITTED/APPROVED/REJECTED in the status table (not DRAFT)
+    const visibleRequests = requests.filter(
+        (r) => r.status !== 'DRAFT' &&
+            (searchQuery === '' || r.id.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
+    const formatDate = (iso: string) => {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
     return (
         <div className="max-w-[1400px] w-full mx-auto space-y-8">
             <div className="flex justify-between items-start">
@@ -17,62 +43,23 @@ export default function ResignationRequestPage() {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-[20px]">assignment_late</span>
-                    <h2 className="font-bold text-slate-800 dark:text-white text-sm">Create Resign Request</h2>
-                </div>
-                <div className="p-8">
-                    <form className="space-y-8">
-                        <div className="grid grid-cols-12 gap-8">
-                            <div className="col-span-12 lg:col-span-5 space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2 sm:col-span-1">
-                                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Desired Last Working Day</label>
-                                        <input className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-sm text-slate-600 dark:text-slate-300 p-2.5 outline-none" placeholder="mm/dd/yyyy" type="date" />
-                                    </div>
-                                    <div className="col-span-2 sm:col-span-1">
-                                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Reason for Resignation</label>
-                                        <select className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-sm text-slate-600 dark:text-slate-300 p-2.5 outline-none">
-                                            <option>Select Reason</option>
-                                            <option>Career Growth</option>
-                                            <option>Personal Reasons</option>
-                                            <option>Better Opportunity</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Add Remarks (Exit Feedback)</label>
-                                    <textarea className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-sm text-slate-600 dark:text-slate-300 p-3 h-32 outline-none" placeholder="Please share any feedback or specific reasons for your departure..."></textarea>
-                                </div>
-                            </div>
-                            <div className="col-span-12 lg:col-span-7">
-                                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Upload Resignation Letter</label>
-                                <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-12 text-center bg-slate-50 dark:bg-slate-800/30 flex flex-col items-center justify-center h-full min-h-[220px]">
-                                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                                        <span className="material-symbols-outlined text-primary text-2xl">cloud_upload</span>
-                                    </div>
-                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">Click to upload or drag and drop</p>
-                                    <p className="text-xs text-slate-400">Signed PDF or Document (max. 5MB)</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex justify-end">
-                            <button className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-bold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all" type="submit">
-                                <span className="material-symbols-outlined text-[20px]">send</span>
-                                Submit Request
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+            <ResignationRequestPage
+                requests={requests}
+                onRequestChange={setRequests}
+            />
 
             <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                 <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <h2 className="font-bold text-slate-800 dark:text-white">Resignation Request Status</h2>
                     <div className="relative w-full sm:w-80">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                        <input className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary focus:border-primary outline-none" placeholder="Search request ID..." type="text" />
+                        <input
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary focus:border-primary outline-none"
+                            placeholder="Search request ID..."
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -87,19 +74,38 @@ export default function ResignationRequestPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                            <tr>
-                                <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300">RES-2024-012</td>
-                                <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">15 Oct 2024</td>
-                                <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">15 Nov 2024</td>
-                                <td className="px-6 py-4">
-                                    <span className="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 text-[10px] font-bold px-2.5 py-1 rounded uppercase">Pending</span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <button className="text-slate-400 hover:text-primary transition-colors">
-                                        <span className="material-symbols-outlined text-[20px]">visibility</span>
-                                    </button>
-                                </td>
-                            </tr>
+                            {visibleRequests.length > 0 ? (
+                                visibleRequests.map((req) => {
+                                    const st = statusStyles[req.status];
+                                    return (
+                                        <tr key={req.id}>
+                                            <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300">{req.id}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{formatDate(req.submittedAt || req.createdAt)}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{formatDate(req.effectiveDate)}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded uppercase ${st.classes}`}>
+                                                    {st.label}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <button className="text-slate-400 hover:text-primary transition-colors">
+                                                    <span className="material-symbols-outlined text-[20px]">visibility</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <span className="material-symbols-outlined text-slate-300 text-4xl">inbox</span>
+                                            <p className="text-sm text-slate-400">No submitted resignation requests</p>
+                                            <p className="text-[11px] text-slate-400">Requests will appear here once submitted for approval</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

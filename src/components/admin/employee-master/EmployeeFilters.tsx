@@ -1,22 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { FilterX } from "lucide-react";
 
-export default function EmployeeFilters() {
-  const [department, setDepartment] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [status, setStatus] = useState("");
+interface EmployeeFiltersProps {
+  department: string;
+  setDepartment: (value: string) => void;
+  jobTitle: string;
+  setJobTitle: (value: string) => void;
+  status: string;
+  setStatus: (value: string) => void;
+  onReset: () => void;
+}
 
+export default function EmployeeFilters({
+  department,
+  setDepartment,
+  jobTitle,
+  setJobTitle,
+  status,
+  setStatus,
+  onReset,
+}: EmployeeFiltersProps) {
   const selectBase = "w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 focus:ring-amber-400 focus:border-amber-400";
   const placeholderClass = "text-slate-400";
   const selectedClass = "text-[#111827]";
-
-  const reset = () => {
-    setDepartment("");
-    setJobTitle("");
-    setStatus("");
-  };
 
   return (
     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
@@ -48,10 +56,15 @@ export default function EmployeeFilters() {
             className={`${selectBase} ${jobTitle === "" ? placeholderClass : selectedClass}`}>
             <option value="">All Roles</option>
             <option value="Senior Engineer">Senior Engineer</option>
+            <option value="Engineer">Engineer</option>
             <option value="HR Manager">HR Manager</option>
-            <option value="Backend Lead">Backend Lead</option>
-            <option value="Marketing Head">Marketing Head</option>
-            <option value="Operations Lead">Operations Lead</option>
+            <option value="HR Executive">HR Executive</option> 
+            <option value="Sales Executive">Sales Executive</option>
+            <option value="Product Manager">Product Manager</option>
+            <option value="Driver">Driver</option>
+            <option value="Support Staff">Support Staff</option>
+
+            
           </select>
         </div>
 
@@ -72,7 +85,7 @@ export default function EmployeeFilters() {
 
         <div>
           <button
-            onClick={reset}
+            onClick={onReset}
             className="w-full flex items-center justify-center gap-2 py-2 border border-amber-900 text-amber-900 rounded-lg font-medium hover:bg-amber-50 transition-colors">
             <FilterX size={16} />
             Clear Filters
@@ -82,3 +95,4 @@ export default function EmployeeFilters() {
     </div>
   );
 }
+

@@ -31,6 +31,7 @@ const SupervisorHeader = () => {
                         <p className="text-sm font-semibold text-gray-800">Supervisor Profile</p>
                         <p className="text-xs text-gray-500 font-medium">Operations Lead</p>
                     </div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         alt="Supervisor Profile Picture"
                         className="h-10 w-10 rounded-full border border-gray-200 object-cover"

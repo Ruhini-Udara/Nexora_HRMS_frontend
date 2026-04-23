@@ -35,12 +35,13 @@ export default function ForgotPasswordPage() {
                     <span className="text-xl font-bold tracking-tight text-[#8a3900]">HR MATE</span>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center max-w-md xl:max-w-lg text-center mx-auto min-h-0">
-                    <div className="mb-8 relative flex-shrink-1 min-h-0">
-                        <div className="absolute inset-0 bg-[#8a3900]/5 rounded-full blur-3xl -z-10 transform scale-150"></div>
+                <div className="flex-1 flex flex-col items-center justify-center max-w-lg xl:max-w-xl text-center mx-auto min-h-0">
+                    <div className="mb-8 relative flex-shrink-1 min-h-0 w-full px-4">
+                        <div className="absolute inset-0 bg-[#8a3900]/5 rounded-[40%] blur-3xl -z-10 transform scale-150 mix-blend-multiply transition-transform duration-700 hover:scale-[1.6]"></div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             alt="Security Illustration"
-                            className="w-full h-auto object-contain mx-auto mix-blend-multiply max-h-[40vh]"
+                            className="w-full h-auto object-contain mx-auto mix-blend-multiply max-h-[55vh] transform transition-transform duration-700 hover:scale-[1.03]"
                             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJjVe74AhUPiM2qKxHTBpeUlipwirLfNBi59J0GAqlBIaLeqRwOw6_Yr59tkgiIbuapqEq2drkHCsNNgWxwBvuGz_-dnGon8IHb92a5S2Sn5a0QnT5jVMecSHvXIVUxf16y2POM4rK-632l7VvXfc_LWoQVqGXUuXCQh7QPZTPxX6gdRJZeYFs-MOmVmHkluEDSQuEFITe_Ui0_gqiirVDmORQawxq6jVuRf2ljaO1M1INzF_CU5ZWDFwdr2FCA-Htypcj9_zMeS4"
                         />
                     </div>
@@ -67,13 +68,13 @@ export default function ForgotPasswordPage() {
                     </div>
 
                     {/* Form Card */}
-                    <div className="w-full max-w-[480px] bg-white rounded-xl shadow-2xl p-8 sm:p-12 transform transition-all duration-300 z-10">
-                        <div className="mb-10 text-center lg:text-left">
-                            <h1 className="text-3xl font-bold text-[#8a3900] mb-3">Reset Password</h1>
+                    <div className="w-full max-w-[480px] bg-white rounded-xl shadow-2xl p-6 sm:p-8 transform transition-all duration-300 z-10">
+                        <div className="mb-6 text-center lg:text-left">
+                            <h1 className="text-3xl font-bold text-[#8a3900] mb-2">Reset Password</h1>
                             <p className="text-slate-500">Enter your new password below to secure your account.</p>
                         </div>
 
-                        <form className="space-y-6">
+                        <form className="space-y-4">
                             {/* New Password Field */}
                             <div className="space-y-2 group">
                                 <label className="block text-sm font-semibold text-[#8a3900] uppercase tracking-wider" htmlFor="new-password">
@@ -86,7 +87,7 @@ export default function ForgotPasswordPage() {
                                         placeholder="Min. 8 characters"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-full px-4 py-3.5 bg-slate-50 border border-[#8a3900]/20 rounded-lg focus:ring-2 focus:ring-[#8a3900]/20 focus:border-[#8a3900] outline-none transition-all placeholder:text-slate-400"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-[#8a3900]/20 rounded-lg focus:ring-2 focus:ring-[#8a3900]/20 focus:border-[#8a3900] outline-none transition-all placeholder:text-slate-400"
                                     />
                                     <button
                                         type="button"
@@ -120,7 +121,7 @@ export default function ForgotPasswordPage() {
                                         id="confirm-password"
                                         type={showConfirmPassword ? "text" : "password"}
                                         placeholder="Re-enter password"
-                                        className="w-full px-4 py-3.5 bg-slate-50 border border-[#8a3900]/20 rounded-lg focus:ring-2 focus:ring-[#8a3900]/20 focus:border-[#8a3900] outline-none transition-all placeholder:text-slate-400"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-[#8a3900]/20 rounded-lg focus:ring-2 focus:ring-[#8a3900]/20 focus:border-[#8a3900] outline-none transition-all placeholder:text-slate-400"
                                     />
                                     <button
                                         type="button"
@@ -135,7 +136,7 @@ export default function ForgotPasswordPage() {
                             {/* CTA Button */}
                             <button
                                 type="submit"
-                                className="w-full py-4 px-6 bg-[#8a3900] text-white font-bold rounded-lg shadow-lg hover:bg-opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
+                                className="w-full py-3 px-6 bg-[#8a3900] text-white font-bold rounded-lg shadow-lg hover:bg-opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
                             >
                                 Update Password
                                 <span className="group-hover:translate-x-1 transition-transform flex items-center">
@@ -157,17 +158,7 @@ export default function ForgotPasswordPage() {
                             </div>
                         </form>
 
-                        {/* Subtle Brand Footer for Card */}
-                        <div className="mt-12 pt-8 border-t border-slate-100 flex items-center justify-center gap-6">
-                            <div className="flex items-center gap-1.5 grayscale opacity-50">
-                                <MaterialIcon icon="verified_user" className="text-lg" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">Secure 256-bit AES</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 grayscale opacity-50">
-                                <MaterialIcon icon="policy" className="text-lg" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">GDPR Compliant</span>
-                            </div>
-                        </div>
+
                     </div>
 
                     {/* Decorative elements on the right panel */}

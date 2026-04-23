@@ -12,7 +12,7 @@ export default function HRModules() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Employees</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">View and update staff directory, roles, and basic contact information.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </Link>
@@ -23,7 +23,7 @@ export default function HRModules() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Documents</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Manage staff folders, upload contracts, and monitor document expirations.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </Link>
@@ -34,7 +34,7 @@ export default function HRModules() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Training & Development</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Track employee skills growth, mandatory training, and career pathing.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </Link>
@@ -45,7 +45,7 @@ export default function HRModules() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Attendance</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Monitor daily check-ins, overtime hours, and attendance patterns.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </Link>
@@ -56,7 +56,7 @@ export default function HRModules() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Leave Management</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Process holiday requests, sick leaves, and manage the team calendar.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </Link>
@@ -67,7 +67,7 @@ export default function HRModules() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Welfare</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Oversee employee benefits, wellness programs, and insurance claims.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </Link>
@@ -78,7 +78,7 @@ export default function HRModules() {
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Reports & Analytics</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Generate departmental reports and track key HR performance indicators.</p>
-                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
                 </Link>

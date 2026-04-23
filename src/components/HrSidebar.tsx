@@ -44,7 +44,7 @@ const HrSidebar = () => {
 
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
                 {navLinks.map(({ label, href, icon: Icon }) => {
-                    const isActive = pathname === href;
+                    const isActive = href === "/hr" ? pathname === "/hr" : pathname.startsWith(href);
                     return (
                         <Link
                             key={href}

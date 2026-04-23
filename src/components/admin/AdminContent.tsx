@@ -11,14 +11,17 @@ import {
   Calendar,
   FileText,
   BarChart2,
+  GraduationCap
 } from "lucide-react";
 import EmployeeMaster from "@/components/admin/employee-master/EmployeeMaster";
 import RegisterEmployee from "@/components/admin/register-employee/RegisterEmployee";
 import OfficeCalendar from "@/components/admin/office-calendar/OfficeCalendar";
+import ShiftManagement from "@/components/admin/shift-management/ShiftManagement";
+import DocumentManagement from "@/components/admin/document-management/DocumentManagement";
 import { useAdminNavigation } from "./AdminNavigationContext";
 
 export default function AdminContent() {
-  const { activeView } = useAdminNavigation();
+  const { activeView, setActiveView } = useAdminNavigation();
 
   if (activeView === "employeeMaster") {
     return <EmployeeMaster />;
@@ -28,14 +31,22 @@ export default function AdminContent() {
     return <RegisterEmployee />;
   }
 
-  if (activeView === "officeCalendar") {  
+  if (activeView === "officeCalendar") {
     return <OfficeCalendar />;
   }
 
+  if (activeView === "shifts") {
+    return <ShiftManagement />;
+  }
+
+  if (activeView === "documents") {
+    return <DocumentManagement />;
+  }
+
   return (
-    <div className="max-w-7xl mx-auto w-full pt-20">
+    <div className="max-w-7xl mx-auto w-full">
       {/* Page Header */}
-      <div className="mb-8 pt-2">
+      <div className="mb-8">
         <h1 className="text-4xl font-extrabold text-gray-900 mb-1">
           Admin Dashboard
         </h1>
@@ -64,8 +75,8 @@ export default function AdminContent() {
         />
         <StatCard
           title="Today's Shifts"
-          value="456"
-          subtext={<span className="text-blue-600">ℹ 98% staffing capacity</span>}
+          value="3"
+          subtext={<span className="text-blue-600"> 98% staffing capacity</span>}
           icon={<Clock className="w-7 h-7 text-blue-600" />}
           iconBgColor="bg-blue-50"
         />
@@ -80,35 +91,35 @@ export default function AdminContent() {
           title="Employee Master"
           description="Centralized database for all personnel information, documents, and career history."
           icon={<Contact className="w-7 h-7" />}
-          href="/admin/employees"
+          onClick={() => setActiveView("employeeMaster")}
           className="lg:col-span-2"
         />
         <ModuleCard
           title="Office Calendar"
           description="Global view of holidays, events, and company-wide deadlines for efficient planning."
           icon={<Calendar className="w-7 h-7" />}
-          href="/admin/calendar"
+          onClick={() => setActiveView("officeCalendar")}
           className="lg:col-span-2"
         />
         <ModuleCard
           title="Shift Management"
           description="Optimize workforce allocation across multiple shifts with automated scheduling tools."
           icon={<Clock className="w-7 h-7" />}
-          href="/admin/shifts"
+          onClick={() => setActiveView("shifts")}
           className="lg:col-span-2"
         />
         <ModuleCard
           title="Document Management"
           description="Securely store and track employee contracts, policies, and certifications in one place."
           icon={<FileText className="w-6 h-6" />}
-          href="/admin/documents"
+          onClick={() => setActiveView("documents")}
           className="lg:col-span-3"
         />
         <ModuleCard
-          title="Reports & Analytics"
-          description="Generate detailed insights on payroll, turnover, and performance metrics instantly."
-          icon={<BarChart2 className="w-6 h-6" />}
-          href="/admin/reports"
+          title="Training & Development"
+          description="Manage and review all pending training applications and monitor employee skill development."
+          icon={<GraduationCap className="w-6 h-6" />}
+          href="/admin/training"
           className="lg:col-span-3"
         />
       </div>
