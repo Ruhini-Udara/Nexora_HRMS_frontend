@@ -111,7 +111,7 @@ export default function CreateTrainingPlanPage() {
                             key={event.id}
                             title={event.title}
                             date={event.proposedStartDate || "TBD"}
-                            time={"TBD"}
+                            time={event.time || "TBD"}
                             category={event.category}
                             onView={() => setSelectedViewEvent(event)}
                             onEdit={() => handleEditEvent(event.id)}
@@ -164,7 +164,7 @@ export default function CreateTrainingPlanPage() {
                                     <span className="material-symbols-outlined text-stone-400">schedule</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Time</p>
-                                        <p className="font-medium text-sm">TBD</p>
+                                        <p className="font-medium text-sm">{selectedViewEvent.time || "TBD"}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-stone-600">
