@@ -246,6 +246,7 @@ export default function CreateTrainingPlanForm() {
                                         expectedParticipants: parseInt(participants) || 50,
                                         description: description || "No description provided.",
                                         proposedStartDate: date || new Date().toISOString().split('T')[0],
+                                        time: time || "TBD",
                                         applyBefore: applyBefore || new Date().toISOString().split('T')[0],
                                         location: location || "TBA",
                                         budget: parseFloat(budget) || 0.0,
@@ -254,10 +255,13 @@ export default function CreateTrainingPlanForm() {
                                     };
 
                                     if (editId) {
-                                        // TODO: Add PUT endpoint to backend to handle updates.
-                                        // For now, if editing is unsupported by the backend, we console log.
-                                        console.warn("Backend does not currently support updating training events via PUT");
-                                        router.push('/hr/training/create-plan');
+                                        axiosInstance.put(`/training/events/${editId}`, payload)
+                                            .then(() => {
+                                                router.push('/hr/training/create-plan');
+                                            })
+                                            .catch(error => {
+                                                console.error("Failed to update training event", error);
+                                            });
                                     } else {
                                         axiosInstance.post('/training/events', payload)
                                             .then(() => {

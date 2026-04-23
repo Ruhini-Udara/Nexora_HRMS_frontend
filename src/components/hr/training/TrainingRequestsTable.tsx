@@ -209,7 +209,7 @@ export default function TrainingRequestsTable() {
                             key={event.id}
                             title={event.title}
                             date={event.proposedStartDate || "TBD"}
-                            time={"TBD"}
+                            time={event.time || "TBD"}
                             category={event.category}
                             hideActions={true}
                             isSelected={selectedEventId === event.id}
