@@ -23,7 +23,7 @@ const deathSchema = z.object({
     relationship: z.string().min(1, 'Relationship is required'),
     address: z.string().min(1, 'Address is required'),
     contactNumber: z.string().min(1, 'Contact number is required'),
-    specialRemark: z.string().optional(),
+    specialRemark: z.string().default(''),
     
     // Nominee fields
     nomineeName: z.string().optional(),
