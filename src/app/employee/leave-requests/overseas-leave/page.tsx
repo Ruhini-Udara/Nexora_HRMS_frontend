@@ -12,6 +12,7 @@ import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
 import Confetti from "react-confetti";
 import { TEMP_AUTH } from "@/lib/authConfig";
+import api from "@/lib/axiosInstance";
 
 const overseasSchema = z.object({
     epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
@@ -167,18 +168,8 @@ export default function OverseasLeaveRequestPage() {
                 specialRemark: data.specialRemark,
             };
 
-            const response = await fetch("http://localhost:8080/api/v1/leaves/overseas", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || "Failed to submit to backend");
-            }
-
-            const savedLeave = await response.json();
+            const response = await api.post("/api/v1/leaves/overseas", payload);
+            const savedLeave = response.data;
             const leaveId: number = savedLeave.id;
 
             // Save each uploaded document as a row in the documents table
@@ -194,16 +185,12 @@ export default function OverseasLeaveRequestPage() {
                 docEntries
                     .filter(d => d.path !== null)
                     .map(d =>
-                        fetch("http://localhost:8080/api/v1/documents", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                refId: leaveId,
-                                refType: "OVERSEAS_LEAVE",
-                                documentType: d.type,
-                                filePathUrl: d.path,
-                                description: d.description,
-                            }),
+                        api.post("/api/v1/documents", {
+                            refId: leaveId,
+                            refType: "OVERSEAS_LEAVE",
+                            documentType: d.type,
+                            filePathUrl: d.path,
+                            description: d.description,
                         })
                     )
             );
