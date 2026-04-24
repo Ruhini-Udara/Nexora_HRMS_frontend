@@ -11,6 +11,7 @@ import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
 import Confetti from "react-confetti";
+import { TEMP_AUTH } from "@/lib/authConfig";
 
 const overseasSchema = z.object({
     epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
@@ -152,7 +153,7 @@ export default function OverseasLeaveRequestPage() {
             setFileError("Documents uploaded! Submitting your request...");
 
             const payload = {
-                employee: { id: 1 },
+                employee: { id: TEMP_AUTH.EMPLOYEE_ID }, // Temporary until User Management integration
                 leaveType: { id: 1 },
                 fromDate: data.startDate,
                 endDate: data.endDate,
