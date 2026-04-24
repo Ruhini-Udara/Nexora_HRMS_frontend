@@ -6,8 +6,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLeaveDays } from "@/hooks/useLeaveDays";
-import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprovalTracker";
-import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
 import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
 import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
