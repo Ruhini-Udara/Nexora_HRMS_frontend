@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import Image from 'next/image';
 
 // Set up worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
@@ -42,11 +43,14 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ file, isOpen, 
         </div>
         <div className="p-4 overflow-auto flex-1 flex justify-center bg-slate-100/50 dark:bg-slate-950/50 relative min-h-[500px]">
           {isImage && imageUrl ? (
-            <div className="flex items-center justify-center w-full">
-                <img 
+            <div className="flex items-center justify-center w-full h-full relative">
+                <Image 
                     src={imageUrl} 
                     alt={file.name} 
-                    className="max-w-full max-h-full object-contain shadow-md rounded-lg"
+                    fill
+                    style={{ objectFit: 'contain' }}
+                    className="shadow-md rounded-lg"
+                    unoptimized
                 />
             </div>
           ) : isPdf ? (

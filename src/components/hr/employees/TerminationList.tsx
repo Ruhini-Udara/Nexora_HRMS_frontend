@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-table';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TerminationRequest } from './TerminationRequestForm';
+import { TerminationRequest, TerminationStatus } from './EmployeeTerminations';
 
 interface TerminationListProps {
     requests: TerminationRequest[];
@@ -65,10 +65,11 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
     const [activeTab, setActiveTab] = useState<'pending' | 'board'>('pending');
 
     const filteredRequests = React.useMemo(() => requests.filter(req => {
+        const status = req.status as string;
         if (activeTab === 'pending') {
-            return req.status === 'NEW';
+            return status === 'NEW';
         } else {
-            return req.status === 'ADDED_TO_TERMINATION_APPROVAL_LIST' || req.status === 'SUBMITTED_FOR_APPROVAL' || req.status === 'BOARD_ASSIGNED';
+            return status === 'ADDED_TO_TERMINATION_APPROVAL_LIST' || status === 'SUBMITTED_FOR_APPROVAL' || status === 'BOARD_ASSIGNED';
         }
     }), [requests, activeTab]);
 
@@ -126,9 +127,10 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
             header: 'Actions',
             cell: ({ row }) => {
                 const req = row.original;
+                const status = req.status as string;
                 return (
                     <div className="flex items-center gap-2">
-                        {req.status === 'NEW' && activeTab === 'pending' ? (
+                        {status === 'NEW' && activeTab === 'pending' ? (
                             <Button variant="outline" onClick={() => onEdit(req)} className="h-8 gap-1">
                                 <span className="material-symbols-outlined text-[16px]">edit</span>
                                 Edit
@@ -145,6 +147,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
         }
     ], [activeTab, onEdit, onView]);
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data: filteredRequests,
         columns,
@@ -153,8 +156,8 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
             rowSelection,
         },
         enableRowSelection: row => activeTab === 'pending' 
-            ? row.original.status === 'NEW'
-            : (row.original.status === 'ADDED_TO_TERMINATION_APPROVAL_LIST' || row.original.status === 'SUBMITTED_FOR_APPROVAL'),
+            ? (row.original.status as string) === 'NEW'
+            : ((row.original.status as string) === 'ADDED_TO_TERMINATION_APPROVAL_LIST' || (row.original.status as string) === 'SUBMITTED_FOR_APPROVAL'),
         onRowSelectionChange: setRowSelection,
         onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
@@ -165,8 +168,8 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
 
     const handleAddToBoardList = () => {
         const updatedRequests = requests.map(req => {
-            if (selectedIds.includes(req.id) && req.status === 'NEW') {
-                return { ...req, status: 'ADDED_TO_TERMINATION_APPROVAL_LIST' as const };
+            if (selectedIds.includes(req.id) && (req.status as string) === 'NEW') {
+                return { ...req, status: 'ADDED_TO_TERMINATION_APPROVAL_LIST' as unknown as TerminationStatus };
             }
             return req;
         });
@@ -179,7 +182,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
         
         const updatedRequests = requests.map(req => {
             if (selectedIds.includes(req.id)) {
-                return { ...req, status: 'BOARD_ASSIGNED' as const, boardDate };
+                return { ...req, status: 'BOARD_ASSIGNED' as unknown as TerminationStatus, boardDate };
             }
             return req;
         });
@@ -226,7 +229,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
                             : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                 >
-                    Board Approval List
+                    Admin Approval List
                     {activeTab === 'board' && (
                         <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />
                     )}
@@ -247,9 +250,9 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
                 </div>
                 <div className="flex items-center gap-3">
                     {activeTab === 'pending' && selectedIds.length > 0 && (
-                        <Button onClick={handleAddToBoardList} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
+                        <Button onClick={handleAddToBoardList} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5 text-sm font-bold">
                             <span className="material-symbols-outlined text-sm">playlist_add_check</span>
-                            Create Board List ({selectedIds.length})
+                            Create Admin Approval List ({selectedIds.length})
                         </Button>
                     )}
                     
@@ -260,9 +263,9 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
                                 Print List
                             </Button>
                             {selectedIds.length > 0 && (
-                                <Button onClick={() => setShowBoardModal(true)} className="gap-2">
+                                <Button onClick={() => setShowBoardModal(true)} className="gap-2 text-sm font-bold">
                                     <span className="material-symbols-outlined text-sm">event</span>
-                                    Submit to Board ({selectedIds.length})
+                                    Submit for Admin Approvals ({selectedIds.length})
                                 </Button>
                             )}
                         </>
@@ -367,7 +370,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
             <div id="termination-print-section" className="hidden print:block w-full text-black bg-white min-h-screen text-left print:p-8">
                 <div className="text-center mb-10 border-b-2 border-slate-800 pb-6">
                     <h1 className="text-3xl font-bold uppercase tracking-widest text-slate-900 mb-2">Nexora HRMS</h1>
-                    <h2 className="text-xl font-semibold mb-1">Board Approval Request</h2>
+                    <h2 className="text-xl font-semibold mb-1">Admin Approval Request</h2>
                     <h3 className="text-lg font-medium text-slate-700">Employee Terminations</h3>
                     <p className="text-sm mt-3 text-slate-500 font-bold">List Generated: {new Date().toLocaleDateString()}</p>
                 </div>
@@ -425,7 +428,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
                     </div>
                     <div className="text-center">
                         <div className="border-b border-black w-48 mx-auto mb-2"></div>
-                        <p className="font-bold text-slate-800 text-sm">Board Approval</p>
+                        <p className="font-bold text-slate-800 text-sm">Admin Approval</p>
                         <p className="text-xs text-slate-500 mt-1 uppercase font-semibold">Signature & Date</p>
                     </div>
                 </div>
