@@ -56,7 +56,7 @@ export default function AttendanceFeedbackTable() {
                 .then(res => setEventFeedback(res.data))
                 .catch(() => console.error("Failed to fetch feedback"));
         } else {
-            setEventFeedback(prev => prev.length > 0 ? [] : prev);
+            setEventFeedback([]);
         }
     }, [selectedEventId]);
 
@@ -116,7 +116,7 @@ export default function AttendanceFeedbackTable() {
 
                 {filteredEvents.length > 6 && (
                     <div className="mt-8 flex justify-center">
-                        <button 
+                        <button
                             onClick={() => setShowAll(!showAll)}
                             className="px-8 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-full hover:bg-slate-50 hover:border-primary hover:text-primary transition-all shadow-sm flex items-center gap-2 group text-sm"
                         >
@@ -135,7 +135,7 @@ export default function AttendanceFeedbackTable() {
                     <div className="flex-1">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">{selectedEvent.title}</h3>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">{selectedEvent.description}</p>
-                        
+
                         <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                 <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
@@ -175,7 +175,7 @@ export default function AttendanceFeedbackTable() {
                     Attendance & Feedback for {selectedEvent ? `"${selectedEvent.title}"` : "Selected Training"}
                 </h2>
                 {selectedEvent && eventFeedback.length > 0 && (
-                    <button 
+                    <button
                         onClick={() => alert(`Generating feedback report for ${selectedEvent.title}...`)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
                     >
@@ -184,7 +184,7 @@ export default function AttendanceFeedbackTable() {
                     </button>
                 )}
             </div>
-            
+
             {/* Table Container */}
             <div className="bg-white dark:bg-background-dark/30 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
                 {selectedEventId ? (
@@ -209,16 +209,15 @@ export default function AttendanceFeedbackTable() {
                                                 <p className="text-sm text-slate-600 dark:text-slate-400">{record.workEmail}</p>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                                                    record.attendanceStatus === 'Present' || record.attendanceStatus === 'Confirmed'
-                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                                                }`}>
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${record.attendanceStatus === 'Present' || record.attendanceStatus === 'Confirmed'
+                                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                    }`}>
                                                     {record.attendanceStatus}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button 
+                                                <button
                                                     onClick={() => setSelectedFeedback(record)}
                                                     className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-white text-primary rounded-lg text-xs font-semibold hover:bg-primary/5 transition-colors"
                                                 >
@@ -242,10 +241,10 @@ export default function AttendanceFeedbackTable() {
                 )}
             </div>
 
-            <FeedbackDetailsModal 
-                isOpen={!!selectedFeedback} 
-                onClose={() => setSelectedFeedback(null)} 
-                feedback={selectedFeedback} 
+            <FeedbackDetailsModal
+                isOpen={!!selectedFeedback}
+                onClose={() => setSelectedFeedback(null)}
+                feedback={selectedFeedback}
             />
         </div>
     );
