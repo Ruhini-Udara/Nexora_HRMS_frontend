@@ -5,6 +5,7 @@ import axiosInstance from "@/lib/axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
+import { formatTime } from "@/lib/utils";
 
 type TrainingEvent = {
     id: number;
@@ -22,15 +23,17 @@ type TrainingEvent = {
     instructor?: string;
 };
 
+
 export default function CreateTrainingPlanPage() {
     const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedViewEvent, setSelectedViewEvent] = useState<TrainingEvent | null>(null);
+    const [showAll, setShowAll] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
         axiosInstance.get('/training/events')
-            .then(res => setEvents(res.data))
+            .then(res => setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id)))
             .catch(err => console.error("Failed to fetch events:", err));
     }, []);
 
@@ -68,8 +71,8 @@ export default function CreateTrainingPlanPage() {
                         Design, manage, and update training programs for your organization.
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
+                <div className="flex items-center gap-2">
+                    <span className="px-4 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center justify-center">
                         {filteredEvents.length} Available Courses
                     </span>
                     <Link href="/hr/training/create-plan/new" className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-full flex items-center gap-1 hover:bg-[#853500] transition-colors shadow-sm shadow-primary/20">
@@ -91,7 +94,10 @@ export default function CreateTrainingPlanPage() {
                     <div className="relative">
                         <select
                             value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedCategory(e.target.value);
+                                setShowAll(false);
+                            }}
                             className="appearance-none bg-white text-stone-700 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 outline-none cursor-pointer hover:bg-stone-50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
                         >
                             {categories.map((category) => (
@@ -106,12 +112,12 @@ export default function CreateTrainingPlanPage() {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredEvents.map((event) => (
+                    {(showAll ? filteredEvents : filteredEvents.slice(0, 6)).map((event) => (
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
                             date={event.proposedStartDate || "TBD"}
-                            time={event.time || "TBD"}
+                            time={formatTime(event.time)}
                             category={event.category}
                             onView={() => setSelectedViewEvent(event)}
                             onEdit={() => handleEditEvent(event.id)}
@@ -119,6 +125,20 @@ export default function CreateTrainingPlanPage() {
                         />
                     ))}
                 </div>
+
+                {filteredEvents.length > 6 && (
+                    <div className="mt-10 flex justify-center">
+                        <button 
+                            onClick={() => setShowAll(!showAll)}
+                            className="px-8 py-2.5 bg-white border border-stone-200 text-stone-700 font-bold rounded-full hover:bg-stone-50 hover:border-primary hover:text-primary transition-all shadow-sm flex items-center gap-2 group"
+                        >
+                            <span>{showAll ? "Show Less" : "View All Training Courses"}</span>
+                            <span className={`material-symbols-outlined text-sm transition-transform ${showAll ? "rotate-180" : "group-hover:translate-y-0.5"}`}>
+                                expand_more
+                            </span>
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* View Event Modal */}
@@ -164,7 +184,7 @@ export default function CreateTrainingPlanPage() {
                                     <span className="material-symbols-outlined text-stone-400">schedule</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Time</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.time || "TBD"}</p>
+                                        <p className="font-medium text-sm">{formatTime(selectedViewEvent.time)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-stone-600">
