@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-table';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TerminationRequest } from './EmployeeTerminations';
+import { TerminationRequest, TerminationStatus } from './EmployeeTerminations';
 
 interface TerminationListProps {
     requests: TerminationRequest[];
@@ -147,6 +147,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
         }
     ], [activeTab, onEdit, onView]);
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data: filteredRequests,
         columns,
@@ -168,7 +169,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
     const handleAddToBoardList = () => {
         const updatedRequests = requests.map(req => {
             if (selectedIds.includes(req.id) && (req.status as string) === 'NEW') {
-                return { ...req, status: 'ADDED_TO_TERMINATION_APPROVAL_LIST' as any };
+                return { ...req, status: 'ADDED_TO_TERMINATION_APPROVAL_LIST' as unknown as TerminationStatus };
             }
             return req;
         });
@@ -181,7 +182,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
         
         const updatedRequests = requests.map(req => {
             if (selectedIds.includes(req.id)) {
-                return { ...req, status: 'BOARD_ASSIGNED' as any, boardDate };
+                return { ...req, status: 'BOARD_ASSIGNED' as unknown as TerminationStatus, boardDate };
             }
             return req;
         });
