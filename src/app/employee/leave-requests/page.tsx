@@ -15,11 +15,20 @@ interface LeaveRequest {
     createdAt: string;
 }
 
+interface LeaveResponse {
+    id: number;
+    fromDate: string;
+    endDate: string;
+    totalDays: number;
+    status: string;
+    reason: string;
+    createdAt: string;
+}
+
 export default function LeaveRequestsDashboard() {
     const [requests, setRequests] = useState<LeaveRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [showHandover, setShowHandover] = useState(false);
-    const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
     const [employeeName, setEmployeeName] = useState("Employee");
     const [statusFilter, setStatusFilter] = useState("ALL");
 
@@ -73,8 +82,8 @@ export default function LeaveRequestsDashboard() {
 
                 // Merge and format
                 const combined = [
-                    ...overseasData.map((r: any) => ({ ...r, type: "Overseas Leave" })),
-                    ...maternityData.map((r: any) => ({ ...r, type: "Maternity Leave" }))
+                    ...overseasData.map((r: LeaveResponse) => ({ ...r, type: "Overseas Leave" })),
+                    ...maternityData.map((r: LeaveResponse) => ({ ...r, type: "Maternity Leave" }))
                 ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
                 setRequests(combined);
@@ -110,8 +119,7 @@ export default function LeaveRequestsDashboard() {
         return status.replace(/_/g, " ");
     };
 
-    const handleHandoverClick = (id: number) => {
-        setSelectedRequestId(id);
+    const handleHandoverClick = () => {
         setShowHandover(true);
     };
 
@@ -223,7 +231,7 @@ export default function LeaveRequestsDashboard() {
                                         <td className="py-4 px-4 text-right">
                                             {req.status.toUpperCase() === "APPROVED" && (
                                                 <button 
-                                                    onClick={() => handleHandoverClick(req.id)}
+                                                    onClick={() => handleHandoverClick()}
                                                     className="inline-flex items-center gap-1.5 text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
                                                 >
                                                     <span className="material-symbols-outlined text-[16px]">assignment_return</span>

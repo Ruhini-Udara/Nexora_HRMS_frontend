@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
 
@@ -37,7 +37,6 @@ interface LeaveDocument {
 export default function MaternityLeaveApprovals() {
     const [requests, setRequests] = useState<MaternityLeave[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
     const [selectedRequest, setSelectedRequest] = useState<MaternityLeave | null>(null);
     const [documents, setDocuments] = useState<LeaveDocument[]>([]);
     const [docsLoading, setDocsLoading] = useState(false);
@@ -50,14 +49,13 @@ export default function MaternityLeaveApprovals() {
     // Fetch Requests
     const fetchRequests = useCallback(async () => {
         setLoading(true);
-        setError("");
         try {
             const res = await fetch(`http://localhost:8080/api/v1/leaves/maternity/status/${statusFilter}`);
             if (!res.ok) throw new Error("Failed to fetch requests");
             const data = await res.json();
             setRequests(data);
-        } catch (err) {
-            setError("Could not connect to backend.");
+        } catch (error) {
+            console.error("Failed to fetch requests:", error);
         } finally {
             setLoading(false);
         }
@@ -83,8 +81,8 @@ export default function MaternityLeaveApprovals() {
                 const docs = await res.json();
                 setDocuments(docs);
             }
-        } catch (err) {
-            console.error("Error fetching documents", err);
+        } catch (error) {
+            console.error("Error fetching documents", error);
         } finally {
             setDocsLoading(false);
         }
@@ -116,7 +114,8 @@ export default function MaternityLeaveApprovals() {
             
             setSelectedRequest(null);
             fetchRequests();
-        } catch (err) {
+        } catch (error) {
+            console.error("Approval decision failed:", error);
             alert("Something went wrong. Please try again.");
         } finally {
             setSubmitting(false);
