@@ -13,6 +13,17 @@ const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').
 import api from "@/lib/axiosInstance";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Button } from "@/components/ui/button";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
 
 const maternitySchema = z.object({
     epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
@@ -210,7 +221,7 @@ export default function MaternityLeaveRequestPage() {
                         <span className="material-symbols-outlined">arrow_back</span>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Maternity Leave Request</h1>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Apply for Maternity Leave</h1>
                         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
                             Please provide all necessary details and mandatory documents for your maternity leave.
                         </p>
@@ -228,31 +239,37 @@ export default function MaternityLeaveRequestPage() {
                 )}
 
                 {status === "submitted" && (
-                    <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-lg border border-emerald-100 dark:border-emerald-900/30 mb-8 overflow-hidden relative text-center">
-                        <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <span className="material-symbols-outlined text-4xl">check_circle</span>
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Request Submitted Successfully!</h2>
-                        <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
-                            Your maternity leave request has been received and is now being processed by the HR department. 
-                            You can track the live status on your dashboard.
-                        </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link 
-                                href="/employee/leave-requests"
-                                className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all flex items-center gap-2"
-                            >
-                                <span className="material-symbols-outlined">dashboard</span>
-                                Go to Dashboard
-                            </Link>
-                            <button
-                                onClick={() => setStatus("editing")}
-                                className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-bold px-6 py-3 transition-colors"
-                            >
-                                Submit Another Request
-                            </button>
-                        </div>
-                    </div>
+                    <Card className="mb-8 overflow-hidden relative text-center py-8">
+                        <CardContent>
+                            <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <span className="material-symbols-outlined text-4xl">check_circle</span>
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Request Submitted Successfully!</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                                Your maternity leave request has been received and is now being processed by the HR department. 
+                                You can track the live status on your dashboard.
+                            </p>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <Link 
+                                    href="/employee/leave-requests"
+                                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-sm">dashboard</span>
+                                    Go to Dashboard
+                                </Link>
+                                <button
+                                    onClick={() => {
+                                        reset();
+                                        setStatus("editing");
+                                    }}
+                                    className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-bold transition-colors flex items-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-sm">add</span>
+                                    Submit New Request
+                                </button>
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
 
                 {fileError && (
@@ -263,8 +280,10 @@ export default function MaternityLeaveRequestPage() {
                 )}
             </div>
 
-            {/* Left Column - Form fields */}
-            <div className="col-span-12 lg:col-span-8">
+            {!isDisabled && (
+                <div className="contents">
+                    {/* Left Column - Form fields */}
+                    <div className="col-span-12 lg:col-span-8">
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
                     <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
                         {/* 1. Employee Details Section */}
@@ -281,10 +300,23 @@ export default function MaternityLeaveRequestPage() {
                                         disabled={isDisabled}
                                         {...register("epfNumber")}
                                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.epfNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="e.g. 12345"
+                                        placeholder="Enter EPF Number"
                                         type="text"
                                     />
                                     {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{errors.epfNumber.message}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                        Branch <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        disabled={isDisabled}
+                                        {...register("branch")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.branch ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                        placeholder="Enter Branch"
+                                        type="text"
+                                    />
+                                    {errors.branch && <p className="text-red-500 text-xs mt-1">{errors.branch.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -664,6 +696,8 @@ export default function MaternityLeaveRequestPage() {
                     </ul>
                 </div>
             </div>
+        </div>
+        )}
  
             <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
