@@ -9,6 +9,7 @@ import { useLeaveDays } from "@/hooks/useLeaveDays";
 import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprovalTracker";
 import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
 import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
+import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
 import Confetti from "react-confetti";
@@ -118,15 +119,90 @@ export default function MaternityLeaveRequestPage() {
         setStatus("draft");
     };
 
-    const onSubmit = (_data: MaternityFormValues) => {
+    const onSubmit = async (data: MaternityFormValues) => {
         setFileError("");
         if (!files.medicalCertificate || !files.leaveLetter) {
             setFileError("Medical Certificate and Maternity Leave Request Letter are mandatory for submission.");
             return;
         }
-        setStatus("submitted");
-        setTrackerStep(0); // Start at first step (HR review)
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        try {
+            setFileError("Uploading documents to secure storage...");
+
+            // Upload all documents to Supabase Storage in parallel
+            const [leaveLetterUrl, medicalCertificateUrl, supportingDocumentUrl] = await Promise.all([
+                uploadDocument(files.leaveLetter, "maternity-leave"),
+                uploadDocument(files.medicalCertificate, "maternity-leave"),
+                files.supportingDocument ? uploadDocument(files.supportingDocument, "maternity-leave") : Promise.resolve(null),
+            ]);
+
+            if (!leaveLetterUrl || !medicalCertificateUrl) {
+                throw new Error("Mandatory files failed to upload. Please check your internet connection.");
+            }
+
+            setFileError("Documents uploaded! Submitting your request...");
+
+            const payload = {
+                employee: { id: 1 }, // TODO: Use dynamic employee ID from auth
+                leaveType: { id: 2 }, // Assuming ID 2 is for Maternity Leave
+                fromDate: data.startDate,
+                endDate: data.endDate,
+                totalDays: Number(noOfDays),
+                reason: data.leaveReason,
+                childNumber: data.childNumber,
+                employeeType: data.employeeType,
+                branch: data.branch,
+                contactNumber: data.contactNumber,
+                email: data.email,
+                specialRemark: data.specialRemark,
+            };
+
+            const response = await fetch("http://localhost:8080/api/v1/leaves/maternity", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || "Failed to submit to backend");
+            }
+
+            const savedLeave = await response.json();
+            const leaveId: number = savedLeave.id;
+
+            // Save document records in the backend
+            const docEntries = [
+                { path: leaveLetterUrl, type: "LEAVE_LETTER", description: "Maternity Leave Request Letter" },
+                { path: medicalCertificateUrl, type: "MEDICAL_CERTIFICATE", description: "Medical Certificate" },
+                { path: supportingDocumentUrl, type: "SUPPORTING_DOC", description: "Supporting Document" },
+            ].filter(d => d.path !== null);
+
+            await Promise.all(
+                docEntries.map(d =>
+                    fetch("http://localhost:8080/api/v1/documents", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            refId: leaveId,
+                            refType: "MATERNITY_LEAVE",
+                            documentType: d.type,
+                            filePathUrl: d.path,
+                            description: d.description,
+                        }),
+                    })
+                )
+            );
+
+            setFileError("");
+            setStatus("submitted");
+            setTrackerStep(0); // Start at HR review
+            localStorage.removeItem("maternityLeaveDraft");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+            console.error("Maternity submission error:", error);
+            setFileError(error instanceof Error ? error.message : "Submission failed. Please try again.");
+        }
     };
 
     const handleSubmitAnother = () => {
