@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { formatTime } from "@/lib/utils";
 
 interface TrainingEventProps {
     category: string;
@@ -16,45 +16,43 @@ interface TrainingEventProps {
 
 const TrainingEventCard: React.FC<TrainingEventProps> = ({
     category,
-    imageSrc,
     title,
     date,
     time,
-    imageAlt,
     applyBefore,
 }) => {
     return (
         <div className="bg-white rounded-xl border border-stone-200 hover:border-[var(--color-training-primary)] transition-all hover:shadow-lg flex flex-col group">
-            <div className="bg-[var(--color-training-primary)]/5 rounded-t-xl p-4 flex justify-end">
-                <span className="bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-black text-[var(--color-training-primary)] uppercase shadow-sm">
+            <div className="bg-[var(--color-training-primary)]/5 rounded-t-xl p-2.5 flex justify-end">
+                <span className="bg-white/90 backdrop-blur px-1.5 py-0.5 rounded text-[9px] font-black text-[var(--color-training-primary)] uppercase shadow-sm">
                     {category}
                 </span>
             </div>
-            <div className="p-5 flex-1 flex flex-col">
-                <h3 className="font-bold text-lg mb-2 text-stone-800">{title}</h3>
-                <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-xs text-stone-500">
-                        <span className="material-symbols-outlined text-sm">calendar_month</span>
+            <div className="p-3 flex-1 flex flex-col">
+                <h3 className="font-bold text-sm mb-1 text-stone-800 line-clamp-1" title={title}>{title}</h3>
+                <div className="space-y-1 mb-3">
+                    <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
+                        <span className="material-symbols-outlined text-xs">calendar_month</span>
                         {date}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-stone-500">
-                        <span className="material-symbols-outlined text-sm">schedule</span>
-                        {time}
+                    <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
+                        <span className="material-symbols-outlined text-xs">schedule</span>
+                        {formatTime(time)}
                     </div>
                 </div>
 
-                <div className="mt-auto flex items-center justify-between gap-2 border-t border-stone-100 pt-3">
+                <div className="mt-auto flex items-center justify-between gap-2 border-t border-stone-100 pt-2.5">
                     {applyBefore && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-orange-600 font-bold bg-orange-50 px-2 py-1.5 rounded-md border border-orange-100">
+                        <div className="flex items-center gap-1 text-[10px] text-orange-600 font-bold bg-orange-50 px-1.5 py-1 rounded-md border border-orange-100">
                             <span className="material-symbols-outlined text-[14px]">event_busy</span>
-                            Apply By: {applyBefore}
+                            Apply Before: {applyBefore}
                         </div>
                     )}
                     <Link
                         href={`/employee/training-request/${title.toLowerCase().replace(/ /g, '-')}`}
-                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 w-max bg-[var(--color-training-primary)] text-white rounded-md font-bold text-[11px] hover:bg-[#853500] transition-colors cursor-pointer ml-auto"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 w-max bg-[var(--color-training-primary)] text-white rounded-md font-bold text-[10px] hover:bg-[#853500] transition-colors cursor-pointer ml-auto"
                     >
-                        <span className="material-symbols-outlined text-[13px]">send</span>
+                        <span className="material-symbols-outlined text-[12px]">send</span>
                         Apply Now
                     </Link>
                 </div>

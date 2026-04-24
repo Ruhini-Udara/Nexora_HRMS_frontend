@@ -1,59 +1,49 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axiosInstance from "@/lib/axios";
 
-interface TrainingRequest {
+type TrainingRequest = {
     id: number;
-    name: string;
-    category: string;
+    eventId: number;
+    employeeId: number;
+    employeeName: string;
+    trainingTitle: string;
+    trainingCategory: string;
+    trainingDate: string;
+    trainingTime: string;
     status: "Approved" | "Pending" | "Rejected";
-    date: string;
-    time: string;
-    canReview: boolean;
     rejectionReason?: string;
-}
+    attendanceConfirmed: boolean;
+};
 
-const requests: TrainingRequest[] = [
-    {
-        id: 1,
-        name: "Customer Success Workshop",
-        category: "Internal",
-        status: "Approved",
-        date: "Oct 18, 2023",
-        time: "10:00 AM - 01:00 PM",
-        canReview: true,
-    },
-    {
-        id: 2,
-        name: "Advanced Negotiation Skills",
-        category: "External",
-        status: "Pending",
-        date: "Oct 30, 2023",
-        time: "09:00 AM - 12:00 PM",
-        canReview: false,
-    },
-    {
-        id: 3,
-        name: "Python for Sales Automation",
-        category: "Internal",
-        status: "Rejected",
-        date: "Nov 05, 2023",
-        time: "All Day Session",
-        canReview: false,
-        rejectionReason: "Does not align with current project requirements.",
-    },
-];
+// Removed mock data
 
 interface TrainingStatusTableProps {
     onFeedbackClick: (request: TrainingRequest) => void;
 }
 
 const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackClick }) => {
+    const [requests, setRequests] = useState<TrainingRequest[]>([]);
     const [isConfirmingAttendance, setIsConfirmingAttendance] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
-    const [confirmedAttendanceIds, setConfirmedAttendanceIds] = useState<number[]>([]);
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
     const [selectedRejection, setSelectedRejection] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Fetching for employee 1 for now
+        axiosInstance.get('/training/employees/1/requests')
+            .then(res => setRequests(res.data))
+            .catch(err => console.error("Failed to fetch requests", err));
+    }, []);
+
+    const handleConfirmAttendance = (requestId: number) => {
+        // We'll simulate this by updating state for now or calling an endpoint if it exists
+        // Assuming we update the status locally for demo
+        setRequests(prev => prev.map(r => r.id === requestId ? { ...r, attendanceConfirmed: true } : r));
+        setIsConfirmingAttendance(false);
+        setSelectedRequest(null);
+    };
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 lg:p-8">
@@ -77,9 +67,9 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                             } ${idx === requests.length - 1 ? "border-none" : ""}`}
                         >
                             <td className="py-4 px-4">
-                                <p className="font-semibold text-slate-800 dark:text-white">{request.name}</p>
+                                <p className="font-semibold text-slate-800 dark:text-white">{request.trainingTitle}</p>
                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium uppercase tracking-wider">
-                                    {request.category}
+                                    {request.trainingCategory}
                                 </p>
                             </td>
                             <td className="py-4 px-4">
@@ -101,12 +91,12 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                 </span>
                             </td>
                             <td className="py-4 px-4">
-                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{request.date}</p>
-                                <p className="text-[11px] text-slate-400">{request.time}</p>
+                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{request.trainingDate}</p>
+                                <p className="text-[11px] text-slate-400">{request.trainingTime}</p>
                             </td>
                             <td className="py-4 px-4 text-center">
                                 {request.status === "Approved" ? (
-                                    confirmedAttendanceIds.includes(request.id) ? (
+                                    request.attendanceConfirmed ? (
                                         <div className="flex items-center justify-center">
                                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/30">
                                                 <span className="material-symbols-outlined text-[14px]">check_circle</span>
@@ -123,9 +113,6 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                 className="px-3 py-1.5 bg-primary text-white text-[11px] font-bold rounded-lg hover:bg-[#853500] transition-colors cursor-pointer shadow-sm shadow-primary/20"
                                             >
                                                 Confirm Attendance
-                                            </button>
-                                            <button className="px-3 py-1.5 bg-slate-50 text-slate-600 border border-slate-200 text-[11px] font-bold rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-colors cursor-pointer">
-                                                Reject
                                             </button>
                                         </div>
                                     )
@@ -151,15 +138,15 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                             </td>
                             <td className="py-4 px-4 text-center">
                                 <button
-                                    className={`text-[11px] font-bold flex items-center gap-1 justify-center mx-auto px-3 py-1.5 rounded-lg transition-colors ${request.canReview
+                                    className={`text-[11px] font-bold flex items-center gap-1 justify-center mx-auto px-3 py-1.5 rounded-lg transition-colors ${request.status === 'Approved' && request.attendanceConfirmed
                                             ? "text-primary hover:bg-primary/5 cursor-pointer"
                                             : "text-slate-300 cursor-not-allowed"
                                         }`}
-                                    disabled={!request.canReview}
-                                    onClick={request.canReview ? () => onFeedbackClick(request) : undefined}
+                                    disabled={!(request.status === 'Approved' && request.attendanceConfirmed)}
+                                    onClick={(request.status === 'Approved' && request.attendanceConfirmed) ? () => onFeedbackClick(request) : undefined}
                                 >
                                     <span className="material-symbols-outlined text-sm">rate_review</span>{" "}
-                                    {request.canReview ? "Give Feedback" : "Review Locked"}
+                                    {(request.status === 'Approved' && request.attendanceConfirmed) ? "Give Feedback" : "Review Locked"}
                                 </button>
                             </td>
                         </tr>
@@ -170,7 +157,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
 
             <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <p className="text-xs text-slate-400 font-medium">
-                    Showing <span className="text-slate-600 dark:text-slate-300 font-bold">3</span> of <span className="text-slate-600 dark:text-slate-300 font-bold">15</span> applications
+                    Showing <span className="text-slate-600 dark:text-slate-300 font-bold">{requests.length}</span> applications
                 </p>
                 <div className="flex gap-1.5">
                     <button className="size-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-primary transition-all cursor-pointer">
@@ -201,7 +188,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                             <div>
                                 <h3 className="text-xl font-bold text-slate-900">Confirm Attendance?</h3>
                                 <p className="text-sm text-slate-500 mt-1">
-                                    Are you sure you want to confirm your attendance for <strong>{selectedRequest.name}</strong> on {selectedRequest.date}?
+                                    Are you sure you want to confirm your attendance for <strong>{selectedRequest.trainingTitle}</strong> on {selectedRequest.trainingDate}?
                                 </p>
                             </div>
                         </div>
@@ -216,14 +203,8 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                             >
                                 Cancel
                             </button>
-                            <button
-                                onClick={() => {
-                                    setConfirmedAttendanceIds(prev => [...prev, selectedRequest.id]);
-                                    setIsConfirmingAttendance(false);
-                                    setTimeout(() => setSelectedRequest(null), 300); // Delay unmounting for animation
-                                    // TODO: Add actual API call logic here
-                                    console.log("Attendance confirmed for", selectedRequest.name);
-                                }}
+                             <button
+                                onClick={() => handleConfirmAttendance(selectedRequest.id)}
                                 className="px-5 py-2.5 rounded-xl bg-[var(--color-training-primary)] text-white font-semibold hover:bg-[#853500] transition-colors shadow-sm cursor-pointer"
                             >
                                 Yes, Confirm
