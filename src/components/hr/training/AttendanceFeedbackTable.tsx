@@ -55,9 +55,11 @@ export default function AttendanceFeedbackTable() {
             axiosInstance.get(`/training/events/${selectedEventId}/feedback`)
                 .then(res => setEventFeedback(res.data))
                 .catch(() => console.error("Failed to fetch feedback"));
-        } else {
-            setEventFeedback([]);
         }
+
+        return () => {
+            setEventFeedback([]);
+        };
     }, [selectedEventId]);
 
     const filteredEvents = selectedCategory === "All"
