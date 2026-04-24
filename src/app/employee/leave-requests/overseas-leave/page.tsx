@@ -74,7 +74,6 @@ export default function OverseasLeaveRequestPage() {
     const [status, setStatus] = useState<"editing" | "draft" | "submitted">("editing");
     const [fileError, setFileError] = useState("");
 
-    const [trackerStep, setTrackerStep] = useState(0);
     const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
     
@@ -212,9 +211,10 @@ export default function OverseasLeaveRequestPage() {
 
             setFileError("");
             setStatus("submitted");
-            setTrackerStep(0);
+            setShowConfetti(true);
             localStorage.removeItem("overseasLeaveDraft");
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => setShowConfetti(false), 5000);
         } catch (error) {
             console.error("Submission error:", error);
             setFileError(error instanceof Error ? error.message : "Submission failed. Please try again.");
@@ -223,69 +223,8 @@ export default function OverseasLeaveRequestPage() {
 
     const isDisabled = status === "submitted";
 
-    const handleSubmitAnother = () => {
-        reset();
-        setFiles({
-            leaveLetter: null,
-            passportCopy: null,
-            visaCopy: null,
-            confirmationLetter: null,
-            flightTickets: null,
-        });
         setStatus("editing");
-        setTrackerStep(0);
-        setShowConfetti(false);
-        localStorage.removeItem("overseasLeaveDraft");
-    };
 
-    // Define the approval steps for Overseas Leave (Employee -> HR User -> Admin -> Director)
-    const approvalSteps: ApprovalStep[] = [
-        {
-            id: 'hr_review',
-            label: 'HR Verification',
-            description: 'Checking documents and leave balances',
-            icon: 'fact_check',
-            status: trackerStep > 0 ? 'completed' : trackerStep === 0 ? 'current' : 'pending',
-            date: trackerStep > 0 ? new Date().toLocaleDateString() : undefined,
-            approverName: trackerStep > 0 ? 'Sarah Jenkins (HR)' : undefined
-        },
-        {
-            id: 'admin_approval',
-            label: 'Admin Approval',
-            description: 'Initial review by System Administrator',
-            icon: 'admin_panel_settings',
-            status: trackerStep > 1 ? 'completed' : trackerStep === 1 ? 'current' : 'pending',
-            date: trackerStep > 1 ? new Date().toLocaleDateString() : undefined,
-            approverName: trackerStep > 1 ? 'Michael Chen (Admin)' : undefined
-        },
-        {
-            id: 'director_approval',
-            label: 'Director Approval',
-            description: 'Final sign-off from the Director',
-            icon: 'gavel',
-            status: trackerStep > 2 ? 'completed' : trackerStep === 2 ? 'current' : 'pending',
-            date: trackerStep > 2 ? new Date().toLocaleDateString() : undefined,
-            approverName: trackerStep > 2 ? 'Robert Williams (Director)' : undefined
-        },
-        {
-            id: 'approved',
-            label: 'Request Approved',
-            description: 'Leave confirmed',
-            icon: 'verified',
-            status: trackerStep > 2 ? 'completed' : 'pending'
-        }
-    ];
-
-    const simulateNextStep = () => {
-        if (trackerStep < approvalSteps.length - 1) {
-            setTrackerStep(prev => prev + 1);
-            if (trackerStep === approvalSteps.length - 2) {
-                // If moving to the final 'approved' step
-                setShowConfetti(true);
-                setTimeout(() => setShowConfetti(false), 5000);
-            }
-        }
-    };
 
     return (
         <div className="max-w-7xl mx-auto w-full grid grid-cols-12 gap-8 pb-12">
@@ -316,7 +255,7 @@ export default function OverseasLeaveRequestPage() {
                 )}
 
                 {status === "submitted" && (
-                    <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 mb-8 overflow-hidden relative">
+                    <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-lg border border-emerald-100 dark:border-emerald-900/30 mb-8 overflow-hidden relative text-center">
                         {showConfetti && (
                             <div className="absolute inset-0 pointer-events-none z-50">
                                 <Confetti
@@ -328,56 +267,29 @@ export default function OverseasLeaveRequestPage() {
                                 />
                             </div>
                         )}
-                        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 pb-6 border-b border-slate-100 dark:border-slate-800 gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-2xl">flight_takeoff</span>
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Live Tracking Status</h2>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Track the approval progress of your overseas request.</p>
-                                </div>
-                            </div>
-
-                            {/* Simulation Controls (For presentation purposes only) */}
-                            {trackerStep < approvalSteps.length - 1 && (
-                                <button
-                                    onClick={simulateNextStep}
-                                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors animate-pulse"
-                                >
-                                    <span className="material-symbols-outlined text-sm">fast_forward</span>
-                                    Simulate Approval ({trackerStep === 0 ? 'Admin' : trackerStep === 1 ? 'Director' : 'Complete'})
-                                </button>
-                            )}
-                            {trackerStep === approvalSteps.length - 1 && (
-                                <div className="flex gap-3">
-                                    <div className="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
-                                        <span className="material-symbols-outlined">celebration</span>
-                                        Fully Approved
-                                    </div>
-                                    <button
-                                        onClick={handleSubmitAnother}
-                                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">add</span>
-                                        New Request
-                                    </button>
-                                </div>
-                            )}
+                        <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <span className="material-symbols-outlined text-4xl">check_circle</span>
                         </div>
-
-                        <LeaveApprovalTracker 
-                            steps={approvalSteps} 
-                            currentStepIndex={trackerStep}
-                            className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-6 border border-slate-100 dark:border-slate-700/50 mb-8"
-                        />
-
-                        {/* Handover Checklist - Only show when fully approved */}
-                        {trackerStep === approvalSteps.length - 1 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                <HandoverChecklist />
-                            </div>
-                        )}
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Request Submitted Successfully!</h2>
+                        <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                            Your overseas leave request has been received and is now being processed through the approval workflow. 
+                            You can track the live status on your dashboard.
+                        </p>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <Link 
+                                href="/employee/leave-requests"
+                                className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined">dashboard</span>
+                                Go to Dashboard
+                            </Link>
+                            <button
+                                onClick={() => setStatus("editing")}
+                                className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-bold px-6 py-3 transition-colors"
+                            >
+                                Submit Another Request
+                            </button>
+                        </div>
                     </div>
                 )}
 
