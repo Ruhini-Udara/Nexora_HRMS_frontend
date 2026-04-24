@@ -6,6 +6,7 @@ import TrainingRequestDetailsModal from "@/components/hr/training/TrainingReques
 import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTrainingListModal";
 import { TrainingRequest } from '@/types/training';
 import axiosInstance from '@/lib/axios';
+import { formatTime } from '@/lib/utils';
 
 
 type TrainingEvent = {
@@ -24,13 +25,15 @@ export default function TrainingRequestsTable() {
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
     const [requests, setRequests] = useState<TrainingRequest[]>([]);
+    const [showAll, setShowAll] = useState(false);
 
     useEffect(() => {
         axiosInstance.get('/training/events')
             .then(res => {
-                setEvents(res.data);
-                if (res.data.length > 0) {
-                    setSelectedEventId(res.data[0].id);
+                const sorted = res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
+                setEvents(sorted);
+                if (sorted.length > 0) {
+                    setSelectedEventId(sorted[0].id);
                 }
             })
             .catch(err => console.error("Failed to fetch events", err));
@@ -190,6 +193,7 @@ export default function TrainingRequestsTable() {
                                     setSelectedCategory(e.target.value);
                                     // Reset selected event when filter changes
                                     setSelectedEventId(null);
+                                    setShowAll(false);
                                 }}
                                 className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
                             >
@@ -204,12 +208,12 @@ export default function TrainingRequestsTable() {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredEvents.map((event) => (
+                    {(showAll ? filteredEvents : filteredEvents.slice(0, 6)).map((event) => (
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
                             date={event.proposedStartDate || "TBD"}
-                            time={event.time || "TBD"}
+                            time={formatTime(event.time)}
                             category={event.category}
                             hideActions={true}
                             isSelected={selectedEventId === event.id}
@@ -217,6 +221,20 @@ export default function TrainingRequestsTable() {
                         />
                     ))}
                 </div>
+
+                {filteredEvents.length > 6 && (
+                    <div className="mt-8 flex justify-center">
+                        <button 
+                            onClick={() => setShowAll(!showAll)}
+                            className="px-8 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-full hover:bg-slate-50 hover:border-primary hover:text-primary transition-all shadow-sm flex items-center gap-2 group text-sm"
+                        >
+                            <span>{showAll ? "Show Less" : "View All Training Courses"}</span>
+                            <span className={`material-symbols-outlined text-sm transition-transform ${showAll ? "rotate-180" : "group-hover:translate-y-0.5"}`}>
+                                expand_more
+                            </span>
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* Table Header Actions */}
