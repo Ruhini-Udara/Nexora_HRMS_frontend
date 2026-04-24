@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
+import { TEMP_AUTH } from "@/lib/authConfig";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MaternityLeave {
@@ -100,7 +101,7 @@ export default function MaternityLeaveApprovals() {
                     refType: "MATERNITY_LEAVE",
                     decision: decision,
                     remark: adminRemark,
-                    approvedBy: { id: 1 }, // TODO: use actual Admin id
+                    approvedBy: { id: TEMP_AUTH.ADMIN_ID }, // Temporary until User Management integration
                 }),
             });
             if (!res.ok) throw new Error("Approval failed");

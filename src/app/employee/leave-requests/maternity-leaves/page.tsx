@@ -11,6 +11,7 @@ import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
 import Confetti from "react-confetti";
+import { TEMP_AUTH } from "@/lib/authConfig";
 
 const maternitySchema = z.object({
     epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
@@ -139,7 +140,7 @@ export default function MaternityLeaveRequestPage() {
             setFileError("Documents uploaded! Submitting your request...");
 
             const payload = {
-                employee: { id: 1 }, // TODO: Use dynamic employee ID from auth
+                employee: { id: TEMP_AUTH.EMPLOYEE_ID }, // Temporary until User Management integration
                 leaveType: { id: 2 }, // Assuming ID 2 is for Maternity Leave
                 fromDate: data.startDate,
                 endDate: data.endDate,

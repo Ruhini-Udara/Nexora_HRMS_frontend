@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
+import { TEMP_AUTH } from "@/lib/authConfig";
 
 interface LeaveRequest {
     id: number;
@@ -62,17 +63,17 @@ export default function LeaveRequestsDashboard() {
     useEffect(() => {
         const fetchAllData = async () => {
             try {
-                // Fetch Employee Details
-                const empRes = await fetch("http://localhost:8080/api/employees/1");
+                // Fetch Employee Details (Temporary ID until Auth Integration)
+                const empRes = await fetch(`http://localhost:8080/api/employees/${TEMP_AUTH.EMPLOYEE_ID}`);
                 if (empRes.ok) {
                     const empData = await empRes.json();
                     setEmployeeName(empData.fullName || "Employee");
                 }
 
-                // Fetch both types of requests (Hardcoded employee ID 1 for now)
+                // Fetch both types of requests (Temporary ID until Auth Integration)
                 const [overseasRes, maternityRes] = await Promise.all([
-                    fetch("http://localhost:8080/api/v1/leaves/overseas/employee/1"),
-                    fetch("http://localhost:8080/api/v1/leaves/maternity/employee/1")
+                    fetch(`http://localhost:8080/api/v1/leaves/overseas/employee/${TEMP_AUTH.EMPLOYEE_ID}`),
+                    fetch(`http://localhost:8080/api/v1/leaves/maternity/employee/${TEMP_AUTH.EMPLOYEE_ID}`)
                 ]);
 
                 if (!overseasRes.ok || !maternityRes.ok) throw new Error("Failed to fetch");
