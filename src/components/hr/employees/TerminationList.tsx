@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-table';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TerminationRequest } from './TerminationRequestForm';
+import { TerminationRequest } from './EmployeeTerminations';
 
 interface TerminationListProps {
     requests: TerminationRequest[];
@@ -65,10 +65,11 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
     const [activeTab, setActiveTab] = useState<'pending' | 'board'>('pending');
 
     const filteredRequests = React.useMemo(() => requests.filter(req => {
+        const status = req.status as string;
         if (activeTab === 'pending') {
-            return req.status === 'NEW';
+            return status === 'NEW';
         } else {
-            return req.status === 'ADDED_TO_TERMINATION_APPROVAL_LIST' || req.status === 'SUBMITTED_FOR_APPROVAL' || req.status === 'BOARD_ASSIGNED';
+            return status === 'ADDED_TO_TERMINATION_APPROVAL_LIST' || status === 'SUBMITTED_FOR_APPROVAL' || status === 'BOARD_ASSIGNED';
         }
     }), [requests, activeTab]);
 
@@ -126,9 +127,10 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
             header: 'Actions',
             cell: ({ row }) => {
                 const req = row.original;
+                const status = req.status as string;
                 return (
                     <div className="flex items-center gap-2">
-                        {req.status === 'NEW' && activeTab === 'pending' ? (
+                        {status === 'NEW' && activeTab === 'pending' ? (
                             <Button variant="outline" onClick={() => onEdit(req)} className="h-8 gap-1">
                                 <span className="material-symbols-outlined text-[16px]">edit</span>
                                 Edit
@@ -153,8 +155,8 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
             rowSelection,
         },
         enableRowSelection: row => activeTab === 'pending' 
-            ? row.original.status === 'NEW'
-            : (row.original.status === 'ADDED_TO_TERMINATION_APPROVAL_LIST' || row.original.status === 'SUBMITTED_FOR_APPROVAL'),
+            ? (row.original.status as string) === 'NEW'
+            : ((row.original.status as string) === 'ADDED_TO_TERMINATION_APPROVAL_LIST' || (row.original.status as string) === 'SUBMITTED_FOR_APPROVAL'),
         onRowSelectionChange: setRowSelection,
         onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
@@ -165,8 +167,8 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
 
     const handleAddToBoardList = () => {
         const updatedRequests = requests.map(req => {
-            if (selectedIds.includes(req.id) && req.status === 'NEW') {
-                return { ...req, status: 'ADDED_TO_TERMINATION_APPROVAL_LIST' as const };
+            if (selectedIds.includes(req.id) && (req.status as string) === 'NEW') {
+                return { ...req, status: 'ADDED_TO_TERMINATION_APPROVAL_LIST' as any };
             }
             return req;
         });
@@ -179,7 +181,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
         
         const updatedRequests = requests.map(req => {
             if (selectedIds.includes(req.id)) {
-                return { ...req, status: 'BOARD_ASSIGNED' as const, boardDate };
+                return { ...req, status: 'BOARD_ASSIGNED' as any, boardDate };
             }
             return req;
         });
