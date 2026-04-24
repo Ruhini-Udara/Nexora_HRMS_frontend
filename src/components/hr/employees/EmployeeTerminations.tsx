@@ -117,7 +117,6 @@ export default function EmployeeTerminations() {
     const handleSaveRequest = (newReq: TerminationRequest) => {
         const adaptedReq: TerminationRequest = {
             ...newReq,
-            status: newReq.status === 'NEW' ? 'SUBMITTED' : (newReq.status === 'SUBMITTED_FOR_APPROVAL' ? 'SUBMITTED' : newReq.status)
         };
         setRequests(prev => {
             const exists = prev.find(r => r.id === adaptedReq.id);

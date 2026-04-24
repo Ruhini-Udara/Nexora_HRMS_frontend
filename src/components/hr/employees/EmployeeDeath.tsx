@@ -145,7 +145,6 @@ export default function EmployeeDeath() {
     const handleSaveRequest = (newReq: DeathRequest) => {
         const adaptedReq: DeathRequest = {
             ...newReq,
-            status: newReq.status === 'SUBMITTED_FOR_APPROVAL' ? 'SUBMITTED' : newReq.status,
             hrRemark: newReq.hrRemark || ""
         };
 
