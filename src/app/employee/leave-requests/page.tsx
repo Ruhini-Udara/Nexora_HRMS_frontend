@@ -7,6 +7,7 @@ import api from "@/lib/axiosInstance";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
 
+
 interface LeaveRequest {
     id: number;
     type: string;
@@ -25,13 +26,14 @@ interface LeaveResponse {
     totalDays: number;
     status: string;
     reason: string;
+    createdAt: string;
 }
 
 export default function LeaveRequestsDashboard() {
     const { employeeId, employeeName, setEmployeeName } = useAuthStore();
 
     // ─── Data Fetching with TanStack Query ───────────────────────────────────
-    
+
     // 1. Fetch Employee Details
     const { data: employeeData } = useQuery({
         queryKey: ['employee', employeeId],
@@ -121,8 +123,8 @@ export default function LeaveRequestsDashboard() {
         setShowHandover(true);
     };
 
-    const filteredRequests = statusFilter === "ALL" 
-        ? requests 
+    const filteredRequests = statusFilter === "ALL"
+        ? requests
         : requests.filter(req => req.status.toUpperCase() === statusFilter);
 
     return (
@@ -158,120 +160,123 @@ export default function LeaveRequestsDashboard() {
                 ))}
             </div>
 
-            <div className="mt-12 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 lg:p-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-white">Recent Leave Requests</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Your recent leave application history</p>
-                    </div>
+            <div className="mt-12 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">Recent Leave Requests</h2>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Your recent leave application history</p>
+                                </div>
 
-                    {/* Status Filter */}
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">Filter by Status:</span>
-                        <select 
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                        >
-                            <option value="ALL">All Statuses</option>
-                            <option value="PENDING_HR_APPROVAL">Pending HR</option>
-                            <option value="PENDING_ADMIN_APPROVAL">Pending Admin</option>
-                            <option value="APPROVED">Approved</option>
-                            <option value="REJECTED">Rejected</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-slate-100 dark:border-slate-800 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                                <th className="pb-3 px-4 font-medium">Leave Type</th>
-                                <th className="pb-3 px-4 font-medium">Date Range</th>
-                                <th className="pb-3 px-4 font-medium">Days</th>
-                                <th className="pb-3 px-4 font-medium">Status</th>
-                                <th className="pb-3 px-4 font-medium text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="text-sm">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={5} className="py-12 text-center text-slate-500">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                                            Loading your requests...
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : filteredRequests.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="py-12 text-center text-slate-500 italic">
-                                        No requests found matching this filter.
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredRequests.map((req) => (
-                                    <tr key={`${req.type}-${req.id}`} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                        <td className="py-4 px-4">
-                                            <div className="font-semibold text-slate-800 dark:text-white">{req.type}</div>
-                                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[200px]">{req.reason}</div>
-                                        </td>
-                                        <td className="py-4 px-4 text-slate-600 dark:text-slate-300">
-                                            {new Date(req.fromDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
-                                        </td>
-                                        <td className="py-4 px-4 text-slate-600 dark:text-slate-300">{req.totalDays}</td>
-                                        <td className="py-4 px-4">
-                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusStyles(req.status)}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${req.status.toUpperCase() === 'APPROVED' ? 'bg-emerald-500' : 'bg-current opacity-60'}`}></span>
-                                                {getStatusLabel(req.status)}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 px-4 text-right">
-                                            {req.status.toUpperCase() === "APPROVED" && (
-                                                <button 
-                                                    onClick={() => handleHandoverClick()}
-                                                    className="inline-flex items-center gap-1.5 text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
-                                                >
-                                                    <span className="material-symbols-outlined text-[16px]">assignment_return</span>
-                                                    Handover
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Handover Modal */}
-            {showHandover && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col">
-                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-                            <div className="flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">assignment_return</span>
-                                <span className="font-bold text-slate-800 dark:text-white">Project & Task Handover</span>
+                                {/* Status Filter */}
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">Filter:</span>
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                    >
+                                        <option value="ALL">All Statuses</option>
+                                        <option value="PENDING_HR_APPROVAL">Pending HR</option>
+                                        <option value="PENDING_ADMIN_APPROVAL">Pending Admin</option>
+                                        <option value="APPROVED">Approved</option>
+                                        <option value="REJECTED">Rejected</option>
+                                    </select>
+                                </div>
                             </div>
-                            <button 
-                                onClick={() => setShowHandover(false)}
-                                className="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 transition-colors"
-                            >
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">
+                                        <tr>
+                                            <th className="px-6 py-4">Leave Type</th>
+                                            <th className="px-6 py-4">From - To</th>
+                                            <th className="px-6 py-4">Days</th>
+                                            <th className="px-6 py-4">Status</th>
+                                            <th className="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {loading ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                                                        Loading requests...
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : filteredRequests.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 italic">
+                                                    No requests found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredRequests.map((req) => (
+                                                <tr key={`${req.type}-${req.id}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-bold text-slate-800 dark:text-white">{req.type}</div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate max-w-[200px]">{req.reason}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm">
+                                                        {new Date(req.fromDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                                            {req.totalDays} Days
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${getStatusStyles(req.status)}`}>
+                                                            {getStatusLabel(req.status)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {req.status.toUpperCase() === "APPROVED" && (
+                                                            <button
+                                                                onClick={() => handleHandoverClick()}
+                                                                className="text-primary hover:text-primary/80 font-bold text-sm flex items-center gap-1.5 ml-auto transition-colors"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[18px]">assignment_return</span>
+                                                                Handover
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <div className="p-6 overflow-y-auto">
-                            <HandoverChecklist 
-                                employeeName={employeeName}
-                                onComplete={() => {
-                                    setTimeout(() => setShowHandover(false), 3000);
-                                }} 
-                            />
-                        </div>
+
+                        {/* Handover Modal */}
+                        {showHandover && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                                <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col">
+                                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-primary">assignment_return</span>
+                                            <span className="font-bold text-slate-800 dark:text-white">Project & Task Handover</span>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowHandover(false)}
+                                            className="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined">close</span>
+                                        </button>
+                                    </div>
+                                    <div className="p-6 overflow-y-auto">
+                                        <HandoverChecklist
+                                            employeeName={employeeName}
+                                            onComplete={() => {
+                                                setTimeout(() => setShowHandover(false), 3000);
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                </div>
-            )}
-        </div>
-    );
+                );
 }

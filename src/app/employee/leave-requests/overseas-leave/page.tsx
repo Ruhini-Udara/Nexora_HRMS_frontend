@@ -13,6 +13,18 @@ const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').
 import api from "@/lib/axiosInstance";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
 
 const overseasSchema = z.object({
     epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
@@ -248,31 +260,38 @@ export default function OverseasLeaveRequestPage() {
                 )}
 
                 {status === "submitted" && (
-                    <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-lg border border-emerald-100 dark:border-emerald-900/30 mb-8 overflow-hidden relative text-center">
-                        <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <span className="material-symbols-outlined text-4xl">check_circle</span>
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Request Submitted Successfully!</h2>
-                        <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
-                            Your overseas leave request has been received and is now being processed through the approval workflow. 
-                            You can track the live status on your dashboard.
-                        </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link 
-                                href="/employee/leave-requests"
-                                className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all flex items-center gap-2"
-                            >
-                                <span className="material-symbols-outlined">dashboard</span>
-                                Go to Dashboard
-                            </Link>
-                            <button
-                                onClick={() => setStatus("editing")}
-                                className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 font-bold px-6 py-3 transition-colors"
-                            >
-                                Submit Another Request
-                            </button>
-                        </div>
-                    </div>
+                    <Card className="mb-8 overflow-hidden relative text-center py-8">
+                        <CardContent>
+                            <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <span className="material-symbols-outlined text-4xl">check_circle</span>
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Overseas Leave Submitted!</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                                Your request has been successfully received. 
+                                You can track the approval status on your dashboard.
+                            </p>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <Link 
+                                    href="/employee/leave-requests"
+                                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-sm">dashboard</span>
+                                    Go to Dashboard
+                                </Link>
+                                <Button
+                                    onClick={() => {
+                                        reset();
+                                        setStatus("editing");
+                                    }}
+                                    variant="outline"
+                                    className="px-6 py-2.5 font-bold transition-colors flex items-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-sm">add</span>
+                                    Submit New Request
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
 
                 {fileError && (
