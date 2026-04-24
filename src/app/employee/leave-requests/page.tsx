@@ -1,9 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
+
+interface LeaveRequest {
+    id: number;
+    type: string;
+    fromDate: string;
+    endDate: string;
+    totalDays: number;
+    status: string;
+    reason: string;
+    createdAt: string;
+}
 
 export default function LeaveRequestsDashboard() {
+    const [requests, setRequests] = useState<LeaveRequest[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showHandover, setShowHandover] = useState(false);
+    const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+    const [employeeName, setEmployeeName] = useState("Employee");
+    const [statusFilter, setStatusFilter] = useState("ALL");
+
     const leaveTypes = [
         {
             title: "Normal Leaves",
@@ -31,8 +50,77 @@ export default function LeaveRequestsDashboard() {
         }
     ];
 
+    useEffect(() => {
+        const fetchAllData = async () => {
+            try {
+                // Fetch Employee Details
+                const empRes = await fetch("http://localhost:8080/api/employees/1");
+                if (empRes.ok) {
+                    const empData = await empRes.json();
+                    setEmployeeName(empData.fullName || "Employee");
+                }
+
+                // Fetch both types of requests (Hardcoded employee ID 1 for now)
+                const [overseasRes, maternityRes] = await Promise.all([
+                    fetch("http://localhost:8080/api/v1/leaves/overseas/employee/1"),
+                    fetch("http://localhost:8080/api/v1/leaves/maternity/employee/1")
+                ]);
+
+                if (!overseasRes.ok || !maternityRes.ok) throw new Error("Failed to fetch");
+
+                const overseasData = await overseasRes.json();
+                const maternityData = await maternityRes.json();
+
+                // Merge and format
+                const combined = [
+                    ...overseasData.map((r: any) => ({ ...r, type: "Overseas Leave" })),
+                    ...maternityData.map((r: any) => ({ ...r, type: "Maternity Leave" }))
+                ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+                setRequests(combined);
+            } catch (err) {
+                console.error("Error fetching requests:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAllData();
+    }, []);
+
+    const getStatusStyles = (status: string) => {
+        switch (status.toUpperCase()) {
+            case "APPROVED":
+                return "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400";
+            case "REJECTED":
+                return "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400";
+            case "PENDING_HR_APPROVAL":
+                return "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400";
+            case "PENDING_ADMIN_APPROVAL":
+            case "ADMIN_APPROVED":
+                return "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400";
+            case "PENDING_DIRECTOR_REVIEW":
+                return "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400";
+            default:
+                return "bg-slate-50 text-slate-600 dark:bg-slate-900/20 dark:text-slate-400";
+        }
+    };
+
+    const getStatusLabel = (status: string) => {
+        return status.replace(/_/g, " ");
+    };
+
+    const handleHandoverClick = (id: number) => {
+        setSelectedRequestId(id);
+        setShowHandover(true);
+    };
+
+    const filteredRequests = statusFilter === "ALL" 
+        ? requests 
+        : requests.filter(req => req.status.toUpperCase() === statusFilter);
+
     return (
-        <div className="max-w-7xl mx-auto w-full">
+        <div className="max-w-7xl mx-auto w-full pb-12">
             <div className="mb-8 block">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Leave Requests</h1>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Select the type of leave you wish to apply for.</p>
@@ -70,9 +158,22 @@ export default function LeaveRequestsDashboard() {
                         <h2 className="text-lg font-bold text-slate-800 dark:text-white">Recent Leave Requests</h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Your recent leave application history</p>
                     </div>
-                    <button className="text-primary hover:bg-primary/5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-                        View All
-                    </button>
+
+                    {/* Status Filter */}
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">Filter by Status:</span>
+                        <select 
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        >
+                            <option value="ALL">All Statuses</option>
+                            <option value="PENDING_HR_APPROVAL">Pending HR</option>
+                            <option value="PENDING_ADMIN_APPROVAL">Pending Admin</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -83,69 +184,88 @@ export default function LeaveRequestsDashboard() {
                                 <th className="pb-3 px-4 font-medium">Date Range</th>
                                 <th className="pb-3 px-4 font-medium">Days</th>
                                 <th className="pb-3 px-4 font-medium">Status</th>
+                                <th className="pb-3 px-4 font-medium text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="text-sm">
-                            <tr className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                <td className="py-4 px-4">
-                                    <div className="font-semibold text-slate-800 dark:text-white">Annual Leave</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Family Vacation</div>
-                                </td>
-                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">Oct 12, 2023 - Oct 15, 2023</td>
-                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">4</td>
-                                <td className="py-4 px-4">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                        Approved
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                <td className="py-4 px-4">
-                                    <div className="font-semibold text-slate-800 dark:text-white">Sick Leave</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fever</div>
-                                </td>
-                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">Sep 05, 2023 - Sep 06, 2023</td>
-                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">2</td>
-                                <td className="py-4 px-4">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                        Approved
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                <td className="py-4 px-4">
-                                    <div className="font-semibold text-slate-800 dark:text-white">Overseas Leave</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tech Conference (Dubai)</div>
-                                </td>
-                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">Nov 10, 2023 - Nov 15, 2023</td>
-                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">5</td>
-                                <td className="py-4 px-4">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                        Sent for Admin Approval
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                <td className="py-4 px-4">
-                                    <div className="font-semibold text-slate-800 dark:text-white">Casual Leave</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Personal Errand</div>
-                                </td>
-                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">Aug 20, 2023 - Aug 20, 2023</td>
-                                <td className="py-4 px-4 text-slate-600 dark:text-slate-300">1</td>
-                                <td className="py-4 px-4">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                        Submitted for Administrator Approvals
-                                    </span>
-                                </td>
-                            </tr>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={5} className="py-12 text-center text-slate-500">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                                            Loading your requests...
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filteredRequests.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="py-12 text-center text-slate-500 italic">
+                                        No requests found matching this filter.
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredRequests.map((req) => (
+                                    <tr key={`${req.type}-${req.id}`} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                        <td className="py-4 px-4">
+                                            <div className="font-semibold text-slate-800 dark:text-white">{req.type}</div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[200px]">{req.reason}</div>
+                                        </td>
+                                        <td className="py-4 px-4 text-slate-600 dark:text-slate-300">
+                                            {new Date(req.fromDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
+                                        </td>
+                                        <td className="py-4 px-4 text-slate-600 dark:text-slate-300">{req.totalDays}</td>
+                                        <td className="py-4 px-4">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusStyles(req.status)}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${req.status.toUpperCase() === 'APPROVED' ? 'bg-emerald-500' : 'bg-current opacity-60'}`}></span>
+                                                {getStatusLabel(req.status)}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 px-4 text-right">
+                                            {req.status.toUpperCase() === "APPROVED" && (
+                                                <button 
+                                                    onClick={() => handleHandoverClick(req.id)}
+                                                    className="inline-flex items-center gap-1.5 text-primary hover:bg-primary/5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                                                >
+                                                    <span className="material-symbols-outlined text-[16px]">assignment_return</span>
+                                                    Handover
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            {/* Handover Modal */}
+            {showHandover && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 max-h-[90vh] flex flex-col">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                            <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">assignment_return</span>
+                                <span className="font-bold text-slate-800 dark:text-white">Project & Task Handover</span>
+                            </div>
+                            <button 
+                                onClick={() => setShowHandover(false)}
+                                className="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 transition-colors"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto">
+                            <HandoverChecklist 
+                                employeeName={employeeName}
+                                onComplete={() => {
+                                    setTimeout(() => setShowHandover(false), 3000);
+                                }} 
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
