@@ -223,7 +223,7 @@ export default function OverseasLeaveRequestPage() {
 
     const isDisabled = status === "submitted";
 
-        setStatus("editing");
+
 
 
     return (
