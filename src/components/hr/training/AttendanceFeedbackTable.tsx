@@ -36,7 +36,15 @@ export default function AttendanceFeedbackTable() {
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
     const [eventFeedback, setEventFeedback] = useState<TrainingFeedback[]>([]);
     const [selectedFeedback, setSelectedFeedback] = useState<TrainingFeedback | null>(null);
-    const [showAll, setShowAll] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+    // Pagination for Events
+    const [currentPageEvents, setCurrentPageEvents] = useState(1);
+    const eventsPerPage = 6;
+
+    // Pagination for Feedback
+    const [currentPageFeedback, setCurrentPageFeedback] = useState(1);
+    const feedbackPerPage = 10;
 
     useEffect(() => {
         axiosInstance.get('/training/events')
@@ -47,14 +55,23 @@ export default function AttendanceFeedbackTable() {
                     setSelectedEventId(sorted[0].id);
                 }
             })
-            .catch(() => console.error("Failed to fetch events"));
+            .catch(() => {
+                console.error("Failed to fetch events");
+                setToast({ message: "Failed to load training events.", type: 'error' });
+            });
     }, []);
 
     useEffect(() => {
         if (selectedEventId) {
             axiosInstance.get(`/training/events/${selectedEventId}/feedback`)
-                .then(res => setEventFeedback(res.data))
-                .catch(() => console.error("Failed to fetch feedback"));
+                .then(res => {
+                    setEventFeedback(res.data);
+                    setCurrentPageFeedback(1); // Reset feedback pagination on event change
+                })
+                .catch(() => {
+                    console.error("Failed to fetch feedback");
+                    setToast({ message: "Failed to load feedback for this event.", type: 'error' });
+                });
         }
 
         return () => {
@@ -65,6 +82,18 @@ export default function AttendanceFeedbackTable() {
     const filteredEvents = selectedCategory === "All"
         ? events
         : events.filter(e => e.category === selectedCategory);
+
+    // Event Pagination Logic
+    const totalPagesEvents = Math.ceil(filteredEvents.length / eventsPerPage);
+    const indexOfLastEvent = currentPageEvents * eventsPerPage;
+    const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
+    const currentEvents = filteredEvents.slice(indexOfFirstEvent, indexOfLastEvent);
+
+    // Feedback Pagination Logic
+    const totalPagesFeedback = Math.ceil(eventFeedback.length / feedbackPerPage);
+    const indexOfLastFeedback = currentPageFeedback * feedbackPerPage;
+    const indexOfFirstFeedback = indexOfLastFeedback - feedbackPerPage;
+    const currentFeedback = eventFeedback.slice(indexOfFirstFeedback, indexOfLastFeedback);
 
     const selectedEvent = events.find(e => e.id === selectedEventId);
 
@@ -87,7 +116,7 @@ export default function AttendanceFeedbackTable() {
                                 onChange={(e) => {
                                     setSelectedCategory(e.target.value);
                                     setSelectedEventId(null);
-                                    setShowAll(false);
+                                    setCurrentPageEvents(1);
                                 }}
                                 className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
                             >
@@ -102,7 +131,7 @@ export default function AttendanceFeedbackTable() {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(showAll ? filteredEvents : filteredEvents.slice(0, 6)).map((event) => (
+                    {currentEvents.map((event) => (
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
@@ -116,16 +145,38 @@ export default function AttendanceFeedbackTable() {
                     ))}
                 </div>
 
-                {filteredEvents.length > 6 && (
-                    <div className="mt-8 flex justify-center">
-                        <button
-                            onClick={() => setShowAll(!showAll)}
-                            className="px-8 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-full hover:bg-slate-50 hover:border-primary hover:text-primary transition-all shadow-sm flex items-center gap-2 group text-sm"
+                {filteredEvents.length > eventsPerPage && (
+                    <div className="mt-8 flex items-center justify-center gap-4">
+                        <button 
+                            disabled={currentPageEvents === 1}
+                            onClick={() => setCurrentPageEvents(prev => Math.max(prev - 1, 1))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                         >
-                            <span>{showAll ? "Show Less" : "View All Training Courses"}</span>
-                            <span className={`material-symbols-outlined text-sm transition-transform ${showAll ? "rotate-180" : "group-hover:translate-y-0.5"}`}>
-                                expand_more
-                            </span>
+                            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                        </button>
+                        
+                        <div className="flex items-center gap-1.5">
+                            {Array.from({ length: totalPagesEvents }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPageEvents(page)}
+                                    className={`w-8 h-8 rounded-lg font-bold text-xs transition-all shadow-sm ${
+                                        currentPageEvents === page 
+                                        ? 'bg-primary text-white' 
+                                        : 'bg-white border border-slate-200 text-slate-600 hover:border-primary hover:text-primary'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            disabled={currentPageEvents === totalPagesEvents}
+                            onClick={() => setCurrentPageEvents(prev => Math.min(prev + 1, totalPagesEvents))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
                         </button>
                     </div>
                 )}
@@ -191,46 +242,90 @@ export default function AttendanceFeedbackTable() {
             <div className="bg-white dark:bg-background-dark/30 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
                 {selectedEventId ? (
                     eventFeedback.length > 0 ? (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-primary/5 border-b border-primary/10">
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Employee Name</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Work Email</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Attendance</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Feedback</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-primary/5">
-                                    {eventFeedback.map((record) => (
-                                        <tr key={record.id} className="hover:bg-primary/5 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <p className="text-sm font-semibold">{record.employeeName}</p>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-sm text-slate-600 dark:text-slate-400">{record.workEmail}</p>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${record.attendanceStatus === 'Present' || record.attendanceStatus === 'Confirmed'
-                                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                                                    }`}>
-                                                    {record.attendanceStatus}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => setSelectedFeedback(record)}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-white text-primary rounded-lg text-xs font-semibold hover:bg-primary/5 transition-colors"
-                                                >
-                                                    <span className="material-symbols-outlined text-[16px]">visibility</span> View
-                                                </button>
-                                            </td>
+                        <>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-primary/5 border-b border-primary/10">
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Employee Name</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Work Email</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Attendance</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Feedback</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-primary/5">
+                                        {currentFeedback.map((record) => (
+                                            <tr key={record.id} className="hover:bg-primary/5 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <p className="text-sm font-semibold">{record.employeeName}</p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="text-sm text-slate-600 dark:text-slate-400">{record.workEmail}</p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${record.attendanceStatus === 'Present' || record.attendanceStatus === 'Confirmed'
+                                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                        }`}>
+                                                        {record.attendanceStatus}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button
+                                                        onClick={() => setSelectedFeedback(record)}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-white text-primary rounded-lg text-xs font-semibold hover:bg-primary/5 transition-colors"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">visibility</span> View
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {/* Feedback Table Pagination */}
+                            {eventFeedback.length > feedbackPerPage && (
+                                <div className="px-6 py-4 bg-slate-50 dark:bg-background-dark/20 border-t border-primary/10 flex items-center justify-between">
+                                    <p className="text-xs font-medium text-slate-500">
+                                        Showing {indexOfFirstFeedback + 1} - {Math.min(indexOfLastFeedback, eventFeedback.length)} of {eventFeedback.length} records
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            disabled={currentPageFeedback === 1}
+                                            onClick={() => setCurrentPageFeedback(prev => Math.max(prev - 1, 1))}
+                                            className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                                        </button>
+                                        
+                                        <div className="flex items-center gap-1.5">
+                                            {Array.from({ length: totalPagesFeedback }, (_, i) => i + 1).map((page) => (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => setCurrentPageFeedback(page)}
+                                                    className={`size-8 rounded font-bold text-xs transition-all shadow-sm ${
+                                                        currentPageFeedback === page 
+                                                        ? 'bg-primary text-white' 
+                                                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                    }`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <button 
+                                            disabled={currentPageFeedback === totalPagesFeedback}
+                                            onClick={() => setCurrentPageFeedback(prev => Math.min(prev + 1, totalPagesFeedback))}
+                                            className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className="px-6 py-12 text-center text-slate-500">
                             <p>No attendance or feedback records found for this event.</p>
@@ -248,6 +343,16 @@ export default function AttendanceFeedbackTable() {
                 onClose={() => setSelectedFeedback(null)}
                 feedback={selectedFeedback}
             />
+            {/* Toast Notifications */}
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
+            )}
         </div>
     );
 }
+
+import { Toast } from '@/components/ui/Toast';

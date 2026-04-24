@@ -18,17 +18,26 @@ export default function CreateTrainingPlanForm() {
     const [location, setLocation] = useState('');
     const [budget, setBudget] = useState('');
     const [instructor, setInstructor] = useState('');
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const editId = searchParams.get('editId');
 
-    // form validation
+    // form validation logic
+    const participantsNum = parseInt(participants);
+    const budgetNum = parseFloat(budget);
+    const isDateLogicValid = date && applyBefore ? new Date(applyBefore) < new Date(date) : true;
+    const isParticipantsValid = participants.trim() !== '' && !isNaN(participantsNum) && participantsNum > 0;
+    const isBudgetValid = budget === '' || (!isNaN(budgetNum) && budgetNum >= 0);
+
     const isFormValid = 
         title.trim() !== '' && 
         category !== '' && 
-        participants.trim() !== '' && 
+        isParticipantsValid && 
+        isBudgetValid &&
         date !== '' && 
-        applyBefore !== '';
+        applyBefore !== '' &&
+        isDateLogicValid;
 
     // Fetch existing data if editing
     useEffect(() => {
@@ -107,12 +116,15 @@ export default function CreateTrainingPlanForm() {
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Expected Participants <span className="text-red-500">*</span></label>
                             <input
-                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${participants && !isParticipantsValid ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                                 placeholder="50"
                                 type="number"
                                 value={participants}
                                 onChange={(e) => setParticipants(e.target.value)}
                             />
+                            {participants && !isParticipantsValid && (
+                                <p className="text-red-500 text-xs mt-1 font-medium">Participants must be at least 1</p>
+                            )}
                         </div>
                         <div className="col-span-2">
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</label>
@@ -159,12 +171,15 @@ export default function CreateTrainingPlanForm() {
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Apply Before (Date) <span className="text-red-500">*</span></label>
                                 <input
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${applyBefore && date && !isDateLogicValid ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                                     type="date"
                                     min={new Date().toISOString().split('T')[0]}  // disable past dates
                                     value={applyBefore}
                                     onChange={(e) => setApplyBefore(e.target.value)}
                                 />
+                                {applyBefore && date && !isDateLogicValid && (
+                                    <p className="text-red-500 text-xs mt-1 font-medium">Apply Before must be earlier than Start Date</p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location</label>
@@ -192,12 +207,15 @@ export default function CreateTrainingPlanForm() {
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium text-xs">LKR</span>
                                     <input
-                                        className="w-full pl-12 pr-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm"
+                                        className={`w-full pl-12 pr-4 py-3 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm ${budget && !isBudgetValid ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                                         placeholder="5,000"
                                         type="number"
                                         value={budget}
                                         onChange={(e) => setBudget(e.target.value)}
                                     />
+                                    {budget && !isBudgetValid && (
+                                        <p className="text-red-500 text-xs mt-1 font-medium">Budget cannot be negative</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -263,13 +281,13 @@ export default function CreateTrainingPlanForm() {
                                     const payload = {
                                         title: title,
                                         category: category,
-                                        expectedParticipants: parseInt(participants) || 0,
+                                        expectedParticipants: participantsNum,
                                         description: description || "No description provided.",
                                         proposedStartDate: date,
                                         time: time || "TBD",
                                         applyBefore: applyBefore,
                                         location: location || "TBA",
-                                        budget: parseFloat(budget) || 0.0,
+                                        budget: budgetNum || 0.0,
                                         instructor: instructor || "TBA",
                                         status: "Published"
                                     };
@@ -278,20 +296,28 @@ export default function CreateTrainingPlanForm() {
                                     if (editId) {
                                         axiosInstance.put(`/training/events/${editId}`, payload)
                                             .then(() => {
-                                                setIsConfirmingPublish(false);
-                                                router.push('/hr/training/create-plan');
+                                                setToast({ message: "Training plan updated successfully!", type: 'success' });
+                                                setTimeout(() => {
+                                                    setIsConfirmingPublish(false);
+                                                    router.push('/hr/training/create-plan');
+                                                }, 1500);
                                             })
                                             .catch(error => {
+                                                setToast({ message: "Failed to update training plan. Please try again.", type: 'error' });
                                                 console.error("Failed to update training event", error);
                                                 setIsLoading(false);
                                             });
                                     } else {
                                         axiosInstance.post('/training/events', payload)
                                             .then(() => {
-                                                setIsConfirmingPublish(false);
-                                                router.push('/hr/training/create-plan');
+                                                setToast({ message: "Training plan published successfully!", type: 'success' });
+                                                setTimeout(() => {
+                                                    setIsConfirmingPublish(false);
+                                                    router.push('/hr/training/create-plan');
+                                                }, 1500);
                                             })
                                             .catch(error => {
+                                                setToast({ message: "Failed to publish training plan. Please try again.", type: 'error' });
                                                 console.error("Failed to create training event", error);
                                                 setIsLoading(false);
                                             });
@@ -312,6 +338,17 @@ export default function CreateTrainingPlanForm() {
                     </div>
                 </div>
             )}
+
+            {/* Toast Notifications */}
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
+            )}
         </div>
     );
 }
+
+import { Toast } from '@/components/ui/Toast';  
