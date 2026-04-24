@@ -47,16 +47,16 @@ export default function AttendanceFeedbackTable() {
                     setSelectedEventId(sorted[0].id);
                 }
             })
-            .catch(err => console.error("Failed to fetch events", err));
+            .catch(() => console.error("Failed to fetch events"));
     }, []);
 
     useEffect(() => {
         if (selectedEventId) {
             axiosInstance.get(`/training/events/${selectedEventId}/feedback`)
                 .then(res => setEventFeedback(res.data))
-                .catch(err => console.error("Failed to fetch feedback", err));
+                .catch(() => console.error("Failed to fetch feedback"));
         } else {
-            setEventFeedback([]);
+            setEventFeedback(prev => prev.length > 0 ? [] : prev);
         }
     }, [selectedEventId]);
 

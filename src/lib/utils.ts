@@ -16,7 +16,7 @@ export const formatTime = (timeStr: string | undefined) => {
         h = h % 12;
         h = h ? h : 12;
         return `${h}:${minutes} ${ampm}`;
-    } catch (e) {
+    } catch {
         return timeStr;
     }
 };

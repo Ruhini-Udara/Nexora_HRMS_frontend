@@ -38,7 +38,7 @@ const EmployeeTopbar = () => (
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">New Training Event</p>
                     <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">A new training course "Full-Stack Development" has been added.</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">A new training course &quot;Full-Stack Development&quot; has been added.</p>
                   <Link href="/employee/training-request" className="inline-block bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded hover:opacity-90 transition-opacity">VIEW COURSE</Link>
                 </div>
               </div>

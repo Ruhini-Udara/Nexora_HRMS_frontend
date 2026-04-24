@@ -43,12 +43,12 @@ export default function TrainingRequestsTable() {
         if (selectedEventId) {
             axiosInstance.get(`/training/events/${selectedEventId}/requests`)
                 .then(res => setRequests(res.data))
-                .catch(err => console.error("Failed to fetch requests", err));
+                .catch(() => console.error("Failed to fetch requests"));
         } else if (requests.length > 0) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setRequests([]);
         }
-    }, [selectedEventId]);
+    }, [selectedEventId, requests.length]);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);

@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { formatTime } from "@/lib/utils";
 
 interface TrainingEventProps {
@@ -17,11 +16,9 @@ interface TrainingEventProps {
 
 const TrainingEventCard: React.FC<TrainingEventProps> = ({
     category,
-    imageSrc,
     title,
     date,
     time,
-    imageAlt,
     applyBefore,
 }) => {
     return (
