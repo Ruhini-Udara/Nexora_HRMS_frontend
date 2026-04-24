@@ -25,7 +25,15 @@ export default function TrainingRequestsTable() {
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
     const [requests, setRequests] = useState<TrainingRequest[]>([]);
-    const [showAll, setShowAll] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    
+    // Pagination for Events
+    const [currentPageEvents, setCurrentPageEvents] = useState(1);
+    const eventsPerPage = 6;
+    
+    // Pagination for Requests
+    const [currentPageRequests, setCurrentPageRequests] = useState(1);
+    const requestsPerPage = 10;
 
     useEffect(() => {
         axiosInstance.get('/training/events')
@@ -36,19 +44,27 @@ export default function TrainingRequestsTable() {
                     setSelectedEventId(sorted[0].id);
                 }
             })
-            .catch(err => console.error("Failed to fetch events", err));
+            .catch(err => {
+                console.error("Failed to fetch events", err);
+                setToast({ message: "Failed to load training events.", type: 'error' });
+            });
     }, []);
 
     useEffect(() => {
         if (selectedEventId) {
             axiosInstance.get(`/training/events/${selectedEventId}/requests`)
-                .then(res => setRequests(res.data))
-                .catch(() => console.error("Failed to fetch requests"));
+                .then(res => {
+                    setRequests(res.data);
+                    setCurrentPageRequests(1); // Reset requests page when event changes
+                })
+                .catch(() => {
+                    console.error("Failed to fetch requests");
+                    setToast({ message: "Failed to load requests for this event.", type: 'error' });
+                });
         } else if (requests.length > 0) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setRequests([]);
         }
-    }, [selectedEventId, requests.length]);
+    }, [selectedEventId]);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
@@ -63,9 +79,21 @@ export default function TrainingRequestsTable() {
         ? events
         : events.filter(e => e.category === selectedCategory);
 
+    // Event Pagination Logic
+    const totalPagesEvents = Math.ceil(filteredEvents.length / eventsPerPage);
+    const indexOfLastEvent = currentPageEvents * eventsPerPage;
+    const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
+    const currentEvents = filteredEvents.slice(indexOfFirstEvent, indexOfLastEvent);
+
     const filteredRequests = selectedEventId
         ? requests.filter(req => req.eventId === selectedEventId)
         : [];
+
+    // Request Pagination Logic
+    const totalPagesRequests = Math.ceil(filteredRequests.length / requestsPerPage);
+    const indexOfLastRequest = currentPageRequests * requestsPerPage;
+    const indexOfFirstRequest = indexOfLastRequest - requestsPerPage;
+    const currentRequests = filteredRequests.slice(indexOfFirstRequest, indexOfLastRequest);
 
     const selectedEvent = events.find(e => e.id === selectedEventId);
 
@@ -191,9 +219,9 @@ export default function TrainingRequestsTable() {
                                 value={selectedCategory}
                                 onChange={(e) => {
                                     setSelectedCategory(e.target.value);
-                                    // Reset selected event when filter changes
+                                    // Reset selected event and pagination when filter changes
                                     setSelectedEventId(null);
-                                    setShowAll(false);
+                                    setCurrentPageEvents(1);
                                 }}
                                 className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
                             >
@@ -208,7 +236,7 @@ export default function TrainingRequestsTable() {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(showAll ? filteredEvents : filteredEvents.slice(0, 6)).map((event) => (
+                    {currentEvents.map((event) => (
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
@@ -222,16 +250,38 @@ export default function TrainingRequestsTable() {
                     ))}
                 </div>
 
-                {filteredEvents.length > 6 && (
-                    <div className="mt-8 flex justify-center">
+                {filteredEvents.length > eventsPerPage && (
+                    <div className="mt-8 flex items-center justify-center gap-4">
                         <button 
-                            onClick={() => setShowAll(!showAll)}
-                            className="px-8 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-full hover:bg-slate-50 hover:border-primary hover:text-primary transition-all shadow-sm flex items-center gap-2 group text-sm"
+                            disabled={currentPageEvents === 1}
+                            onClick={() => setCurrentPageEvents(prev => Math.max(prev - 1, 1))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                         >
-                            <span>{showAll ? "Show Less" : "View All Training Courses"}</span>
-                            <span className={`material-symbols-outlined text-sm transition-transform ${showAll ? "rotate-180" : "group-hover:translate-y-0.5"}`}>
-                                expand_more
-                            </span>
+                            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                        </button>
+                        
+                        <div className="flex items-center gap-1.5">
+                            {Array.from({ length: totalPagesEvents }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPageEvents(page)}
+                                    className={`w-8 h-8 rounded-lg font-bold text-xs transition-all shadow-sm ${
+                                        currentPageEvents === page 
+                                        ? 'bg-primary text-white' 
+                                        : 'bg-white border border-slate-200 text-slate-600 hover:border-primary hover:text-primary'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            disabled={currentPageEvents === totalPagesEvents}
+                            onClick={() => setCurrentPageEvents(prev => Math.min(prev + 1, totalPagesEvents))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
                         </button>
                     </div>
                 )}
@@ -267,8 +317,8 @@ export default function TrainingRequestsTable() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-primary/5">
-                            {filteredRequests.length > 0 ? (
-                                filteredRequests.map((request) => (
+                            {currentRequests.length > 0 ? (
+                                currentRequests.map((request) => (
                                     <tr key={request.id} className="hover:bg-primary/5 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -315,8 +365,12 @@ export default function TrainingRequestsTable() {
                                                         axiosInstance.put(`/training/requests/${request.id}/status`, { status: 'Approved' })
                                                             .then(() => {
                                                                 setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
+                                                                setToast({ message: `Request from ${request.employeeName} approved!`, type: 'success' });
                                                             })
-                                                            .catch(err => console.error("Failed to approve request", err));
+                                                            .catch(err => {
+                                                                console.error("Failed to approve request", err);
+                                                                setToast({ message: "Failed to approve request. Please try again.", type: 'error' });
+                                                            });
                                                     }}
                                                     className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Approve">
                                                     <span className="material-symbols-outlined text-[20px]">check_circle</span>
@@ -350,20 +404,46 @@ export default function TrainingRequestsTable() {
                     </table>
                 </div>
                 {/* Pagination */}
-                <div className="px-6 py-4 bg-slate-50 dark:bg-background-dark/20 border-t border-primary/10 flex items-center justify-between">
-                    <p className="text-xs font-medium text-slate-500">Showing {filteredRequests.length} results</p>
-                    <div className="flex items-center gap-2">
-                        <button className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50" disabled>
-                            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-                        </button>
-                        <button className="size-8 rounded bg-primary text-white text-xs font-bold">1</button>
-                        <button className="size-8 rounded hover:bg-primary/10 text-xs font-bold transition-colors">2</button>
-                        <button className="size-8 rounded hover:bg-primary/10 text-xs font-bold transition-colors">3</button>
-                        <button className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors">
-                            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-                        </button>
+                {filteredRequests.length > requestsPerPage && (
+                    <div className="px-6 py-4 bg-slate-50 dark:bg-background-dark/20 border-t border-primary/10 flex items-center justify-between">
+                        <p className="text-xs font-medium text-slate-500">
+                            Showing {indexOfFirstRequest + 1} - {Math.min(indexOfLastRequest, filteredRequests.length)} of {filteredRequests.length} results
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                disabled={currentPageRequests === 1}
+                                onClick={() => setCurrentPageRequests(prev => Math.max(prev - 1, 1))}
+                                className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                            </button>
+                            
+                            <div className="flex items-center gap-1.5">
+                                {Array.from({ length: totalPagesRequests }, (_, i) => i + 1).map((page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPageRequests(page)}
+                                        className={`size-8 rounded font-bold text-xs transition-all shadow-sm ${
+                                            currentPageRequests === page 
+                                            ? 'bg-primary text-white' 
+                                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button 
+                                disabled={currentPageRequests === totalPagesRequests}
+                                onClick={() => setCurrentPageRequests(prev => Math.min(prev + 1, totalPagesRequests))}
+                                className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
             {/* Footer Info */}
 
@@ -419,10 +499,14 @@ export default function TrainingRequestsTable() {
                                         })
                                         .then(() => {
                                             setRequests(requests.map(r => r.id === rejectionModal.requestId ? { ...r, status: "Rejected", rejectionReason } : r));
+                                            setToast({ message: "Request rejected successfully.", type: 'info' });
                                             setRejectionModal({ isOpen: false, requestId: null });
                                             setRejectionReason("");
                                         })
-                                        .catch(err => console.error("Failed to reject request", err));
+                                        .catch(err => {
+                                            console.error("Failed to reject request", err);
+                                            setToast({ message: "Failed to reject request. Please try again.", type: 'error' });
+                                        });
                                     } else {
                                         setRejectionModal({ isOpen: false, requestId: null });
                                         setRejectionReason("");
@@ -437,6 +521,16 @@ export default function TrainingRequestsTable() {
                     </div>
                 </div>
             )}
+            {/* Toast Notifications */}
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
+            )}
         </div>
     );
 }
+
+import { Toast } from '@/components/ui/Toast';

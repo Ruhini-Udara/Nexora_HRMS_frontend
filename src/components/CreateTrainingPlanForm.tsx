@@ -18,7 +18,7 @@ export default function CreateTrainingPlanForm() {
     const [location, setLocation] = useState('');
     const [budget, setBudget] = useState('');
     const [instructor, setInstructor] = useState('');
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const editId = searchParams.get('editId');

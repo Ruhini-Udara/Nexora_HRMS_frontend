@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import { formatTime } from "@/lib/utils";
+import { Toast } from "@/components/ui/Toast";
 
 type TrainingEvent = {
     id: number;
@@ -28,7 +29,11 @@ export default function CreateTrainingPlanPage() {
     const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedViewEvent, setSelectedViewEvent] = useState<TrainingEvent | null>(null);
-    const [showAll, setShowAll] = useState(false);
+    const [eventToDelete, setEventToDelete] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
     const router = useRouter();
 
     useEffect(() => {
@@ -43,15 +48,32 @@ export default function CreateTrainingPlanPage() {
         ? events
         : events.filter(e => e.category === selectedCategory);
 
+    // Pagination logic
+    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredEvents.slice(indexOfFirstItem, indexOfLastItem);
+
     const handleDeleteEvent = (id: number) => {
-        axiosInstance.delete(`/training/events/${id}`)
+        setEventToDelete(id);
+    };
+
+    const confirmDelete = () => {
+        if (!eventToDelete) return;
+        
+        setIsDeleting(true);
+        axiosInstance.delete(`/training/events/${eventToDelete}`)
             .then(() => {
-                setEvents(events.filter(event => event.id !== id));
+                setEvents(events.filter(event => event.id !== eventToDelete));
+                setToast({ message: "Training plan deleted successfully!", type: 'success' });
+                setEventToDelete(null);
             })
             .catch(err => {
-                console.warn("Backend may not support DELETE yet:", err);
-                // Optimistically remove from UI for demonstration
-                setEvents(events.filter(event => event.id !== id));
+                console.error("Failed to delete event:", err);
+                setToast({ message: "Failed to delete training plan. Please try again.", type: 'error' });
+            })
+            .finally(() => {
+                setIsDeleting(false);
             });
     };
 
@@ -96,7 +118,7 @@ export default function CreateTrainingPlanPage() {
                             value={selectedCategory}
                             onChange={(e) => {
                                 setSelectedCategory(e.target.value);
-                                setShowAll(false);
+                                setCurrentPage(1); // Reset to first page on filter change
                             }}
                             className="appearance-none bg-white text-stone-700 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 outline-none cursor-pointer hover:bg-stone-50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
                         >
@@ -112,7 +134,7 @@ export default function CreateTrainingPlanPage() {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(showAll ? filteredEvents : filteredEvents.slice(0, 6)).map((event) => (
+                    {currentItems.map((event) => (
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
@@ -126,16 +148,38 @@ export default function CreateTrainingPlanPage() {
                     ))}
                 </div>
 
-                {filteredEvents.length > 6 && (
-                    <div className="mt-10 flex justify-center">
+                {filteredEvents.length > itemsPerPage && (
+                    <div className="mt-10 flex items-center justify-center gap-4">
                         <button 
-                            onClick={() => setShowAll(!showAll)}
-                            className="px-8 py-2.5 bg-white border border-stone-200 text-stone-700 font-bold rounded-full hover:bg-stone-50 hover:border-primary hover:text-primary transition-all shadow-sm flex items-center gap-2 group"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                         >
-                            <span>{showAll ? "Show Less" : "View All Training Courses"}</span>
-                            <span className={`material-symbols-outlined text-sm transition-transform ${showAll ? "rotate-180" : "group-hover:translate-y-0.5"}`}>
-                                expand_more
-                            </span>
+                            <span className="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        
+                        <div className="flex items-center gap-2">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-10 h-10 rounded-xl font-bold text-sm transition-all shadow-sm ${
+                                        currentPage === page 
+                                        ? 'bg-primary text-white' 
+                                        : 'bg-white border border-stone-200 text-stone-600 hover:border-primary hover:text-primary'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        >
+                            <span className="material-symbols-outlined">chevron_right</span>
                         </button>
                     </div>
                 )}
@@ -235,6 +279,56 @@ export default function CreateTrainingPlanPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Confirmation Modal for Deletion */}
+            {eventToDelete !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                                <span className="material-symbols-outlined text-2xl">delete_forever</span>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-stone-900 leading-tight">Delete Training Plan?</h3>
+                                <p className="text-sm text-stone-500 mt-1">This action cannot be undone. All related data will be permanently removed.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setEventToDelete(null)}
+                                disabled={isDeleting}
+                                className="px-5 py-2.5 rounded-xl font-semibold text-stone-700 hover:bg-stone-100 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                disabled={isDeleting}
+                                className="px-5 py-2.5 rounded-xl bg-rose-600 text-white font-semibold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-200 flex items-center gap-2 disabled:opacity-70"
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    "Yes, Delete Now"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notifications */}
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
             )}
         </div>
     );
