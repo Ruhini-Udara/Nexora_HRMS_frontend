@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react'; 
+import { useRouter, useSearchParams } from 'next/navigation'; 
 import axiosInstance from '@/lib/axios';
 
+// create training plan form
 export default function CreateTrainingPlanForm() {
     const [isConfirmingPublish, setIsConfirmingPublish] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState('');
     const [date, setDate] = useState('');
@@ -20,6 +22,15 @@ export default function CreateTrainingPlanForm() {
     const searchParams = useSearchParams();
     const editId = searchParams.get('editId');
 
+    // form validation
+    const isFormValid = 
+        title.trim() !== '' && 
+        category !== '' && 
+        participants.trim() !== '' && 
+        date !== '' && 
+        applyBefore !== '';
+
+    // Fetch existing data if editing
     useEffect(() => {
         if (editId) {
             axiosInstance.get(`/training/events/${editId}`)
@@ -44,6 +55,7 @@ export default function CreateTrainingPlanForm() {
         }
     }, [editId]);
 
+    // create training plan form
     return (
         <div className="p-8 max-w-5xl mx-auto w-full relative">
             <div className="flex items-center justify-between mb-8">
@@ -130,7 +142,7 @@ export default function CreateTrainingPlanForm() {
                                 <input
                                     className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
                                     type="date"
-                                    min={new Date().toISOString().split('T')[0]}
+                                    min={new Date().toISOString().split('T')[0]}  // disable past dates
                                     value={date}
                                     onChange={(e) => setDate(e.target.value)}
                                 />
@@ -149,7 +161,7 @@ export default function CreateTrainingPlanForm() {
                                 <input
                                     className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
                                     type="date"
-                                    min={new Date().toISOString().split('T')[0]}
+                                    min={new Date().toISOString().split('T')[0]}  // disable past dates
                                     value={applyBefore}
                                     onChange={(e) => setApplyBefore(e.target.value)}
                                 />
@@ -206,8 +218,14 @@ export default function CreateTrainingPlanForm() {
             </div>
             <div className="pt-8 mt-4 flex justify-end gap-4 pb-10">
                 <button
-                    className="px-8 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
+                    disabled={!isFormValid || isLoading}
+                    className={`px-8 py-3 rounded-xl font-bold transition-all shadow-sm ${
+                        (isFormValid && !isLoading)
+                        ? 'bg-primary text-white hover:bg-primary/90 shadow-primary/20' 
+                        : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed opacity-60'
+                    }`}
                     onClick={() => setIsConfirmingPublish(true)}
+                    title={!isFormValid ? "Please fill all required fields (*) before publishing" : ""}
                 >
                     {editId ? 'Save Changes' : 'Publish'}
                 </button>
@@ -232,50 +250,63 @@ export default function CreateTrainingPlanForm() {
                         <div className="flex items-center justify-end gap-3 mt-8">
                             <button
                                 onClick={() => setIsConfirmingPublish(false)}
-                                className="px-5 py-2.5 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                disabled={isLoading}
+                                className="px-5 py-2.5 rounded-xl font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>
                             <button
+                                disabled={isLoading}
                                 onClick={() => {
-                                    setIsConfirmingPublish(false);
+                                    setIsLoading(true);
                                     // Build payload
                                     const payload = {
-                                        title: title || "New Training Event",
-                                        category: category || "Internal",
-                                        expectedParticipants: parseInt(participants) || 50,
+                                        title: title,
+                                        category: category,
+                                        expectedParticipants: parseInt(participants) || 0,
                                         description: description || "No description provided.",
-                                        proposedStartDate: date || new Date().toISOString().split('T')[0],
+                                        proposedStartDate: date,
                                         time: time || "TBD",
-                                        applyBefore: applyBefore || new Date().toISOString().split('T')[0],
+                                        applyBefore: applyBefore,
                                         location: location || "TBA",
                                         budget: parseFloat(budget) || 0.0,
                                         instructor: instructor || "TBA",
                                         status: "Published"
                                     };
 
+                                    // update training event
                                     if (editId) {
                                         axiosInstance.put(`/training/events/${editId}`, payload)
                                             .then(() => {
+                                                setIsConfirmingPublish(false);
                                                 router.push('/hr/training/create-plan');
                                             })
                                             .catch(error => {
                                                 console.error("Failed to update training event", error);
+                                                setIsLoading(false);
                                             });
                                     } else {
                                         axiosInstance.post('/training/events', payload)
                                             .then(() => {
+                                                setIsConfirmingPublish(false);
                                                 router.push('/hr/training/create-plan');
                                             })
                                             .catch(error => {
                                                 console.error("Failed to create training event", error);
-                                                // Consider adding error toast here
+                                                setIsLoading(false);
                                             });
                                     }
                                 }}
-                                className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
+                                className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
                             >
-                                {editId ? 'Yes, Save Changes' : 'Yes, Publish Now'}
+                                {isLoading ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                        {editId ? 'Saving...' : 'Publishing...'}
+                                    </>
+                                ) : (
+                                    editId ? 'Yes, Save Changes' : 'Yes, Publish Now'
+                                )}
                             </button>
                         </div>
                     </div>
