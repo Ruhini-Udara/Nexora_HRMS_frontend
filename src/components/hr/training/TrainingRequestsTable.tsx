@@ -61,8 +61,6 @@ export default function TrainingRequestsTable() {
                     console.error("Failed to fetch requests");
                     setToast({ message: "Failed to load requests for this event.", type: 'error' });
                 });
-        } else if (requests.length > 0) {
-            setRequests([]);
         }
     }, [selectedEventId]);
     
