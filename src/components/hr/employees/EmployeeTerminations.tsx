@@ -54,6 +54,7 @@ const MOCK_REQUESTS: TerminationRequest[] = [
         initiationDate: '2024-10-25',
         effectiveDate: '2024-11-25',
         specialRemark: 'Cleared all dues.',
+        status: 'VERIFIED_BY_HR',
         documents: {
             request_for_termination: 'resignation_sunil.pdf',
             loan_clearance_letter: 'clearance_sunil.pdf'
