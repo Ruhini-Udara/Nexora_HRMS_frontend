@@ -10,9 +10,9 @@ import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
 import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
-import { TEMP_AUTH } from "@/lib/authConfig";
 import api from "@/lib/axiosInstance";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const maternitySchema = z.object({
     epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
@@ -45,6 +45,7 @@ const maternitySchema = z.object({
 type MaternityFormValues = z.infer<typeof maternitySchema>;
 
 export default function MaternityLeaveRequestPage() {
+    const { employeeId } = useAuthStore();
     const { register, handleSubmit, control, getValues, reset, formState: { errors } } = useForm<MaternityFormValues>({
         resolver: zodResolver(maternitySchema),
         defaultValues: {
@@ -136,7 +137,7 @@ export default function MaternityLeaveRequestPage() {
             setFileError("Documents uploaded! Submitting your request...");
 
             const payload = {
-                employee: { id: TEMP_AUTH.EMPLOYEE_ID }, // Temporary until User Management integration
+                employee: { id: employeeId }, // Temporary until User Management integration
                 leaveType: { id: 2 }, // Assuming ID 2 is for Maternity Leave
                 fromDate: data.startDate,
                 endDate: data.endDate,
@@ -180,7 +181,7 @@ export default function MaternityLeaveRequestPage() {
             localStorage.removeItem("maternityLeaveDraft");
             window.scrollTo({ top: 0, behavior: 'smooth' });
             // Invalidate the 'leaves' query to refresh the dashboard
-            queryClient.invalidateQueries({ queryKey: ['leaves', TEMP_AUTH.EMPLOYEE_ID] });
+            queryClient.invalidateQueries({ queryKey: ['leaves', employeeId] });
         },
         onError: (error: Error) => {
             console.error("Maternity submission error:", error);
