@@ -114,7 +114,7 @@ export default function EmployeeTerminations() {
         setIsModalOpen(true);
     };
 
-    const handleSaveRequest = (newReq: any) => {
+    const handleSaveRequest = (newReq: TerminationRequest) => {
         const adaptedReq: TerminationRequest = {
             ...newReq,
             status: newReq.status === 'NEW' ? 'SUBMITTED' : (newReq.status === 'SUBMITTED_FOR_APPROVAL' ? 'SUBMITTED' : newReq.status)
@@ -128,20 +128,7 @@ export default function EmployeeTerminations() {
         });
         setIsModalOpen(false);
     };
-    const handleBackToList = () => {
-        setActiveTab('pending');
-        setCurrentPage(1);
-    };
 
-    const handleSearch = (val: string) => {
-        setSearchTerm(val);
-        setCurrentPage(1);
-    };
-
-    const handleStatusFilter = (val: string) => {
-        setStatusFilter(val);
-        setCurrentPage(1);
-    };
 
     const handleVerify = () => {
         if (!selectedRequest) return;

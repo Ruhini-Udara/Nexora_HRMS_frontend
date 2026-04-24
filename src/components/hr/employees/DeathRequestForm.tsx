@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -84,7 +84,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
 
 interface DeathRequestFormProps {
     initialData?: DeathRequest;
-    onSave: (data: any) => void;
+    onSave: (data: DeathRequest) => void;
     onCancel: () => void;
     isReadOnly?: boolean;
     hideFooter?: boolean;

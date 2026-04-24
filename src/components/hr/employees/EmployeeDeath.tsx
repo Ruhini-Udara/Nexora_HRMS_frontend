@@ -142,7 +142,7 @@ export default function EmployeeDeath() {
         setIsModalOpen(true);
     };
 
-    const handleSaveRequest = (newReq: any) => {
+    const handleSaveRequest = (newReq: DeathRequest) => {
         const adaptedReq: DeathRequest = {
             ...newReq,
             status: newReq.status === 'SUBMITTED_FOR_APPROVAL' ? 'SUBMITTED' : newReq.status,

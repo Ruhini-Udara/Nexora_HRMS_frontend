@@ -77,7 +77,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
 
 interface TerminationRequestFormProps {
     initialData?: TerminationRequest;
-    onSave: (data: any) => void;
+    onSave: (data: TerminationRequest) => void;
     onCancel: () => void;
     isReadOnly?: boolean;
     hideFooter?: boolean;
