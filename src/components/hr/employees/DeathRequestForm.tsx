@@ -23,7 +23,7 @@ const deathSchema = z.object({
     relationship: z.string().min(1, 'Relationship is required'),
     address: z.string().min(1, 'Address is required'),
     contactNumber: z.string().min(1, 'Contact number is required'),
-    specialRemark: z.string().default(''),
+    specialRemark: z.string().optional(),
     
     // Nominee fields
     nomineeName: z.string().optional(),
@@ -111,8 +111,15 @@ export function DeathRequestForm({
     const { register, handleSubmit, formState: { errors }, getValues } = useForm<DeathFormData>({
         resolver: zodResolver(deathSchema),
         defaultValues: initialData || {
+            employeeName: '',
+            epfNumber: '',
+            dateOfDeath: '',
             natureOfDeath: 'Natural',
+            requesterName: '',
             relationship: 'Spouse',
+            address: '',
+            contactNumber: '',
+            specialRemark: '',
         }
     });
 
@@ -137,7 +144,13 @@ export function DeathRequestForm({
             if (slot.file) acc[slot.key] = slot.file.name;
             return acc;
         }, {} as DeathRequest['documents']);
-        onSave({ ...formData, id: initialData?.id || `DTH-${Date.now()}`, status: 'SUBMITTED', documents });
+        onSave({ 
+            ...formData, 
+            specialRemark: formData.specialRemark || '',
+            id: initialData?.id || `DTH-${Date.now()}`, 
+            status: 'SUBMITTED', 
+            documents 
+        });
         setShowAckPopup(false);
     };
 
@@ -147,7 +160,13 @@ export function DeathRequestForm({
             if (slot.file) acc[slot.key] = slot.file.name;
             return acc;
         }, {} as DeathRequest['documents']);
-        onSave({ ...formData, id: initialData?.id || `DTH-${Date.now()}`, status: 'NEW', documents });
+        onSave({ 
+            ...formData, 
+            specialRemark: formData.specialRemark || '',
+            id: initialData?.id || `DTH-${Date.now()}`, 
+            status: 'NEW', 
+            documents 
+        });
     };
 
     return (

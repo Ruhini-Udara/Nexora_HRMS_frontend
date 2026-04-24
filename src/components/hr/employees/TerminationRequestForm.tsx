@@ -104,8 +104,14 @@ export function TerminationRequestForm({
     const { register, handleSubmit, formState: { errors }, getValues } = useForm<TerminationFormData>({
         resolver: zodResolver(terminationSchema),
         defaultValues: initialData || {
+            employeeName: '',
+            epfNumber: '',
+            branch: '',
             type: 'Voluntary (Resignation)',
+            reason: '',
             initiationDate: new Date().toISOString().split('T')[0],
+            effectiveDate: '',
+            specialRemark: '',
         }
     });
 
@@ -126,13 +132,33 @@ export function TerminationRequestForm({
 
     const confirmSubmit = () => {
         const formData = getValues();
-        onSave({ ...formData, id: initialData?.id || `TRM-${Date.now()}`, status: 'SUBMITTED' });
+        const documents = docSlots.reduce((acc, slot) => {
+            if (slot.file) acc[slot.key] = slot.file.name;
+            return acc;
+        }, {} as TerminationRequest['documents']);
+        onSave({ 
+            ...formData, 
+            specialRemark: formData.specialRemark || '',
+            id: initialData?.id || `TRM-${Date.now()}`, 
+            status: 'SUBMITTED', 
+            documents 
+        });
         setShowAckPopup(false);
     };
 
     const handleSaveAsDraft = () => {
         const formData = getValues();
-        onSave({ ...formData, id: initialData?.id || `TRM-${Date.now()}`, status: 'NEW' });
+        const documents = docSlots.reduce((acc, slot) => {
+            if (slot.file) acc[slot.key] = slot.file.name;
+            return acc;
+        }, {} as TerminationRequest['documents']);
+        onSave({ 
+            ...formData, 
+            specialRemark: formData.specialRemark || '',
+            id: initialData?.id || `TRM-${Date.now()}`, 
+            status: 'NEW', 
+            documents 
+        });
     };
 
     return (
