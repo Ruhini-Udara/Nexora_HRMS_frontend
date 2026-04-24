@@ -25,33 +25,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 
-const maternitySchema = z.object({
-    epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
-    branch: z.string().min(1, "Branch is required"),
-    dateOfRequest: z.string().min(1),
-    employeeName: z.string().min(1, "Employee Name is required"),
-    employeeType: z.string().min(1, "Employee Type is required"),
-    designation: z.string().min(1, "Designation is required"),
-    leaveReason: z.string().min(1, "Leave Request Reason is required"),
-    startDate: z.string().min(1, "Start Date is required").refine((val) => {
-        const today = new Date().toISOString().split("T")[0];
-        return val >= today;
-    }, "Start Date cannot be in the past"),
-    endDate: z.string().min(1, "End Date is required"),
-    childNumber: z.string().min(1, "Child Number is required"),
-    contactNumber: z.string().regex(/^\+?[0-9\s\-]{9,15}$/, "Invalid phone format"),
-    email: z.string().email("Invalid email address").min(1, "Email is required"),
-    specialRemark: z.string().optional(),
-    acknowledgement: z.boolean().refine(val => val === true, "You must acknowledge the terms to proceed.")
-}).refine((data) => {
-    if (!data.startDate || !data.endDate) return true;
-    const start = new Date(data.startDate);
-    const end = new Date(data.endDate);
-    return end >= start;
-}, {
-    message: "End Date must be the same as or after Start Date.",
-    path: ["endDate"]
-});
+import { maternitySchema } from "@/lib/validations";
 
 type MaternityFormValues = z.infer<typeof maternitySchema>;
 
