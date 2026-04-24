@@ -10,9 +10,9 @@ import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
 import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
-import Confetti from "react-confetti";
 import { TEMP_AUTH } from "@/lib/authConfig";
 import api from "@/lib/axiosInstance";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const maternitySchema = z.object({
     epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
@@ -61,7 +61,6 @@ export default function MaternityLeaveRequestPage() {
     const [status, setStatus] = useState<"editing" | "draft" | "submitted">("editing");
     const [fileError, setFileError] = useState("");
 
-    const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
     const [previewFile, setPreviewFile] = useState<File | null>(null);
 
@@ -108,7 +107,7 @@ export default function MaternityLeaveRequestPage() {
         }
     };
 
-    const isDisabled = status === "submitted";
+
 
     const handleSaveDraft = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -117,25 +116,21 @@ export default function MaternityLeaveRequestPage() {
         setStatus("draft");
     };
 
-    const onSubmit = async (data: MaternityFormValues) => {
-        setFileError("");
-        if (!files.medicalCertificate || !files.leaveLetter) {
-            setFileError("Medical Certificate and Maternity Leave Request Letter are mandatory for submission.");
-            return;
-        }
+    const queryClient = useQueryClient();
 
-        try {
+    const submitMutation = useMutation({
+        mutationFn: async (data: MaternityFormValues) => {
             setFileError("Uploading documents to secure storage...");
 
             // Upload all documents to Supabase Storage in parallel
-            const [leaveLetterUrl, medicalCertificateUrl, supportingDocumentUrl] = await Promise.all([
-                uploadDocument(files.leaveLetter, "maternity-leave"),
-                uploadDocument(files.medicalCertificate, "maternity-leave"),
+            const [medicalCertificateUrl, leaveLetterUrl, supportingDocumentUrl] = await Promise.all([
+                uploadDocument(files.medicalCertificate!, "maternity-leave"),
+                uploadDocument(files.leaveLetter!, "maternity-leave"),
                 files.supportingDocument ? uploadDocument(files.supportingDocument, "maternity-leave") : Promise.resolve(null),
             ]);
 
-            if (!leaveLetterUrl || !medicalCertificateUrl) {
-                throw new Error("Mandatory files failed to upload. Please check your internet connection.");
+            if (!medicalCertificateUrl || !leaveLetterUrl) {
+                throw new Error("One or more files failed to upload. Please check your internet connection and try again.");
             }
 
             setFileError("Documents uploaded! Submitting your request...");
@@ -177,21 +172,31 @@ export default function MaternityLeaveRequestPage() {
                     })
                 )
             );
-
+            return savedLeave;
+        },
+        onSuccess: () => {
             setFileError("");
             setStatus("submitted");
-            setShowConfetti(true);
             localStorage.removeItem("maternityLeaveDraft");
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            setTimeout(() => setShowConfetti(false), 5000);
-        } catch (error) {
+            // Invalidate the 'leaves' query to refresh the dashboard
+            queryClient.invalidateQueries({ queryKey: ['leaves', TEMP_AUTH.EMPLOYEE_ID] });
+        },
+        onError: (error: Error) => {
             console.error("Maternity submission error:", error);
-            setFileError(error instanceof Error ? error.message : "Submission failed. Please try again.");
+            setFileError(error.message || "Submission failed. Please try again.");
         }
+    });
+
+    const onSubmit = (data: MaternityFormValues) => {
+        if (!files.medicalCertificate || !files.leaveLetter) {
+            setFileError("Medical Certificate and Leave Letter are mandatory for submission.");
+            return;
+        }
+        submitMutation.mutate(data);
     };
 
-
-
+    const isDisabled = status === "submitted" || submitMutation.isPending;
 
     return (
         <div className="max-w-7xl mx-auto w-full grid grid-cols-12 gap-8 pb-12">
@@ -223,17 +228,6 @@ export default function MaternityLeaveRequestPage() {
 
                 {status === "submitted" && (
                     <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-lg border border-emerald-100 dark:border-emerald-900/30 mb-8 overflow-hidden relative text-center">
-                        {showConfetti && (
-                            <div className="absolute inset-0 pointer-events-none z-50">
-                                <Confetti
-                                    width={windowSize.width}
-                                    height={windowSize.height}
-                                    recycle={false}
-                                    numberOfPieces={400}
-                                    gravity={0.15}
-                                />
-                            </div>
-                        )}
                         <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
                             <span className="material-symbols-outlined text-4xl">check_circle</span>
                         </div>
@@ -593,9 +587,19 @@ export default function MaternityLeaveRequestPage() {
                                         <button
                                             className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                             type="submit"
+                                            disabled={submitMutation.isPending}
                                         >
-                                            <span className="material-symbols-outlined text-sm">send</span>
-                                            Submit Request
+                                            {submitMutation.isPending ? (
+                                                <>
+                                                    <span className="material-symbols-outlined animate-spin text-sm">sync</span>
+                                                    Submitting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="material-symbols-outlined text-sm">send</span>
+                                                    Submit Request
+                                                </>
+                                            )}
                                         </button>
 
                                         <button

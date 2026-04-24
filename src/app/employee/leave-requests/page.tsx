@@ -5,6 +5,7 @@ import Link from "next/link";
 import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
 import { TEMP_AUTH } from "@/lib/authConfig";
 import api from "@/lib/axiosInstance";
+import { useQuery } from "@tanstack/react-query";
 
 interface LeaveRequest {
     id: number;
@@ -28,10 +29,39 @@ interface LeaveResponse {
 }
 
 export default function LeaveRequestsDashboard() {
-    const [requests, setRequests] = useState<LeaveRequest[]>([]);
-    const [loading, setLoading] = useState(true);
+    // ─── Data Fetching with TanStack Query ───────────────────────────────────
+    
+    // 1. Fetch Employee Details
+    const { data: employeeData } = useQuery({
+        queryKey: ['employee', TEMP_AUTH.EMPLOYEE_ID],
+        queryFn: async () => {
+            const res = await api.get(`/api/employees/${TEMP_AUTH.EMPLOYEE_ID}`);
+            return res.data;
+        }
+    });
+
+    // 2. Fetch All Leave Requests
+    const { data: requests = [], isLoading: loading } = useQuery({
+        queryKey: ['leaves', TEMP_AUTH.EMPLOYEE_ID],
+        queryFn: async () => {
+            const [overseasRes, maternityRes] = await Promise.all([
+                api.get(`/api/v1/leaves/overseas/employee/${TEMP_AUTH.EMPLOYEE_ID}`),
+                api.get(`/api/v1/leaves/maternity/employee/${TEMP_AUTH.EMPLOYEE_ID}`)
+            ]);
+
+            const overseasData = overseasRes.data;
+            const maternityData = maternityRes.data;
+
+            // Merge and format
+            return [
+                ...overseasData.map((r: LeaveResponse) => ({ ...r, type: "Overseas Leave" })),
+                ...maternityData.map((r: LeaveResponse) => ({ ...r, type: "Maternity Leave" }))
+            ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        }
+    });
+
+    const employeeName = employeeData?.fullName || "Employee";
     const [showHandover, setShowHandover] = useState(false);
-    const [employeeName, setEmployeeName] = useState("Employee");
     const [statusFilter, setStatusFilter] = useState("ALL");
 
     const leaveTypes = [
@@ -60,39 +90,6 @@ export default function LeaveRequestsDashboard() {
             iconColor: "text-purple-500",
         }
     ];
-
-    useEffect(() => {
-        const fetchAllData = async () => {
-            try {
-                // Fetch Employee Details (Temporary ID until Auth Integration)
-                const empRes = await api.get(`/api/employees/${TEMP_AUTH.EMPLOYEE_ID}`);
-                setEmployeeName(empRes.data.fullName || "Employee");
-
-                // Fetch both types of requests (Temporary ID until Auth Integration)
-                const [overseasRes, maternityRes] = await Promise.all([
-                    api.get(`/api/v1/leaves/overseas/employee/${TEMP_AUTH.EMPLOYEE_ID}`),
-                    api.get(`/api/v1/leaves/maternity/employee/${TEMP_AUTH.EMPLOYEE_ID}`)
-                ]);
-
-                const overseasData = overseasRes.data;
-                const maternityData = maternityRes.data;
-
-                // Merge and format
-                const combined = [
-                    ...overseasData.map((r: LeaveResponse) => ({ ...r, type: "Overseas Leave" })),
-                    ...maternityData.map((r: LeaveResponse) => ({ ...r, type: "Maternity Leave" }))
-                ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-                setRequests(combined);
-            } catch (err) {
-                console.error("Error fetching requests:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchAllData();
-    }, []);
 
     const getStatusStyles = (status: string) => {
         switch (status.toUpperCase()) {
