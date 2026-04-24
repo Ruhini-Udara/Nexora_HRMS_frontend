@@ -1,17 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
+import axiosInstance from "@/lib/axios";
 
 interface TrainingFeedbackModalProps {
     isOpen: boolean;
     onClose: () => void;
     courseName?: string;
+    eventId?: number | null;
 }
 
 const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
     isOpen,
     onClose,
     courseName,
+    eventId,
 }) => {
     const [ratings, setRatings] = useState({
         "Course Content": 0,
@@ -20,6 +23,7 @@ const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
     });
     const [suggestions, setSuggestions] = useState("");
     const [isConfirming, setIsConfirming] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleStarClick = (category: string, value: number) => {
         setRatings((prev) => ({ ...prev, [category]: value }));
@@ -29,16 +33,36 @@ const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
         setIsConfirming(true);
     };
 
-    const handleFinalSubmit = () => {
-        console.log("Submitting feedback for:", courseName);
-        console.log("Ratings:", ratings);
-        console.log("Suggestions:", suggestions);
-        
-        // Reset form and close
-        setRatings({ "Course Content": 0, "Instructor": 0, "Overall Experience": 0 });
-        setSuggestions("");
-        setIsConfirming(false);
-        onClose();
+    const handleFinalSubmit = async () => {
+        if (!eventId) return;
+
+        setIsSubmitting(true);
+        try {
+            const payload = {
+                eventId: eventId,
+                employeeId: 1, // Hardcoded for demo
+                attendanceStatus: "Present",
+                feedback: suggestions, // Using suggestions as the main feedback text
+                courseContentRating: ratings["Course Content"],
+                instructorRating: ratings["Instructor"],
+                overallExperienceRating: ratings["Overall Experience"],
+                suggestions: suggestions
+            };
+
+            await axiosInstance.post('/training/feedback', payload);
+            
+            // Reset form and close
+            setRatings({ "Course Content": 0, "Instructor": 0, "Overall Experience": 0 });
+            setSuggestions("");
+            setIsConfirming(false);
+            onClose();
+            alert("Feedback submitted successfully!");
+        } catch (error) {
+            console.error("Failed to submit feedback", error);
+            alert("Failed to submit feedback. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleClose = () => {
@@ -86,9 +110,10 @@ const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
                             </button>
                             <button
                                 onClick={handleFinalSubmit}
-                                className="px-5 py-2.5 bg-orange-600 text-white text-sm font-bold rounded-lg hover:bg-orange-700 shadow-lg shadow-orange-600/20 transition-all cursor-pointer"
+                                disabled={isSubmitting}
+                                className="px-5 py-2.5 bg-orange-600 text-white text-sm font-bold rounded-lg hover:bg-orange-700 shadow-lg shadow-orange-600/20 transition-all cursor-pointer disabled:opacity-50"
                             >
-                                Yes, Submit Feedback
+                                {isSubmitting ? "Submitting..." : "Yes, Submit Feedback"}
                             </button>
                         </div>
                     </div>

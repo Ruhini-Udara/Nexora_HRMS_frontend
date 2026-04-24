@@ -1,50 +1,43 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TrainingEventCard from "@/components/employee/training/TrainingEventCard";
 import TrainingStatusTable from "@/components/employee/training/TrainingStatusTable";
 import TrainingFeedbackModal from "@/components/employee/training/TrainingFeedbackModal";
+import axiosInstance from "@/lib/axios";
+
+type TrainingEvent = {
+    id: number;
+    title: string;
+    proposedStartDate?: string;
+    date?: string;
+    time?: string;
+    category: string;
+    imageSrc?: string;
+    imageAlt?: string;
+    applyBefore?: string;
+};
 
 export default function TrainingRequestPage() {
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [selectedFeedbackCourse, setSelectedFeedbackCourse] = useState("");
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState("All");
+    const [showAll, setShowAll] = useState(false);
 
-    const trainingEvents = [
-        {
-            category: "External",
-            imageSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuD8kev8B1LHYhdvJyun1RzU5HW-NDFoJcDXqV7wdhsVReP40kpwOtbuxDty4O6mfetRRD_QTIJIJSjSp4mw1fNCpwFqjfcIreTGSOTOKsEsO3MBcrz-WlwuTzupbrmc-o_v6Lgu__qD6QWbyDyeRJ26EJtz2nzEoUITC4819iWyi4NrePIRCsW_8OUJE_mnttj7P1ijejfnRuikHbdDkWXZWlQ4qOTfWlwrNsWBCheAV2_OupK08EcTN9TGNdugoXWibnpud_0qhBI",
-            imageAlt: "Team collaborating in a modern office workshop setting",
-            title: "Advanced Sales Tactics",
-            date: "October 24, 2023",
-            time: "09:00 AM - 12:00 PM",
-            applyBefore: "October 18, 2023",
-        },
-        {
-            category: "Internal",
-            imageSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuCeomj4FV-xTtl2q-eZoLucnP8oW2QvbeBuvy5Jy4SlB02M4bG-Lbm02kxsJMCKLnPwdIFc1imWvEFWqzereZgUBki7sf7CcgjvgFmglNSiSSuT2BuDhCBsU4QwSi8ropV70Fz77jye_NG8hb7xtEtutziJY23stOGe9XUQOTSuRlKsk995DZ6T7PvLqBG2T8IeN_hFvHPoQGIFCCqIdKOI2yqDouhUviARKhhCgVmw4f-bqAygPiLqG6iDvmwSIUbifK7oRoCHWzM",
-            imageAlt: "Corporate meeting room with leadership presentation",
-            title: "Leadership 101: Core Basics",
-            date: "November 02, 2023",
-            time: "02:00 PM - 05:00 PM",
-            applyBefore: "October 28, 2023",
-        },
-        {
-            category: "Internal",
-            imageSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuCCAiE3w4C5N0fAAb27Exc4cON_BPrwP423cWY51Z5bAwzqP4nOzSTulKsfKLMmmNnL9d9WrqSIScUMPHNCBR3p9o0HUFnsXt9qSJy52kRa0m2dIlnLwnzkLhxUXZxmx7tY1C3kmdjAiBEjevmQsROHz-bkkrsvt_a92zGS9emts4J3NeWW31g9Nf6HdXTjKZl5zBLwuwrKVYbHQdFRCm8nqWPpp9B9fEY6YhuDFZP9LLl6CPD_0tjGaul5Q-BWhhMKHmEE4U2dS48",
-            imageAlt: "Laptop displaying data analytics charts and graphs",
-            title: "2024 Product Roadmap",
-            date: "November 15, 2023",
-            time: "11:00 AM - 12:30 PM",
-            applyBefore: "November 10, 2023",
-        },
-    ];
+    const [events, setEvents] = useState<TrainingEvent[]>([]);
 
-    const categories = ["All", ...Array.from(new Set(trainingEvents.map(event => event.category)))];
+    useEffect(() => {
+        axiosInstance.get('/training/events')
+            .then(res => setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id)))
+            .catch(err => console.error("Failed to fetch events", err));
+    }, []);
+
+    const categories = ["All", ...Array.from(new Set(events.map(event => event.category)))];
 
     const filteredEvents = selectedCategory === "All"
-        ? trainingEvents
-        : trainingEvents.filter(event => event.category === selectedCategory);
+        ? events
+        : events.filter(event => event.category === selectedCategory);
 
     return (
         <div className="space-y-10 max-w-7xl mx-auto w-full">
@@ -59,11 +52,8 @@ export default function TrainingRequestPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <span className="px-3 py-1 bg-[var(--color-training-primary)]/10 text-[var(--color-training-primary)] text-xs font-bold rounded-full">
-                        12 Available Courses
-                    </span>
-                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
-                        3 Active Requests
+                    <span className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center justify-center">
+                        {events.length} Available Courses
                     </span>
                 </div>
             </div>
@@ -81,7 +71,10 @@ export default function TrainingRequestPage() {
                         <span className="text-sm font-semibold text-stone-500">Filter by Type:</span>
                         <select
                             value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedCategory(e.target.value);
+                                setShowAll(false);
+                            }}
                             className="bg-white border border-stone-200 text-stone-800 text-sm font-medium rounded-lg focus:ring-[var(--color-training-primary)] focus:border-[var(--color-training-primary)] block p-2 outline-none cursor-pointer"
                         >
                             {categories.map((category) => (
@@ -93,10 +86,33 @@ export default function TrainingRequestPage() {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredEvents.map((event, index) => (
-                        <TrainingEventCard key={index} {...event} />
+                    {(showAll ? filteredEvents : filteredEvents.slice(0, 6)).map((event) => (
+                        <TrainingEventCard 
+                            key={event.id} 
+                            category={event.category}
+                            imageSrc={event.imageSrc || "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"}
+                            imageAlt={event.imageAlt || event.title}
+                            title={event.title}
+                            date={event.proposedStartDate || event.date || "TBD"}
+                            time={event.time || "TBD"}
+                            applyBefore={event.applyBefore}
+                        />
                     ))}
                 </div>
+
+                {filteredEvents.length > 6 && (
+                    <div className="mt-8 flex justify-center">
+                        <button 
+                            onClick={() => setShowAll(!showAll)}
+                            className="px-8 py-2 bg-white border border-stone-200 text-stone-700 font-bold rounded-full hover:bg-stone-50 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)] transition-all shadow-sm flex items-center gap-2 group text-sm"
+                        >
+                            <span>{showAll ? "Show Less" : "View All Training Courses"}</span>
+                            <span className={`material-symbols-outlined text-sm transition-transform ${showAll ? "rotate-180" : "group-hover:translate-y-0.5"}`}>
+                                expand_more
+                            </span>
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* Section 2: My Training Status */}
@@ -109,11 +125,12 @@ export default function TrainingRequestPage() {
                         My Training Status
                     </h2>
                 </div>
-                <TrainingStatusTable 
+                <TrainingStatusTable
                     onFeedbackClick={(request) => {
-                        setSelectedFeedbackCourse(request.name);
+                        setSelectedFeedbackCourse(request.trainingTitle);
+                        setSelectedEventId(request.eventId);
                         setIsFeedbackModalOpen(true);
-                    }} 
+                    }}
                 />
             </section>
 
@@ -121,6 +138,7 @@ export default function TrainingRequestPage() {
                 isOpen={isFeedbackModalOpen}
                 onClose={() => setIsFeedbackModalOpen(false)}
                 courseName={selectedFeedbackCourse}
+                eventId={selectedEventId}
             />
         </div>
     );

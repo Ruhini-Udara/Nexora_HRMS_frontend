@@ -2,11 +2,9 @@ import React from 'react';
 
 interface FeedbackData {
     employeeName: string;
-    ratings: {
-        courseContent: number;
-        instructor: number;
-        overallExperience: number;
-    };
+    courseContentRating: number;
+    instructorRating: number;
+    overallExperienceRating: number;
     suggestions: string;
 }
 
@@ -63,17 +61,17 @@ export default function FeedbackDetailsModal({ isOpen, onClose, feedback }: Feed
                             <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-100 dark:border-slate-700/50">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Course Content</span>
-                                    <StarRating rating={feedback.ratings.courseContent} />
+                                    <StarRating rating={feedback.courseContentRating} />
                                 </div>
                                 <div className="w-full h-px bg-slate-200 dark:bg-slate-700"></div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Instructor</span>
-                                    <StarRating rating={feedback.ratings.instructor} />
+                                    <StarRating rating={feedback.instructorRating} />
                                 </div>
                                 <div className="w-full h-px bg-slate-200 dark:bg-slate-700"></div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Overall Experience</span>
-                                    <StarRating rating={feedback.ratings.overallExperience} />
+                                    <StarRating rating={feedback.overallExperienceRating} />
                                 </div>
                             </div>
                         </div>

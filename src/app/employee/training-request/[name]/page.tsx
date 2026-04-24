@@ -1,54 +1,97 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axiosInstance from "@/lib/axios";
+import { uploadDocument } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
+import { formatTime } from "@/lib/utils";
+
+interface TrainingEvent {
+    id: number;
+    title: string;
+    description: string;
+    proposedStartDate?: string;
+    date?: string;
+    time?: string;
+}
 
 interface TrainingRequestPageProps {
     params: Promise<{ name: string }>;
 }
 
 export default function TrainingRequestPage({ params }: TrainingRequestPageProps) {
-    // Note: Since this is now a client component, we unwrap params using React.use()
     const resolvedParams = React.use(params);
     const name = resolvedParams.name;
+    const router = useRouter();
+    
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const [events, setEvents] = useState<TrainingEvent[]>([]);
+    const [justification, setJustification] = useState("");
+    
+    // Employee details state (Ideally pre-filled from auth)
+    const [employeeName, setEmployeeName] = useState("");
+    const [epfNumber, setEpfNumber] = useState("");
+    const [age, setAge] = useState("");
+    const [department, setDepartment] = useState("");
+    const [designation, setDesignation] = useState("");
+    const [workEmail, setWorkEmail] = useState("");
 
-    // Decode URL component to handle special characters like %3A (colon)
     const decodedName = name ? decodeURIComponent(name) : "";
-
-    // Format the title: convert slug to Title Case
     const formattedTitle = decodedName
         ? decodedName.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
         : "Training Request";
 
-    const trainingEvents = [
-        {
-            title: "Advanced Sales Tactics",
-            description: "This training covers advanced methodologies for driving B2B sales in enterprise markets. Participants will learn account-based marketing tactics, advanced negotiation frameworks, and strategies for navigating complex procurement cycles.",
-            date: "October 24, 2023",
-            time: "09:00 AM - 12:00 PM",
-        },
-        {
-            title: "Leadership 101: Core Basics",
-            description: "A foundational course designed to transition high-performing individuals into effective managers. Focuses on interpersonal communication, conflict resolution, delegation, and building high-trust teams.",
-            date: "November 02, 2023",
-            time: "02:00 PM - 05:00 PM",
-        },
-        {
-            title: "2024 Product Roadmap",
-            description: "An intensive workshop detailing the strategic vision and upcoming features for the 2024 calendar year. Essential for product managers, marketing teams, and sales engineers to align on our future offerings.",
-            date: "November 15, 2023",
-            time: "11:00 AM - 12:30 PM",
-        },
-    ];
+    useEffect(() => {
+        axiosInstance.get('/training/events')
+            .then(res => setEvents(res.data))
+            .catch(err => console.error("Failed to fetch events", err));
+    }, []);
 
-    const eventDetails = trainingEvents.find(
+    const eventDetails = events.find(
         event => event.title.toLowerCase() === formattedTitle.toLowerCase()
-    ) || {
-        description: "General professional development and skill enhancement training. Please see the complete course syllabus for specific learning objectives and curriculum details.",
+    );
+
+    const displayEvent = eventDetails || {
+        id: -1,
+        title: formattedTitle,
+        description: "Loading training details...",
         date: "TBD",
         time: "TBD",
+    };
+
+    const handleSubmit = async () => {
+        if (!eventDetails) return;
+        
+        setIsSubmitting(true);
+        try {
+            let attachmentPath = "";
+            if (selectedFile) {
+                const path = await uploadDocument(selectedFile, 'training-requests');
+                if (path) {
+                    attachmentPath = path;
+                }
+            }
+
+            const payload = {
+                eventId: eventDetails.id,
+                employeeId: 1, // HARDCODED for demo as we don't have auth yet
+                justification: justification,
+                attachmentPath: attachmentPath
+            };
+
+            await axiosInstance.post('/training/requests', payload);
+            alert("Application submitted successfully!");
+            router.push('/employee/training-request');
+        } catch (error) {
+            console.error("Submission failed", error);
+            alert("Failed to submit application. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -80,7 +123,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                         <div className="col-span-1 md:col-span-2">
                             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-2">Training Scope & Description</h3>
                             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                                {eventDetails.description}
+                                {displayEvent.description}
                             </p>
                         </div>
                         
@@ -91,7 +134,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                                 </div>
                                 <div>
                                     <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Proposed Date</p>
-                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{eventDetails.date}</p>
+                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{displayEvent.proposedStartDate || displayEvent.date || "TBD"}</p>
                                 </div>
                             </div>
                             
@@ -101,7 +144,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                                 </div>
                                 <div>
                                     <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Proposed Time</p>
-                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{eventDetails.time}</p>
+                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatTime(displayEvent.time)}</p>
                                 </div>
                             </div>
                         </div>
@@ -121,6 +164,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Employee Name <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
+                                value={employeeName}
+                                onChange={(e) => setEmployeeName(e.target.value)}
                                 placeholder="e.g. John Doe"
                                 required
                                 className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border"
@@ -130,6 +175,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">EPF Number <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
+                                value={epfNumber}
+                                onChange={(e) => setEpfNumber(e.target.value)}
                                 placeholder="e.g. 12345"
                                 required
                                 className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border"
@@ -139,6 +186,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Age <span className="text-red-500">*</span></label>
                             <input
                                 type="number"
+                                value={age}
+                                onChange={(e) => setAge(e.target.value)}
                                 placeholder="e.g. 28"
                                 required
                                 min="18"
@@ -150,6 +199,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Department <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
+                                value={department}
+                                onChange={(e) => setDepartment(e.target.value)}
                                 placeholder="e.g. Engineering"
                                 required
                                 className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border"
@@ -159,6 +210,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Designation <span className="text-red-500">*</span></label>
                             <input
                                 type="text"
+                                value={designation}
+                                onChange={(e) => setDesignation(e.target.value)}
                                 placeholder="e.g. Software Engineer"
                                 required
                                 className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border"
@@ -168,6 +221,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Work Email <span className="text-red-500">*</span></label>
                             <input
                                 type="email"
+                                value={workEmail}
+                                onChange={(e) => setWorkEmail(e.target.value)}
                                 placeholder="john.doe@nexora.com"
                                 required
                                 pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
@@ -189,8 +244,15 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                     <div className="p-4 flex-1 flex flex-col">
                         <div className="flex-1 flex flex-col">
                             <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Justification <span className="text-red-500">*</span></label>
-                            <textarea required className="w-full flex-1 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-sm text-slate-600 dark:text-slate-300 p-3 outline-none min-h-[120px] resize-none" placeholder="I would like to attend this course because..."></textarea>
-                            <p className="text-[10px] text-right text-slate-400 mt-1">0 / 1000 characters</p>
+                            <textarea 
+                                required 
+                                value={justification}
+                                onChange={(e) => setJustification(e.target.value)}
+                                className="w-full flex-1 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-sm text-slate-600 dark:text-slate-300 p-3 outline-none min-h-[120px] resize-none" 
+                                placeholder="I would like to attend this course because..."
+                                maxLength={1000}
+                            ></textarea>
+                            <p className="text-[10px] text-right text-slate-400 mt-1">{justification.length} / 1000 characters</p>
                         </div>
                     </div>
                 </div>
@@ -282,8 +344,9 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                 </button>
                 <button
                     type="submit"
-                    className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all">
-                    Submit Application
+                    disabled={isSubmitting}
+                    className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all disabled:opacity-50">
+                    {isSubmitting ? 'Submitting...' : 'Submit Application'}
                 </button>
             </div>
 
@@ -313,8 +376,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                                 type="button"
                                 onClick={() => {
                                     setIsConfirmingSubmit(false);
-                                    // TODO: Add actual submit logic here
-                                    console.log("Application submitted");
+                                    handleSubmit();
                                 }}
                                 className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
                             >
