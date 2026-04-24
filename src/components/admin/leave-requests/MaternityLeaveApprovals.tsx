@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
 import { TEMP_AUTH } from "@/lib/authConfig";
+import api from "@/lib/axiosInstance";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MaternityLeave {
@@ -51,10 +52,8 @@ export default function MaternityLeaveApprovals() {
     const fetchRequests = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:8080/api/v1/leaves/maternity/status/${statusFilter}`);
-            if (!res.ok) throw new Error("Failed to fetch requests");
-            const data = await res.json();
-            setRequests(data);
+            const res = await api.get(`/api/v1/leaves/maternity/status/${statusFilter}`);
+            setRequests(res.data);
         } catch (error) {
             console.error("Failed to fetch requests:", error);
         } finally {
@@ -77,11 +76,8 @@ export default function MaternityLeaveApprovals() {
         setDocuments([]);
         setDocsLoading(true);
         try {
-            const res = await fetch(`http://localhost:8080/api/v1/documents?refId=${req.id}&refType=MATERNITY_LEAVE`);
-            if (res.ok) {
-                const docs = await res.json();
-                setDocuments(docs);
-            }
+            const res = await api.get(`/api/v1/documents?refId=${req.id}&refType=MATERNITY_LEAVE`);
+            setDocuments(res.data);
         } catch (error) {
             console.error("Error fetching documents", error);
         } finally {
@@ -93,18 +89,13 @@ export default function MaternityLeaveApprovals() {
         if (!selectedRequest) return;
         setSubmitting(true);
         try {
-            const res = await fetch("http://localhost:8080/api/v1/approvals", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    refId: selectedRequest.id,
-                    refType: "MATERNITY_LEAVE",
-                    decision: decision,
-                    remark: adminRemark,
-                    approvedBy: { id: TEMP_AUTH.ADMIN_ID }, // Temporary until User Management integration
-                }),
+            await api.post("/api/v1/approvals", {
+                refId: selectedRequest.id,
+                refType: "MATERNITY_LEAVE",
+                decision: decision,
+                remark: adminRemark,
+                approvedBy: { id: TEMP_AUTH.ADMIN_ID }, // Temporary until User Management integration
             });
-            if (!res.ok) throw new Error("Approval failed");
             
             triggerNotification(
                 decision === "APPROVED" 
