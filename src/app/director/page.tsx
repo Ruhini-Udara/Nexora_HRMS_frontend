@@ -1,5 +1,5 @@
 
-import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, Heart, GraduationCap, UserX, LogOut } from 'lucide-react';
+import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, Heart, UserX, LogOut } from 'lucide-react';
 import SummaryCard from '@/components/dashboard/SummaryCard';
 import ModuleCard from '@/components/dashboard/ModuleCard';
 
@@ -88,12 +88,6 @@ export default function DirectorDashboard() {
                         description="Handle employee benefit claims, health insurance inquiries, and wellness program enrollments."
                         icon={<Heart className="w-5 h-5" />}
                         href="/director/welfare"
-                    />
-                    <ModuleCard
-                        title="Training Requests"
-                        description="Approve skill development courses and external certification requests for your team."
-                        icon={<GraduationCap className="w-5 h-5" />}
-                        href="/director/training"
                     />
                     <ModuleCard
                         title="Leave Requests"
