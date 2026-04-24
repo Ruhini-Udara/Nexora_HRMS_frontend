@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
-import { TEMP_AUTH } from "@/lib/authConfig";
 import api from "@/lib/axiosInstance";
 import { useQuery } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface LeaveRequest {
     id: number;
@@ -25,28 +25,32 @@ interface LeaveResponse {
     totalDays: number;
     status: string;
     reason: string;
-    createdAt: string;
 }
 
 export default function LeaveRequestsDashboard() {
+    const { employeeId, employeeName, setEmployeeName } = useAuthStore();
+
     // ─── Data Fetching with TanStack Query ───────────────────────────────────
     
     // 1. Fetch Employee Details
     const { data: employeeData } = useQuery({
-        queryKey: ['employee', TEMP_AUTH.EMPLOYEE_ID],
+        queryKey: ['employee', employeeId],
         queryFn: async () => {
-            const res = await api.get(`/api/employees/${TEMP_AUTH.EMPLOYEE_ID}`);
-            return res.data;
+            const res = await api.get(`/api/employees/${employeeId}`);
+            const data = res.data;
+            // Sync with global store
+            if (data.fullName) setEmployeeName(data.fullName);
+            return data;
         }
     });
 
     // 2. Fetch All Leave Requests
     const { data: requests = [], isLoading: loading } = useQuery({
-        queryKey: ['leaves', TEMP_AUTH.EMPLOYEE_ID],
+        queryKey: ['leaves', employeeId],
         queryFn: async () => {
             const [overseasRes, maternityRes] = await Promise.all([
-                api.get(`/api/v1/leaves/overseas/employee/${TEMP_AUTH.EMPLOYEE_ID}`),
-                api.get(`/api/v1/leaves/maternity/employee/${TEMP_AUTH.EMPLOYEE_ID}`)
+                api.get(`/api/v1/leaves/overseas/employee/${employeeId}`),
+                api.get(`/api/v1/leaves/maternity/employee/${employeeId}`)
             ]);
 
             const overseasData = overseasRes.data;
@@ -60,7 +64,7 @@ export default function LeaveRequestsDashboard() {
         }
     });
 
-    const employeeName = employeeData?.fullName || "Employee";
+
     const [showHandover, setShowHandover] = useState(false);
     const [statusFilter, setStatusFilter] = useState("ALL");
 

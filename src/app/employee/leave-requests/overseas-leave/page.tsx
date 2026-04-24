@@ -10,9 +10,9 @@ import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
 import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
-import { TEMP_AUTH } from "@/lib/authConfig";
 import api from "@/lib/axiosInstance";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const overseasSchema = z.object({
     epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
@@ -56,6 +56,7 @@ const overseasSchema = z.object({
 type OverseasFormValues = z.infer<typeof overseasSchema>;
 
 export default function OverseasLeaveRequestPage() {
+    const { employeeId } = useAuthStore();
     const { register, handleSubmit, control, getValues, reset, formState: { errors } } = useForm<OverseasFormValues>({
         resolver: zodResolver(overseasSchema),
         defaultValues: {
@@ -149,7 +150,7 @@ export default function OverseasLeaveRequestPage() {
             setFileError("Documents uploaded! Submitting your request...");
 
             const payload = {
-                employee: { id: TEMP_AUTH.EMPLOYEE_ID }, // Temporary until User Management integration
+                employee: { id: employeeId }, // Temporary until User Management integration
                 leaveType: { id: 1 },
                 fromDate: data.startDate,
                 endDate: data.endDate,
@@ -197,7 +198,7 @@ export default function OverseasLeaveRequestPage() {
             localStorage.removeItem("overseasLeaveDraft");
             window.scrollTo({ top: 0, behavior: 'smooth' });
             // Invalidate the 'leaves' query to refresh the dashboard
-            queryClient.invalidateQueries({ queryKey: ['leaves', TEMP_AUTH.EMPLOYEE_ID] });
+            queryClient.invalidateQueries({ queryKey: ['leaves', employeeId] });
         },
         onError: (error: Error) => {
             console.error("Submission error:", error);
