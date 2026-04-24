@@ -226,7 +226,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
                             : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                 >
-                    Board Approval List
+                    Admin Approval List
                     {activeTab === 'board' && (
                         <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />
                     )}
@@ -247,9 +247,9 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
                 </div>
                 <div className="flex items-center gap-3">
                     {activeTab === 'pending' && selectedIds.length > 0 && (
-                        <Button onClick={handleAddToBoardList} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
+                        <Button onClick={handleAddToBoardList} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5 text-sm font-bold">
                             <span className="material-symbols-outlined text-sm">playlist_add_check</span>
-                            Create Board List ({selectedIds.length})
+                            Create Admin Approval List ({selectedIds.length})
                         </Button>
                     )}
                     
@@ -260,9 +260,9 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
                                 Print List
                             </Button>
                             {selectedIds.length > 0 && (
-                                <Button onClick={() => setShowBoardModal(true)} className="gap-2">
+                                <Button onClick={() => setShowBoardModal(true)} className="gap-2 text-sm font-bold">
                                     <span className="material-symbols-outlined text-sm">event</span>
-                                    Submit to Board ({selectedIds.length})
+                                    Submit for Admin Approvals ({selectedIds.length})
                                 </Button>
                             )}
                         </>
@@ -367,7 +367,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
             <div id="termination-print-section" className="hidden print:block w-full text-black bg-white min-h-screen text-left print:p-8">
                 <div className="text-center mb-10 border-b-2 border-slate-800 pb-6">
                     <h1 className="text-3xl font-bold uppercase tracking-widest text-slate-900 mb-2">Nexora HRMS</h1>
-                    <h2 className="text-xl font-semibold mb-1">Board Approval Request</h2>
+                    <h2 className="text-xl font-semibold mb-1">Admin Approval Request</h2>
                     <h3 className="text-lg font-medium text-slate-700">Employee Terminations</h3>
                     <p className="text-sm mt-3 text-slate-500 font-bold">List Generated: {new Date().toLocaleDateString()}</p>
                 </div>
@@ -425,7 +425,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
                     </div>
                     <div className="text-center">
                         <div className="border-b border-black w-48 mx-auto mb-2"></div>
-                        <p className="font-bold text-slate-800 text-sm">Board Approval</p>
+                        <p className="font-bold text-slate-800 text-sm">Admin Approval</p>
                         <p className="text-xs text-slate-500 mt-1 uppercase font-semibold">Signature & Date</p>
                     </div>
                 </div>
