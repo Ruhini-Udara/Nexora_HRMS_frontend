@@ -133,13 +133,21 @@ export function DeathRequestForm({
 
     const confirmSubmit = () => {
         const formData = getValues();
-        onSave({ ...formData, id: initialData?.id || `DTH-${Date.now()}`, status: 'SUBMITTED' });
+        const documents = docSlots.reduce((acc, slot) => {
+            if (slot.file) acc[slot.key] = slot.file.name;
+            return acc;
+        }, {} as DeathRequest['documents']);
+        onSave({ ...formData, id: initialData?.id || `DTH-${Date.now()}`, status: 'SUBMITTED', documents });
         setShowAckPopup(false);
     };
 
     const handleSaveAsDraft = () => {
         const formData = getValues();
-        onSave({ ...formData, id: initialData?.id || `DTH-${Date.now()}`, status: 'NEW' });
+        const documents = docSlots.reduce((acc, slot) => {
+            if (slot.file) acc[slot.key] = slot.file.name;
+            return acc;
+        }, {} as DeathRequest['documents']);
+        onSave({ ...formData, id: initialData?.id || `DTH-${Date.now()}`, status: 'NEW', documents });
     };
 
     return (
