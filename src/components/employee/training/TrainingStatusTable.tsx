@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@/lib/axios";
+import { useAuthStore } from "@/store/useAuthStore";
 
 type TrainingRequest = {
     id: number;
@@ -24,6 +25,8 @@ interface TrainingStatusTableProps {
 }
 
 const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackClick }) => {
+    const { user } = useAuthStore();
+    const employeeId = user?.id;
     const [requests, setRequests] = useState<TrainingRequest[]>([]);
     const [isConfirmingAttendance, setIsConfirmingAttendance] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
@@ -31,11 +34,12 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
     const [selectedRejection, setSelectedRejection] = useState<string | null>(null);
 
     useEffect(() => {
-        // Fetching for employee 1 for now
-        axiosInstance.get('/training/employees/1/requests')
+        if (!employeeId) return;
+        
+        axiosInstance.get(`/training/employees/${employeeId}/requests`)
             .then(res => setRequests(res.data))
             .catch(err => console.error("Failed to fetch requests", err));
-    }, []);
+    }, [employeeId]);
 
     const handleConfirmAttendance = (requestId: number) => {
         // We'll simulate this by updating state for now or calling an endpoint if it exists

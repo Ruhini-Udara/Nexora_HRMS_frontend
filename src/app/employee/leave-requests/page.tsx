@@ -30,7 +30,9 @@ interface LeaveResponse {
 }
 
 export default function LeaveRequestsDashboard() {
-    const { employeeId, employeeName, setEmployeeName } = useAuthStore();
+    const { user } = useAuthStore();
+    const employeeId = user?.id;
+    const employeeName = user?.name || "";
 
     // ─── Data Fetching with TanStack Query ───────────────────────────────────
 
@@ -40,8 +42,6 @@ export default function LeaveRequestsDashboard() {
         queryFn: async () => {
             const res = await api.get(`/api/employees/${employeeId}`);
             const data = res.data;
-            // Sync with global store
-            if (data.fullName) setEmployeeName(data.fullName);
             return data;
         }
     });
