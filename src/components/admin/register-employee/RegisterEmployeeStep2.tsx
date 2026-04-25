@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,12 @@ import {
 } from "@/components/ui/select";
 import { Briefcase, Hash, Info, Building2, UserCog, ChevronLeft } from "lucide-react";
 import type { EmployeeFormData } from "./RegisterEmployee";
+import axios from "@/lib/axios";
+
+interface DesignationOption {
+  designationId: number;
+  designationName: string;
+}
 
 interface RegisterEmployeeStep2Props {
   formData: EmployeeFormData;
@@ -27,6 +33,13 @@ export default function RegisterEmployeeStep2({
   onNext,
   onPrevious,
 }: RegisterEmployeeStep2Props) {
+  const [designations, setDesignations] = useState<DesignationOption[]>([]);
+
+  useEffect(() => {
+    axios.get("/designations")
+      .then((res) => setDesignations(res.data))
+      .catch((err) => console.error("Failed to fetch designations", err));
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -117,21 +130,18 @@ export default function RegisterEmployeeStep2({
                 <div className="relative">
                   <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10 pointer-events-none" />
                   <Select
-                    value={formData.designation}
-                    onValueChange={(value) => handleSelectChange("designation", value)}
+                    value={formData.designationId?.toString() ?? ""}
+                    onValueChange={(value) => updateFormData({ designationId: Number(value) })}
                   >
                     <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500">
                       <SelectValue placeholder="Select Designation" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Senior Engineer">Senior Engineer</SelectItem>
-                      <SelectItem value="Engineer">Engineer</SelectItem>
-                      <SelectItem value="HR Manager">HR Manager</SelectItem>
-                      <SelectItem value="HR Executive">HR Executive</SelectItem>
-                      <SelectItem value="Sales Executive">Sales Executive</SelectItem>
-                      <SelectItem value="Product Manager">Product Manager</SelectItem>
-                      <SelectItem value="Driver">Driver</SelectItem>
-                      <SelectItem value="Support Staff">Support Staff</SelectItem>
+                      {designations.map((d) => (
+                        <SelectItem key={d.designationId} value={d.designationId.toString()}>
+                          {d.designationName}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
