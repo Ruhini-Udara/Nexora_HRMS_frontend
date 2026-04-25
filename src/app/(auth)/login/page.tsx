@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LogIn, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/axiosInstance';
+import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { DarkModeToggle } from "@/components/DarkModeToggle";
 
@@ -54,8 +55,12 @@ export default function LoginPage() {
             else if (userData.role === 'ROLE_DIRECTOR') redirectPath = '/director';
             
             router.push(redirectPath);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+            } else {
+                setError('Login failed. Please check your credentials.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -155,7 +160,7 @@ export default function LoginPage() {
                     {/* Quick Demo Info */}
                     <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
                         <p className="text-center text-xs text-slate-500 dark:text-slate-500 font-medium">
-                            Don't have an account? <span className="text-slate-700 dark:text-slate-300">Contact your Administrator</span>
+                            Don&apos;t have an account? <span className="text-slate-700 dark:text-slate-300">Contact your Administrator</span>
                         </p>
                     </div>
                 </div>
