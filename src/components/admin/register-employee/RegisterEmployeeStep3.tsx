@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, Mail, Shield, Lock, Eye, EyeOff, CheckCircle2, Circle, Sparkles, Loader2 } from "lucide-react";
 import { useAdminNavigation } from "../AdminNavigationContext";
 import type { EmployeeFormData } from "./RegisterEmployee";
@@ -10,6 +10,11 @@ import type { AxiosError } from "axios";
 interface RegisterEmployeeStep3Props {
   formData: EmployeeFormData;
   onPrevious: () => void;
+}
+
+interface Role {
+  id: number;
+  roleName: string;
 }
 
 export default function RegisterEmployeeStep3({ formData, onPrevious }: RegisterEmployeeStep3Props) {
@@ -22,9 +27,25 @@ export default function RegisterEmployeeStep3({ formData, onPrevious }: Register
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Form states
-  const [email, setEmail] = useState("alex.morris@hrmate.com");
-  const [userRole, setUserRole] = useState("Employee");
+  const [email, setEmail] = useState(formData.email || "alex.morris@hrmate.com");
+  const [userRole, setUserRole] = useState("");
+  const [roles, setRoles] = useState<Role[]>([]);
   const [password, setPassword] = useState("HRM_2024_P@ss");
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const response = await axios.get("/roles");
+        setRoles(response.data);
+        if (response.data.length > 0) {
+          setUserRole(response.data[0].id.toString());
+        }
+      } catch (error) {
+        console.error("Failed to fetch roles:", error);
+      }
+    };
+    fetchRoles();
+  }, []);
 
   const generateRandomPassword = () => {
     const length = 12;
@@ -139,11 +160,11 @@ export default function RegisterEmployeeStep3({ formData, onPrevious }: Register
                   onChange={(e) => setUserRole(e.target.value)}
                   className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-background-dark appearance-none cursor-pointer"
                 >
-                  <option value="Employee">Employee</option>
-                  <option value="Admin">Admin</option>
-                  <option value="HR">HR</option>
-                  <option value="Supervisor">Supervisor</option>
-                  <option value="Director">Director</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.roleName}
+                    </option>
+                  ))}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                   <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,7 +269,13 @@ export default function RegisterEmployeeStep3({ formData, onPrevious }: Register
             setIsSubmitting(true);
             setSubmitError(null);
             try {
-              await axios.post("/employees", formData);
+              const finalFormData = {
+                ...formData,
+                email,
+                password,
+                roleId: userRole ? parseInt(userRole) : null,
+              };
+              await axios.post("/employees", finalFormData);
               setSubmitSuccess(true);
               setTimeout(() => {
                 setActiveView("employeeMaster");
