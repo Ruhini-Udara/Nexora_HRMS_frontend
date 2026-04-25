@@ -1,9 +1,10 @@
 "use client";
 
-import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays, ClipboardCheck } from "lucide-react";
+import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays, ClipboardCheck, LogOut, Moon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const menuItems = [
   { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const, href: "/admin" },
@@ -18,8 +19,14 @@ const menuItems = [
 
 export default function AdminSidebar() {
   const { activeView, setActiveView } = useAdminNavigation();
+  const logout = useAuthStore((state) => state.logout);
   const pathname = usePathname();
   const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   const handleMenuClick = (view: typeof menuItems[number]["view"]) => {
     setActiveView(view);
@@ -74,10 +81,17 @@ export default function AdminSidebar() {
           })}
         </nav>
       </div>
-      <div className="px-6 py-4 border-t border-gray-200">
+      <div className="px-6 py-4 border-t border-gray-200 space-y-2">
         <button className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-custom hover:bg-gray-50">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+          <Moon size={18} />
           Toggle Theme
+        </button>
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-custom hover:bg-red-100 transition-colors"
+        >
+          <LogOut size={18} />
+          Logout
         </button>
       </div>
     </aside>

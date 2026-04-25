@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Briefcase, Hash, Info, Building2, UserCog, ChevronLeft } from "lucide-react";
 import type { EmployeeFormData } from "./RegisterEmployee";
-import axios from "@/lib/axios";
+import api from "@/lib/axiosInstance";
 
 interface DesignationOption {
   designationId: number;
@@ -36,7 +36,7 @@ export default function RegisterEmployeeStep2({
   const [designations, setDesignations] = useState<DesignationOption[]>([]);
 
   useEffect(() => {
-    axios.get("/designations")
+    api.get("/api/designations")
       .then((res) => setDesignations(res.data))
       .catch((err) => console.error("Failed to fetch designations", err));
   }, []);

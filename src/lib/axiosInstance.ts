@@ -11,6 +11,23 @@ const api = axios.create({
     },
 });
 
+// Request interceptor to add JWT token
+api.interceptors.request.use(
+    (config) => {
+        // We import useAuthStore dynamically to avoid circular dependencies
+        // or issues during SSR if not handled carefully
+        const token = typeof window !== 'undefined' 
+            ? JSON.parse(localStorage.getItem('nexora-auth-storage') || '{}')?.state?.token 
+            : null;
+
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
 // Response interceptor for consistent error handling
 api.interceptors.response.use(
     (response) => response,
