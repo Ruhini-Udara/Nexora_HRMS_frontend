@@ -116,6 +116,13 @@ export default function AdminContent() {
           className="lg:col-span-3"
         />
         <ModuleCard
+          title="Register Employee"
+          description="Seamlessly onboard new staff, assign roles, and configure their dual-identity system accounts."
+          icon={<Users className="w-6 h-6" />}
+          onClick={() => setActiveView("registerEmployee")}
+          className="lg:col-span-3"
+        />
+        <ModuleCard
           title="Training & Development"
           description="Manage and review all pending training applications and monitor employee skill development."
           icon={<GraduationCap className="w-6 h-6" />}

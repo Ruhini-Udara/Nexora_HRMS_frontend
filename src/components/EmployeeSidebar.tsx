@@ -2,7 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/useAuthStore";
 
 import {
     LayoutDashboard,
@@ -16,12 +17,19 @@ import {
 
 const EmployeeSidebar = () => {
     const pathname = usePathname();
+    const router = useRouter();
+    const logout = useAuthStore((state) => state.logout);
     const [isDark, setIsDark] = React.useState(false);
 
     // Toggle theme handler
     const toggleTheme = () => {
         setIsDark(!isDark);
         document.documentElement.classList.toggle('dark');
+    };
+
+    const handleLogout = () => {
+        logout();
+        router.push("/login");
     };
 
     const navLinks = [
@@ -38,8 +46,6 @@ const EmployeeSidebar = () => {
     const isActiveLink = (href: string) => {
         if (href === "/employee/dashboard" && pathname === "/employee") return true; // Default match
         if (href === "/employee") return pathname === "/employee";
-
-        // Check if the current pathname starts with the href (useful for nested routes like /employee/leave-requests/overseas-leave)
         return pathname.startsWith(href);
     };
 
@@ -70,15 +76,22 @@ const EmployeeSidebar = () => {
                     );
                 })}
             </nav>
-            <div className="mt-auto px-4 pb-6 pt-4 border-t border-[#F1F5F9]">
+            <div className="mt-auto px-4 pb-6 pt-4 border-t border-[#F1F5F9] dark:border-gray-800 space-y-2">
                 <button
                     onClick={toggleTheme}
-                    className="w-full border border-[#E2E8F0] rounded-xl py-2 text-[#475569] font-medium flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
+                    className="w-full border border-[#E2E8F0] dark:border-gray-700 rounded-xl py-2 text-[#475569] dark:text-gray-300 font-medium flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                     <span className="material-symbols-outlined text-[20px]">
                         {isDark ? 'light_mode' : 'dark_mode'}
                     </span>
                     Toggle Theme
+                </button>
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors"
+                >
+                    <LogOut className="w-4 h-4" />
+                    Logout
                 </button>
             </div>
         </aside >

@@ -23,8 +23,10 @@ export interface EmployeeFormData {
   epfNumber: string;
   etfNumber: string;
   // Step 3: System Access
-  password?: string;
-  roleId?: number | null;
+  accountEmail: string;
+  password: string;
+  roleName: string;
+  enableSystemAccess: boolean;
 }
 
 export default function RegisterEmployee() {
@@ -44,8 +46,10 @@ export default function RegisterEmployee() {
     department: "",
     epfNumber: "",
     etfNumber: "",
+    accountEmail: "",
     password: "",
-    roleId: null,
+    roleName: "Employee",
+    enableSystemAccess: true,
   });
 
   const handleNextStep = () => {
@@ -84,6 +88,7 @@ export default function RegisterEmployee() {
       {currentStep === 3 && (
         <RegisterEmployeeStep3
           formData={formData}
+          updateFormData={updateFormData}
           onPrevious={handlePreviousStep}
         />
       )}

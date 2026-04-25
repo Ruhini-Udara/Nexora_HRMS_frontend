@@ -1,163 +1,180 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useState } from "react";
-import Image from "next/image";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { LogIn, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import api from '@/lib/axiosInstance';
+import axios from 'axios';
+import { useAuthStore } from '@/store/useAuthStore';
 import { DarkModeToggle } from "@/components/DarkModeToggle";
-import { InputIcon } from "@/components/ui/input-icon";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { MaterialIcon } from "@/components/ui/material-icon";
-import { AuthCard, AuthHeader, AuthFooterLinks } from "@/components/auth/auth-components";
-import { Separator } from "@/components/ui/separator";
+
+// Validation Schema
+const loginSchema = z.object({
+    email: z.string().email('Please enter a valid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-    const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
+    const login = useAuthStore((state) => state.login);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const footerLinks = [
-        { label: "Privacy Policy", href: "#" },
-        { label: "Terms of Service", href: "#" },
-        { label: "Support Center", href: "#" },
-    ];
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<LoginFormValues>({
+        resolver: zodResolver(loginSchema),
+    });
+
+    const onSubmit = async (data: LoginFormValues) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await api.post('/api/auth/login', data);
+            const { token, ...userData } = response.data;
+
+            // Save to Zustand store (persisted in localStorage for UI use)
+            login(token, userData);
+
+            // Save to Cookies (for Middleware use)
+            document.cookie = `nexora-token=${token}; path=/; max-age=86400; SameSite=Strict`;
+            document.cookie = `nexora-role=${userData.role}; path=/; max-age=86400; SameSite=Strict`;
+
+            // Redirect based on role
+            let redirectPath = '/employee';
+            if (userData.role === 'ROLE_ADMIN') redirectPath = '/admin';
+            else if (userData.role === 'ROLE_HR') redirectPath = '/hr';
+            else if (userData.role === 'ROLE_DIRECTOR') redirectPath = '/director';
+            
+            router.push(redirectPath);
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+            } else {
+                setError('Login failed. Please check your credentials.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
-        <div className="flex min-h-screen flex-col lg:flex-row bg-white dark:bg-slate-900 transition-colors duration-300">
-            {/* LEFT SIDE - Hero Section */}
-            <div className="hidden lg:flex lg:w-1/2 bg-white dark:bg-zinc-900 flex-col items-center justify-center p-8 xl:p-16 relative overflow-hidden">
-                {/* Decorative gradient blobs */}
-                <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-[#8B3A00]/5 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-[#8B3A00]/10 rounded-full blur-3xl"></div>
-
-                {/* Hero Image */}
-                <div className="relative z-10 w-full max-w-lg xl:max-w-xl transform hover:scale-[1.02] transition-transform duration-500">
-                    <Image
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqGtxWGKdgdVf_MMqGR3iSo2Byl1zsxhuiiKxkNfpR8tIwdqVh1VXl4HoHAJN-Vx7EK_5sLC-CtlinFWLoawhNqtWUFNEAWrtWfvu2XT1kLWqosaK6_ZOlZf7xFlpObwIwSl69XlHkwSpHjHPy9KF6J4komSigSNrezoFXBAEJF8qETAV8nx__WG8w9povjrgZor2o86sjwYKA-i3M4hGjAsTSCky2_mUe6tATqjNDPepmrV6QWMMF5IBU5_aN_9F-owCkywhFu9s"
-                        alt="Professional woman working on a laptop in a modern office"
-                        width={800}
-                        height={600}
-                        className="w-full h-auto drop-shadow-2xl rounded-2xl"
-                        priority
-                    />
-                </div>
-
-                {/* Bottom text - positioned below image */}
-                <div className="relative z-10 w-full max-w-lg xl:max-w-xl mt-6">
-                    <h2 className="text-zinc-800 dark:text-zinc-100 text-xl xl:text-2xl font-semibold mb-2">
-                        Elevate your workforce.
-                    </h2>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-sm xl:text-base leading-relaxed">
-                        Experience a comprehensive HR management system designed for the modern enterprise.
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6 relative">
+            <div className="w-full max-w-md z-10">
+                {/* Logo & Branding */}
+                <div className="text-center mb-10">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 mb-4 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20">
+                        <LogIn className="w-8 h-8 text-white" />
+                    </div>
+                    <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        Nexora HRMS
+                    </h1>
+                    <p className="mt-2 text-slate-600 dark:text-slate-400">
+                        Sign in to access your dashboard
                     </p>
                 </div>
-            </div>
 
-            {/* RIGHT SIDE - Form Section */}
-            <div className="w-full lg:w-1/2 bg-gradient-to-br from-[#8B3A00] to-[#D68D5A] flex items-center justify-center p-6 lg:p-10 xl:p-16 relative">
-                {/* Decorative circles */}
-                <div className="absolute inset-0 overflow-hidden opacity-20">
-                    <div className="absolute top-1/4 -right-20 w-80 h-80 border-4 border-white rounded-full"></div>
-                    <div className="absolute -bottom-20 -left-20 w-60 h-60 border-2 border-white/50 rounded-full"></div>
-                </div>
-
-                {/* Content */}
-                <div className="w-full max-w-sm xl:max-w-md z-10">
-                    <AuthCard>
-                        <AuthHeader title="HR MATE" subtitle="Welcome back" />
-
-                        <form className="space-y-6">
-                            {/* Email Field */}
-                            <div>
-                                <Label htmlFor="email" className="text-zinc-700 dark:text-zinc-300 mb-2">
-                                    Email Address
-                                </Label>
-                                <InputIcon
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    required
-                                    placeholder="name@company.com"
-                                    icon={<MaterialIcon icon="mail" />}
-                                />
+                {/* Login Form Card */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 p-8">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        {/* Error Message */}
+                        {error && (
+                            <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl text-red-600 dark:text-red-400 text-sm">
+                                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                <span>{error}</span>
                             </div>
+                        )}
 
-                            {/* Password Field */}
-                            <div>
-                                <Label htmlFor="password" className="text-zinc-700 dark:text-zinc-300 mb-2">
-                                    Password
-                                </Label>
-                                <InputIcon
-                                    id="password"
-                                    name="password"
-                                    type={showPassword ? "text" : "password"}
-                                    required
-                                    placeholder="••••••••"
-                                    icon={<MaterialIcon icon="lock" />}
-                                    endAdornment={
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="text-zinc-400 hover:text-[#8B3A00] transition-colors"
-                                        >
-                                            <MaterialIcon
-                                                icon={showPassword ? "visibility_off" : "visibility"}
-                                            />
-                                        </button>
-                                    }
-                                />
-                            </div>
-
-                            {/* Remember Me & Forgot Password */}
-                            <div className="flex items-center justify-between py-1">
-                                <div className="flex items-center">
-                                    <input
-                                        id="remember-me"
-                                        name="remember-me"
-                                        type="checkbox"
-                                        className="h-4 w-4 text-[#8B3A00] focus:ring-[#8B3A00] border-zinc-300 dark:border-zinc-700 rounded transition-all"
-                                    />
-                                    <Label
-                                        htmlFor="remember-me"
-                                        className="ml-2 text-sm text-zinc-600 dark:text-zinc-400 font-normal"
-                                    >
-                                        Remember me
-                                    </Label>
+                        {/* Email Field */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                                Email Address
+                            </label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+                                    <Mail className="w-5 h-5" />
                                 </div>
-                                <Link
-                                    href="/forgot-password"
-                                    className="text-sm font-medium text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors"
-                                >
-                                    Forgot password?
-                                </Link>
+                                <input
+                                    {...register('email')}
+                                    type="email"
+                                    placeholder="name@company.com"
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-slate-900 dark:text-white"
+                                />
                             </div>
-
-                            {/* Submit Button */}
-                            <Button
-                                type="submit"
-                                className="w-full h-12 bg-[#8B3A00] hover:bg-[#722F00] text-white font-bold shadow-lg rounded-xl active:scale-[0.98] transition-all"
-                            >
-                                Login to Dashboard
-                            </Button>
-                        </form>
-
-                        {/* Bottom Section */}
-                        <div className="mt-8 pt-8">
-                            <Separator className="mb-8" />
-                            <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center">
-                                Don&apos;t have an account?{" "}
-                                <Link href="#" className="font-semibold text-[#8B3A00] hover:underline">
-                                    Contact Support
-                                </Link>
-                            </p>
+                            {errors.email && (
+                                <p className="text-xs text-red-500 ml-1 mt-1 font-medium">{errors.email.message}</p>
+                            )}
                         </div>
-                    </AuthCard>
 
-                    {/* Footer Links */}
-                    <AuthFooterLinks links={footerLinks} />
+                        {/* Password Field */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center ml-1">
+                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    Password
+                                </label>
+                                <a href="#" className="text-xs font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
+                                    Forgot password?
+                                </a>
+                            </div>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+                                    <Lock className="w-5 h-5" />
+                                </div>
+                                <input
+                                    {...register('password')}
+                                    type="password"
+                                    placeholder="••••••••"
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-slate-900 dark:text-white"
+                                />
+                            </div>
+                            {errors.password && (
+                                <p className="text-xs text-red-500 ml-1 mt-1 font-medium">{errors.password.message}</p>
+                            )}
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-2xl shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    <span>Sign In</span>
+                                    <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Quick Demo Info */}
+                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                        <p className="text-center text-xs text-slate-500 dark:text-slate-500 font-medium">
+                            Don&apos;t have an account? <span className="text-slate-700 dark:text-slate-300">Contact your Administrator</span>
+                        </p>
+                    </div>
                 </div>
-            </div>
 
+                {/* Footer */}
+                <p className="text-center mt-10 text-xs text-slate-400 dark:text-slate-600">
+                    &copy; 2024 Nexora Solutions. All rights reserved.
+                </p>
+            </div>
+            
             {/* Dark Mode Toggle */}
-            <DarkModeToggle />
+            <div className="absolute top-6 right-6">
+                <DarkModeToggle />
+            </div>
         </div>
     );
 }

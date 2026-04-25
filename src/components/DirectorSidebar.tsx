@@ -1,11 +1,19 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ArrowLeftRight, UserX, Heart, UserMinus, ShieldQuestion, GraduationCap, Calendar } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuthStore } from "@/store/useAuthStore";
+import { LayoutDashboard, ArrowLeftRight, UserX, Heart, UserMinus, ShieldQuestion, Calendar, LogOut } from 'lucide-react';
 
 const DirectorSidebar = () => {
     const pathname = usePathname();
+    const router = useRouter();
+    const logout = useAuthStore((state) => state.logout);
+
+    const handleLogout = () => {
+        logout();
+        router.push("/login");
+    };
 
     const navLinks = [
         { label: "Dashboard", href: "/director", icon: LayoutDashboard },
@@ -43,10 +51,17 @@ const DirectorSidebar = () => {
                     );
                 })}
             </nav>
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-4 border-t border-gray-200 space-y-2">
                 <button className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-custom hover:bg-gray-50">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
                     Toggle Theme
+                </button>
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-custom hover:bg-red-100 transition-colors"
+                >
+                    <LogOut size={18} />
+                    Logout
                 </button>
             </div>
         </aside>
@@ -54,4 +69,3 @@ const DirectorSidebar = () => {
 };
 
 export default DirectorSidebar;
-

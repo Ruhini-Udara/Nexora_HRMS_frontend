@@ -1,26 +1,55 @@
 import { create } from 'zustand';
-import { TEMP_AUTH } from '@/lib/authConfig';
+import { persist, createJSONStorage } from 'zustand/middleware';
+
+interface User {
+    id: number;
+    email: string;
+    role: string;
+    name: string;
+    designation: string;
+}
 
 interface AuthState {
-    employeeId: number;
-    employeeName: string;
-    isAdmin: boolean;
-    setEmployeeId: (id: number) => void;
-    setEmployeeName: (name: string) => void;
-    setIsAdmin: (isAdmin: boolean) => void;
+    token: string | null;
+    user: User | null;
+    isAuthenticated: boolean;
+    login: (token: string, user: User) => void;
+    logout: () => void;
 }
 
 /**
  * Global Auth Store using Zustand.
- * Centralizes user identity across the application.
+ * Handles JWT token storage and user role information.
  */
-export const useAuthStore = create<AuthState>((set) => ({
-    // Initialize with values from our temp config
-    employeeId: TEMP_AUTH.EMPLOYEE_ID,
-    employeeName: "Employee",
-    isAdmin: false,
+export const useAuthStore = create<AuthState>()(
+    persist(
+        (set) => ({
+            token: null,
+            user: null,
+            isAuthenticated: false,
 
-    setEmployeeId: (id) => set({ employeeId: id }),
-    setEmployeeName: (name) => set({ employeeName: name }),
-    setIsAdmin: (isAdmin) => set({ isAdmin }),
-}));
+            login: (token, user) => set({ 
+                token, 
+                user, 
+                isAuthenticated: true 
+            }),
+
+            logout: () => {
+                // Clear state
+                set({ 
+                    token: null, 
+                    user: null, 
+                    isAuthenticated: false 
+                });
+                
+                // Clear cookies
+                document.cookie = "nexora-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                document.cookie = "nexora-role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            },
+        }),
+        {
+            name: 'nexora-auth-storage',
+            storage: createJSONStorage(() => localStorage),
+        }
+    )
+);
