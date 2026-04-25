@@ -22,6 +22,9 @@ export interface EmployeeFormData {
   department: string;
   epfNumber: string;
   etfNumber: string;
+  // Step 3: System Access
+  password?: string;
+  roleId?: number | null;
 }
 
 export default function RegisterEmployee() {
@@ -41,6 +44,8 @@ export default function RegisterEmployee() {
     department: "",
     epfNumber: "",
     etfNumber: "",
+    password: "",
+    roleId: null,
   });
 
   const handleNextStep = () => {
