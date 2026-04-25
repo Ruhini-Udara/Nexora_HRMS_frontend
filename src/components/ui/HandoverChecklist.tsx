@@ -1,36 +1,31 @@
 import React, { useState } from 'react';
 
-// Mock Colleagues
-const MOCK_COLLEAGUES = [
-    { id: 'usr-1', name: 'John Doe', role: 'Senior Developer' },
-    { id: 'usr-2', name: 'Jane Smith', role: 'Project Manager' },
-    { id: 'usr-3', name: 'Michael Chen', role: 'UI/UX Designer' },
-    { id: 'usr-4', name: 'Sarah Jenkins', role: 'QA Engineer' },
-    { id: 'usr-5', name: 'David Wilson', role: 'Backend Engineer' },
-];
 
-// Initial Mock Tasks (Pre-loaded from theoretical DB)
-const INITIAL_TASKS = [
-    { id: 'task-1', title: 'Q3 Marketing Website Refresh', assignedTo: '' },
-    { id: 'task-2', title: 'Weekly Standup Moderation', assignedTo: '' },
-];
+
+// Initial Mock Tasks (Empty to allow manual entry)
+const INITIAL_TASKS: { id: string, title: string, assignedTo: string, colleagueEmail: string }[] = [];
 
 interface HandoverChecklistProps {
     className?: string;
     onComplete?: () => void;
+    employeeName?: string;
 }
 
-export function HandoverChecklist({ className = "", onComplete }: HandoverChecklistProps) {
+export function HandoverChecklist({ className = "", onComplete, employeeName = "Employee" }: HandoverChecklistProps) {
     const [tasks, setTasks] = useState(INITIAL_TASKS);
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    // Check if all tasks have been assigned
-    const isAllAssigned = tasks.length > 0 && tasks.every(t => t.assignedTo !== '');
+    // Check if all tasks have been assigned with both name and email
+    const isAllAssigned = tasks.length > 0 && tasks.every(t => t.assignedTo !== '' && t.colleagueEmail !== '');
 
-    const handleAssignColleague = (taskId: string, colleagueId: string) => {
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, assignedTo: colleagueId } : t));
+    const handleAssignColleague = (taskId: string, name: string) => {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, assignedTo: name } : t));
+    };
+
+    const handleAssignEmail = (taskId: string, email: string) => {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, colleagueEmail: email } : t));
     };
 
     const handleAddTask = (e: React.FormEvent) => {
@@ -40,7 +35,8 @@ export function HandoverChecklist({ className = "", onComplete }: HandoverCheckl
         const newTask = {
             id: `task-new-${Date.now()}`,
             title: newTaskTitle.trim(),
-            assignedTo: ''
+            assignedTo: '',
+            colleagueEmail: ''
         };
 
         setTasks(prev => [...prev, newTask]);
@@ -51,16 +47,35 @@ export function HandoverChecklist({ className = "", onComplete }: HandoverCheckl
         setTasks(prev => prev.filter(t => t.id !== taskId));
     };
 
-    const handleSubmitHandover = () => {
+    const handleSubmitHandover = async () => {
         if (!isAllAssigned) return;
         
         setIsSubmitting(true);
-        // Simulate an API call / Email dispatch
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            const response = await fetch("http://localhost:8080/api/v1/notifications/handover", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    employeeName: employeeName,
+                    tasks: tasks.map(t => ({
+                        taskTitle: t.title,
+                        colleagueName: t.assignedTo,
+                        colleagueEmail: t.colleagueEmail
+                    }))
+                })
+            });
+
+            if (!response.ok) throw new Error("Failed to send notifications");
+
             setIsSuccess(true);
             if (onComplete) onComplete();
-        }, 2000);
+        } catch (err) {
+            console.error("Handover error:", err);
+            alert("Failed to notify colleagues. Please try again.");
+        } finally {
+            setIsSubmitting(true); // Keep it submitting to show success state? No, setIsSuccess handles it.
+            setIsSubmitting(false);
+        }
     };
 
     if (isSuccess) {
@@ -116,35 +131,41 @@ export function HandoverChecklist({ className = "", onComplete }: HandoverCheckl
                             </div>
                         </div>
 
-                        {/* Assign Dropdown */}
-                        <div className="flex items-center gap-3 sm:w-64 flex-shrink-0">
+                        {/* Assign Colleague Inputs */}
+                        <div className="flex flex-col gap-2 sm:w-80 flex-shrink-0">
                             <div className="relative w-full">
-                                <select 
+                                <input 
+                                    type="text"
+                                    placeholder="Colleague Name"
                                     value={task.assignedTo}
                                     onChange={(e) => handleAssignColleague(task.id, e.target.value)}
-                                    className={`w-full appearance-none bg-white dark:bg-slate-900 border rounded-lg p-2.5 pr-8 text-sm outline-none transition-colors ${task.assignedTo ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30' : 'border-slate-200 dark:border-slate-700'} focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:text-slate-300`}
-                                >
-                                    <option value="" disabled>Assign to colleague...</option>
-                                    {MOCK_COLLEAGUES.map(colleague => (
-                                        <option key={colleague.id} value={colleague.id}>
-                                            {colleague.name} ({colleague.role})
-                                        </option>
-                                    ))}
-                                </select>
-                                <span className="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none text-lg">
-                                    keyboard_arrow_down
+                                    className={`w-full bg-white dark:bg-slate-900 border rounded-lg p-2 text-xs outline-none transition-colors ${task.assignedTo ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30' : 'border-slate-200 dark:border-slate-700'} focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:text-slate-300`}
+                                />
+                                <span className="material-symbols-outlined absolute right-3 top-2 text-slate-400 pointer-events-none text-sm">
+                                    person
                                 </span>
                             </div>
-
-                            {/* Delete specific task (only added dynamically, or all?) Let's allow deleting any for now to keep it simple */}
-                            <button 
-                                type="button" 
-                                onClick={() => handleDeleteTask(task.id)}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                            </button>
+                            <div className="relative w-full">
+                                <input 
+                                    type="email"
+                                    placeholder="Colleague Email"
+                                    value={task.colleagueEmail}
+                                    onChange={(e) => handleAssignEmail(task.id, e.target.value)}
+                                    className={`w-full bg-white dark:bg-slate-900 border rounded-lg p-2 text-xs outline-none transition-colors ${task.colleagueEmail ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30' : 'border-slate-200 dark:border-slate-700'} focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:text-slate-300`}
+                                />
+                                <span className="material-symbols-outlined absolute right-3 top-2 text-slate-400 pointer-events-none text-sm">
+                                    mail
+                                </span>
+                            </div>
                         </div>
+
+                        <button 
+                            type="button" 
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="w-10 h-10 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors self-center"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
                     </div>
                 ))}
 

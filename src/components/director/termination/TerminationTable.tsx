@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Check, X, Eye, MonitorPlay, Mails } from 'lucide-react';
+import { Check, X, Eye, MonitorPlay, Mails, Send } from 'lucide-react';
 
 export type DirTermRequest = {
     id: string;
     employeeName: string;
+    email: string;
     branch: string;
     type: string;
     reason: string;
@@ -21,46 +22,50 @@ const mockData: DirTermRequest[] = [
     {
         id: 'TRM-2024-001',
         employeeName: 'John Doe',
+        email: 'john.doe@example.com',
         branch: 'Colombo',
         type: 'Involuntary',
         reason: 'Poor performance over 3 quarters.',
         initiationDate: '2024-10-15',
         effectiveDate: '2024-11-01',
-        boardMeetingDate: '2024-11-10', // Past
+        boardMeetingDate: '2024-11-10',
         status: 'APPROVED'
     },
     {
         id: 'TRM-2024-002',
         employeeName: 'Sunil Silva',
+        email: 'sunil.silva@example.com',
         branch: 'Kandy',
         type: 'Voluntary',
         reason: 'Career change',
         initiationDate: '2024-11-05',
         effectiveDate: '2024-12-01',
-        boardMeetingDate: '2024-11-20', // Current
+        boardMeetingDate: '2024-11-20',
         specialRemark: 'Employee requested an expedited settlement for the loan clearance due to urgent departure.',
         status: 'BOARD_ASSIGNED'
     },
     {
         id: 'TRM-2024-003',
         employeeName: 'Amal Perera',
+        email: 'amal.perera@example.com',
         branch: 'Galle',
         type: 'Voluntary',
         reason: 'Relocating abroad',
         initiationDate: '2024-11-06',
         effectiveDate: '2024-12-15',
-        boardMeetingDate: '2024-11-20', // Current
+        boardMeetingDate: '2024-11-20',
         status: 'BOARD_ASSIGNED'
     },
     {
         id: 'TRM-2024-004',
         employeeName: 'Nuwan Fernando',
+        email: 'nuwan.fernando@example.com',
         branch: 'Matara',
         type: 'Involuntary',
         reason: 'Policy violation',
         initiationDate: '2024-11-10',
         effectiveDate: '2024-11-12',
-        boardMeetingDate: '2024-12-15', // Upcoming
+        boardMeetingDate: '2024-12-15',
         status: 'BOARD_ASSIGNED'
     }
 ];
@@ -83,6 +88,10 @@ export default function TerminationTable() {
 
     const [selectedDate, setSelectedDate] = useState('2024-11-20');
 
+    // Toast State
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+    const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
+
     // Filter Logic based on tabs
     const filteredRequests = useMemo(() => {
         return requests.filter(req => {
@@ -101,16 +110,15 @@ export default function TerminationTable() {
     const isCurrentListFullyDecided = filteredRequests.length > 0 && filteredRequests.every(r => r.status !== 'BOARD_ASSIGNED');
 
     const handleApprove = (id: string) => {
-        const targetReq = requests.find(r => r.id === id);
-        if (targetReq) {
-            alert(`Termination approval email automatically dispatched to: ${targetReq.employeeName}`);
-        }
+        const req = requests.find(r => r.id === id);
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'APPROVED' } : r));
+        showToast(`✅ Approved — email sent to ${req?.employeeName} (${req?.email})`);
     };
 
     const handleConfirmReject = () => {
         if (!rejectingRequest || !rejectReason.trim()) return;
         setRequests(prev => prev.map(r => r.id === rejectingRequest.id ? { ...r, status: 'REJECTED', rejectReason } : r));
+        showToast(`❌ Rejected — email sent to ${rejectingRequest.employeeName} (${rejectingRequest.email})`);
         setRejectingRequest(null);
         setRejectReason('');
     };
@@ -194,7 +202,6 @@ export default function TerminationTable() {
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
-                                            
                                             {req.status === 'BOARD_ASSIGNED' && activeTab === 'current' && (
                                                 <>
                                                     <button 
@@ -244,16 +251,16 @@ export default function TerminationTable() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-16">
                         <button 
-                            onClick={() => { setHrNotified(true); alert("Email sent to HR successfully!"); }}
+                            onClick={() => { setHrNotified(true); showToast('✅ Summary email sent to HR Team'); }}
                             disabled={hrNotified}
                             className={`p-4 rounded-lg border text-left transition-colors flex flex-col justify-center gap-2 ${hrNotified ? 'bg-green-50 border-green-200 cursor-not-allowed text-green-800' : 'bg-white border-blue-200 hover:bg-white hover:border-blue-400 hover:shadow-md cursor-pointer'}`}
                         >
                             <span className="font-bold">{hrNotified ? '✓ Sent to HR' : 'Notify HR Team'}</span>
-                            <span className="text-xs opacity-80">Summary of all approved & rejected requests.</span>
+                            <span className="text-xs opacity-80">Summary of all approved &amp; rejected requests.</span>
                         </button>
 
                         <button 
-                            onClick={() => { setFinanceNotified(true); alert("Email sent to Finance successfully!"); }}
+                            onClick={() => { setFinanceNotified(true); showToast('✅ Summary email sent to Finance'); }}
                             disabled={financeNotified}
                             className={`p-4 rounded-lg border text-left transition-colors flex flex-col justify-center gap-2 ${financeNotified ? 'bg-green-50 border-green-200 cursor-not-allowed text-green-800' : 'bg-white border-blue-200 hover:bg-white hover:border-blue-400 hover:shadow-md cursor-pointer'}`}
                         >
@@ -264,59 +271,48 @@ export default function TerminationTable() {
                 </div>
             )}
 
+
             {/* View Details Modal */}
             {viewingRequest && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden">
+                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                            <h3 className="font-bold text-lg text-gray-900">Request Details: {viewingRequest.id}</h3>
+                            <div>
+                                <h3 className="font-bold text-lg text-gray-900">Termination Request</h3>
+                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id} · View-only</p>
+                            </div>
                             <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="p-6 space-y-6">
-                            <div className="grid grid-cols-2 gap-y-6 gap-x-8 text-sm">
-                                <div>
-                                    <span className="block text-xs font-bold text-gray-500 uppercase mb-1">Employee</span>
-                                    <p className="font-medium text-gray-900">{viewingRequest.employeeName}</p>
-                                </div>
-                                <div>
-                                    <span className="block text-xs font-bold text-gray-500 uppercase mb-1">Branch</span>
-                                    <p className="font-medium text-gray-900">{viewingRequest.branch}</p>
-                                </div>
-                                <div>
-                                    <span className="block text-xs font-bold text-gray-500 uppercase mb-1">Termination Type</span>
-                                    <p className="font-medium text-gray-900">{viewingRequest.type}</p>
-                                </div>
-                                <div>
-                                    <span className="block text-xs font-bold text-gray-500 uppercase mb-1">Dates</span>
-                                    <p className="font-medium text-gray-900">Initiated: {viewingRequest.initiationDate}</p>
-                                    <p className="font-medium text-gray-900 text-red-600">Effective: {viewingRequest.effectiveDate}</p>
-                                </div>
+                        <div className="p-6 overflow-y-auto space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Employee</span><p className="font-medium text-gray-900">{viewingRequest.employeeName}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Branch</span><p className="font-medium text-gray-900">{viewingRequest.branch}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Termination Type</span><p className="font-medium text-gray-900">{viewingRequest.type}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting Date</span><p className="font-medium text-primary">{viewingRequest.boardMeetingDate}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Initiated</span><p className="font-medium text-gray-900">{viewingRequest.initiationDate}</p></div>
+                                <div className="p-3 bg-red-50 rounded-lg"><span className="block text-xs font-bold text-red-500 uppercase mb-1">Effective Date</span><p className="font-medium text-red-700">{viewingRequest.effectiveDate}</p></div>
                             </div>
-
-                            <div className="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+                            <div className="p-3 bg-gray-50 rounded-lg">
                                 <span className="block text-xs font-bold text-gray-500 uppercase mb-2">Reason for Termination</span>
-                                <p className="text-gray-800">{viewingRequest.reason}</p>
+                                <p className="text-gray-800 text-sm">{viewingRequest.reason}</p>
                             </div>
-
                             {viewingRequest.specialRemark && (
-                                <div className="border border-orange-100 rounded-lg p-4 bg-orange-50/50">
-                                    <span className="block text-xs font-bold text-orange-800 uppercase mb-2">HR Special Remarks</span>
-                                    <p className="text-orange-900">{viewingRequest.specialRemark}</p>
+                                <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
+                                    <span className="block text-xs font-bold text-orange-700 uppercase mb-2">HR Special Remarks</span>
+                                    <p className="text-orange-900 text-sm">{viewingRequest.specialRemark}</p>
                                 </div>
                             )}
-
                             {viewingRequest.rejectReason && (
-                                <div className="border border-red-100 rounded-lg p-4 bg-red-50/50">
-                                    <span className="block text-xs font-bold text-red-800 uppercase mb-2">Director Rejection Reason</span>
-                                    <p className="text-red-900">{viewingRequest.rejectReason}</p>
+                                <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                                    <span className="block text-xs font-bold text-red-700 uppercase mb-2">Rejection Reason</span>
+                                    <p className="text-red-900 text-sm">{viewingRequest.rejectReason}</p>
                                 </div>
                             )}
-                            
-                            <div className="border-t border-gray-100 pt-6">
-                                <span className="block text-xs font-bold text-gray-500 uppercase mb-4">Attached Documents</span>
-                                <div className="flex gap-4">
+                            <div>
+                                <span className="block text-xs font-bold text-gray-500 uppercase mb-2">Attached Documents</span>
+                                <div className="flex gap-3">
                                     <a href="#" className="flex-1 border border-gray-200 rounded-lg p-3 hover:bg-gray-50 hover:border-blue-200 transition-all group flex items-center justify-between">
                                         <span className="text-sm font-medium text-gray-700 group-hover:text-primary">Request Formulation.pdf</span>
                                         <MonitorPlay className="w-4 h-4 text-gray-400 group-hover:text-primary" />
@@ -327,6 +323,9 @@ export default function TerminationTable() {
                                     </a>
                                 </div>
                             </div>
+                        </div>
+                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors cursor-pointer">Close</button>
                         </div>
                     </div>
                 </div>
@@ -368,6 +367,14 @@ export default function TerminationTable() {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {toastMessage && (
+                <div className="fixed bottom-6 right-6 z-[70] bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg font-medium text-sm flex items-center gap-2">
+                    <Send className="w-4 h-4 text-green-400" />
+                    {toastMessage}
                 </div>
             )}
         </div>

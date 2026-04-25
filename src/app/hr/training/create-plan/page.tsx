@@ -1,59 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axiosInstance from "@/lib/axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
-
-const INITIAL_TRAINING_EVENTS = [
-    {
-        id: 1,
-        title: "Advanced Sales Tactics",
-        date: "October 24, 2023",
-        time: "09:00 AM - 12:00 PM",
-        category: "External",
-        participants: "45",
-        description: "Learn advanced negotiation and closing strategies.",
-        applyBefore: "October 10, 2023",
-        location: "Conference Room A",
-        budget: "2000",
-        instructor: "Jane Doe",
-    },
-    {
-        id: 2,
-        title: "Leadership 101: Core Basics",
-        date: "November 02, 2023",
-        time: "02:00 PM - 05:00 PM",
-        category: "Internal",
-        participants: "30",
-        description: "Foundational leadership skills for new managers.",
-        applyBefore: "October 20, 2023",
-        location: "Main Auditorium",
-        budget: "1500",
-        instructor: "John Smith",
-    },
-    {
-        id: 3,
-        title: "2024 Product Roadmap",
-        date: "November 15, 2023",
-        time: "11:00 AM - 12:30 PM",
-        category: "Internal",
-        participants: "100",
-        description: "Deep dive into the 2024 product feature set.",
-        applyBefore: "November 01, 2023",
-        location: "Virtual (Zoom)",
-        budget: "500",
-        instructor: "Product Team",
-    },
-];
+import { formatTime } from "@/lib/utils";
+import { Toast } from "@/components/ui/Toast";
 
 type TrainingEvent = {
     id: number;
     title: string;
-    date: string;
-    time: string;
+    proposedStartDate?: string;
+    date?: string;
+    time?: string;
     category: string;
     participants?: string;
+    expectedParticipants?: number;
     description?: string;
     applyBefore?: string;
     location?: string;
@@ -61,22 +24,57 @@ type TrainingEvent = {
     instructor?: string;
 };
 
+
 export default function CreateTrainingPlanPage() {
-    const [events, setEvents] = useState(INITIAL_TRAINING_EVENTS);
+    const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedViewEvent, setSelectedViewEvent] = useState<TrainingEvent | null>(null);
+    const [eventToDelete, setEventToDelete] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
     const router = useRouter();
 
-    const categories = ["All", ...Array.from(new Set(INITIAL_TRAINING_EVENTS.map(e => e.category)))];
+    useEffect(() => {
+        axiosInstance.get('/training/events')
+            .then(res => setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id)))
+            .catch(err => console.error("Failed to fetch events:", err));
+    }, []);
+
+    const categories = ["All", ...Array.from(new Set(events.map(e => e.category)))];
 
     const filteredEvents = selectedCategory === "All"
         ? events
         : events.filter(e => e.category === selectedCategory);
 
+    // Pagination logic
+    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredEvents.slice(indexOfFirstItem, indexOfLastItem);
+
     const handleDeleteEvent = (id: number) => {
-        const newEvents = events.filter(event => event.id !== id);
-        setEvents(newEvents);
-        localStorage.setItem('trainingEvents', JSON.stringify(newEvents));
+        setEventToDelete(id);
+    };
+
+    const confirmDelete = () => {
+        if (!eventToDelete) return;
+        
+        setIsDeleting(true);
+        axiosInstance.delete(`/training/events/${eventToDelete}`)
+            .then(() => {
+                setEvents(events.filter(event => event.id !== eventToDelete));
+                setToast({ message: "Training plan deleted successfully!", type: 'success' });
+                setEventToDelete(null);
+            })
+            .catch(err => {
+                console.error("Failed to delete event:", err);
+                setToast({ message: "Failed to delete training plan. Please try again.", type: 'error' });
+            })
+            .finally(() => {
+                setIsDeleting(false);
+            });
     };
 
     const handleEditEvent = (id: number) => {
@@ -95,8 +93,8 @@ export default function CreateTrainingPlanPage() {
                         Design, manage, and update training programs for your organization.
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
+                <div className="flex items-center gap-2">
+                    <span className="px-4 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center justify-center">
                         {filteredEvents.length} Available Courses
                     </span>
                     <Link href="/hr/training/create-plan/new" className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-full flex items-center gap-1 hover:bg-[#853500] transition-colors shadow-sm shadow-primary/20">
@@ -118,7 +116,10 @@ export default function CreateTrainingPlanPage() {
                     <div className="relative">
                         <select
                             value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedCategory(e.target.value);
+                                setCurrentPage(1); // Reset to first page on filter change
+                            }}
                             className="appearance-none bg-white text-stone-700 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 outline-none cursor-pointer hover:bg-stone-50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
                         >
                             {categories.map((category) => (
@@ -133,12 +134,12 @@ export default function CreateTrainingPlanPage() {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredEvents.map((event) => (
+                    {currentItems.map((event) => (
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
-                            date={event.date}
-                            time={event.time}
+                            date={event.proposedStartDate || "TBD"}
+                            time={formatTime(event.time)}
                             category={event.category}
                             onView={() => setSelectedViewEvent(event)}
                             onEdit={() => handleEditEvent(event.id)}
@@ -146,6 +147,42 @@ export default function CreateTrainingPlanPage() {
                         />
                     ))}
                 </div>
+
+                {filteredEvents.length > itemsPerPage && (
+                    <div className="mt-10 flex items-center justify-center gap-4">
+                        <button 
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        >
+                            <span className="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        
+                        <div className="flex items-center gap-2">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-10 h-10 rounded-xl font-bold text-sm transition-all shadow-sm ${
+                                        currentPage === page 
+                                        ? 'bg-primary text-white' 
+                                        : 'bg-white border border-stone-200 text-stone-600 hover:border-primary hover:text-primary'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        >
+                            <span className="material-symbols-outlined">chevron_right</span>
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* View Event Modal */}
@@ -184,21 +221,21 @@ export default function CreateTrainingPlanPage() {
                                     <span className="material-symbols-outlined text-stone-400">calendar_month</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Date</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.date}</p>
+                                        <p className="font-medium text-sm">{selectedViewEvent.proposedStartDate}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-stone-600">
                                     <span className="material-symbols-outlined text-stone-400">schedule</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Time</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.time}</p>
+                                        <p className="font-medium text-sm">{formatTime(selectedViewEvent.time)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-stone-600">
                                     <span className="material-symbols-outlined text-stone-400">group</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Participants</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.participants} Expected</p>
+                                        <p className="font-medium text-sm">{selectedViewEvent.expectedParticipants} Expected</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-stone-600">
@@ -219,7 +256,7 @@ export default function CreateTrainingPlanPage() {
                                     <span className="material-symbols-outlined text-stone-400">payments</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Budget</p>
-                                        <p className="font-medium text-sm">${selectedViewEvent.budget}</p>
+                                        <p className="font-medium text-sm">LKR {selectedViewEvent.budget}</p>
                                     </div>
                                 </div>
                                 <div className="col-span-2 flex items-center gap-3 text-stone-600">
@@ -242,6 +279,56 @@ export default function CreateTrainingPlanPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Confirmation Modal for Deletion */}
+            {eventToDelete !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                                <span className="material-symbols-outlined text-2xl">delete_forever</span>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-stone-900 leading-tight">Delete Training Plan?</h3>
+                                <p className="text-sm text-stone-500 mt-1">This action cannot be undone. All related data will be permanently removed.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setEventToDelete(null)}
+                                disabled={isDeleting}
+                                className="px-5 py-2.5 rounded-xl font-semibold text-stone-700 hover:bg-stone-100 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                disabled={isDeleting}
+                                className="px-5 py-2.5 rounded-xl bg-rose-600 text-white font-semibold hover:bg-rose-700 transition-colors shadow-sm shadow-rose-200 flex items-center gap-2 disabled:opacity-70"
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    "Yes, Delete Now"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notifications */}
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
             )}
         </div>
     );

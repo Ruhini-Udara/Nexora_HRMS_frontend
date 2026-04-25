@@ -6,56 +6,32 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLeaveDays } from "@/hooks/useLeaveDays";
-import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprovalTracker";
-import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
 import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
 import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
-import Confetti from "react-confetti";
+import api from "@/lib/axiosInstance";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/useAuthStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-const overseasSchema = z.object({
-    epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
-    branch: z.string().min(1, "Branch is required"),
-    dateOfRequest: z.string().min(1),
-    employeeName: z.string().min(1, "Employee Name is required"),
-    designation: z.string().min(1, "Designation is required"),
-    leaveReason: z.string().min(1, "Leave Request Reason is required"),
-    startDate: z.string().min(1, "Start Date is required").refine((val) => {
-        const today = new Date().toISOString().split("T")[0];
-        return val >= today;
-    }, "Start Date cannot be in the past"),
-    endDate: z.string().min(1, "End Date is required"),
-    passportNumber: z.string().min(1, "Passport Number is required"),
-    passportExpDate: z.string().min(1, "Passport Expiry Date is required"),
-    contactNumber: z.string().regex(/^\+?[0-9\s\-]{9,15}$/, "Invalid phone format"),
-    email: z.string().email("Invalid email address").min(1, "Email is required"),
-    specialRemark: z.string().optional(),
-    acknowledgement: z.boolean().refine(val => val === true, "You must acknowledge the terms to proceed.")
-}).refine((data) => {
-    if (!data.startDate || !data.endDate) return true;
-    const start = new Date(data.startDate);
-    const end = new Date(data.endDate);
-    return end >= start;
-}, {
-    message: "End Date must be the same as or after Start Date.",
-    path: ["endDate"]
-}).refine((data) => {
-    if (!data.endDate || !data.passportExpDate) return true;
-    const end = new Date(data.endDate);
-    const exp = new Date(data.passportExpDate);
-    const sixMonthsFromEnd = new Date(end.setMonth(end.getMonth() + 6));
-    sixMonthsFromEnd.setHours(0,0,0,0);
-    exp.setHours(0,0,0,0);
-    return exp >= sixMonthsFromEnd;
-}, {
-    message: "Passport must be valid for at least 6 months beyond travel end date.",
-    path: ["passportExpDate"]
-});
+
+import { overseasSchema } from "@/lib/validations";
 
 type OverseasFormValues = z.infer<typeof overseasSchema>;
 
 export default function OverseasLeaveRequestPage() {
+    const { employeeId } = useAuthStore();
     const { register, handleSubmit, control, getValues, reset, formState: { errors } } = useForm<OverseasFormValues>({
         resolver: zodResolver(overseasSchema),
         defaultValues: {
@@ -74,8 +50,6 @@ export default function OverseasLeaveRequestPage() {
     const [status, setStatus] = useState<"editing" | "draft" | "submitted">("editing");
     const [fileError, setFileError] = useState("");
 
-    const [trackerStep, setTrackerStep] = useState(0);
-    const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
     
     // Preview State
@@ -129,23 +103,19 @@ export default function OverseasLeaveRequestPage() {
         setFileError("");
     };
 
-    const onSubmit = async (data: OverseasFormValues) => {
-        setFileError("");
-        if (!files.passportCopy || !files.visaCopy || !files.confirmationLetter || !files.flightTickets) {
-            setFileError("Flight Tickets, Passport Copy, Visa Copy, and Confirmation Letter are mandatory for submission.");
-            return;
-        }
+    const queryClient = useQueryClient();
 
-        try {
+    const submitMutation = useMutation({
+        mutationFn: async (data: OverseasFormValues) => {
             setFileError("Uploading documents to secure storage...");
 
             // Upload all documents to Supabase Storage in parallel
             const [leaveLetterUrl, passportCopyUrl, visaCopyUrl, confirmationLetterUrl, flightTicketsUrl] = await Promise.all([
                 files.leaveLetter ? uploadDocument(files.leaveLetter, "overseas-leave") : Promise.resolve(null),
-                uploadDocument(files.passportCopy, "overseas-leave"),
-                uploadDocument(files.visaCopy, "overseas-leave"),
-                uploadDocument(files.confirmationLetter, "overseas-leave"),
-                uploadDocument(files.flightTickets, "overseas-leave"),
+                uploadDocument(files.passportCopy!, "overseas-leave"),
+                uploadDocument(files.visaCopy!, "overseas-leave"),
+                uploadDocument(files.confirmationLetter!, "overseas-leave"),
+                uploadDocument(files.flightTickets!, "overseas-leave"),
             ]);
 
             if (!passportCopyUrl || !visaCopyUrl || !confirmationLetterUrl || !flightTicketsUrl) {
@@ -155,7 +125,7 @@ export default function OverseasLeaveRequestPage() {
             setFileError("Documents uploaded! Submitting your request...");
 
             const payload = {
-                employee: { id: 1 },
+                employee: { id: employeeId }, // Temporary until User Management integration
                 leaveType: { id: 1 },
                 fromDate: data.startDate,
                 endDate: data.endDate,
@@ -169,18 +139,8 @@ export default function OverseasLeaveRequestPage() {
                 specialRemark: data.specialRemark,
             };
 
-            const response = await fetch("http://localhost:8080/api/v1/leaves/overseas", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || "Failed to submit to backend");
-            }
-
-            const savedLeave = await response.json();
+            const response = await api.post("/api/v1/leaves/overseas", payload);
+            const savedLeave = response.data;
             const leaveId: number = savedLeave.id;
 
             // Save each uploaded document as a row in the documents table
@@ -196,96 +156,43 @@ export default function OverseasLeaveRequestPage() {
                 docEntries
                     .filter(d => d.path !== null)
                     .map(d =>
-                        fetch("http://localhost:8080/api/v1/documents", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                refId: leaveId,
-                                refType: "OVERSEAS_LEAVE",
-                                documentType: d.type,
-                                filePathUrl: d.path,
-                                description: d.description,
-                            }),
+                        api.post("/api/v1/documents", {
+                            refId: leaveId,
+                            refType: "OVERSEAS_LEAVE",
+                            documentType: d.type,
+                            filePathUrl: d.path,
+                            description: d.description,
                         })
                     )
             );
-
+            return savedLeave;
+        },
+        onSuccess: () => {
             setFileError("");
             setStatus("submitted");
-            setTrackerStep(0);
             localStorage.removeItem("overseasLeaveDraft");
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (error) {
+            // Invalidate the 'leaves' query to refresh the dashboard
+            queryClient.invalidateQueries({ queryKey: ['leaves', employeeId] });
+        },
+        onError: (error: Error) => {
             console.error("Submission error:", error);
-            setFileError(error instanceof Error ? error.message : "Submission failed. Please try again.");
+            setFileError(error.message || "Submission failed. Please try again.");
         }
+    });
+
+    const onSubmit = (data: OverseasFormValues) => {
+        if (!files.passportCopy || !files.visaCopy || !files.confirmationLetter || !files.flightTickets) {
+            setFileError("Flight Tickets, Passport Copy, Visa Copy, and Confirmation Letter are mandatory for submission.");
+            return;
+        }
+        submitMutation.mutate(data);
     };
 
-    const isDisabled = status === "submitted";
+    const isDisabled = status === "submitted" || submitMutation.isPending;
 
-    const handleSubmitAnother = () => {
-        reset();
-        setFiles({
-            leaveLetter: null,
-            passportCopy: null,
-            visaCopy: null,
-            confirmationLetter: null,
-            flightTickets: null,
-        });
-        setStatus("editing");
-        setTrackerStep(0);
-        setShowConfetti(false);
-        localStorage.removeItem("overseasLeaveDraft");
-    };
 
-    // Define the approval steps for Overseas Leave (Employee -> HR User -> Admin -> Director)
-    const approvalSteps: ApprovalStep[] = [
-        {
-            id: 'hr_review',
-            label: 'HR Verification',
-            description: 'Checking documents and leave balances',
-            icon: 'fact_check',
-            status: trackerStep > 0 ? 'completed' : trackerStep === 0 ? 'current' : 'pending',
-            date: trackerStep > 0 ? new Date().toLocaleDateString() : undefined,
-            approverName: trackerStep > 0 ? 'Sarah Jenkins (HR)' : undefined
-        },
-        {
-            id: 'admin_approval',
-            label: 'Admin Approval',
-            description: 'Initial review by System Administrator',
-            icon: 'admin_panel_settings',
-            status: trackerStep > 1 ? 'completed' : trackerStep === 1 ? 'current' : 'pending',
-            date: trackerStep > 1 ? new Date().toLocaleDateString() : undefined,
-            approverName: trackerStep > 1 ? 'Michael Chen (Admin)' : undefined
-        },
-        {
-            id: 'director_approval',
-            label: 'Director Approval',
-            description: 'Final sign-off from the Director',
-            icon: 'gavel',
-            status: trackerStep > 2 ? 'completed' : trackerStep === 2 ? 'current' : 'pending',
-            date: trackerStep > 2 ? new Date().toLocaleDateString() : undefined,
-            approverName: trackerStep > 2 ? 'Robert Williams (Director)' : undefined
-        },
-        {
-            id: 'approved',
-            label: 'Request Approved',
-            description: 'Leave confirmed',
-            icon: 'verified',
-            status: trackerStep > 2 ? 'completed' : 'pending'
-        }
-    ];
 
-    const simulateNextStep = () => {
-        if (trackerStep < approvalSteps.length - 1) {
-            setTrackerStep(prev => prev + 1);
-            if (trackerStep === approvalSteps.length - 2) {
-                // If moving to the final 'approved' step
-                setShowConfetti(true);
-                setTimeout(() => setShowConfetti(false), 5000);
-            }
-        }
-    };
 
     return (
         <div className="max-w-7xl mx-auto w-full grid grid-cols-12 gap-8 pb-12">
@@ -316,69 +223,38 @@ export default function OverseasLeaveRequestPage() {
                 )}
 
                 {status === "submitted" && (
-                    <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 mb-8 overflow-hidden relative">
-                        {showConfetti && (
-                            <div className="absolute inset-0 pointer-events-none z-50">
-                                <Confetti
-                                    width={windowSize.width}
-                                    height={windowSize.height}
-                                    recycle={false}
-                                    numberOfPieces={400}
-                                    gravity={0.15}
-                                />
+                    <Card className="mb-8 overflow-hidden relative text-center py-8">
+                        <CardContent>
+                            <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <span className="material-symbols-outlined text-4xl">check_circle</span>
                             </div>
-                        )}
-                        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 pb-6 border-b border-slate-100 dark:border-slate-800 gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-2xl">flight_takeoff</span>
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Live Tracking Status</h2>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Track the approval progress of your overseas request.</p>
-                                </div>
-                            </div>
-
-                            {/* Simulation Controls (For presentation purposes only) */}
-                            {trackerStep < approvalSteps.length - 1 && (
-                                <button
-                                    onClick={simulateNextStep}
-                                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors animate-pulse"
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Overseas Leave Submitted!</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                                Your request has been successfully received. 
+                                You can track the approval status on your dashboard.
+                            </p>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <Link 
+                                    href="/employee/leave-requests"
+                                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
                                 >
-                                    <span className="material-symbols-outlined text-sm">fast_forward</span>
-                                    Simulate Approval ({trackerStep === 0 ? 'Admin' : trackerStep === 1 ? 'Director' : 'Complete'})
-                                </button>
-                            )}
-                            {trackerStep === approvalSteps.length - 1 && (
-                                <div className="flex gap-3">
-                                    <div className="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
-                                        <span className="material-symbols-outlined">celebration</span>
-                                        Fully Approved
-                                    </div>
-                                    <button
-                                        onClick={handleSubmitAnother}
-                                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">add</span>
-                                        New Request
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        <LeaveApprovalTracker 
-                            steps={approvalSteps} 
-                            currentStepIndex={trackerStep}
-                            className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-6 border border-slate-100 dark:border-slate-700/50 mb-8"
-                        />
-
-                        {/* Handover Checklist - Only show when fully approved */}
-                        {trackerStep === approvalSteps.length - 1 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                <HandoverChecklist />
+                                    <span className="material-symbols-outlined text-sm">dashboard</span>
+                                    Go to Dashboard
+                                </Link>
+                                <Button
+                                    onClick={() => {
+                                        reset();
+                                        setStatus("editing");
+                                    }}
+                                    variant="outline"
+                                    className="px-6 py-2.5 font-bold transition-colors flex items-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-sm">add</span>
+                                    Submit New Request
+                                </Button>
                             </div>
-                        )}
-                    </div>
+                        </CardContent>
+                    </Card>
                 )}
 
                 {fileError && (
@@ -776,9 +652,19 @@ export default function OverseasLeaveRequestPage() {
                                         <button
                                             className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                             type="submit"
+                                            disabled={submitMutation.isPending}
                                         >
-                                            <span className="material-symbols-outlined text-sm">send</span>
-                                            Submit Request
+                                            {submitMutation.isPending ? (
+                                                <>
+                                                    <span className="material-symbols-outlined animate-spin text-sm">sync</span>
+                                                    Submitting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="material-symbols-outlined text-sm">send</span>
+                                                    Submit Request
+                                                </>
+                                            )}
                                         </button>
 
                                         <button

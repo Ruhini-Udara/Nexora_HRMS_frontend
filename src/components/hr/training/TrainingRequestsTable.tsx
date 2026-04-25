@@ -1,116 +1,68 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import TrainingRequestDetailsModal from "@/components/hr/training/TrainingRequestDetailsModal";
 import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTrainingListModal";
 import { TrainingRequest } from '@/types/training';
+import axiosInstance from '@/lib/axios';
+import { formatTime } from '@/lib/utils';
 
 
-const initialTrainingEvents = [
-    {
-        id: 1,
-        title: "Advanced Sales Tactics",
-        date: "October 24, 2023",
-        time: "09:00 AM - 12:00 PM",
-        category: "External",
-        status: "Approved",
-    },
-    {
-        id: 2,
-        title: "Leadership 101: Core Basics",
-        date: "November 02, 2023",
-        time: "02:00 PM - 05:00 PM",
-        category: "Internal",
-        status: "Pending",
-    },
-    {
-        id: 3,
-        title: "2024 Product Roadmap",
-        date: "November 15, 2023",
-        time: "11:00 AM - 12:30 PM",
-        category: "Internal",
-        status: "Rejected",
-        reason: "Does not align with Q4 objectives."
-    },
-];
-
-const initialMockRequests = [
-    {
-        id: 1,
-        eventId: 1,
-        employeeName: "Kamal Perera",
-        epfNumber: "EPF-1025",
-        age: 32,
-        department: "Sales Department",
-        designation: "Senior Sales Executive",
-        workEmail: "kamal.p@nexora.com",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAmYuDYYWzEWBuDPbtCpt5100Pybre81uC7wd5tncHa7Jb-5NUaTQX6p7I-m5P94omqeXaZ3fId2Eovte-nCUw70ZEYa-652-sxCuLm0VnE3ak_KOd1CRvc8dASaXTHTZNuj8c-zmMSJujN2mhNPqt3afItU8BQI3hytOFdK8OczliowI5LtJRCG75lxjAv1BGif_LdMI-Bz6L4fwWqypzcCfC__cH5nz6wbT5Aw7HUuBV3LjPbt4hlUrdKOMHf1ZBi-ozecK43AGE",
-        dateSubmitted: "Oct 12, 2023",
-        status: "Pending",
-        justification: "I would like to improve my sales closing techniques and learn advanced negotiation skills to meet Q4 targets efficiently. This training will highly benefit the company's revenue growth.",
-        attachments: [
-            { name: "sales_performance_report_Q3.pdf", url: "#" },
-            { name: "manager_recommendation.docx", url: "#" }
-        ]
-    },
-    {
-        id: 2,
-        eventId: 1,
-        employeeName: "Amali Silva",
-        epfNumber: "EPF-2041",
-        age: 28,
-        department: "IT & Data",
-        designation: "Data Analyst",
-        workEmail: "amali.s@nexora.com",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAE3GELhkAR_Bsi9WXiYp4-iplhAdX8v6jQ3zpYtB6F1Bsjj8RSQ2MnAFLTDwhd09KIhjIzBny6-TrfnJAVH1RqaItRSjlmDeKcYnH7qZ4j-ssCJzDYwY6nRznWDtfrXeYCzoltdvjoWOkzCmLEa9ymLX6_fHAZaQ1zZega6kK58VlYomoz2ClLlMkaPBNhTrCSZ9j_fujB-JiFy0GFC9rzlQ3cIi37J1M_knGqtqMbkIXLoDLwGCshBEXlUcCRpLNh80sUIj9TaXI",
-        dateSubmitted: "Oct 10, 2023",
-        status: "Approved",
-        justification: "Cross-training in sales data analysis to better support the sales team with insights and customized dashboards.",
-        attachments: [
-            { name: "training_justification_amali.pdf", url: "#" }
-        ]
-    },
-    {
-        id: 3,
-        eventId: 2,
-        employeeName: "Nuwan Kumara",
-        epfNumber: "EPF-3105",
-        age: 41,
-        department: "Marketing",
-        designation: "Marketing Manager",
-        workEmail: "nuwan.k@nexora.com",
-        initials: "NK",
-        dateSubmitted: "Oct 08, 2023",
-        status: "Pending",
-        justification: "To enhance team leadership strategies and effective communication within the department.",
-        attachments: []
-    },
-    {
-        id: 4,
-        eventId: 3,
-        employeeName: "Nethmi Fernando",
-        epfNumber: "EPF-4022",
-        age: 26,
-        department: "Operations",
-        designation: "Operations Coordinator",
-        workEmail: "nethmi.f@nexora.com",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBCyRHcUSOchj-O-7fcIy8ZhsWe1_ckC5tQx0N7AOX1OOf-O38ObkaVfbxuFyS2XvWZIP5uTWasCvnQ92XcIAeodaajIvT1q56iAbZA0nEpFIv2s9VhG4BlH4V8pFcfWFJAcPq2j9z5sQizCSfrNOG7IEPMixbDQydcp3zH5KxfrH0AQvjt62MIIHMik6krYZBgnSbeWt0fCIlHdFYtRsoS6SRg6FdrD2VxnSVx23SiSO8ujKOoy7r4rl2_DgcO91kzwIR3eXuDoMw",
-        dateSubmitted: "Oct 05, 2023",
-        status: "Rejected",
-        justification: "Interested in understanding the product roadmap to align operational processes.",
-        rejectionReason: "Limited availability of seats in the current session. Please request for the next quarter.",
-        attachments: [
-            { name: "operations_alignment_proposal.pdf", url: "#" }
-        ]
-    },
-];
+type TrainingEvent = {
+    id: number;
+    title: string;
+    proposedStartDate?: string;
+    date?: string;
+    time?: string;
+    category: string;
+    status: string;
+    reason?: string;
+};
 
 export default function TrainingRequestsTable() {
-    const [events, setEvents] = useState(initialTrainingEvents);
-    const [selectedEventId, setSelectedEventId] = useState<number | null>(initialTrainingEvents[0].id);
+    const [events, setEvents] = useState<TrainingEvent[]>([]);
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
-    const [requests, setRequests] = useState<TrainingRequest[]>(initialMockRequests as TrainingRequest[]);
+    const [requests, setRequests] = useState<TrainingRequest[]>([]);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    
+    // Pagination for Events
+    const [currentPageEvents, setCurrentPageEvents] = useState(1);
+    const eventsPerPage = 6;
+    
+    // Pagination for Requests
+    const [currentPageRequests, setCurrentPageRequests] = useState(1);
+    const requestsPerPage = 10;
+
+    useEffect(() => {
+        axiosInstance.get('/training/events')
+            .then(res => {
+                const sorted = res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
+                setEvents(sorted);
+                if (sorted.length > 0) {
+                    setSelectedEventId(sorted[0].id);
+                }
+            })
+            .catch(err => {
+                console.error("Failed to fetch events", err);
+                setToast({ message: "Failed to load training events.", type: 'error' });
+            });
+    }, []);
+
+    useEffect(() => {
+        if (selectedEventId) {
+            axiosInstance.get(`/training/events/${selectedEventId}/requests`)
+                .then(res => {
+                    setRequests(res.data);
+                    setCurrentPageRequests(1); // Reset requests page when event changes
+                })
+                .catch(() => {
+                    console.error("Failed to fetch requests");
+                    setToast({ message: "Failed to load requests for this event.", type: 'error' });
+                });
+        }
+    }, [selectedEventId]);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
@@ -125,9 +77,21 @@ export default function TrainingRequestsTable() {
         ? events
         : events.filter(e => e.category === selectedCategory);
 
+    // Event Pagination Logic
+    const totalPagesEvents = Math.ceil(filteredEvents.length / eventsPerPage);
+    const indexOfLastEvent = currentPageEvents * eventsPerPage;
+    const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
+    const currentEvents = filteredEvents.slice(indexOfFirstEvent, indexOfLastEvent);
+
     const filteredRequests = selectedEventId
         ? requests.filter(req => req.eventId === selectedEventId)
         : [];
+
+    // Request Pagination Logic
+    const totalPagesRequests = Math.ceil(filteredRequests.length / requestsPerPage);
+    const indexOfLastRequest = currentPageRequests * requestsPerPage;
+    const indexOfFirstRequest = indexOfLastRequest - requestsPerPage;
+    const currentRequests = filteredRequests.slice(indexOfFirstRequest, indexOfLastRequest);
 
     const selectedEvent = events.find(e => e.id === selectedEventId);
 
@@ -253,8 +217,9 @@ export default function TrainingRequestsTable() {
                                 value={selectedCategory}
                                 onChange={(e) => {
                                     setSelectedCategory(e.target.value);
-                                    // Reset selected event when filter changes
+                                    // Reset selected event and pagination when filter changes
                                     setSelectedEventId(null);
+                                    setCurrentPageEvents(1);
                                 }}
                                 className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
                             >
@@ -269,12 +234,12 @@ export default function TrainingRequestsTable() {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredEvents.map((event) => (
+                    {currentEvents.map((event) => (
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
-                            date={event.date}
-                            time={event.time}
+                            date={event.proposedStartDate || "TBD"}
+                            time={formatTime(event.time)}
                             category={event.category}
                             hideActions={true}
                             isSelected={selectedEventId === event.id}
@@ -282,6 +247,42 @@ export default function TrainingRequestsTable() {
                         />
                     ))}
                 </div>
+
+                {filteredEvents.length > eventsPerPage && (
+                    <div className="mt-8 flex items-center justify-center gap-4">
+                        <button 
+                            disabled={currentPageEvents === 1}
+                            onClick={() => setCurrentPageEvents(prev => Math.max(prev - 1, 1))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                        </button>
+                        
+                        <div className="flex items-center gap-1.5">
+                            {Array.from({ length: totalPagesEvents }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPageEvents(page)}
+                                    className={`w-8 h-8 rounded-lg font-bold text-xs transition-all shadow-sm ${
+                                        currentPageEvents === page 
+                                        ? 'bg-primary text-white' 
+                                        : 'bg-white border border-slate-200 text-slate-600 hover:border-primary hover:text-primary'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            disabled={currentPageEvents === totalPagesEvents}
+                            onClick={() => setCurrentPageEvents(prev => Math.min(prev + 1, totalPagesEvents))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* Table Header Actions */}
@@ -314,8 +315,8 @@ export default function TrainingRequestsTable() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-primary/5">
-                            {filteredRequests.length > 0 ? (
-                                filteredRequests.map((request) => (
+                            {currentRequests.length > 0 ? (
+                                currentRequests.map((request) => (
                                     <tr key={request.id} className="hover:bg-primary/5 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -359,7 +360,15 @@ export default function TrainingRequestsTable() {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button 
                                                     onClick={() => {
-                                                        setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
+                                                        axiosInstance.put(`/training/requests/${request.id}/status`, { status: 'Approved' })
+                                                            .then(() => {
+                                                                setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
+                                                                setToast({ message: `Request from ${request.employeeName} approved!`, type: 'success' });
+                                                            })
+                                                            .catch(err => {
+                                                                console.error("Failed to approve request", err);
+                                                                setToast({ message: "Failed to approve request. Please try again.", type: 'error' });
+                                                            });
                                                     }}
                                                     className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Approve">
                                                     <span className="material-symbols-outlined text-[20px]">check_circle</span>
@@ -393,20 +402,46 @@ export default function TrainingRequestsTable() {
                     </table>
                 </div>
                 {/* Pagination */}
-                <div className="px-6 py-4 bg-slate-50 dark:bg-background-dark/20 border-t border-primary/10 flex items-center justify-between">
-                    <p className="text-xs font-medium text-slate-500">Showing {filteredRequests.length} results</p>
-                    <div className="flex items-center gap-2">
-                        <button className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50" disabled>
-                            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-                        </button>
-                        <button className="size-8 rounded bg-primary text-white text-xs font-bold">1</button>
-                        <button className="size-8 rounded hover:bg-primary/10 text-xs font-bold transition-colors">2</button>
-                        <button className="size-8 rounded hover:bg-primary/10 text-xs font-bold transition-colors">3</button>
-                        <button className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors">
-                            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-                        </button>
+                {filteredRequests.length > requestsPerPage && (
+                    <div className="px-6 py-4 bg-slate-50 dark:bg-background-dark/20 border-t border-primary/10 flex items-center justify-between">
+                        <p className="text-xs font-medium text-slate-500">
+                            Showing {indexOfFirstRequest + 1} - {Math.min(indexOfLastRequest, filteredRequests.length)} of {filteredRequests.length} results
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                disabled={currentPageRequests === 1}
+                                onClick={() => setCurrentPageRequests(prev => Math.max(prev - 1, 1))}
+                                className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                            </button>
+                            
+                            <div className="flex items-center gap-1.5">
+                                {Array.from({ length: totalPagesRequests }, (_, i) => i + 1).map((page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPageRequests(page)}
+                                        className={`size-8 rounded font-bold text-xs transition-all shadow-sm ${
+                                            currentPageRequests === page 
+                                            ? 'bg-primary text-white' 
+                                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button 
+                                disabled={currentPageRequests === totalPagesRequests}
+                                onClick={() => setCurrentPageRequests(prev => Math.min(prev + 1, totalPagesRequests))}
+                                className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
             {/* Footer Info */}
 
@@ -456,10 +491,24 @@ export default function TrainingRequestsTable() {
                             <button
                                 onClick={() => {
                                     if (rejectionModal.requestId) {
-                                        setRequests(requests.map(r => r.id === rejectionModal.requestId ? { ...r, status: "Rejected", rejectionReason } : r));
+                                        axiosInstance.put(`/training/requests/${rejectionModal.requestId}/status`, { 
+                                            status: 'Rejected', 
+                                            rejectionReason 
+                                        })
+                                        .then(() => {
+                                            setRequests(requests.map(r => r.id === rejectionModal.requestId ? { ...r, status: "Rejected", rejectionReason } : r));
+                                            setToast({ message: "Request rejected successfully.", type: 'info' });
+                                            setRejectionModal({ isOpen: false, requestId: null });
+                                            setRejectionReason("");
+                                        })
+                                        .catch(err => {
+                                            console.error("Failed to reject request", err);
+                                            setToast({ message: "Failed to reject request. Please try again.", type: 'error' });
+                                        });
+                                    } else {
+                                        setRejectionModal({ isOpen: false, requestId: null });
+                                        setRejectionReason("");
                                     }
-                                    setRejectionModal({ isOpen: false, requestId: null });
-                                    setRejectionReason("");
                                 }}
                                 disabled={!rejectionReason.trim()}
                                 className="flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -470,6 +519,16 @@ export default function TrainingRequestsTable() {
                     </div>
                 </div>
             )}
+            {/* Toast Notifications */}
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
+            )}
         </div>
     );
 }
+
+import { Toast } from '@/components/ui/Toast';

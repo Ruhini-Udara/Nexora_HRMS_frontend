@@ -6,44 +6,31 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLeaveDays } from "@/hooks/useLeaveDays";
-import { LeaveApprovalTracker, ApprovalStep } from "@/components/ui/LeaveApprovalTracker";
-import { HandoverChecklist } from "@/components/ui/HandoverChecklist";
 import { FileUploadDropzone } from "@/components/ui/FileUploadDropzone";
+import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
-import Confetti from "react-confetti";
+import api from "@/lib/axiosInstance";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/useAuthStore";
+import { Button } from "@/components/ui/button";
 
-const maternitySchema = z.object({
-    epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
-    branch: z.string().min(1, "Branch is required"),
-    dateOfRequest: z.string().min(1),
-    employeeName: z.string().min(1, "Employee Name is required"),
-    employeeType: z.string().min(1, "Employee Type is required"),
-    designation: z.string().min(1, "Designation is required"),
-    leaveReason: z.string().min(1, "Leave Request Reason is required"),
-    startDate: z.string().min(1, "Start Date is required").refine((val) => {
-        const today = new Date().toISOString().split("T")[0];
-        return val >= today;
-    }, "Start Date cannot be in the past"),
-    endDate: z.string().min(1, "End Date is required"),
-    childNumber: z.string().min(1, "Child Number is required"),
-    contactNumber: z.string().regex(/^\+?[0-9\s\-]{9,15}$/, "Invalid phone format"),
-    email: z.string().email("Invalid email address").min(1, "Email is required"),
-    specialRemark: z.string().optional(),
-    acknowledgement: z.boolean().refine(val => val === true, "You must acknowledge the terms to proceed.")
-}).refine((data) => {
-    if (!data.startDate || !data.endDate) return true;
-    const start = new Date(data.startDate);
-    const end = new Date(data.endDate);
-    return end >= start;
-}, {
-    message: "End Date must be the same as or after Start Date.",
-    path: ["endDate"]
-});
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+
+import { maternitySchema } from "@/lib/validations";
 
 type MaternityFormValues = z.infer<typeof maternitySchema>;
 
 export default function MaternityLeaveRequestPage() {
+    const { employeeId } = useAuthStore();
     const { register, handleSubmit, control, getValues, reset, formState: { errors } } = useForm<MaternityFormValues>({
         resolver: zodResolver(maternitySchema),
         defaultValues: {
@@ -60,9 +47,6 @@ export default function MaternityLeaveRequestPage() {
     const [status, setStatus] = useState<"editing" | "draft" | "submitted">("editing");
     const [fileError, setFileError] = useState("");
 
-    // Tracker State Simulation
-    const [trackerStep, setTrackerStep] = useState(0);
-    const [showConfetti, setShowConfetti] = useState(false);
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
     const [previewFile, setPreviewFile] = useState<File | null>(null);
 
@@ -109,7 +93,7 @@ export default function MaternityLeaveRequestPage() {
         }
     };
 
-    const isDisabled = status === "submitted";
+
 
     const handleSaveDraft = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -118,69 +102,87 @@ export default function MaternityLeaveRequestPage() {
         setStatus("draft");
     };
 
-    const onSubmit = (_data: MaternityFormValues) => {
-        setFileError("");
+    const queryClient = useQueryClient();
+
+    const submitMutation = useMutation({
+        mutationFn: async (data: MaternityFormValues) => {
+            setFileError("Uploading documents to secure storage...");
+
+            // Upload all documents to Supabase Storage in parallel
+            const [medicalCertificateUrl, leaveLetterUrl, supportingDocumentUrl] = await Promise.all([
+                uploadDocument(files.medicalCertificate!, "maternity-leave"),
+                uploadDocument(files.leaveLetter!, "maternity-leave"),
+                files.supportingDocument ? uploadDocument(files.supportingDocument, "maternity-leave") : Promise.resolve(null),
+            ]);
+
+            if (!medicalCertificateUrl || !leaveLetterUrl) {
+                throw new Error("One or more files failed to upload. Please check your internet connection and try again.");
+            }
+
+            setFileError("Documents uploaded! Submitting your request...");
+
+            const payload = {
+                employee: { id: employeeId }, // Temporary until User Management integration
+                leaveType: { id: 2 }, // Assuming ID 2 is for Maternity Leave
+                fromDate: data.startDate,
+                endDate: data.endDate,
+                totalDays: Number(noOfDays),
+                reason: data.leaveReason,
+                childNumber: data.childNumber,
+                employeeType: data.employeeType,
+                branch: data.branch,
+                contactNumber: data.contactNumber,
+                email: data.email,
+                specialRemark: data.specialRemark,
+            };
+
+            const response = await api.post("/api/v1/leaves/maternity", payload);
+            const savedLeave = response.data;
+            const leaveId: number = savedLeave.id;
+
+            // Save document records in the backend
+            const docEntries = [
+                { path: leaveLetterUrl, type: "LEAVE_LETTER", description: "Maternity Leave Request Letter" },
+                { path: medicalCertificateUrl, type: "MEDICAL_CERTIFICATE", description: "Medical Certificate" },
+                { path: supportingDocumentUrl, type: "SUPPORTING_DOC", description: "Supporting Document" },
+            ].filter(d => d.path !== null);
+
+            await Promise.all(
+                docEntries.map(d =>
+                    api.post("/api/v1/documents", {
+                        refId: leaveId,
+                        refType: "MATERNITY_LEAVE",
+                        documentType: d.type,
+                        filePathUrl: d.path,
+                        description: d.description,
+                    })
+                )
+            );
+            return savedLeave;
+        },
+        onSuccess: () => {
+            setFileError("");
+            setStatus("submitted");
+            localStorage.removeItem("maternityLeaveDraft");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Invalidate the 'leaves' query to refresh the dashboard
+            queryClient.invalidateQueries({ queryKey: ['leaves', employeeId] });
+        },
+        onError: (error: Error) => {
+            console.error("Maternity submission error:", error);
+            setFileError(error.message || "Submission failed. Please try again.");
+        }
+    });
+
+    const onSubmit = (data: MaternityFormValues) => {
         if (!files.medicalCertificate || !files.leaveLetter) {
-            setFileError("Medical Certificate and Maternity Leave Request Letter are mandatory for submission.");
+            setFileError("Medical Certificate and Leave Letter are mandatory for submission.");
             return;
         }
-        setStatus("submitted");
-        setTrackerStep(0); // Start at first step (HR review)
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        submitMutation.mutate(data);
     };
 
-    const handleSubmitAnother = () => {
-        reset();
-        setFiles({
-            medicalCertificate: null,
-            leaveLetter: null,
-            supportingDocument: null,
-        });
-        setStatus("editing");
-        setTrackerStep(0);
-        setShowConfetti(false);
-        localStorage.removeItem("maternityLeaveDraft");
-    };
-
-    // Define the approval steps for Maternity Leave (Employee -> HR User -> Admin)
-    const approvalSteps: ApprovalStep[] = [
-        {
-            id: 'hr_review',
-            label: 'HR Verification',
-            description: 'Checking documents and leave balances',
-            icon: 'fact_check',
-            status: trackerStep > 0 ? 'completed' : trackerStep === 0 ? 'current' : 'pending',
-            date: trackerStep > 0 ? new Date().toLocaleDateString() : undefined,
-            approverName: trackerStep > 0 ? 'Sarah Jenkins (HR)' : undefined
-        },
-        {
-            id: 'admin_approval',
-            label: 'Admin Approval',
-            description: 'Final review by System Administrator',
-            icon: 'admin_panel_settings',
-            status: trackerStep > 1 ? 'completed' : trackerStep === 1 ? 'current' : 'pending',
-            date: trackerStep > 1 ? new Date().toLocaleDateString() : undefined,
-            approverName: trackerStep > 1 ? 'Michael Chen (Admin)' : undefined
-        },
-        {
-            id: 'approved',
-            label: 'Request Approved',
-            description: 'Leave confirmed',
-            icon: 'verified',
-            status: trackerStep > 1 ? 'completed' : 'pending' // Last step is only active when completed
-        }
-    ];
-
-    const simulateNextStep = () => {
-        if (trackerStep < approvalSteps.length - 1) {
-            setTrackerStep(prev => prev + 1);
-            if (trackerStep === approvalSteps.length - 2) {
-                // If moving to the final 'approved' step
-                setShowConfetti(true);
-                setTimeout(() => setShowConfetti(false), 5000);
-            }
-        }
-    };
+    const isDisabled = status === "submitted" || submitMutation.isPending;
 
     return (
         <div className="max-w-7xl mx-auto w-full grid grid-cols-12 gap-8 pb-12">
@@ -193,7 +195,7 @@ export default function MaternityLeaveRequestPage() {
                         <span className="material-symbols-outlined">arrow_back</span>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Maternity Leave Request</h1>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Apply for Maternity Leave</h1>
                         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
                             Please provide all necessary details and mandatory documents for your maternity leave.
                         </p>
@@ -211,69 +213,37 @@ export default function MaternityLeaveRequestPage() {
                 )}
 
                 {status === "submitted" && (
-                    <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 mb-8 overflow-hidden relative">
-                        {showConfetti && (
-                            <div className="absolute inset-0 pointer-events-none z-50">
-                                <Confetti
-                                    width={windowSize.width}
-                                    height={windowSize.height}
-                                    recycle={false}
-                                    numberOfPieces={400}
-                                    gravity={0.15}
-                                />
+                    <Card className="mb-8 overflow-hidden relative text-center py-8">
+                        <CardContent>
+                            <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <span className="material-symbols-outlined text-4xl">check_circle</span>
                             </div>
-                        )}
-                        <div className="flex flex-col sm:flex-row items-center justify-between mb-8 pb-6 border-b border-slate-100 dark:border-slate-800 gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-2xl">track_changes</span>
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Live Tracking Status</h2>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Track the approval progress of your maternity request.</p>
-                                </div>
-                            </div>
-
-                            {/* Simulation Controls (For presentation purposes only) */}
-                            {trackerStep < approvalSteps.length - 1 && (
-                                <button
-                                    onClick={simulateNextStep}
-                                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors animate-pulse"
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Request Submitted Successfully!</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                                Your maternity leave request has been received and is now being processed by the HR department. 
+                                You can track the live status on your dashboard.
+                            </p>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <Link 
+                                    href="/employee/leave-requests"
+                                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
                                 >
-                                    <span className="material-symbols-outlined text-sm">fast_forward</span>
-                                    Simulate Approval ({trackerStep === 0 ? 'Admin' : 'Complete'})
+                                    <span className="material-symbols-outlined text-sm">dashboard</span>
+                                    Go to Dashboard
+                                </Link>
+                                <button
+                                    onClick={() => {
+                                        reset();
+                                        setStatus("editing");
+                                    }}
+                                    className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-bold transition-colors flex items-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-sm">add</span>
+                                    Submit New Request
                                 </button>
-                            )}
-                            {trackerStep === approvalSteps.length - 1 && (
-                                <div className="flex gap-3">
-                                    <div className="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
-                                        <span className="material-symbols-outlined">celebration</span>
-                                        Fully Approved
-                                    </div>
-                                    <button
-                                        onClick={handleSubmitAnother}
-                                        className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 transition-colors"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">add</span>
-                                        New Request
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        <LeaveApprovalTracker 
-                            steps={approvalSteps} 
-                            currentStepIndex={trackerStep}
-                            className="bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-6 border border-slate-100 dark:border-slate-700/50 mb-8"
-                        />
-
-                        {/* Handover Checklist - Only show when fully approved */}
-                        {trackerStep === approvalSteps.length - 1 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                <HandoverChecklist />
                             </div>
-                        )}
-                    </div>
+                        </CardContent>
+                    </Card>
                 )}
 
                 {fileError && (
@@ -284,8 +254,10 @@ export default function MaternityLeaveRequestPage() {
                 )}
             </div>
 
-            {/* Left Column - Form fields */}
-            <div className="col-span-12 lg:col-span-8">
+            {!isDisabled && (
+                <div className="contents">
+                    {/* Left Column - Form fields */}
+                    <div className="col-span-12 lg:col-span-8">
                 <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
                     <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
                         {/* 1. Employee Details Section */}
@@ -302,10 +274,23 @@ export default function MaternityLeaveRequestPage() {
                                         disabled={isDisabled}
                                         {...register("epfNumber")}
                                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.epfNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="e.g. 12345"
+                                        placeholder="Enter EPF Number"
                                         type="text"
                                     />
                                     {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{errors.epfNumber.message}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                        Branch <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        disabled={isDisabled}
+                                        {...register("branch")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.branch ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                        placeholder="Enter Branch"
+                                        type="text"
+                                    />
+                                    {errors.branch && <p className="text-red-500 text-xs mt-1">{errors.branch.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -609,9 +594,19 @@ export default function MaternityLeaveRequestPage() {
                                         <button
                                             className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                             type="submit"
+                                            disabled={submitMutation.isPending}
                                         >
-                                            <span className="material-symbols-outlined text-sm">send</span>
-                                            Submit Request
+                                            {submitMutation.isPending ? (
+                                                <>
+                                                    <span className="material-symbols-outlined animate-spin text-sm">sync</span>
+                                                    Submitting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="material-symbols-outlined text-sm">send</span>
+                                                    Submit Request
+                                                </>
+                                            )}
                                         </button>
 
                                         <button
@@ -675,6 +670,8 @@ export default function MaternityLeaveRequestPage() {
                     </ul>
                 </div>
             </div>
+        </div>
+        )}
  
             <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
