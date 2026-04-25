@@ -12,10 +12,8 @@ import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
 import api from "@/lib/axiosInstance";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { TEMP_AUTH } from "@/lib/authConfig";
 import {
   Select,
   SelectContent,
@@ -31,7 +29,6 @@ import { overseasSchema } from "@/lib/validations";
 type OverseasFormValues = z.infer<typeof overseasSchema>;
 
 export default function OverseasLeaveRequestPage() {
-    const { employeeId } = useAuthStore();
     const { register, handleSubmit, control, getValues, reset, formState: { errors } } = useForm<OverseasFormValues>({
         resolver: zodResolver(overseasSchema),
         defaultValues: {
@@ -125,7 +122,7 @@ export default function OverseasLeaveRequestPage() {
             setFileError("Documents uploaded! Submitting your request...");
 
             const payload = {
-                employee: { id: employeeId }, // Temporary until User Management integration
+                employee: { id: TEMP_AUTH.EMPLOYEE_ID }, // Centralized temporary auth config
                 leaveType: { id: 1 },
                 fromDate: data.startDate,
                 endDate: data.endDate,
@@ -173,7 +170,7 @@ export default function OverseasLeaveRequestPage() {
             localStorage.removeItem("overseasLeaveDraft");
             window.scrollTo({ top: 0, behavior: 'smooth' });
             // Invalidate the 'leaves' query to refresh the dashboard
-            queryClient.invalidateQueries({ queryKey: ['leaves', employeeId] });
+            queryClient.invalidateQueries({ queryKey: ['leaves', TEMP_AUTH.EMPLOYEE_ID] });
         },
         onError: (error: Error) => {
             console.error("Submission error:", error);
@@ -276,19 +273,6 @@ export default function OverseasLeaveRequestPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        EPF Number <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("epfNumber")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.epfNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="e.g. 12345"
-                                        type="text"
-                                    />
-                                    {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{errors.epfNumber.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                         Employee Name <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -299,6 +283,19 @@ export default function OverseasLeaveRequestPage() {
                                         type="text"
                                     />
                                     {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName.message}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                                        EPF Number <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        disabled={isDisabled}
+                                        {...register("epfNumber")}
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.epfNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                        placeholder="e.g. 12345"
+                                        type="text"
+                                    />
+                                    {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{errors.epfNumber.message}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
