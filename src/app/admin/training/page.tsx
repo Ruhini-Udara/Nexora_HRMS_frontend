@@ -16,10 +16,37 @@ interface TrainingEvent {
     trainer?: string;
     status: string;
     reason?: string;
+    trainingName?: string;
+    trainingType?: string;
+    updatedAt?: string;
+    trainingDate?: string;
+    trainingTime?: string;
+    trainingLocation?: string;
+    instructor?: string;
+    trainerName?: string;
+    expectedParticipants?: number;
+    participants?: number;
+    rejectionReason?: string;
+}
+
+interface MappedTrainingEvent {
+    id: number;
+    title: string;
+    requester: string;
+    type: string;
+    typeColor: string;
+    submissionDate: string;
+    date: string;
+    time: string;
+    location: string;
+    trainer: string;
+    expectedParticipants: number;
+    status: string;
+    rejectionReason?: string;
 }
 
 export default function TrainingRequestsPage() {
-    const [requests, setRequests] = useState<any[]>([]);
+    const [requests, setRequests] = useState<MappedTrainingEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -33,7 +60,7 @@ export default function TrainingRequestsPage() {
                 const ampm = hour >= 12 ? 'PM' : 'AM';
                 const hour12 = hour % 12 || 12;
                 return `${hour12}:${minutes} ${ampm}`;
-            } catch (e) {
+            } catch {
                 return timeStr;
             }
         };
@@ -42,16 +69,17 @@ export default function TrainingRequestsPage() {
             try {
                 const res = await api.get('/api/training/events');
                 // Filter only events that are relevant to Admin review (skip 'Published' status)
-                const relevantEvents = res.data.filter((event: any) => 
+                const relevantEvents = (res.data as TrainingEvent[]).filter((event: TrainingEvent) => 
                     ['Pending Admin Approval', 'Approved', 'Rejected'].includes(event.status)
                 );
                 
                 // Map filtered API events to the table model
-                const mappedEvents = relevantEvents.map((event: any) => ({
+                const mappedEvents: MappedTrainingEvent[] = relevantEvents.map((event: TrainingEvent) => ({
                     id: event.id,
                     title: event.title || event.trainingName || "Untitled Training",
                     requester: "HR Department", 
                     type: event.category || event.trainingType || "General",
+                    typeColor: "bg-blue-100 text-blue-800",
                     submissionDate: event.updatedAt ? new Date(event.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
                     date: event.proposedStartDate || event.date || event.trainingDate || "TBD",
                     time: formatTime(event.time || event.trainingTime || "10:00"),

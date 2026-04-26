@@ -26,10 +26,17 @@ export default function CandidatesTable({ eventId }: CandidatesTableProps) {
             setIsLoading(true);
             try {
                 const res = await api.get(`/api/training/events/${eventId}/requests`);
+                interface CandidateRequest {
+                    id: number;
+                    status: string;
+                    employeeName: string;
+                    department: string;
+                    workEmail?: string;
+                }
                 // Only show approved candidates in the list for admin review
-                const approvedCandidates = res.data
-                    .filter((req: any) => req.status === 'Approved')
-                    .map((req: any) => ({
+                const approvedCandidates: Candidate[] = (res.data as CandidateRequest[])
+                    .filter((req: CandidateRequest) => req.status === 'Approved')
+                    .map((req: CandidateRequest) => ({
                         id: req.id,
                         name: req.employeeName,
                         department: req.department,
