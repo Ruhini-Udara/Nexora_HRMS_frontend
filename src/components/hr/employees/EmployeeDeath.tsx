@@ -1,139 +1,74 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { DeathRequestForm } from "./DeathRequestForm";
+import React, { useState, useEffect, useCallback } from 'react';
+import { DeathRequestForm } from './DeathRequestForm';
+import { 
+    DeathRequest, 
+    getAllDeathRequests, 
+    createDeathRequest, 
+    updateDeathRequest, 
+    verifyDeathRequest, 
+    rejectDeathRequest 
+} from '@/lib/api/deathRequests';
+import api from '@/lib/axiosInstance';
 
-// ── Types ───────────────────────────────────────────────────────────
-export interface DeathRequest {
-    id: string;
-    employeeName: string;
-    epfNumber: string;
-    dateOfDeath: string;
-    natureOfDeath: string;
-    requesterName: string;
-    relationship: string;
-    address: string;
-    contactNumber: string;
-    specialRemark: string;
-    status: 'NEW' | 'SUBMITTED' | 'VERIFIED_BY_HR' | 'PENDING_ADMIN' | 'REJECTED';
-    nomineeName?: string;
-    nomineeBank?: string;
-    nomineeBranch?: string;
-    nomineeAccount?: string;
-    documents: {
-        deathCertificate?: string;
-        nomineeId?: string;
-        requestLetter?: string;
-    };
-    hrRemark?: string;
-}
-
-// ── Mock Data ───────────────────────────────────────────────────────
-const MOCK_REQUESTS: DeathRequest[] = [
-    {
-        id: 'DTH-2024-001',
-        employeeName: 'Amal Perera',
-        epfNumber: '45829',
-        dateOfDeath: '2024-11-01',
-        natureOfDeath: 'Natural',
-        requesterName: 'Sunil Perera',
-        relationship: 'Brother',
-        address: '123, Galle Road, Colombo',
-        contactNumber: '0771234567',
-        specialRemark: '',
-        status: 'SUBMITTED',
-        documents: {
-            deathCertificate: 'death_certificate_amal.pdf',
-            nomineeId: 'id_sunil.pdf',
-            requestLetter: 'request_letter_sunil.pdf'
-        }
-    },
-    {
-        id: 'DTH-2024-002',
-        employeeName: 'Nimali Silva',
-        epfNumber: '11223',
-        dateOfDeath: '2024-10-25',
-        natureOfDeath: 'Accident',
-        requesterName: 'Kasun Silva',
-        relationship: 'Husband',
-        address: '45, Kandy Road, Kandy',
-        contactNumber: '0719876543',
-        specialRemark: 'Pending police report copy',
-        status: 'VERIFIED_BY_HR',
-        nomineeName: 'Kasun Silva',
-        nomineeBank: 'BOC',
-        nomineeBranch: 'Kandy',
-        nomineeAccount: '1234567890',
-        documents: {
-            deathCertificate: 'death_certificate_nimali.pdf',
-            nomineeId: 'id_kasun.pdf',
-            requestLetter: 'request_letter_kasun.pdf'
-        }
-    },
-    {
-        id: 'DTH-2024-003',
-        employeeName: 'Kamal Bandara',
-        epfNumber: '22334',
-        dateOfDeath: '2024-11-10',
-        natureOfDeath: 'Natural',
-        requesterName: 'Saman Bandara',
-        relationship: 'Son',
-        address: '78, Peradeniya Road, Kandy',
-        contactNumber: '0755566778',
-        specialRemark: 'Drafting request, nominee info pending.',
-        status: 'NEW',
-        documents: {}
-    }
-];
-
-// ── Status badge config ─────────────────────────────────────────────
-const statusConfig: Record<DeathRequest['status'], { label: string; classes: string }> = {
+const statusConfig: Record<string, { label: string; classes: string }> = {
     NEW: {
         label: "Draft",
-        classes: "bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-400",
+        classes: "bg-slate-100 text-slate-600",
     },
     SUBMITTED: {
-        label: "Submitted",
-        classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+        label: "Pending Approval",
+        classes: "bg-yellow-50 text-yellow-600",
     },
     VERIFIED_BY_HR: {
         label: "Verified",
-        classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        classes: "bg-green-50 text-green-600",
     },
     PENDING_ADMIN: {
-        label: "Pending Admin",
-        classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+        label: "Submitted",
+        classes: "bg-blue-50 text-blue-600",
     },
     REJECTED: {
         label: "Rejected",
-        classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        classes: "bg-red-50 text-red-600",
     },
 };
 
-// ── Main Component ──────────────────────────────────────────────────
 export default function EmployeeDeath() {
-    const [requests, setRequests] = useState<DeathRequest[]>(MOCK_REQUESTS);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
-    const [selectedRequest, setSelectedRequest] = useState<DeathRequest | null>(null);
+    const [requests, setRequests] = useState<DeathRequest[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState<DeathRequest | null>(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState<'main' | 'board'>('main');
-    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 4;
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     
     // Reject states
     const [showRejectDialog, setShowRejectDialog] = useState(false);
-    const [rejectReason, setRejectReason] = useState("");
-    const [rejectReasonError, setRejectReasonError] = useState(false);
+    const [rejectReason, setRejectReason] = useState('');
+    
+    const [viewRequest, setViewRequest] = useState<DeathRequest | null>(null);
 
-    // ── Handlers ─────────────────────────────────────────────────────
-    const handleView = (req: DeathRequest) => {
-        setSelectedRequest(req);
-        setIsReadOnly(req.status !== 'NEW');
-        setIsModalOpen(true);
+    const loadRequests = useCallback(async () => {
+        try {
+            const data = await getAllDeathRequests();
+            setRequests(data);
+        } catch (error) {
+            console.error("Failed to load death requests", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadRequests();
+    }, [loadRequests]);
+
+    const showSuccess = (msg: string) => {
+        setSuccessMessage(msg);
+        setTimeout(() => setSuccessMessage(null), 3000);
     };
 
     const handleCreateNew = () => {
@@ -142,417 +77,489 @@ export default function EmployeeDeath() {
         setIsModalOpen(true);
     };
 
-    const handleSaveRequest = (newReq: DeathRequest) => {
-        const adaptedReq: DeathRequest = {
-            ...newReq,
-            hrRemark: newReq.hrRemark || ""
-        };
+    const handleEdit = (req: DeathRequest) => {
+        setSelectedRequest(req);
+        setIsReadOnly(false);
+        setIsModalOpen(true);
+    };
 
-        setRequests(prev => {
-            const exists = prev.find(r => r.id === adaptedReq.id);
-            if (exists) {
-                return prev.map(r => r.id === adaptedReq.id ? adaptedReq : r);
+    const handleView = (req: DeathRequest) => {
+        setViewRequest(req);
+    };
+
+    const handleSaveRequest = async (data: DeathRequest) => {
+        try {
+            if (selectedRequest) {
+                const updated = await updateDeathRequest(selectedRequest.id, data);
+                setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
+                showSuccess("Application updated successfully");
+            } else {
+                const created = await createDeathRequest(data);
+                setRequests(prev => [...prev, created]);
+                showSuccess("Application saved as draft");
             }
-            return [...prev, adaptedReq];
-        });
-        setIsModalOpen(false);
-    };
-
-    const handleVerify = () => {
-        if (!selectedRequest) return;
-        setRequests(prev => prev.map(r => 
-            r.id === selectedRequest.id ? { ...r, status: 'VERIFIED_BY_HR' } : r
-        ));
-        setIsModalOpen(false);
-    };
-
-    const handleOpenRejectDialog = () => setShowRejectDialog(true);
-    const handleCloseRejectDialog = () => {
-        setShowRejectDialog(false);
-        setRejectReason("");
-        setRejectReasonError(false);
-    };
-
-    const handleConfirmReject = () => {
-        if (!rejectReason.trim()) {
-            setRejectReasonError(true);
-            return;
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error("Failed to save death request", error);
         }
+    };
+
+    const handleVerify = async () => {
         if (!selectedRequest) return;
-        setRequests((prev) =>
-            prev.map((req) =>
-                req.id === selectedRequest.id
-                    ? { ...req, status: "REJECTED", hrRemark: rejectReason }
-                    : req
-            )
-        );
-        handleCloseRejectDialog();
-        setIsModalOpen(false);
+        try {
+            const updated = await verifyDeathRequest(selectedRequest.id);
+            setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
+            showSuccess("Application verified successfully");
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error("Failed to verify death request", error);
+        }
     };
 
-    const handleConfirmSubmitToAdmin = () => {
-        const verifiedIds = requests
-            .filter((r) => r.status === "VERIFIED_BY_HR")
-            .map((r) => r.id);
-
-        setRequests((prev) =>
-            prev.map((req) =>
-                verifiedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_ADMIN" as DeathRequest['status'] }
-                    : req
-            )
-        );
-        setShowConfirmDialog(false);
-        setActiveTab('main');
+    const handleOpenRejectDialog = () => {
+        setShowRejectDialog(true);
     };
 
-    // ── Filtered list ─────────────────────────────────────────────────
-    const filteredRequests = requests.filter((req) => {
-        const matchesTab = activeTab === 'main' 
-            ? (req.status === 'SUBMITTED' || req.status === 'PENDING_ADMIN' || req.status === 'REJECTED' || req.status === 'NEW')
-            : (req.status === 'VERIFIED_BY_HR');
+    const handleConfirmReject = async () => {
+        if (!selectedRequest || !rejectReason) return;
+        try {
+            const updated = await rejectDeathRequest(selectedRequest.id, rejectReason);
+            setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
+            showSuccess("Application rejected");
+            setShowRejectDialog(false);
+            setRejectReason('');
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error("Failed to reject death request", error);
+        }
+    };
 
-        const matchesSearch =
-            req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const handleBulkSubmitToAdmin = async () => {
+        if (selectedIds.length === 0) return;
+        
+        try {
+            await Promise.all(selectedIds.map(id => {
+                const numericId = parseInt(id.replace('DTH-', ''), 10);
+                return api.post(`/death-requests/${numericId}/submit-admin`);
+            }));
+            
+            await loadRequests();
+            const count = selectedIds.length;
+            setSelectedIds([]);
+            setShowBatchConfirm(false);
+            showSuccess(`${count} applications submitted to admin successfully`);
+        } catch (error) {
+            console.error("Bulk submission failed", error);
+        }
+    };
+
+    const filteredRequests = requests.filter(req => {
+        const matchesSearch = req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             req.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            req.epfNumber.includes(searchTerm);
+            req.epfNumber.toLowerCase().includes(searchTerm.toLowerCase());
         
-        const matchesStatus = statusFilter === "All" || req.status === statusFilter;
-        
-        return matchesTab && matchesSearch && matchesStatus;
+        if (activeTab === 'board') {
+            return matchesSearch && req.status === 'SUBMITTED';
+        }
+        return matchesSearch;
     });
 
-    const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
-    const paginatedRequests = filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const draftCount = requests.filter(r => r.status === 'NEW').length;
+    const pendingCount = requests.filter(r => r.status === 'SUBMITTED').length;
+    const submittedToAdminCount = requests.filter(r => r.status === 'PENDING_ADMIN').length;
 
-    const formatDate = (iso: string) => {
-        if (!iso) return "—";
-        const d = new Date(iso);
-        return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return '—';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
-    const verifiedCount = requests.filter(r => r.status === 'VERIFIED_BY_HR').length;
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const handleSelectAll = () => {
+        if (selectedIds.length === filteredRequests.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredRequests.map(r => r.id));
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-            <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
+        <div className="max-w-7xl w-full mx-auto p-8 pb-24">
 
-                {/* Header */}
-                <div className="mb-8 flex items-center justify-between">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <Link href="/hr/employees" className="text-slate-400 hover:text-primary transition-colors">
-                                <span className="material-symbols-outlined">arrow_back</span>
-                            </Link>
-                            <h2 className="text-3xl font-bold text-slate-800 dark:text-white">
-                                {activeTab === 'board' ? "Admin Approval List" : "Death Applications"}
-                            </h2>
-                        </div>
-                        <p className="text-slate-500 dark:text-slate-400 ml-9">
-                            Review and process employee death benefit claims and documentation.
-                        </p>
-                    </div>
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[#8B3A00] text-3xl">person_remove</span>
+                        Death Benefit Claims
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">Manage and track employee death benefit applications</p>
                 </div>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={handleCreateNew}
+                        className="bg-[#8B3A00] hover:opacity-90 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-[#8B3A00]/20 transition-all active:scale-95 cursor-pointer"
+                    >
+                        <span className="material-symbols-outlined">add</span>
+                        New Application
+                    </button>
+                </div>
+            </div>
 
-                {/* Sub-Tabs */}
-                <div className="mb-6 border-b border-slate-200 dark:border-slate-700">
-                    <div className="flex gap-0">
-                        <button 
-                            onClick={() => {
-                                setActiveTab('main');
-                                setCurrentPage(1);
-                            }}
-                            className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${activeTab === 'main' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[18px]">person_remove</span>
-                                Death Applications
-                            </span>
-                        </button>
-                        <button 
-                            onClick={() => {
-                                setActiveTab('board');
-                                setCurrentPage(1);
-                            }}
-                            className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${activeTab === 'board' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[18px]">playlist_add_check</span>
-                                Admin Approval List
-                                {verifiedCount > 0 && (
-                                    <span className="bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded-full ml-1 animate-pulse">
-                                        {verifiedCount}
-                                    </span>
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Applications</p>
+                    <p className="text-2xl font-black text-slate-900 dark:text-white">{requests.length}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <p className="text-[11px] font-bold text-amber-500 uppercase tracking-widest mb-1">Active Drafts</p>
+                    <p className="text-2xl font-black text-slate-900 dark:text-white">{draftCount}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <p className="text-[11px] font-bold text-blue-500 uppercase tracking-widest mb-1">Pending Approvals</p>
+                    <p className="text-2xl font-black text-slate-900 dark:text-white">{pendingCount}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                    <p className="text-[11px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Submitted to Admin</p>
+                    <p className="text-2xl font-black text-slate-900 dark:text-white">{submittedToAdminCount}</p>
+                </div>
+            </div>
+
+            {/* Filters & Tabs */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                <div className="flex bg-slate-200/50 dark:bg-slate-800 p-1 rounded-xl">
+                    <button 
+                        onClick={() => { setActiveTab('main'); setSelectedIds([]); }}
+                        className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'main' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 cursor-pointer'}`}
+                    >
+                        All Applications
+                    </button>
+                    <button 
+                        onClick={() => { setActiveTab('board'); setSelectedIds([]); }}
+                        className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'board' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 cursor-pointer'}`}
+                    >
+                        Submit to Admin Approvals
+                    </button>
+                </div>
+                <div className="relative w-full sm:w-80">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                    <input 
+                        type="text"
+                        placeholder="Search by name, ID or EPF..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all"
+                    />
+                </div>
+            </div>
+
+            {/* Batch Action Bar */}
+            {activeTab === 'board' && selectedIds.length > 0 && (
+                <div className="mb-4 p-4 bg-[#8B3A00]/10 border border-[#8B3A00]/20 rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
+                    <p className="text-sm font-bold text-[#8B3A00]">
+                        {selectedIds.length} application(s) selected for Admin Submission
+                    </p>
+                    <button 
+                        onClick={() => setShowBatchConfirm(true)}
+                        className="bg-[#8B3A00] text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-[#8B3A00]/20 hover:opacity-90 transition-all cursor-pointer"
+                    >
+                        Confirm & Submit Batch
+                    </button>
+                </div>
+            )}
+
+            {/* Data Table */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="overflow-x-hidden overflow-y-auto max-h-[420px] scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                    <table className="w-full text-left border-collapse table-fixed">
+                        <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 shadow-sm">
+                            <tr className="border-b border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                {activeTab === 'board' && (
+                                    <th className="py-4 px-6 w-12 text-center">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={filteredRequests.length > 0 && selectedIds.length === filteredRequests.length}
+                                            onChange={handleSelectAll}
+                                            className="rounded border-slate-300 text-[#8B3A00] focus:ring-[#8B3A00] cursor-pointer w-4 h-4" 
+                                        />
+                                    </th>
                                 )}
-                            </span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Filter & Search Bar */}
-                <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                    <div className="relative w-full sm:w-96">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="material-symbols-outlined text-slate-400">search</span>
-                        </span>
-                        <input
-                            type="text"
-                            placeholder="Search by ID, Name, or EPF..."
-                            value={searchTerm}
-                            onChange={(e) => {
-                                setSearchTerm(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow shadow-sm"
-                        />
-                    </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-slate-400">filter_list</span>
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => {
-                                    setStatusFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
-                            >
-                                <option value="All">All Statuses</option>
-                                {Object.keys(statusConfig).map(st => (
-                                    <option key={st} value={st}>{statusConfig[st as DeathRequest['status']].label}</option>
-                                ))}
-                            </select>
-                        </div>
-                        {activeTab === 'main' ? (
-                            <button
-                                onClick={handleCreateNew}
-                                className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">add</span>
-                                New Application
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => setShowConfirmDialog(true)}
-                                disabled={verifiedCount === 0}
-                                className="px-6 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">send</span>
-                                Submit for Admin Approvals
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Stats Row */}
-                <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {(
-                        [
-                            { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
-                            { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-                            { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
-                            { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
-                        ] as const
-                    ).map(({ label, status, icon, color, bg }) => (
-                        <div key={status} className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center gap-3 shadow-sm`}>
-                            <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
-                            <div>
-                                <p className="text-2xl font-bold text-slate-800 dark:text-white">
-                                    {requests.filter((r) => r.status === status).length}
-                                </p>
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Data Table */}
-                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                                    {activeTab === 'board' && <th className="py-4 px-6 w-12"><input type="checkbox" checked readOnly className="rounded border-slate-300" /></th>}
-                                    <th className="py-4 px-6">Application ID</th>
-                                    <th className="py-4 px-6">Employee</th>
-                                    <th className="py-4 px-6 text-center">Date of Death</th>
-                                    <th className="py-4 px-6 text-center">Status</th>
-                                    <th className="py-4 px-6 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm">
-                                {paginatedRequests.map((req) => {
-                                    const st = statusConfig[req.status];
-                                    return (
-                                        <tr
-                                            key={req.id}
-                                            className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors group"
-                                        >
-                                            {activeTab === 'board' && <td className="py-4 px-6"><input type="checkbox" checked readOnly className="rounded border-slate-300" /></td>}
-                                            <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">
-                                                {req.id}
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
-                                                <div className="text-xs text-slate-500">EPF: {req.epfNumber}</div>
-                                            </td>
-                                            <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-300">{formatDate(req.dateOfDeath)}</td>
+                                <th className="py-4 px-6 w-[15%]">Request ID</th>
+                                <th className="py-4 px-6 w-[35%]">Employee</th>
+                                <th className="py-4 px-6 w-[20%] text-center">Date of Death</th>
+                                <th className="py-4 px-6 w-[15%] text-center">Status</th>
+                                <th className="py-4 px-6 w-[15%] text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-sm divide-y divide-slate-100 dark:divide-slate-700">
+                            {filteredRequests.map((req) => {
+                                const st = statusConfig[req.status] || statusConfig.NEW;
+                                const isSelected = selectedIds.includes(req.id);
+                                return (
+                                    <tr
+                                        key={req.id}
+                                        className={`hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors group ${isSelected ? 'bg-orange-50/50 dark:bg-orange-900/10' : ''}`}
+                                    >
+                                        {activeTab === 'board' && (
                                             <td className="py-4 px-6 text-center">
-                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${st.classes}`}>
-                                                    {st.label}
-                                                </span>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={isSelected}
+                                                    onChange={() => toggleSelect(req.id)}
+                                                    className="rounded border-slate-300 text-[#8B3A00] focus:ring-[#8B3A00] cursor-pointer w-4 h-4" 
+                                                />
                                             </td>
-                                            <td className="py-4 px-6 text-right">
+                                        )}
+                                        <td className="py-4 px-6 font-bold text-slate-800 dark:text-white truncate">
+                                            {req.id}
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <div className="font-bold text-slate-700 dark:text-slate-200 truncate">{req.employeeName}</div>
+                                            <div className="text-[10px] text-slate-500">EPF: {req.epfNumber}</div>
+                                        </td>
+                                        <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-400">
+                                            {formatDate(req.dateOfDeath)}
+                                        </td>
+                                        <td className="py-4 px-6 text-center">
+                                            <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${st.classes}`}>
+                                                {st.label}
+                                            </span>
+                                        </td>
+                                        <td className="py-4 px-6 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {req.status === 'NEW' && (
+                                                    <button
+                                                        onClick={() => handleEdit(req)}
+                                                        className="flex items-center gap-1 text-[11px] font-bold text-[#8B3A00] hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors border border-orange-100 cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">edit</span>
+                                                        Edit
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleView(req)}
-                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-all cursor-pointer"
+                                                    className="p-2 text-slate-400 hover:text-[#8B3A00] transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
                                                 >
-                                                    <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                    {req.status === 'SUBMITTED' ? "Review & Verify" : "View Details"}
+                                                    <span className="material-symbols-outlined text-[20px]">visibility</span>
                                                 </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                {filteredRequests.length === 0 && (
-                                    <tr>
-                                        <td colSpan={activeTab === 'board' ? 7 : 6} className="py-12 text-center text-slate-400">
-                                            No applications found matching your filters.
+                                            </div>
                                         </td>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRequests.length)} of {filteredRequests.length}
+                                );
+                            })}
+                            {filteredRequests.length === 0 && (
+                                <tr>
+                                    <td colSpan={activeTab === 'board' ? 6 : 5} className="py-12 text-center text-slate-400">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <span className="material-symbols-outlined text-4xl text-slate-300">inbox</span>
+                                            <p className="text-sm font-medium">No applications found matching your filters.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Batch Confirmation Modal */}
+            {showBatchConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[#8B3A00]">warning</span>
+                                Confirm Batch Submission
+                            </h3>
+                            <button onClick={() => setShowBatchConfirm(false)} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="p-8 text-center">
+                            <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/20 mb-4 inline-block px-8">
+                                <p className="text-3xl font-black text-[#8B3A00] mb-1">{selectedIds.length}</p>
+                                <p className="text-[10px] font-bold text-[#8B3A00] uppercase tracking-widest">Applications Selected</p>
+                            </div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-bold mt-4">
+                                Are you sure you want to submit this batch for admin approvals?
                             </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                                </button>
-                                <div className="flex items-center gap-1">
-                                    {[...Array(totalPages)].map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setCurrentPage(i + 1)}
-                                            className={`w-7 h-7 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${currentPage === i + 1 ? 'bg-primary text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
-                                        >
-                                            {i + 1}
-                                        </button>
+                        </div>
+                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setShowBatchConfirm(false)}
+                                className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleBulkSubmitToAdmin}
+                                className="px-8 py-2.5 bg-[#8B3A00] text-white text-sm font-bold rounded-xl hover:opacity-90 shadow-lg shadow-[#8B3A00]/20 transition-all cursor-pointer"
+                            >
+                                Yes, Submit Batch
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Toast */}
+            {successMessage && (
+                <div className="fixed bottom-8 right-8 z-[110] animate-in slide-in-from-bottom-5 fade-in">
+                    <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700">
+                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-white text-lg">check</span>
+                        </div>
+                        <p className="text-sm font-bold tracking-tight">{successMessage}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal for Create/Edit */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <DeathRequestForm
+                        onSave={handleSaveRequest}
+                        onCancel={() => setIsModalOpen(false)}
+                        initialData={selectedRequest || undefined}
+                        isReadOnly={isReadOnly}
+                        hideFooter={false}
+                        onVerify={handleVerify}
+                        onReject={handleOpenRejectDialog}
+                    />
+                </div>
+            )}
+
+            {/* Detail View Modal */}
+            {viewRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[#8B3A00]">person_remove</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">Death Application Details</h3>
+                                    <p className="text-[11px] text-slate-500 font-medium">{viewRequest.id}</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setViewRequest(null)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors text-slate-400"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                            <div className="grid grid-cols-2 gap-8">
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Employee Name</p>
+                                    <p className="text-sm text-slate-700 dark:text-slate-200 font-semibold">{viewRequest.employeeName}</p>
+                                    <p className="text-[10px] text-slate-500">EPF: {viewRequest.epfNumber}</p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
+                                    <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${statusConfig[viewRequest.status]?.classes || statusConfig.NEW.classes}`}>
+                                        {statusConfig[viewRequest.status]?.label || 'Draft'}
+                                    </span>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date of Death</p>
+                                    <p className="text-sm text-slate-700 dark:text-slate-200 font-semibold">{formatDate(viewRequest.dateOfDeath)}</p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nature of Death</p>
+                                    <p className="text-sm text-slate-700 dark:text-slate-200 font-semibold">{viewRequest.natureOfDeath}</p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Requester Name</p>
+                                    <p className="text-sm text-slate-700 dark:text-slate-200 font-semibold">{viewRequest.requesterName}</p>
+                                    <p className="text-[10px] text-slate-500">{viewRequest.requesterDesignation} ({viewRequest.requesterEmpId})</p>
+                                    <p className="text-[10px] text-slate-500">{viewRequest.requesterBranch}</p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contact Number</p>
+                                    <p className="text-sm text-slate-700 dark:text-slate-200 font-semibold">{viewRequest.contactNumber}</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nominee Details</p>
+                                <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl">
+                                    <div>
+                                        <p className="text-[10px] text-slate-500">Nominee Name</p>
+                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{viewRequest.nomineeName || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-slate-500">Bank Details</p>
+                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{viewRequest.nomineeBank} - {viewRequest.nomineeBranch}</p>
+                                        <p className="text-[10px] text-slate-500">{viewRequest.nomineeAccount}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attached Documents</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {Object.entries(viewRequest.documents).map(([key, filename], idx) => (
+                                        filename && (
+                                            <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                                                <div className="w-8 h-8 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center">
+                                                    <span className="material-symbols-outlined text-slate-400 text-lg">description</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate capitalize">{key.replace(/([A-Z])/g, ' $1')}</p>
+                                                    <p className="text-[10px] text-slate-500 truncate">{filename}</p>
+                                                </div>
+                                                <button className="text-slate-300 hover:text-[#8B3A00] transition-colors cursor-pointer">
+                                                    <span className="material-symbols-outlined text-lg">download</span>
+                                                </button>
+                                            </div>
+                                        )
                                     ))}
                                 </div>
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                                </button>
                             </div>
                         </div>
-                    )}
+                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex justify-end">
+                            <button 
+                                onClick={() => setViewRequest(null)}
+                                className="px-8 py-2.5 bg-slate-800 text-white text-sm font-bold rounded-xl hover:opacity-90 shadow-lg shadow-slate-900/10 transition-all cursor-pointer"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            )}
 
-                {/* Modal for Create/View/Review */}
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-                        <DeathRequestForm
-                            onSave={handleSaveRequest}
-                            onCancel={() => setIsModalOpen(false)}
-                            initialData={selectedRequest || undefined}
-                            isReadOnly={isReadOnly}
-                            hideFooter={false}
-                            onVerify={handleVerify}
-                            onReject={handleOpenRejectDialog}
-                        />
-                    </div>
-                )}
-
-                {/* Confirm Batch Submit Dialog */}
-                {showConfirmDialog && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800">
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-white">
-                                <span className="material-symbols-outlined text-primary">warning</span>
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-white">Confirm Submission</h3>
-                            </div>
-                            <div className="p-8 text-center bg-white">
-                                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span className="material-symbols-outlined text-primary text-3xl">send</span>
-                                </div>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                                    You are about to compile <span className="font-bold text-slate-800 dark:text-white">{verifiedCount} verified death applications</span> and submit them for Admin approval.
-                                </p>
-                                <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg text-left">
-                                    <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold flex items-start gap-2">
-                                        <span className="material-symbols-outlined text-sm mt-0.5">info</span>
-                                        Once submitted, the request statuses cannot be changed by HR.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex gap-3 justify-end rounded-b-2xl">
-                                <button onClick={() => setShowConfirmDialog(false)} className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 transition-colors cursor-pointer">
-                                    Cancel
-                                </button>
-                                <button onClick={handleConfirmSubmitToAdmin} className="px-8 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all cursor-pointer flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined text-[18px]">send</span>
-                                    Submit for Admin Approvals
-                                </button>
-                            </div>
+            {/* Reject Dialog */}
+            {showRejectDialog && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+                            <span className="material-symbols-outlined text-red-500">error</span>
+                            <h3 className="font-bold text-slate-800 dark:text-white text-sm uppercase tracking-tight">Reject Application</h3>
+                        </div>
+                        <div className="p-8 space-y-4">
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Please provide a reason for rejecting this application.</p>
+                            <textarea 
+                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-red-500/20 transition-all resize-none h-32"
+                                placeholder="Enter rejection reason..."
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                            />
+                        </div>
+                        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
+                            <button onClick={() => setShowRejectDialog(false)} className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 transition-colors cursor-pointer">Cancel</button>
+                            <button onClick={handleConfirmReject} className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all cursor-pointer">Confirm Reject</button>
                         </div>
                     </div>
-                )}
-
-                {/* Reject Reason Popup */}
-                {showRejectDialog && selectedRequest && (
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                        <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-red-500 text-xl">cancel</span>
-                                    </div>
-                                    <h3 className="text-base font-bold text-slate-800 dark:text-white">Reject Application</h3>
-                                </div>
-                                <button onClick={handleCloseRejectDialog} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
-                            <div className="p-6 space-y-4">
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Please provide a reason for rejecting this death application.</p>
-                                <textarea
-                                    value={rejectReason}
-                                    onChange={(e) => {
-                                        setRejectReason(e.target.value);
-                                        if (e.target.value.trim()) setRejectReasonError(false);
-                                    }}
-                                    placeholder="e.g. Incomplete documentation..."
-                                    rows={4}
-                                    className={`w-full border rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 resize-none transition-colors ${rejectReasonError ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-primary/20 focus:border-primary"}`}
-                                />
-                                {rejectReasonError && <p className="text-xs text-red-500">Reason is mandatory.</p>}
-                            </div>
-                            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-end gap-3 rounded-b-2xl">
-                                <button onClick={handleCloseRejectDialog} className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 cursor-pointer">
-                                    Cancel
-                                </button>
-                                <button onClick={handleConfirmReject} className="px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg shadow-sm shadow-red-200 transition-all cursor-pointer flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[18px]">cancel</span>
-                                    Confirm Rejection
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

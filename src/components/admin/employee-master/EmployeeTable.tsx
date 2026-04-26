@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, User, X, Mail, Building2, Briefcase, BadgeCheck } from "lucide-react";
+import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
 
 interface Employee {
@@ -39,9 +40,17 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:8080/api/employees")
-      .then(res => res.json())
-      .then((data) => {
+    const fetchEmployees = async () => {
+      try {
+        const res = await api.get("/api/employees");
+        const data = res.data;
+        
+        if (!Array.isArray(data)) {
+          console.error("Expected array of employees but received:", data);
+          setEmployees([]);
+          return;
+        }
+
         const fetchedEmployees: Employee[] = data.map((emp: ApiEmployee) => ({
           id: emp.employeeCode || "",
           name: emp.fullName || "",
@@ -55,10 +64,13 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
 
         // Sort employees by Employee Code in ascending order
         fetchedEmployees.sort((a, b) => a.id.localeCompare(b.id));
-
         setEmployees(fetchedEmployees);
-      })
-      .catch(err => console.error("Error fetching employees:", err));
+      } catch (err) {
+        console.error("Error fetching employees:", err);
+      }
+    };
+
+    fetchEmployees();
   }, []);
 
   // Filter employees based on selected filters
