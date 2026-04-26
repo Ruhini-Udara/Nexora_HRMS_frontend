@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getSignedUrl } from '@/lib/supabaseClient';
 
 interface Attachment {
     name: string;
@@ -13,6 +14,7 @@ interface RequestDetails {
     designation?: string;
     workEmail?: string;
     justification?: string;
+    attachmentPath?: string;
     attachments?: Attachment[];
     avatar?: string;
     initials?: string;
@@ -26,6 +28,18 @@ interface TrainingRequestDetailsModalProps {
 }
 
 export default function TrainingRequestDetailsModal({ isOpen, onClose, request }: TrainingRequestDetailsModalProps) {
+    const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (isOpen && request?.attachmentPath) {
+            getSignedUrl(request.attachmentPath)
+                .then(url => setSignedUrl(url))
+                .catch(err => console.error("Failed to get signed URL", err));
+        } else {
+            setSignedUrl(null);
+        }
+    }, [isOpen, request?.attachmentPath]);
+
     if (!isOpen || !request) return null;
 
     return (
@@ -88,10 +102,16 @@ export default function TrainingRequestDetailsModal({ isOpen, onClose, request }
                     {/* Documents Section */}
                     <div>
                         <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Uploaded Attachments</h4>
-                        {request.attachments && request.attachments.length > 0 ? (
+                        {(request.attachments && request.attachments.length > 0) || request.attachmentPath ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                {request.attachments.map((file, index) => (
-                                    <div key={index} className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 group hover:border-primary transition-colors cursor-pointer">
+                                {request.attachments?.map((file, index) => (
+                                    <a 
+                                        key={index} 
+                                        href={file.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 group hover:border-primary transition-colors cursor-pointer"
+                                    >
                                         <div className="w-8 h-8 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
                                             <span className="material-symbols-outlined text-[18px]">description</span>
                                         </div>
@@ -100,8 +120,26 @@ export default function TrainingRequestDetailsModal({ isOpen, onClose, request }
                                             <div className="text-[10px] text-slate-500 truncate">Document</div>
                                         </div>
                                         <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors">download</span>
-                                    </div>
+                                    </a>
                                 ))}
+                                {request.attachmentPath && (!request.attachments || request.attachments.length === 0) && (
+                                    <a 
+                                        href={signedUrl || "#"} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className={`flex items-center gap-3 p-3 border rounded-lg bg-slate-50 dark:bg-slate-800/50 group transition-colors cursor-pointer ${signedUrl ? 'border-slate-200 dark:border-slate-700 hover:border-primary' : 'border-slate-200 opacity-50 cursor-not-allowed'}`}
+                                        onClick={(e) => { if (!signedUrl) e.preventDefault(); }}
+                                    >
+                                        <div className="w-8 h-8 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                            <span className="material-symbols-outlined text-[18px]">description</span>
+                                        </div>
+                                        <div className="overflow-hidden flex-1">
+                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">Training_Attachment</div>
+                                            <div className="text-[10px] text-slate-500 truncate">Document</div>
+                                        </div>
+                                        <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors">download</span>
+                                    </a>
+                                )}
                             </div>
                         ) : (
                             <p className="text-sm text-slate-500 italic p-3 bg-slate-50 dark:bg-slate-800/20 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">No attachments provided.</p>

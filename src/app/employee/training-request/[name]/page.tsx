@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import axiosInstance from "@/lib/axios";
+import api from "@/lib/axiosInstance";
 import { uploadDocument } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { formatTime } from "@/lib/utils";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface TrainingEvent {
     id: number;
@@ -23,6 +24,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
     const resolvedParams = React.use(params);
     const name = resolvedParams.name;
     const router = useRouter();
+    const { user } = useAuthStore();
     
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false);
@@ -32,7 +34,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
     const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [justification, setJustification] = useState("");
     
-    // Employee details state (Ideally pre-filled from auth)
+    // Employee details state
     const [employeeName, setEmployeeName] = useState("");
     const [epfNumber, setEpfNumber] = useState("");
     const [age, setAge] = useState("");
@@ -46,10 +48,21 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
         : "Training Request";
 
     useEffect(() => {
-        axiosInstance.get('/training/events')
+        api.get('/api/training/events')
             .then(res => setEvents(res.data))
             .catch(err => console.error("Failed to fetch events", err));
     }, []);
+
+    // Pre-fill user details
+    useEffect(() => {
+        if (user) {
+            setEmployeeName(user.name || "");
+            setWorkEmail(user.email || "");
+            setDesignation(user.designation || "");
+            setEpfNumber(user.epfNumber || "");
+            setDepartment(user.department || "");
+        }
+    }, [user]);
 
     const eventDetails = events.find(
         event => event.title.toLowerCase() === formattedTitle.toLowerCase()
@@ -64,7 +77,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
     };
 
     const handleSubmit = async () => {
-        if (!eventDetails) return;
+        if (!eventDetails || !user) return;
         
         setIsSubmitting(true);
         try {
@@ -78,12 +91,18 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
 
             const payload = {
                 eventId: eventDetails.id,
-                employeeId: 1, // HARDCODED for demo as we don't have auth yet
+                employeeId: user.id,
+                employeeName,
+                epfNumber,
+                department,
+                designation,
+                workEmail,
                 justification: justification,
-                attachmentPath: attachmentPath
+                attachmentPath: attachmentPath,
+                dateSubmitted: new Date().toISOString().split('T')[0]
             };
 
-            await axiosInstance.post('/training/requests', payload);
+            await api.post('/api/training/requests', payload);
             alert("Application submitted successfully!");
             router.push('/employee/training-request');
         } catch (error) {

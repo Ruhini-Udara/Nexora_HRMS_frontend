@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '@/lib/axiosInstance';
 
 interface RequestDetails {
     id: number;
@@ -16,9 +17,11 @@ interface ApprovedTrainingListModalProps {
     onClose: () => void;
     requests: RequestDetails[];
     eventName: string;
+    eventId?: number;
+    onStatusUpdate?: () => void;
 }
 
-export default function ApprovedTrainingListModal({ isOpen, onClose, requests, eventName }: ApprovedTrainingListModalProps) {
+export default function ApprovedTrainingListModal({ isOpen, onClose, requests, eventName, eventId, onStatusUpdate }: ApprovedTrainingListModalProps) {
     const [isConfirming, setIsConfirming] = useState(false);
 
     if (!isOpen) return null;
@@ -148,9 +151,22 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                                 </button>
                                 <button 
                                     onClick={() => {
-                                        // Logic to handle admin submission would go here
-                                        setIsConfirming(false);
-                                        onClose();
+                                        if (eventId) {
+                                            api.put(`/api/training/events/${eventId}/status`, { status: 'Pending Admin Approval' })
+                                                .then(() => {
+                                                    alert("Training list sent to Admin for approval!");
+                                                    if (onStatusUpdate) onStatusUpdate();
+                                                    setIsConfirming(false);
+                                                    onClose();
+                                                })
+                                                .catch(err => {
+                                                    console.error("Failed to send to admin", err);
+                                                    alert("Failed to send for Admin approval. Please try again.");
+                                                    setIsConfirming(false);
+                                                });
+                                        } else {
+                                            setIsConfirming(false);
+                                        }
                                     }} 
                                     className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-semibold shadow-sm transition-colors"
                                 >

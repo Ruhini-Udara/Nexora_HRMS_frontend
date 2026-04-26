@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import axiosInstance from "@/lib/axios";
+import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
 
 type TrainingRequest = {
@@ -14,6 +14,7 @@ type TrainingRequest = {
     trainingDate: string;
     trainingTime: string;
     status: "Approved" | "Pending" | "Rejected";
+    eventStatus?: string;
     rejectionReason?: string;
     attendanceConfirmed: boolean;
 };
@@ -28,17 +29,31 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
     const { user } = useAuthStore();
     const employeeId = user?.id;
     const [requests, setRequests] = useState<TrainingRequest[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
     const [isConfirmingAttendance, setIsConfirmingAttendance] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
     const [selectedRejection, setSelectedRejection] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!employeeId) return;
+        if (!employeeId) {
+            console.warn("TrainingStatusTable: No employeeId found in auth store.");
+            return;
+        }
         
-        axiosInstance.get(`/training/employees/${employeeId}/requests`)
-            .then(res => setRequests(res.data))
-            .catch(err => console.error("Failed to fetch requests", err));
+        console.log(`TrainingStatusTable: Fetching requests for employeeId: ${employeeId}`);
+        setIsLoading(true);
+        api.get(`/api/training/employees/${employeeId}/requests`)
+            .then(res => {
+                console.log("TrainingStatusTable: Requests received:", res.data);
+                setRequests(res.data);
+            })
+            .catch(err => {
+                console.error("TrainingStatusTable: Failed to fetch requests", err);
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
     }, [employeeId]);
 
     const handleConfirmAttendance = (requestId: number) => {
@@ -63,99 +78,134 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                         </tr>
                     </thead>
                     <tbody className="text-sm">
-                    {requests.map((request, idx) => (
-                        <tr
-                            key={request.id}
-                            className={`border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors ${
-                                request.status === "Rejected" ? "opacity-70" : ""
-                            } ${idx === requests.length - 1 ? "border-none" : ""}`}
-                        >
-                            <td className="py-4 px-4">
-                                <p className="font-semibold text-slate-800 dark:text-white">{request.trainingTitle}</p>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium uppercase tracking-wider">
-                                    {request.trainingCategory}
-                                </p>
-                            </td>
-                            <td className="py-4 px-4">
-                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                                    request.status === "Approved"
-                                        ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                        : request.status === "Pending"
-                                            ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-                                            : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-                                }`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${
-                                        request.status === "Approved"
-                                            ? "bg-emerald-500"
-                                            : request.status === "Pending"
-                                                ? "bg-blue-500"
-                                                : "bg-red-500"
-                                    }`}></span>
-                                    {request.status}
-                                </span>
-                            </td>
-                            <td className="py-4 px-4">
-                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{request.trainingDate}</p>
-                                <p className="text-[11px] text-slate-400">{request.trainingTime}</p>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                                {request.status === "Approved" ? (
-                                    request.attendanceConfirmed ? (
-                                        <div className="flex items-center justify-center">
-                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/30">
-                                                <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                                                Confirmed
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <button 
-                                                onClick={() => {
-                                                    setSelectedRequest(request);
-                                                    setIsConfirmingAttendance(true);
-                                                }}
-                                                className="px-3 py-1.5 bg-primary text-white text-[11px] font-bold rounded-lg hover:bg-[#853500] transition-colors cursor-pointer shadow-sm shadow-primary/20"
-                                            >
-                                                Confirm Attendance
-                                            </button>
-                                        </div>
-                                    )
-                                ) : request.status === "Pending" ? (
-                                    <div className="flex items-center justify-center gap-2">
-                                        <span className="text-[11px] font-semibold text-slate-400 px-3 py-1.5 border border-dashed border-slate-200 rounded-lg">
-                                            Waiting...
-                                        </span>
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={5} className="py-10 text-center">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                        <p className="text-slate-400 font-medium">Fetching your training status...</p>
                                     </div>
-                                ) : (
-                                    <div className="flex items-center justify-center">
-                                        <button 
-                                            onClick={() => {
-                                                setSelectedRejection(request.rejectionReason || "No reason provided.");
-                                                setIsRejectionModalOpen(true);
-                                            }}
-                                            className="text-slate-400 text-[11px] font-semibold hover:text-slate-600 hover:underline cursor-pointer transition-colors"
-                                        >
-                                            View Reason
-                                        </button>
-                                    </div>
-                                )}
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                                <button
-                                    className={`text-[11px] font-bold flex items-center gap-1 justify-center mx-auto px-3 py-1.5 rounded-lg transition-colors ${request.status === 'Approved' && request.attendanceConfirmed
-                                            ? "text-primary hover:bg-primary/5 cursor-pointer"
-                                            : "text-slate-300 cursor-not-allowed"
-                                        }`}
-                                    disabled={!(request.status === 'Approved' && request.attendanceConfirmed)}
-                                    onClick={(request.status === 'Approved' && request.attendanceConfirmed) ? () => onFeedbackClick(request) : undefined}
+                                </td>
+                            </tr>
+                        ) : requests.length > 0 ? (
+                            requests.map((request, idx) => (
+                                <tr
+                                    key={request.id}
+                                    className={`border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors ${
+                                        request.status === "Rejected" ? "opacity-70" : ""
+                                    } ${idx === requests.length - 1 ? "border-none" : ""}`}
                                 >
-                                    <span className="material-symbols-outlined text-sm">rate_review</span>{" "}
-                                    {(request.status === 'Approved' && request.attendanceConfirmed) ? "Give Feedback" : "Review Locked"}
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
+                                    <td className="py-4 px-4">
+                                        <p className="font-semibold text-slate-800 dark:text-white">{request.trainingTitle}</p>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium uppercase tracking-wider">
+                                            {request.trainingCategory}
+                                        </p>
+                                    </td>
+                                    <td className="py-4 px-4">
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                                            request.status === "Approved"
+                                                ? request.eventStatus === "Approved"
+                                                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                                                    : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                                                : request.status === "Pending"
+                                                    ? "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+                                                    : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                                        }`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${
+                                                request.status === "Approved"
+                                                    ? request.eventStatus === "Approved"
+                                                        ? "bg-emerald-500"
+                                                        : "bg-blue-500"
+                                                    : request.status === "Pending"
+                                                        ? "bg-amber-500"
+                                                        : "bg-red-500"
+                                            }`}></span>
+                                            {request.status === "Approved" 
+                                                ? request.eventStatus === "Approved" ? "Approved" : "HR Approved" 
+                                                : request.status}
+                                        </span>
+                                    </td>
+                                    <td className="py-4 px-4">
+                                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{request.trainingDate}</p>
+                                        <p className="text-[11px] text-slate-400">{request.trainingTime}</p>
+                                    </td>
+                                    <td className="py-4 px-4 text-center">
+                                        {request.status === "Approved" ? (
+                                            request.eventStatus === "Approved" ? (
+                                                request.attendanceConfirmed ? (
+                                                    <div className="flex items-center justify-center">
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/30">
+                                                            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                                                            Confirmed
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button 
+                                                            onClick={() => {
+                                                                setSelectedRequest(request);
+                                                                setIsConfirmingAttendance(true);
+                                                            }}
+                                                            className="px-3 py-1.5 bg-primary text-white text-[11px] font-bold rounded-lg hover:bg-[#853500] transition-colors cursor-pointer shadow-sm shadow-primary/20"
+                                                        >
+                                                            Confirm Attendance
+                                                        </button>
+                                                    </div>
+                                                )
+                                            ) : (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 border border-blue-100 rounded-lg dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/30 flex items-center gap-1.5">
+                                                        <span className="material-symbols-outlined text-[14px]">admin_panel_settings</span>
+                                                        Pending Admin Approval
+                                                    </span>
+                                                </div>
+                                            )
+                                        ) : request.status === "Pending" ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <span className="text-[11px] font-semibold text-slate-400 px-3 py-1.5 border border-dashed border-slate-200 rounded-lg">
+                                                    Waiting...
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-center">
+                                                <button 
+                                                    onClick={() => {
+                                                        setSelectedRejection(request.rejectionReason || "No reason provided.");
+                                                        setIsRejectionModalOpen(true);
+                                                    }}
+                                                    className="text-slate-400 text-[11px] font-semibold hover:text-slate-600 hover:underline cursor-pointer transition-colors"
+                                                >
+                                                    View Reason
+                                                </button>
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="py-4 px-4 text-center">
+                                        <button
+                                            className={`text-[11px] font-bold flex items-center gap-1 justify-center mx-auto px-3 py-1.5 rounded-lg transition-colors ${request.status === 'Approved' && request.attendanceConfirmed
+                                                    ? "text-primary hover:bg-primary/5 cursor-pointer"
+                                                    : "text-slate-300 cursor-not-allowed"
+                                                }`}
+                                            disabled={!(request.status === 'Approved' && request.attendanceConfirmed)}
+                                            onClick={(request.status === 'Approved' && request.attendanceConfirmed) ? () => onFeedbackClick(request) : undefined}
+                                        >
+                                            <span className="material-symbols-outlined text-sm">rate_review</span>{" "}
+                                            {(request.status === 'Approved' && request.attendanceConfirmed) ? "Give Feedback" : "Review Locked"}
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={5} className="py-12 text-center">
+                                    <div className="flex flex-col items-center gap-2 opacity-40">
+                                        <span className="material-symbols-outlined text-4xl">history_edu</span>
+                                        <p className="text-sm font-medium">No training requests found for your account.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
             </table>
             </div>
 
