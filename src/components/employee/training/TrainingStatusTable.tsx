@@ -77,12 +77,12 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="border-b border-slate-100 dark:border-slate-800 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                            <th className="pb-3 px-4 font-medium uppercase tracking-tight text-xs">Training Name</th>
-                            <th className="pb-3 px-4 font-medium uppercase tracking-tight text-xs">Status</th>
-                            <th className="pb-3 px-4 font-medium uppercase tracking-tight text-xs">Date & Time</th>
-                            <th className="pb-3 px-4 font-medium uppercase tracking-tight text-xs text-center">Actions</th>
-                            <th className="pb-3 px-4 font-medium uppercase tracking-tight text-xs text-center">Feedback</th>
+                        <tr className="border-b border-slate-100 dark:border-slate-800">
+                            <th className="pb-4 px-4 font-bold uppercase tracking-wider text-[13px] text-slate-700 dark:text-slate-200">Program Name</th>
+                            <th className="pb-4 px-4 font-bold uppercase tracking-wider text-[13px] text-slate-700 dark:text-slate-200">Status</th>
+                            <th className="pb-4 px-4 font-bold uppercase tracking-wider text-[13px] text-slate-700 dark:text-slate-200">Date & Time</th>
+                            <th className="pb-4 px-4 font-bold uppercase tracking-wider text-[13px] text-slate-700 dark:text-slate-200 text-center">Actions</th>
+                            <th className="pb-4 px-4 font-bold uppercase tracking-wider text-[13px] text-slate-700 dark:text-slate-200 text-center">Feedback</th>
                         </tr>
                     </thead>
                     <tbody className="text-sm">
@@ -91,7 +91,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                 <td colSpan={5} className="py-10 text-center">
                                     <div className="flex flex-col items-center gap-2">
                                         <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                                        <p className="text-slate-400 font-medium">Fetching your training status...</p>
+                                        <p className="text-slate-400 font-medium">Fetching your program status...</p>
                                     </div>
                                 </td>
                             </tr>
@@ -169,9 +169,13 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                 </div>
                                             )
                                         ) : request.status === "Pending" ? (
-                                            <div className="flex items-center justify-center gap-2">
-                                                <span className="text-[11px] font-semibold text-slate-400 px-3 py-1.5 border border-dashed border-slate-200 rounded-lg">
-                                                    Waiting...
+                                            <div className="flex items-center justify-center">
+                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-50 text-slate-500 border border-slate-200/50 dark:bg-slate-800/40 dark:border-slate-700/30 shadow-sm shadow-slate-100/50 dark:shadow-none">
+                                                    <span className="relative flex h-2 w-2">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-300 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-400"></span>
+                                                    </span>
+                                                    In Review
                                                 </span>
                                             </div>
                                         ) : (
@@ -208,7 +212,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                 <td colSpan={5} className="py-12 text-center">
                                     <div className="flex flex-col items-center gap-2 opacity-40">
                                         <span className="material-symbols-outlined text-4xl">history_edu</span>
-                                        <p className="text-sm font-medium">No training requests found for your account.</p>
+                                        <p className="text-sm font-medium">No program requests found for your account.</p>
                                     </div>
                                 </td>
                             </tr>

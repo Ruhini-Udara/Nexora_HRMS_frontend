@@ -219,7 +219,7 @@ export default function TrainingRequestPage() {
                         <span className="material-symbols-outlined text-[var(--color-training-primary)]">
                             assignment_turned_in
                         </span>
-                        My Training Status
+                        My Training Events Status
                     </h2>
                 </div>
                 <TrainingStatusTable

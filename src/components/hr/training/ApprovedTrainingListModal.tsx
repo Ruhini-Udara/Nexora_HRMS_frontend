@@ -26,17 +26,72 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
     const [isConfirming, setIsConfirming] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-    if (!isOpen) return null;
-
     // Filter only approved requests
     const approvedRequests = requests.filter(req => req.status === 'Approved');
 
+    const handleDownloadCSV = () => {
+        if (approvedRequests.length === 0) {
+            setToast({ message: "No approved participants to download.", type: 'info' });
+            return;
+        }
+        
+        const headers = ["Employee Name", "Department", "Work Email"];
+        const csvContent = [
+            headers.join(","),
+            ...approvedRequests.map(req => [
+                `"${req.employeeName}"`,
+                `"${req.department}"`,
+                `"${req.workEmail || 'N/A'}"`
+            ].join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Approved_Participants_${eventName.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setToast({ message: "List downloaded as CSV", type: 'success' });
+    };
+
+    const handlePrint = () => {
+        const printStyles = document.createElement('style');
+        printStyles.innerHTML = `
+            @media print {
+                body * { visibility: hidden; }
+                #printable-modal, #printable-modal * { visibility: visible; }
+                #printable-modal {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    background: white !important;
+                }
+                .no-print, .print-hide { display: none !important; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+                th { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; }
+                .print-header { margin-bottom: 20px; border-bottom: 2px solid #334155; padding-bottom: 10px; }
+            }
+        `;
+        document.head.appendChild(printStyles);
+        window.print();
+        document.head.removeChild(printStyles);
+    };
+
+    if (!isOpen) return null;
+
+
+
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 h-screen max-h-screen">
-            <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[85vh]">
+            <div id="printable-modal" className="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[85vh]">
                 
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0 print-header">
                     <div>
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <span className="material-symbols-outlined text-primary">groups</span>
@@ -49,12 +104,12 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                     <div className="flex items-center gap-4">
                         <button 
                             onClick={() => setToast({ message: "Add Employee feature to be implemented", type: 'info' })}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-semibold transition-colors"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-semibold transition-colors no-print"
                         >
                             <span className="material-symbols-outlined text-[18px]">person_add</span>
                             Add Employee
                         </button>
-                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+                        <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors no-print">
                             <span className="material-symbols-outlined">close</span>
                         </button>
                     </div>
@@ -81,13 +136,15 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                                     <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                                         <td className="py-3 px-6">
                                             <div className="flex items-center gap-3">
-                                                {req.avatar ? (
-                                                    <img src={req.avatar} alt={req.employeeName} className="size-10 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
-                                                ) : (
-                                                    <div className="size-10 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-sm">
-                                                        {req.initials}
-                                                    </div>
-                                                )}
+                                                <div className="print-hide">
+                                                    {req.avatar ? (
+                                                        <img src={req.avatar} alt={req.employeeName} className="size-10 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
+                                                    ) : (
+                                                        <div className="size-10 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-sm">
+                                                            {req.initials}
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <div>
                                                     <div className="font-semibold text-sm text-slate-900 dark:text-white">{req.employeeName}</div>
                                                     <div className="text-xs text-slate-500">{req.designation || 'Employee'}</div>
@@ -97,7 +154,7 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                                         <td className="py-3 px-6 text-sm text-slate-600 dark:text-slate-300 font-medium">
                                             {req.department}
                                         </td>
-                                        <td className="py-3 px-6 text-sm text-slate-600 dark:text-slate-300 font-medium truncate max-w-[150px]" title={req.workEmail || 'N/A'}>
+                                        <td className="py-3 px-6 text-sm text-slate-600 dark:text-slate-300 font-medium" title={req.workEmail || 'N/A'}>
                                             {req.workEmail || 'N/A'}
                                         </td>
                                     </tr>
@@ -108,14 +165,24 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex items-center justify-between rounded-b-2xl">
+                <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex items-center justify-between rounded-b-2xl no-print">
                     <span className="text-sm font-semibold text-slate-500">
                         Total Participants: <span className="text-primary">{approvedRequests.length}</span>
                     </span>
                     <div className="flex gap-2">
-                        <button className="px-5 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-semibold text-sm transition-colors flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[18px]">print</span>
-                            Print
+                        <button 
+                            onClick={handleDownloadCSV}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-semibold text-sm transition-colors flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">description</span>
+                            CSV
+                        </button>
+                        <button 
+                            onClick={handlePrint}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-semibold text-sm transition-colors flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                            PDF
                         </button>
                         <button
                             onClick={onClose}

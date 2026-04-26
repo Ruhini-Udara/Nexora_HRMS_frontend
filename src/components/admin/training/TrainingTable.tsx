@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import TrainingListModal from './viewlist/TrainingListModal';
+import api from '@/lib/axiosInstance';
 
 interface RequestModel {
     id: number;
@@ -10,9 +11,14 @@ interface RequestModel {
     requester: string;
     type: string;
     typeColor: string;
+    submissionDate: string;
     date: string;
     status: string;
     rejectionReason?: string;
+    time: string;
+    location: string;
+    trainer: string;
+    expectedParticipants: number;
 }
 
 interface TrainingTableProps {
@@ -22,7 +28,7 @@ interface TrainingTableProps {
 
 export default function TrainingTable({ requests, setRequests }: TrainingTableProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedTraining, setSelectedTraining] = useState<{ id: number, title: string, type: string, date: string, status: string } | null>(null);
+    const [selectedTraining, setSelectedTraining] = useState<{ id: number, title: string, type: string, date: string, status: string, time: string, location: string, trainer: string, expectedParticipants: number } | null>(null);
     const [filterType, setFilterType] = useState("All");
     const [filterStatus, setFilterStatus] = useState("Pending");
     const [rejectionReason, setRejectionReason] = useState("");
@@ -33,13 +39,17 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
         type: 'Approve' | 'Reject' | null;
     }>({ isOpen: false, type: null });
 
-    const handleViewList = (req: RequestModel) => {
+    const handleViewList = (req: any) => {
         setSelectedTraining({
             id: req.id,
             title: req.title,
             type: req.type,
             date: req.date,
-            status: req.status
+            status: req.status,
+            time: req.time,
+            location: req.location,
+            trainer: req.trainer,
+            expectedParticipants: req.expectedParticipants
         });
         setIsModalOpen(true);
     };
@@ -54,31 +64,62 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
         setConfirmModal({ isOpen: true, type: 'Reject' });
     };
 
-    const confirmAction = () => {
+    const confirmAction = async () => {
         if (!selectedTraining || !confirmModal.type) return;
 
-        setRequests(prev => prev.map(req =>
-            req.id === selectedTraining.id
-                ? {
-                    ...req,
-                    status: confirmModal.type === 'Approve' ? "Approved" as const : "Rejected" as const,
-                    ...(confirmModal.type === 'Reject' ? { rejectionReason } : {})
-                }
-                : req
-        ));
+        const newStatus = confirmModal.type === 'Approve' ? 'Approved' : 'Rejected';
 
-        setConfirmModal({ isOpen: false, type: null });
-        setRejectionReason("");
-        setIsModalOpen(false);
+        try {
+            await api.put(`/api/training/events/${selectedTraining.id}/status`, {
+                status: newStatus,
+                reason: confirmModal.type === 'Reject' ? rejectionReason : undefined
+            });
+
+            setRequests(prev => prev.map(req =>
+                req.id === selectedTraining.id
+                    ? {
+                        ...req,
+                        status: newStatus,
+                        ...(confirmModal.type === 'Reject' ? { rejectionReason } : {})
+                    }
+                    : req
+            ));
+        } catch (err) {
+            console.error("Failed to update training event status", err);
+            alert("Failed to update status. Please try again.");
+        } finally {
+            setConfirmModal({ isOpen: false, type: null });
+            setRejectionReason("");
+            setIsModalOpen(false);
+        }
     };
 
-    const uniqueTypes = ["All", ...Array.from(new Set(requests.map(req => req.type)))];
-    const uniqueStatuses = ["All Statuses", ...Array.from(new Set(requests.map(req => req.status)))];
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
+    // Filter Logic
     const filteredRequests = requests.filter(req =>
         (filterType === "All" || req.type === filterType) &&
         (filterStatus === "All Statuses" || req.status === filterStatus)
     );
+
+    // Pagination Logic
+    const totalItems = filteredRequests.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+    const currentItems = filteredRequests.slice(startIndex, endIndex);
+
+    const handlePageChange = (page: number) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
+
+    // Reset to page 1 when filters change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [filterType, filterStatus]);
 
     return (
         <>
@@ -91,11 +132,9 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
                     >
-                        {uniqueTypes.map(type => (
-                            <option key={type} value={type}>
-                                {type === "All" ? "All Types" : type}
-                            </option>
-                        ))}
+                        <option value="All">All Types</option>
+                        <option value="Internal">Internal</option>
+                        <option value="External">External</option>
                     </select>
                     <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 pointer-events-none" />
                 </div>
@@ -106,11 +145,10 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
-                        {uniqueStatuses.map(status => (
-                            <option key={status} value={status}>
-                                {status}
-                            </option>
-                        ))}
+                        <option value="All Statuses">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
                     </select>
                     <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 pointer-events-none" />
                 </div>
@@ -126,14 +164,14 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Training Type</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Submitted</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                                 {filterStatus === "Rejected" && (
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-48">Rejection Reason</th>
                                 )}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {filteredRequests.map((req) => (
+                            {currentItems.map((req) => (
                                 <tr key={req.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
@@ -143,7 +181,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                     <td className="px-6 py-4">
                                         <p className="text-sm text-gray-600">{req.type}</p>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-medium text-gray-500">{req.date}</td>
+                                    <td className="px-6 py-4 text-sm font-medium text-gray-500">{req.submissionDate}</td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'Approved' ? 'bg-green-100 text-green-800' :
                                             req.status === 'Rejected' ? 'bg-red-100 text-red-800' :
@@ -169,19 +207,52 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                     )}
                                 </tr>
                             ))}
+                            {currentItems.length === 0 && (
+                                <tr>
+                                    <td colSpan={filterStatus === "Rejected" ? 6 : 5} className="px-6 py-10 text-center text-gray-500 italic">
+                                        No programs found matching the selected filters.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
 
                 {/* Pagination */}
                 <div className="px-6 py-5 border-t border-gray-100 flex items-center justify-between">
-                    <p className="text-sm text-gray-500 font-medium">Showing 1 to 5 of 8 results</p>
+                    <p className="text-sm text-gray-500 font-medium">
+                        Showing {totalItems > 0 ? startIndex + 1 : 0} to {endIndex} of {totalItems} results
+                    </p>
                     <div className="flex gap-2">
-                        <button className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 text-gray-600 disabled:opacity-50" disabled>Previous</button>
-                        <button className="px-3 py-1.5 bg-primary text-white rounded-md text-sm font-bold">1</button>
-                        <button className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 text-gray-600">2</button>
-                        <button className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 text-gray-600">3</button>
-                        <button className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 text-gray-600">Next</button>
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Previous
+                        </button>
+                        
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                                key={page}
+                                onClick={() => handlePageChange(page)}
+                                className={`px-3 py-1.5 rounded-md text-sm font-bold transition-all ${
+                                    currentPage === page 
+                                    ? 'bg-primary text-white shadow-sm shadow-primary/20' 
+                                    : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Next
+                        </button>
                     </div>
                 </div>
             </div>

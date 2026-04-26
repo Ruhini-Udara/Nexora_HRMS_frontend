@@ -6,9 +6,14 @@ import SessionSummaryCard from "./SessionSummaryCard";
 import CandidatesTable from "./CandidatesTable";
 
 interface TrainingDetails {
+    id: number;
     title: string;
     type: string;
     date: string;
+    time: string;
+    location: string;
+    trainer: string;
+    expectedParticipants: number;
     status: string;
 }
 
@@ -54,9 +59,6 @@ export default function TrainingListModal({ isOpen, onClose, training, onApprove
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">
                             Approve Training List
                         </h2>
-                        <p className="text-gray-500 font-medium text-sm mt-1">
-                            Advanced tracking and coordination for scheduled development programs.
-                        </p>
                     </div>
                     <button 
                         onClick={onClose}
@@ -72,13 +74,14 @@ export default function TrainingListModal({ isOpen, onClose, training, onApprove
                     <SessionSummaryCard
                         title={training.title}
                         type={training.type}
-                        date={`${training.date} • 10:00 AM`}
-                        location="Main Conference Room B"
-                        trainer="Alex Rivera"
+                        date={`${training.date} • ${training.time || '10:00 AM'}`}
+                        location={training.location || 'Main Conference Hall'}
+                        trainer={training.trainer || 'To Be Assigned'}
+                        expectedParticipants={training.expectedParticipants || 0}
                     />
 
                     {/* Candidates Table Section */}
-                    <CandidatesTable />
+                    <CandidatesTable eventId={training.id} />
                 </div>
 
                 {/* Modal Footer Actions - Only show if Pending */}

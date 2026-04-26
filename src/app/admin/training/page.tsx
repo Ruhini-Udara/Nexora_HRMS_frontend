@@ -1,67 +1,92 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import TrainingStats from '@/components/admin/training/TrainingStats';
 import TrainingTable from '@/components/admin/training/TrainingTable';
+import api from '@/lib/axiosInstance';
 
-export const initialRequests = [
-    {
-        id: 1,
-        title: "Sales Tactics Optimization",
-        requester: "Sarah Jenkins",
-        type: "External",
-        typeColor: "bg-green-100 text-green-700",
-        date: "Oct 12, 2023",
-        status: "Pending",
-    },
-    {
-        id: 2,
-        title: "Cybersecurity Fundamentals 101",
-        requester: "Michael Chen",
-        type: "Internal",
-        typeColor: "bg-blue-100 text-blue-700",
-        date: "Oct 11, 2023",
-        status: "Approved",
-    },
-    {
-        id: 3,
-        title: "Executive Leadership Coaching",
-        requester: "Elena Rodriguez",
-        type: "External",
-        typeColor: "bg-purple-100 text-purple-700",
-        date: "Oct 10, 2023",
-        status: "Rejected",
-        rejectionReason: "Budget constraints for leadership training this quarter.",
-    },
-    {
-        id: 4,
-        title: "Workplace Safety & Compliance",
-        requester: "David Park",
-        type: "Internal",
-        typeColor: "bg-red-100 text-red-700",
-        date: "Oct 09, 2023",
-        status: "Pending",
-    },
-    {
-        id: 5,
-        title: "Advanced UI Design Systems",
-        requester: "Jamie Smith",
-        type: "Internal",
-        typeColor: "bg-blue-100 text-blue-700",
-        date: "Oct 08, 2023",
-        status: "Approved",
-    },
-];
+interface TrainingEvent {
+    id: number;
+    title: string;
+    category: string;
+    proposedStartDate?: string;
+    date?: string;
+    time?: string;
+    location?: string;
+    trainer?: string;
+    status: string;
+    reason?: string;
+}
 
 export default function TrainingRequestsPage() {
-    const [requests, setRequests] = useState(initialRequests);
+    const [requests, setRequests] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const pendingCount = requests.filter(r => r.status === 'Pending').length;
+    useEffect(() => {
+        const formatTime = (timeStr: string) => {
+            if (!timeStr || timeStr === "TBD") return "10:00 AM";
+            if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+            
+            try {
+                const [hours, minutes] = timeStr.split(':');
+                const hour = parseInt(hours);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const hour12 = hour % 12 || 12;
+                return `${hour12}:${minutes} ${ampm}`;
+            } catch (e) {
+                return timeStr;
+            }
+        };
+
+        const fetchEvents = async () => {
+            try {
+                const res = await api.get('/api/training/events');
+                // Filter only events that are relevant to Admin review (skip 'Published' status)
+                const relevantEvents = res.data.filter((event: any) => 
+                    ['Pending Admin Approval', 'Approved', 'Rejected'].includes(event.status)
+                );
+                
+                // Map filtered API events to the table model
+                const mappedEvents = relevantEvents.map((event: any) => ({
+                    id: event.id,
+                    title: event.title || event.trainingName || "Untitled Training",
+                    requester: "HR Department", 
+                    type: event.category || event.trainingType || "General",
+                    submissionDate: event.updatedAt ? new Date(event.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
+                    date: event.proposedStartDate || event.date || event.trainingDate || "TBD",
+                    time: formatTime(event.time || event.trainingTime || "10:00"),
+                    location: event.location || event.trainingLocation || "Main Conference Hall",
+                    trainer: event.instructor || event.trainer || event.trainerName || "To Be Assigned",
+                    expectedParticipants: event.expectedParticipants || event.participants || 0,
+                    status: event.status === 'Pending Admin Approval' ? 'Pending' : event.status,
+                    rejectionReason: event.reason || event.rejectionReason
+                }));
+                setRequests(mappedEvents);
+            } catch (err) {
+                console.error("Failed to fetch training events for admin", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchEvents();
+    }, []);
+
+    const pendingCount = requests.filter(r => r.status === 'Pending' || r.status === 'Pending Admin Approval').length;
     const rejectedCount = requests.filter(r => r.status === 'Rejected').length;
     const approvedCount = requests.filter(r => r.status === 'Approved').length;
 
+    if (isLoading) {
+        return (
+            <div className="p-8 flex flex-col items-center justify-center min-h-[60vh]">
+                <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
+                <p className="text-slate-500 font-medium">Loading training requests...</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="pt-4 px-8 pb-8 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>

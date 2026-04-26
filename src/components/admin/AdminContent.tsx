@@ -113,21 +113,21 @@ export default function AdminContent() {
           description="Securely store and track employee contracts, policies, and certifications in one place."
           icon={<FileText className="w-6 h-6" />}
           onClick={() => setActiveView("documents")}
-          className="lg:col-span-3"
+          className="lg:col-span-2"
         />
         <ModuleCard
           title="Register Employee"
           description="Seamlessly onboard new staff, assign roles, and configure their dual-identity system accounts."
           icon={<Users className="w-6 h-6" />}
           onClick={() => setActiveView("registerEmployee")}
-          className="lg:col-span-3"
+          className="lg:col-span-2"
         />
         <ModuleCard
           title="Training & Development"
           description="Manage and review all pending training applications and monitor employee skill development."
           icon={<GraduationCap className="w-6 h-6" />}
           href="/admin/training"
-          className="lg:col-span-3"
+          className="lg:col-span-2"
         />
       </div>
     </div>
