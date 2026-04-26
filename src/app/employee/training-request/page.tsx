@@ -35,7 +35,7 @@ export default function TrainingRequestPage() {
     const [selectedFeedbackCourse, setSelectedFeedbackCourse] = useState("");
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState("All");
-    const [statusFilter, setStatusFilter] = useState("All"); // All, New, Applied
+    const [statusFilter, setStatusFilter] = useState("New"); // All, New, Applied
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
 

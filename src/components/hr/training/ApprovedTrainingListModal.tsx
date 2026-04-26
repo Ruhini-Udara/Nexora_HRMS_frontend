@@ -8,6 +8,7 @@ interface RequestDetails {
     department: string;
     designation?: string;
     workEmail?: string;
+    personalEmail?: string;
     status: string;
     avatar?: string;
     initials?: string;
@@ -19,10 +20,13 @@ interface ApprovedTrainingListModalProps {
     requests: RequestDetails[];
     eventName: string;
     eventId?: number;
+    eventStatus?: string;
+    approvedBy?: string;
+    approvedAt?: string;
     onStatusUpdate?: () => void;
 }
 
-export default function ApprovedTrainingListModal({ isOpen, onClose, requests, eventName, eventId, onStatusUpdate }: ApprovedTrainingListModalProps) {
+export default function ApprovedTrainingListModal({ isOpen, onClose, requests, eventName, eventId, eventStatus, approvedBy, approvedAt, onStatusUpdate }: ApprovedTrainingListModalProps) {
     const [isConfirming, setIsConfirming] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -41,7 +45,7 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
             ...approvedRequests.map(req => [
                 `"${req.employeeName}"`,
                 `"${req.department}"`,
-                `"${req.workEmail || 'N/A'}"`
+                `"${req.personalEmail || req.workEmail || 'N/A'}"`
             ].join(","))
         ].join("\n");
 
@@ -97,9 +101,19 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                             <span className="material-symbols-outlined text-primary">groups</span>
                             Approved Training List
                         </h3>
-                       <p className="text-sm font-medium text-slate-500 mt-1">
-                        Participants for <span className="text-primary font-bold">&quot;{eventName}&quot;</span>
-                        </p>
+                        <div className="flex items-center gap-3">
+                            <p className="text-sm font-medium text-slate-500 mt-1">
+                                Participants for <span className="text-primary font-bold">&quot;{eventName}&quot;</span>
+                            </p>
+                            {eventStatus === 'Approved' && approvedBy && (
+                                <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-md">
+                                    <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[14px]">verified</span>
+                                    <span className="text-[10px] font-bold text-green-700 dark:text-green-300 uppercase tracking-tight">
+                                        Approved by {approvedBy} {approvedAt ? `on ${new Date(approvedAt).toLocaleDateString()}` : ''}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <button 
@@ -128,7 +142,7 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                                 <tr>
                                     <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider">Employee</th>
                                     <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider">Department</th>
-                                    <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider">Work Email</th>
+                                    <th className="py-3 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider">Email</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -154,8 +168,8 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                                         <td className="py-3 px-6 text-sm text-slate-600 dark:text-slate-300 font-medium">
                                             {req.department}
                                         </td>
-                                        <td className="py-3 px-6 text-sm text-slate-600 dark:text-slate-300 font-medium" title={req.workEmail || 'N/A'}>
-                                            {req.workEmail || 'N/A'}
+                                        <td className="py-3 px-6 text-sm text-slate-600 dark:text-slate-300 font-medium" title={req.personalEmail || req.workEmail || 'N/A'}>
+                                            {req.personalEmail || req.workEmail || 'N/A'}
                                         </td>
                                     </tr>
                                 ))}
@@ -190,13 +204,20 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                         >
                             Close
                         </button>
-                        <button
-                            onClick={() => setIsConfirming(true)}
-                            className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-sm"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">send</span>
-                            Send for Admin Approval
-                        </button>
+                        {(eventStatus === 'Pending Admin Approval' || eventStatus === 'Approved') ? (
+                            <div className="flex items-center gap-2 px-6 py-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-lg font-bold text-sm border border-slate-200 dark:border-slate-700">
+                                <span className="material-symbols-outlined text-[18px]">done_all</span>
+                                {eventStatus === 'Approved' ? 'List Finalized' : 'Sent to Admin'}
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setIsConfirming(true)}
+                                className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-sm"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">send</span>
+                                Send for Admin Approval
+                            </button>
+                        )}
                     </div>
                 </div>
 
