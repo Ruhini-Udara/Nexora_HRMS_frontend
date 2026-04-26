@@ -12,57 +12,15 @@ interface Employee {
   employmentStatus: string;
 }
 
-const allEmployees: Employee[] = [
-  {
-    id: "#EMP-2024-001",
-    name: "John Doe",
-    email: "john.doe@hrmate.com",
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuA8iMLpzmmJmH7j3dbMXxnj4o5iYoSo8h_zjUTmVHpYIwAVF7vqW3eLIenoCIfYXRA9T17LjtjGeSzHsUpsSaPwaRhuF8aKyp5kUl3eoeo-0NN3Mmjb2XGcs7Wlwp4f27828GGHCTdfvlmsm4-2Kv59ViPhmoN6NpcYdAtVUmHUoTx-ufs2DlGo-FlYQcmniS3XSCNeldflnQy762x-5IG-TC247VYHQ67KgeW9qp4_IJwDtYPwgRYiQT_Pbo7Kp68tLydES_5qRpLe",
-    department: "Product Development",
-    designation: "Product Manager",
-    joiningDate: "Jan 15, 2021",
-    employmentStatus: "Full-time",
-  },
-  {
-    id: "#EMP-2024-002",
-    name: "Sarah Smith",
-    email: "sarah.s@hrmate.com",
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDURttzoY6PQtU6lRECoWc7rVhwE63NwlG9TNRUatsVZX4lek9dh3S7IUZCihwIUC2kv34I7jCRlYEpBu0EDg1i7gh3ziAQsSFCXgdab5c_d8cZvV7T4f_BQQzuWYS8SPmdHXMA8TEmzEvJ47WboIAJYvphaGsUL2yHnIsJJDqx7baeCBv_QMqpUq3tLq3LFUf6SChDBtyN9vtAZY6rQ3LkxhHTasFbmzLW1R92vQ4wwrcdIe_a8Yiq7cmzrBQFfs-0ES7Cmg-S30_2",
-    department: "Human Resources",
-    designation: "HR Manager",
-    joiningDate: "Mar 22, 2022",
-    employmentStatus: "Full-time",
-  },
-  {
-    id: "#EMP-2024-045",
-    name: "Michael Kearney",
-    email: "m.kearney@hrmate.com",
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuB1Yg9pfj8NjSM-sr4GG-WR_G58fse0e6MyHmlTxVUkrqaU6RTFDxdM7g_R3ZGZln6zlTHUWR2xCODW3tl5D1ULjEB_nwLhT4XlTavV3y-O2OAtCpW1Zstk_H7eDCRVbSkBSktUgXwtd9YElkL3io233GFZFgQtz8FjS1mF9BDLAqzjTHWlPTeVk0JKN0HdUi3p7-26KwSTmPcKrChMUNNgLWQ4fU3n_C1ddgDdVl8PD0IGipLnM3H5mTXkzMA61UVKfGLGHWqUFwBh",
-    department: "Engineering",
-    designation: "Engineer",
-    joiningDate: "Jul 10, 2020",
-    employmentStatus: "Full-time",
-  },
-  {
-    id: "#EMP-2024-098",
-    name: "Emily Watson",
-    email: "emily.w@hrmate.com",
-    department: "Sales & Marketing",
-    designation: "Sales Executive",
-    joiningDate: "Oct 05, 2023",
-    employmentStatus: "Contract",
-  },
-  {
-    id: "#EMP-2024-112",
-    name: "David Chen",
-    email: "david.chen@hrmate.com",
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuC-YbZuyJW9xRrJ8SFGCU1rojUwZZE-sKnQDGsd0zyeV7Q8AwXbs3Dl6cKIQiLq7cJjC7aeNJEpJkXskJ3REDiHEMEUP4JJHKGTmhQHQh_0erz_RzFz1ikTkpkywUX9QTFQVTEGODcbK7KxViTwaWdrRFmWKkFjvI02s6BlpKEFsuGXUuBVEz_xoROU5Gfwx0gC5_H9Fto8kC6WDUv3epAYcqUKx0EAMfnAAOezaSiRDWm0sOFAXD1NJ_aIxDCDh1RuXY4SqFiRBQqt",
-    department: "Operations",
-    designation: "Support Staff",
-    joiningDate: "Feb 28, 2019",
-    employmentStatus: "Full-time",
-  },
-];
+interface ApiEmployee {
+  employeeCode?: string;
+  fullName?: string;
+  email?: string;
+  department?: string;
+  designation?: { designationName?: string };
+  dateJoined?: string;
+  employeeType?: string;
+}
 
 interface EmployeeTableProps {
   department: string;
@@ -80,7 +38,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     fetch("http://localhost:8080/api/employees")
       .then(res => res.json())
       .then((data) => {
-        const fetchedEmployees: Employee[] = data.map((emp: any) => ({
+        const fetchedEmployees: Employee[] = data.map((emp: ApiEmployee) => ({
           id: emp.employeeCode || "",
           name: emp.fullName || "",
           email: emp.email || "",
