@@ -115,18 +115,21 @@ export default function TrainingRequestsTable() {
     // Handle auto-selection when filters change
     useEffect(() => {
         if (filteredEvents.length > 0) {
-            // If no event is selected, or the selected event is no longer in the filtered list
             const isCurrentlyVisible = filteredEvents.some(e => e.id === selectedEventId);
             if (!selectedEventId || !isCurrentlyVisible) {
                 const firstVisibleId = filteredEvents[0].id;
                 if (selectedEventId !== firstVisibleId) {
-                    setSelectedEventId(firstVisibleId);
+                    Promise.resolve().then(() => {
+                        setSelectedEventId(firstVisibleId);
+                    });
                 }
             }
         } else {
             if (selectedEventId !== null) {
-                setSelectedEventId(null);
-                setRequests([]);
+                Promise.resolve().then(() => {
+                    setSelectedEventId(null);
+                    setRequests([]);
+                });
             }
         }
     }, [filteredEvents, selectedEventId]);
