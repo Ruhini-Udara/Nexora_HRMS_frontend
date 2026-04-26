@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, User, X, Mail, Building2, Briefcase, BadgeCheck } from "lucide-react";
 import api from "@/lib/axiosInstance";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface Employee {
   id: string;
@@ -30,6 +31,9 @@ interface EmployeeTableProps {
 }
 
 export default function EmployeeTable({ department, jobTitle, status }: EmployeeTableProps) {
+  const { user, token } = useAuthStore();
+  const isAdmin = user?.role === 'ROLE_ADMIN';
+
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [editForm, setEditForm] = useState<Employee | null>(null);
@@ -78,8 +82,27 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     return matchesDepartment && matchesJobTitle && matchesStatus;
   });
 
-  const handleDelete = (employeeId: string) => {
-    setEmployees(employees.filter((emp) => emp.id !== employeeId));
+  const handleDelete = async (employeeId: string) => {
+    if (window.confirm("Are you sure you want to delete this employee?")) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/employees/${employeeId}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          setEmployees(employees.filter((emp) => emp.id !== employeeId));
+        } else {
+          console.error("Failed to delete employee");
+          alert("Failed to delete employee. Please try again.");
+        }
+      } catch (error) {
+        console.error("Error deleting employee:", error);
+        alert("An error occurred while deleting the employee.");
+      }
+    }
   };
 
   const handleEdit = (employee: Employee) => {
@@ -410,12 +433,14 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                     >
                       <Edit size={18} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(employee.id)}
-                      className="hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDelete(employee.id)}
+                        className="hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

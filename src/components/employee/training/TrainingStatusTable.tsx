@@ -15,6 +15,7 @@ type TrainingRequest = {
     trainingTime: string;
     status: "Approved" | "Pending" | "Rejected";
     eventStatus?: string;
+    eventRejectionReason?: string;
     rejectionReason?: string;
     attendanceConfirmed: boolean;
 };
@@ -33,6 +34,22 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
     const [selectedRejection, setSelectedRejection] = useState<string | null>(null);
+    const [isDecliningInvitation, setIsDecliningInvitation] = useState(false);
+
+    const formatTime = (timeStr: string) => {
+        if (!timeStr || timeStr === "TBD") return "10:00 AM";
+        if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+        
+        try {
+            const [hours, minutes] = timeStr.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return `${hour12}:${minutes} ${ampm}`;
+        } catch {
+            return timeStr;
+        }
+    };
 
     useEffect(() => {
         let isMounted = true;
@@ -70,6 +87,22 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
         setRequests(prev => prev.map(r => r.id === requestId ? { ...r, attendanceConfirmed: true } : r));
         setIsConfirmingAttendance(false);
         setSelectedRequest(null);
+    };
+
+    const handleDeclineInvitation = async (requestId: number) => {
+        try {
+            await api.put(`/api/training/requests/${requestId}/status`, {
+                status: 'Rejected',
+                rejectionReason: 'Declined by employee.'
+            });
+            setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Rejected', rejectionReason: 'Declined by employee.' } : r));
+        } catch (err) {
+            console.error("Failed to decline invitation", err);
+            alert("Failed to decline invitation. Please try again.");
+        } finally {
+            setIsDecliningInvitation(false);
+            setSelectedRequest(null);
+        }
     };
 
     return (
@@ -114,7 +147,9 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                             request.status === "Approved"
                                                 ? request.eventStatus === "Approved"
                                                     ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                                    : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                                                    : request.eventStatus === "Rejected"
+                                                        ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                                                        : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                                                 : request.status === "Pending"
                                                     ? "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
                                                     : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
@@ -123,19 +158,25 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                 request.status === "Approved"
                                                     ? request.eventStatus === "Approved"
                                                         ? "bg-emerald-500"
-                                                        : "bg-blue-500"
+                                                        : request.eventStatus === "Rejected"
+                                                            ? "bg-red-500"
+                                                            : "bg-blue-500"
                                                     : request.status === "Pending"
                                                         ? "bg-amber-500"
                                                         : "bg-red-500"
                                             }`}></span>
                                             {request.status === "Approved" 
-                                                ? request.eventStatus === "Approved" ? "Approved" : "HR Approved" 
+                                                ? request.eventStatus === "Approved" 
+                                                    ? "Approved" 
+                                                    : request.eventStatus === "Rejected"
+                                                        ? "Rejected (List)"
+                                                        : "HR Approved" 
                                                 : request.status}
                                         </span>
                                     </td>
                                     <td className="py-4 px-4">
                                         <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{request.trainingDate}</p>
-                                        <p className="text-[11px] text-slate-400">{request.trainingTime}</p>
+                                        <p className="text-[11px] text-slate-400">{formatTime(request.trainingTime)}</p>
                                     </td>
                                     <td className="py-4 px-4 text-center">
                                         {request.status === "Approved" ? (
@@ -158,8 +199,30 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                         >
                                                             Confirm Attendance
                                                         </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                setSelectedRequest(request);
+                                                                setIsDecliningInvitation(true);
+                                                            }}
+                                                            className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-100 text-[11px] font-bold rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
+                                                        >
+                                                            Reject
+                                                        </button>
                                                     </div>
                                                 )
+                                            ) : request.eventStatus === "Rejected" ? (
+                                                <div className="flex items-center justify-center">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSelectedRejection(request.eventRejectionReason || "The training list was rejected by the administrator. HR will update and resubmit shortly.");
+                                                            setIsRejectionModalOpen(true);
+                                                        }}
+                                                        className="text-red-500 text-[11px] font-semibold hover:text-red-700 hover:underline cursor-pointer transition-colors flex items-center gap-1"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[14px]">info</span>
+                                                        View Reason
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <div className="flex items-center justify-center gap-2">
                                                     <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 border border-blue-100 rounded-lg dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/30 flex items-center gap-1.5">
@@ -185,8 +248,9 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                         setSelectedRejection(request.rejectionReason || "No reason provided.");
                                                         setIsRejectionModalOpen(true);
                                                     }}
-                                                    className="text-slate-400 text-[11px] font-semibold hover:text-slate-600 hover:underline cursor-pointer transition-colors"
+                                                    className="text-red-500 text-[11px] font-semibold hover:text-red-700 hover:underline cursor-pointer transition-colors flex items-center gap-1"
                                                 >
+                                                    <span className="material-symbols-outlined text-[14px]">info</span>
                                                     View Reason
                                                 </button>
                                             </div>
@@ -307,6 +371,44 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                 className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                             >
                                 Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Decline Invitation Modal */}
+            {isDecliningInvitation && selectedRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200 border border-slate-100">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                    cancel
+                                </span>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900">Decline Invitation?</h3>
+                                <p className="text-sm text-slate-500 mt-1">
+                                    Are you sure you want to decline the invitation for <strong>{selectedRequest.trainingTitle}</strong>? This action cannot be undone.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 mt-8">
+                            <button
+                                onClick={() => {
+                                    setIsDecliningInvitation(false);
+                                    setSelectedRequest(null);
+                                }}
+                                className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                                Back
+                            </button>
+                             <button
+                                onClick={() => handleDeclineInvitation(selectedRequest.id)}
+                                className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
+                            >
+                                Yes, Decline
                             </button>
                         </div>
                     </div>

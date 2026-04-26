@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import TrainingRequestDetailsModal from "@/components/hr/training/TrainingRequestDetailsModal";
 import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTrainingListModal";
@@ -20,12 +20,15 @@ type TrainingEvent = {
     status: string;
     expectedParticipants?: number;
     reason?: string;
+    approvedBy?: string;
+    approvedAt?: string;
 };
 
 export default function TrainingRequestsTable() {
     const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
+    const [selectedStatus, setSelectedStatus] = useState<string>("Not Sent");
     const [requests, setRequests] = useState<TrainingRequest[]>([]);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
     
@@ -46,9 +49,6 @@ export default function TrainingRequestsTable() {
                 if (isMounted) {
                     const sorted = res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
                     setEvents(sorted);
-                    if (sorted.length > 0) {
-                        setSelectedEventId(sorted[0].id);
-                    }
                 }
             })
             .catch(err => {
@@ -93,9 +93,18 @@ export default function TrainingRequestsTable() {
     const [rejectionModal, setRejectionModal] = useState<{isOpen: boolean, requestId: number | null}>({isOpen: false, requestId: null});
     const [rejectionReason, setRejectionReason] = useState("");
 
-    const filteredEvents = selectedCategory === "All"
-        ? events
-        : events.filter(e => e.category === selectedCategory);
+    const filteredEvents = useMemo(() => {
+        return events.filter(e => {
+            const matchesCategory = selectedCategory === "All" || e.category === selectedCategory;
+            const isSent = e.status === 'Pending Admin Approval' || e.status === 'Approved';
+            const isRejected = e.status === 'Rejected';
+            
+            const matchesStatus = selectedStatus === "All" || 
+                                 (selectedStatus === "Sent" && isSent) || 
+                                 (selectedStatus === "Not Sent" && (!isSent || isRejected));
+            return matchesCategory && matchesStatus;
+        });
+    }, [events, selectedCategory, selectedStatus]);
 
     // Event Pagination Logic
     const totalPagesEvents = Math.ceil(filteredEvents.length / eventsPerPage);
@@ -103,7 +112,29 @@ export default function TrainingRequestsTable() {
     const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
     const currentEvents = filteredEvents.slice(indexOfFirstEvent, indexOfLastEvent);
 
-    const filteredRequests = selectedEventId
+    // Handle auto-selection when filters change
+    useEffect(() => {
+        if (filteredEvents.length > 0) {
+            const isCurrentlyVisible = filteredEvents.some(e => e.id === selectedEventId);
+            if (!selectedEventId || !isCurrentlyVisible) {
+                const firstVisibleId = filteredEvents[0].id;
+                if (selectedEventId !== firstVisibleId) {
+                    Promise.resolve().then(() => {
+                        setSelectedEventId(firstVisibleId);
+                    });
+                }
+            }
+        } else {
+            if (selectedEventId !== null) {
+                Promise.resolve().then(() => {
+                    setSelectedEventId(null);
+                    setRequests([]);
+                });
+            }
+        }
+    }, [filteredEvents, selectedEventId]);
+
+    const filteredRequests = selectedEventId && filteredEvents.some(e => e.id === selectedEventId)
         ? requests.filter(req => req.eventId === selectedEventId)
         : [];
 
@@ -183,7 +214,15 @@ export default function TrainingRequestsTable() {
                             </thead>
                             <tbody className="divide-y divide-primary/5">
                                 {events.filter(evt => evt.status === 'Rejected').map((evt) => (
-                                    <tr key={evt.id} className="hover:bg-primary/5 transition-colors">
+                                    <tr 
+                                        key={evt.id} 
+                                        onClick={() => setSelectedEventId(evt.id)}
+                                        className={`transition-colors cursor-pointer ${
+                                            selectedEventId === evt.id 
+                                            ? 'bg-primary/10 border-l-4 border-l-primary' 
+                                            : 'hover:bg-primary/5 border-l-4 border-l-transparent'
+                                        }`}
+                                    >
                                         <td className="px-6 py-4 text-sm font-semibold">{evt.title}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600">{evt.category}</td>
                                         <td className="px-6 py-4">
@@ -197,7 +236,8 @@ export default function TrainingRequestsTable() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <button 
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     setSelectedEventId(evt.id);
                                                     setIsListModalOpen(true);
                                                 }}
@@ -208,7 +248,7 @@ export default function TrainingRequestsTable() {
                                         </td>
                                         <td className="px-6 py-4 w-48">
                                             {evt.status === 'Rejected' && evt.reason && (
-                                                <p className="text-sm text-slate-600 break-words line-clamp-2" title={evt.reason}>
+                                                <p className="text-sm text-red-600 font-medium break-words line-clamp-2" title={evt.reason}>
                                                     {evt.reason}
                                                 </p>
                                             )}
@@ -230,26 +270,49 @@ export default function TrainingRequestsTable() {
                         </span>
                         Available Training Events
                     </h2>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-500">Filter by Type:</span>
-                        <div className="relative">
-                            <select
-                                value={selectedCategory}
-                                onChange={(e) => {
-                                    setSelectedCategory(e.target.value);
-                                    // Reset selected event and pagination when filter changes
-                                    setSelectedEventId(null);
-                                    setCurrentPageEvents(1);
-                                }}
-                                className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
-                            >
-                                <option value="All">All Types</option>
-                                <option value="Internal">Internal</option>
-                                <option value="External">External</option>
-                            </select>
-                            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">
-                                arrow_drop_down
-                            </span>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-slate-500">Type:</span>
+                            <div className="relative">
+                                <select
+                                    value={selectedCategory}
+                                    onChange={(e) => {
+                                        setSelectedCategory(e.target.value);
+                                        setSelectedEventId(null);
+                                        setCurrentPageEvents(1);
+                                    }}
+                                    className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
+                                >
+                                    <option value="All">All Types</option>
+                                    <option value="Internal">Internal</option>
+                                    <option value="External">External</option>
+                                </select>
+                                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">
+                                    arrow_drop_down
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-slate-500">Status:</span>
+                            <div className="relative">
+                                <select
+                                    value={selectedStatus}
+                                    onChange={(e) => {
+                                        setSelectedStatus(e.target.value);
+                                        setSelectedEventId(null);
+                                        setCurrentPageEvents(1);
+                                    }}
+                                    className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
+                                >
+                                    <option value="All">All Status</option>
+                                    <option value="Sent">Already Sent</option>
+                                    <option value="Not Sent">Not Sent Yet</option>
+                                </select>
+                                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">
+                                    arrow_drop_down
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -261,6 +324,8 @@ export default function TrainingRequestsTable() {
                             date={event.proposedStartDate || "TBD"}
                             time={formatTime(event.time)}
                             category={event.category}
+                            status={event.status}
+                            reason={event.reason}
                             hideActions={true}
                             isSelected={selectedEventId === event.id}
                             onClick={() => setSelectedEventId(event.id)}
@@ -487,6 +552,9 @@ export default function TrainingRequestsTable() {
                 requests={filteredRequests}
                 eventName={selectedEvent?.title || "Selected Training"}
                 eventId={selectedEvent?.id}
+                eventStatus={selectedEvent?.status}
+                approvedBy={selectedEvent?.approvedBy}
+                approvedAt={selectedEvent?.approvedAt}
                 onStatusUpdate={() => {
                     // Refresh events to show updated status
                     api.get('/api/training/events')
