@@ -8,6 +8,7 @@ interface SessionSummaryCardProps {
     date: string;
     location: string;
     trainer: string;
+    expectedParticipants: number;
 }
 
 export default function SessionSummaryCard({
@@ -16,42 +17,51 @@ export default function SessionSummaryCard({
     date,
     location,
     trainer,
+    expectedParticipants,
 }: SessionSummaryCardProps) {
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between">
             <div className="flex justify-between items-start">
                 <div>
-                    <span className="px-2.5 py-1 rounded bg-primary text-white text-[10px] font-bold uppercase tracking-widest mb-3 inline-block">
+                    <span className="px-2 py-0.5 rounded bg-primary text-white text-[9px] font-bold uppercase tracking-widest mb-2 inline-block">
                         {type}
                     </span>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 uppercase tracking-tight leading-tight">
                         {title}
                     </h3>
                 </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 pt-6 border-t border-gray-100">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100">
                 <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1">
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">
                         Date & Time
                     </span>
-                    <span className="text-gray-700 dark:text-gray-200 font-medium">
+                    <span className="text-sm text-gray-700 dark:text-gray-200 font-semibold">
                         {date}
                     </span>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1">
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">
                         Location
                     </span>
-                    <span className="text-gray-700 dark:text-gray-200 font-medium">
+                    <span className="text-sm text-gray-700 dark:text-gray-200 font-semibold truncate" title={location}>
                         {location}
                     </span>
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1">
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">
                         Trainer
                     </span>
-                    <span className="text-gray-700 dark:text-gray-200 font-medium">
+                    <span className="text-sm text-gray-700 dark:text-gray-200 font-semibold truncate" title={trainer}>
                         {trainer}
+                    </span>
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">
+                        Expected
+                    </span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200 font-semibold">
+                        {expectedParticipants} Participants
                     </span>
                 </div>
             </div>
