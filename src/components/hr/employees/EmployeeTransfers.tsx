@@ -73,18 +73,18 @@ export default function EmployeeTransfers() {
     const [rejectReason, setRejectReason] = useState("");
     const [rejectReasonError, setRejectReasonError] = useState(false);
 
-    React.useEffect(() => {
-        loadRequests();
-    }, []);
-
-    const loadRequests = async () => {
+    const loadRequests = React.useCallback(async () => {
         try {
             const data = await getAllTransferRequests();
             setRequests(data);
         } catch (error) {
             console.error("Failed to load requests", error);
         }
-    };
+    }, []);
+
+    React.useEffect(() => {
+        loadRequests();
+    }, [loadRequests]);
 
     // ── Handlers ─────────────────────────────────────────────────────
     const handleView = (req: TransferRequest) => {
@@ -184,11 +184,6 @@ export default function EmployeeTransfers() {
     const paginatedRequests = filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     const verifiedCount = requests.filter((r) => r.status === "VERIFIED_BY_HR").length;
 
-    const formatDate = (iso: string) => {
-        if (!iso) return "—";
-        const d = new Date(iso);
-        return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    };
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">

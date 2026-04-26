@@ -24,6 +24,7 @@ export interface TransferRequest {
     documents: TransferDocument[];
     submittedAt?: string;
     createdAt?: string;
+    hrRemark?: string;
 }
 
 // Internal mapping function to map DTO from backend to frontend interface
@@ -53,6 +54,7 @@ const mapDtoToFrontend = (dto: any): TransferRequest => {
         documents: docs,
         submittedAt: dto.createdAt || '',
         createdAt: dto.createdAt || '',
+        hrRemark: dto.remarks || '',
     };
 };
 
@@ -88,10 +90,10 @@ export const createTransferRequest = async (request: Partial<TransferRequest>): 
     return mapDtoToFrontend(response.data);
 };
 
-export const updateTransferStatus = async (idStr: string, status: string): Promise<TransferRequest> => {
+export const updateTransferStatus = async (idStr: string, status: string, remarks?: string): Promise<TransferRequest> => {
     const numericId = parseInt(idStr.replace('TRF-', ''), 10);
     const response = await api.put(`/transfer-requests/${numericId}/status`, null, {
-        params: { status }
+        params: { status, remarks }
     });
     return mapDtoToFrontend(response.data);
 };

@@ -4,7 +4,6 @@ import React, { useState, useRef } from 'react';
 import TransferRequestPage from '@/components/TransferRequestPage';
 import { TransferRequest, getAllTransferRequests } from '@/lib/api/transferRequests';
 
-type RequestStatus = 'NEW' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 const statusStyles: Record<string, { label: string; classes: string }> = {
     NEW: { label: 'Draft', classes: 'bg-slate-100 text-slate-600' },
     SUBMITTED: { label: 'Pending', classes: 'bg-yellow-50 text-yellow-600' },
@@ -198,7 +197,7 @@ export default function Page() {
 
                             <div className="space-y-2 pt-4 border-t border-slate-100">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reason for Transfer</p>
-                                <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl italic">"{viewRequest.reason}"</p>
+                                <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl italic">&quot;{viewRequest.reason}&quot;</p>
                             </div>
 
                             {viewRequest.documents && viewRequest.documents.length > 0 && (

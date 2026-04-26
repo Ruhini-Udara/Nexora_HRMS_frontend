@@ -26,6 +26,21 @@ const welfareSchema = z.object({
 
 type WelfareFormData = z.infer<typeof welfareSchema>;
 
+// ── Status Badge Component ──────────────────────────────────────────
+const StatusBadge = ({ status }: { status: RequestStatus }) => {
+    const config: Record<RequestStatus, string> = {
+        'New': 'bg-slate-100 text-slate-600',
+        'Submitted for Certification': 'bg-yellow-50 text-yellow-600',
+        'Approved': 'bg-green-50 text-green-600',
+        'Rejected': 'bg-red-50 text-red-600',
+    };
+    return (
+        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${config[status]}`}>
+            {status === 'New' ? 'Saved' : status}
+        </span>
+    );
+};
+
 // ── Constants & Mocks ───────────────────────────────────────────────
 const welfareTypes = [
     'Family Funeral',
@@ -183,79 +198,6 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
     );
 };
 
-// ── Active Request Banner ───────────────────────────────────────────
-const ActiveRequestBanner: React.FC<{ request: WelfareRequest }> = ({ request }) => {
-    const statusConfig: Record<RequestStatus, { label: string; color: string; bg: string }> = {
-        'New': { label: 'New', color: 'text-slate-600', bg: 'bg-slate-100' },
-        'Submitted for Certification': { label: 'Submitted for Certification', color: 'text-yellow-600', bg: 'bg-yellow-50' },
-        'Approved': { label: 'Approved', color: 'text-green-600', bg: 'bg-green-50' },
-        'Rejected': { label: 'Rejected', color: 'text-red-600', bg: 'bg-red-50' },
-    };
-    const cfg = statusConfig[request.status];
-
-    return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-            <div className="p-4 border-b border-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-[20px]">info</span>
-                <h2 className="font-bold text-slate-800 text-sm">Active Welfare Request</h2>
-            </div>
-            <div className="p-8">
-                <div className="flex items-center gap-4 p-6 bg-amber-50 border border-amber-200 rounded-xl">
-                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-amber-600 text-2xl">pending_actions</span>
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="font-bold text-slate-800 text-sm">You already have an active request</h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                            Request <span className="font-bold">{request.id}</span> is currently <span className={`font-bold ${cfg.color}`}>{cfg.label}</span>.
-                            Wait for its resolution to edit or submit a new one.
-                        </p>
-                    </div>
-                    <span className={`text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider ${cfg.color} ${cfg.bg}`}>
-                        {cfg.label}
-                    </span>
-                </div>
-
-                <div className="mt-6 grid grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Welfare Type</p>
-                        <p className="text-sm text-slate-700">{request.welfareType}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Amount Requested</p>
-                        <p className="text-sm text-slate-700">LKR {request.amount}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Employee Type</p>
-                        <p className="text-sm text-slate-700">{request.employeeType}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date of Request</p>
-                        <p className="text-sm text-slate-700">{request.dateOfRequest}</p>
-                    </div>
-                    {request.specialRemark && (
-                        <div className="col-span-2 space-y-1">
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Special Remark</p>
-                            <p className="text-sm text-slate-700">{request.specialRemark}</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Documents attached */}
-                <div className="mt-6 space-y-2">
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Documents Submitted</p>
-                    <div className="flex flex-wrap gap-2">
-                        {request.documents.supporting_document && (
-                            <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                                <span className="material-symbols-outlined text-xs">check_circle</span> Supporting Document
-                            </span>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 // ── Main Component ──────────────────────────────────────────────────
 export default function WelfareRequestPage() {
@@ -288,9 +230,19 @@ export default function WelfareRequestPage() {
         },
     });
 
-    useEffect(() => {
-        loadRequests();
+    const loadRequests = useCallback(async () => {
+        try {
+            const data = await getAllWelfareRequests();
+            setRequests(data);
+        } catch (error) {
+            console.error("Failed to load requests", error);
+        }
     }, []);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadRequests();
+    }, [loadRequests]);
 
     // When editingDraft changes, populate form with draft data
     useEffect(() => {
@@ -302,6 +254,7 @@ export default function WelfareRequestPage() {
                 specialRemark: editingDraft.specialRemark || '',
             });
             // Also populate docSlots with existing document name
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setDocSlots(prev => prev.map(slot => ({
                 ...slot,
                 file: null,
@@ -309,15 +262,6 @@ export default function WelfareRequestPage() {
             })));
         }
     }, [editingDraft, reset]);
-
-    const loadRequests = async () => {
-        try {
-            const data = await getAllWelfareRequests();
-            setRequests(data);
-        } catch (error) {
-            console.error("Failed to load requests", error);
-        }
-    };
 
     const resetForm = () => {
         setEditingDraft(null);
@@ -428,20 +372,6 @@ export default function WelfareRequestPage() {
     const handleEditDraft = (req: WelfareRequest) => {
         setEditingDraft(req);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const StatusBadge = ({ status }: { status: RequestStatus }) => {
-        const config: Record<RequestStatus, string> = {
-            'New': 'bg-slate-100 text-slate-600',
-            'Submitted for Certification': 'bg-yellow-50 text-yellow-600',
-            'Approved': 'bg-green-50 text-green-600',
-            'Rejected': 'bg-red-50 text-red-600',
-        };
-        return (
-            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${config[status]}`}>
-                {status === 'New' ? 'Saved' : status}
-            </span>
-        );
     };
 
     const filteredRequests = requests.filter(req =>
@@ -826,7 +756,7 @@ export default function WelfareRequestPage() {
                             {viewRequest.specialRemark && (
                                 <div className="space-y-2 pt-4 border-t border-slate-100">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Special Remark</p>
-                                    <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl italic">"{viewRequest.specialRemark}"</p>
+                                    <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl italic">&quot;{viewRequest.specialRemark}&quot;</p>
                                 </div>
                             )}
 

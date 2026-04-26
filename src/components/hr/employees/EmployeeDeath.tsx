@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DeathRequestForm } from './DeathRequestForm';
 import { 
     DeathRequest, 
@@ -52,18 +52,19 @@ export default function EmployeeDeath() {
     
     const [viewRequest, setViewRequest] = useState<DeathRequest | null>(null);
 
-    useEffect(() => {
-        loadRequests();
-    }, []);
-
-    const loadRequests = async () => {
+    const loadRequests = useCallback(async () => {
         try {
             const data = await getAllDeathRequests();
             setRequests(data);
         } catch (error) {
             console.error("Failed to load death requests", error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadRequests();
+    }, [loadRequests]);
 
     const showSuccess = (msg: string) => {
         setSuccessMessage(msg);
