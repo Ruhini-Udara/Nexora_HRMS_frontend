@@ -7,6 +7,7 @@ import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTraining
 import { TrainingRequest } from '@/types/training';
 import api from '@/lib/axiosInstance';
 import { formatTime } from '@/lib/utils';
+import { useAuthStore } from '@/store/useAuthStore';
 
 
 type TrainingEvent = {
@@ -35,6 +36,8 @@ export default function TrainingRequestsTable() {
     // Pagination for Requests
     const [currentPageRequests, setCurrentPageRequests] = useState(1);
     const requestsPerPage = 10;
+
+    const { user } = useAuthStore();
 
     useEffect(() => {
         let isMounted = true;
@@ -384,7 +387,10 @@ export default function TrainingRequestsTable() {
                                                 {request.status !== 'Approved' && (
                                                     <button 
                                                         onClick={() => {
-                                                            api.put(`/api/training/requests/${request.id}/status`, { status: 'Approved' })
+                                                            api.put(`/api/training/requests/${request.id}/status`, { 
+                                                                status: 'Approved',
+                                                                approverId: user?.id
+                                                            })
                                                                 .then(() => {
                                                                     setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
                                                                     setToast({ message: `Request from ${request.employeeName} approved!`, type: 'success' });
@@ -528,7 +534,8 @@ export default function TrainingRequestsTable() {
                                     if (rejectionModal.requestId) {
                                         api.put(`/api/training/requests/${rejectionModal.requestId}/status`, { 
                                             status: 'Rejected', 
-                                            rejectionReason 
+                                            rejectionReason,
+                                            approverId: user?.id
                                         })
                                         .then(() => {
                                             setRequests(requests.map(r => r.id === rejectionModal.requestId ? { ...r, status: "Rejected", rejectionReason } : r));

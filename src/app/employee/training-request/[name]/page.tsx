@@ -6,6 +6,7 @@ import { uploadDocument } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import { formatTime } from "@/lib/utils";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Toast } from "@/components/ui/Toast";
 
 interface TrainingEvent {
     id: number;
@@ -41,6 +42,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
     const [department, setDepartment] = useState("");
     const [designation, setDesignation] = useState("");
     const [workEmail, setWorkEmail] = useState("");
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
     const decodedName = name ? decodeURIComponent(name) : "";
     const formattedTitle = decodedName
@@ -103,11 +105,13 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
             };
 
             await api.post('/api/training/requests', payload);
-            alert("Application submitted successfully!");
-            router.push('/employee/training-request');
+            setToast({ message: "Application submitted successfully!", type: 'success' });
+            setTimeout(() => {
+                router.push('/employee/training-request');
+            }, 2000);
         } catch (error) {
             console.error("Submission failed", error);
-            alert("Failed to submit application. Please try again.");
+            setToast({ message: "Failed to submit application. Please try again.", type: 'error' });
         } finally {
             setIsSubmitting(false);
         }
@@ -404,6 +408,15 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Toast Notifications */}
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
             )}
         </form>
     );
