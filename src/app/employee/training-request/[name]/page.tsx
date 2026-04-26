@@ -188,10 +188,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <input
                                 type="text"
                                 value={employeeName}
-                                onChange={(e) => setEmployeeName(e.target.value)}
-                                placeholder="e.g. John Doe"
-                                required
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border"
+                                className="w-full bg-slate-100/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-[13px] text-slate-500 dark:text-slate-400 font-medium px-4 py-3 outline-none border cursor-not-allowed"
+                                readOnly
                             />
                         </div>
                         <div>
@@ -199,10 +197,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <input
                                 type="text"
                                 value={epfNumber}
-                                onChange={(e) => setEpfNumber(e.target.value)}
-                                placeholder="e.g. 12345"
-                                required
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border"
+                                className="w-full bg-slate-100/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-[13px] text-slate-500 dark:text-slate-400 font-medium px-4 py-3 outline-none border cursor-not-allowed"
+                                readOnly
                             />
                         </div>
                         <div>
@@ -223,10 +219,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <input
                                 type="text"
                                 value={department}
-                                onChange={(e) => setDepartment(e.target.value)}
-                                placeholder="e.g. Engineering"
-                                required
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border"
+                                className="w-full bg-slate-100/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-[13px] text-slate-500 dark:text-slate-400 font-medium px-4 py-3 outline-none border cursor-not-allowed"
+                                readOnly
                             />
                         </div>
                         <div>
@@ -234,10 +228,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <input
                                 type="text"
                                 value={designation}
-                                onChange={(e) => setDesignation(e.target.value)}
-                                placeholder="e.g. Software Engineer"
-                                required
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border"
+                                className="w-full bg-slate-100/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-[13px] text-slate-500 dark:text-slate-400 font-medium px-4 py-3 outline-none border cursor-not-allowed"
+                                readOnly
                             />
                         </div>
                         <div>
@@ -245,12 +237,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             <input
                                 type="email"
                                 value={workEmail}
-                                onChange={(e) => setWorkEmail(e.target.value)}
-                                placeholder="john.doe@nexora.com"
-                                required
-                                pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-                                title="Please enter a valid email address"
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 invalid:[&:not(:placeholder-shown):not(:focus)]:ring-red-500"
+                                className="w-full bg-slate-100/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-[13px] text-slate-500 dark:text-slate-400 font-medium px-4 py-3 outline-none border cursor-not-allowed"
+                                readOnly
                             />
                         </div>
                     </div>
