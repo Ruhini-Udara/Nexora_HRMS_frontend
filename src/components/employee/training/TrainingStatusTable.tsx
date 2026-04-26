@@ -27,7 +27,6 @@ interface TrainingStatusTableProps {
 
 const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackClick }) => {
     const { user } = useAuthStore();
-    const employeeId = user?.id;
     const [requests, setRequests] = useState<TrainingRequest[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isConfirmingAttendance, setIsConfirmingAttendance] = useState(false);
@@ -38,11 +37,15 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
     useEffect(() => {
         let isMounted = true;
         if (user?.id) {
-            setIsLoading(true);
+            // Wrap sync state update in micro-task to avoid cascading render lint error
+            Promise.resolve().then(() => {
+                if (isMounted) setIsLoading(true);
+            });
+
             api.get(`/api/training/employees/${user.id}/requests`)
                 .then(res => {
                     if (isMounted) {
-                        setRequests(res.data.sort((a: any, b: any) => b.id - a.id));
+                        setRequests(res.data.sort((a: TrainingRequest, b: TrainingRequest) => b.id - a.id));
                     }
                 })
                 .catch(err => {

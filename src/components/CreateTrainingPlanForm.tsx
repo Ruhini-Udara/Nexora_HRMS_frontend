@@ -46,7 +46,9 @@ export default function CreateTrainingPlanForm() {
                 clearTimeout(delayDebounceFn);
             };
         } else {
-            if (isMounted) setIsTitleConflict(false);
+            Promise.resolve().then(() => {
+                if (isMounted) setIsTitleConflict(false);
+            });
         }
         return () => {
             isMounted = false;

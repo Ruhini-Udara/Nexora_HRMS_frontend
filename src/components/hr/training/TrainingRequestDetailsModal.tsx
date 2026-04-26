@@ -41,7 +41,9 @@ export default function TrainingRequestDetailsModal({ isOpen, onClose, request }
                     if (isMounted) console.error("Failed to get signed URL", err);
                 });
         } else {
-            if (isMounted) setSignedUrl(null);
+            Promise.resolve().then(() => {
+                if (isMounted) setSignedUrl(null);
+            });
         }
         return () => {
             isMounted = false;

@@ -488,7 +488,7 @@ export default function TrainingRequestsTable() {
                     // Refresh events to show updated status
                     api.get('/api/training/events')
                         .then(res => {
-                            setEvents(res.data.sort((a: any, b: any) => b.id - a.id));
+                            setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id));
                         });
                 }}
             />
