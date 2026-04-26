@@ -2,73 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { getAllTransferRequests, updateTransferStatus, TransferRequest, TransferStatus } from "@/lib/api/transferRequests";
 
-// ── Types ───────────────────────────────────────────────────────────
-type TransferStatus = "SUBMITTED" | "VERIFIED_BY_HR" | "PENDING_ADMIN" | "REJECTED";
-
-interface TransferDocument {
-    key: string;
-    label: string;
-    filename: string;
-}
-
-interface TransferRequest {
-    id: string;
-    epfNumber: string;
-    employeeName: string;
-    designation: string;
-    branch: string;
-    currentBranch: string;
-    targetBranch: string;
-    transferType: string;
-    reason: string;
-    requestDate: string;
-    expectedDate: string;
-    status: TransferStatus;
-    documents: TransferDocument[];
-    hrRemark: string;
-}
-
-// ── Mock Data ───────────────────────────────────────────────────────
-const MOCK_REQUESTS: TransferRequest[] = [
-    {
-        id: "TRF-2024-001",
-        epfNumber: "12345",
-        employeeName: "Kasun Perera",
-        designation: "Software Engineer",
-        branch: "Colombo Branch",
-        currentBranch: "Colombo Branch",
-        targetBranch: "Kandy Branch",
-        transferType: "Requested by Employee",
-        reason: "Career advancement to senior role available at Kandy Branch. Completed 3 years in current role with consistently high performance ratings.",
-        requestDate: "2024-10-01",
-        expectedDate: "2024-11-15",
-        status: "SUBMITTED",
-        documents: [
-            { key: "justification", label: "Transfer Justification Letter", filename: "transfer_justification_kasun.pdf" },
-            { key: "proof", label: "Performance Review", filename: "performance_review_2024.pdf" },
-        ],
-        hrRemark: "",
-    },
-    {
-        id: "TRF-2024-002",
-        epfNumber: "67890",
-        employeeName: "Nimali Silva",
-        designation: "Marketing Manager",
-        branch: "Kandy Branch",
-        currentBranch: "Kandy Branch",
-        targetBranch: "Galle Branch",
-        transferType: "Requested by Employee",
-        reason: "Relocating due to spouse's job transfer to Galle district. Need to move closer to family residence for personal commitments.",
-        requestDate: "2024-10-05",
-        expectedDate: "2024-12-01",
-        status: "SUBMITTED",
-        documents: [
-            { key: "justification", label: "Transfer Justification Letter", filename: "relocation_letter_nimali.pdf" },
-        ],
-        hrRemark: "",
-    }
-];
+// Mock Data removed, using real API data.
 
 // ── Status badge config ─────────────────────────────────────────────
 const statusConfig: Record<TransferStatus, { label: string; classes: string }> = {
@@ -87,6 +23,10 @@ const statusConfig: Record<TransferStatus, { label: string; classes: string }> =
     REJECTED: {
         label: "Rejected",
         classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    },
+    NEW: {
+        label: "Draft",
+        classes: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400",
     },
 };
 
@@ -121,7 +61,7 @@ const ReadOnlyTextarea = ({ label, value, rows = 3 }: { label: string; value: st
 
 // ── Main Component ──────────────────────────────────────────────────
 export default function EmployeeTransfers() {
-    const [requests, setRequests] = useState<TransferRequest[]>(MOCK_REQUESTS);
+    const [requests, setRequests] = useState<TransferRequest[]>([]);
     const [selectedRequest, setSelectedRequest] = useState<TransferRequest | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
@@ -132,6 +72,19 @@ export default function EmployeeTransfers() {
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
     const [rejectReasonError, setRejectReasonError] = useState(false);
+
+    React.useEffect(() => {
+        loadRequests();
+    }, []);
+
+    const loadRequests = async () => {
+        try {
+            const data = await getAllTransferRequests();
+            setRequests(data);
+        } catch (error) {
+            console.error("Failed to load requests", error);
+        }
+    };
 
     // ── Handlers ─────────────────────────────────────────────────────
     const handleView = (req: TransferRequest) => {
@@ -154,33 +107,32 @@ export default function EmployeeTransfers() {
         setRejectReasonError(false);
     };
 
-    const handleConfirmReject = () => {
+    const handleConfirmReject = async () => {
         if (!rejectReason.trim()) {
             setRejectReasonError(true);
             return;
         }
         if (!selectedRequest) return;
-        setRequests((prev) =>
-            prev.map((req) =>
-                req.id === selectedRequest.id
-                    ? { ...req, status: "REJECTED", hrRemark: rejectReason }
-                    : req
-            )
-        );
-        handleCloseRejectDialog();
-        handleCloseModal();
+        
+        try {
+            const updatedReq = await updateTransferStatus(selectedRequest.id, "REJECTED", rejectReason);
+            setRequests((prev) => prev.map((req) => req.id === updatedReq.id ? updatedReq : req));
+            handleCloseRejectDialog();
+            handleCloseModal();
+        } catch (error) {
+            console.error("Failed to reject request", error);
+        }
     };
 
-    const handleVerify = () => {
+    const handleVerify = async () => {
         if (!selectedRequest) return;
-        setRequests((prev) =>
-            prev.map((req) =>
-                req.id === selectedRequest.id
-                    ? { ...req, status: "VERIFIED_BY_HR" }
-                    : req
-            )
-        );
-        handleCloseModal();
+        try {
+            const updatedReq = await updateTransferStatus(selectedRequest.id, "VERIFIED_BY_HR");
+            setRequests((prev) => prev.map((req) => req.id === updatedReq.id ? updatedReq : req));
+            handleCloseModal();
+        } catch (error) {
+            console.error("Failed to verify request", error);
+        }
     };
 
     const handleShowVerifiedList = () => {
@@ -196,20 +148,19 @@ export default function EmployeeTransfers() {
         setCurrentPage(1);
     };
 
-    const handleConfirmSubmitToAdmin = () => {
-        const verifiedIds = requests
-            .filter((r) => r.status === "VERIFIED_BY_HR")
-            .map((r) => r.id);
+    const handleConfirmSubmitToAdmin = async () => {
+        const verifiedRequests = requests.filter((r) => r.status === "VERIFIED_BY_HR");
         
-        setRequests((prev) =>
-            prev.map((req) =>
-                verifiedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_ADMIN" as TransferStatus }
-                    : req
-            )
-        );
-        setShowConfirmDialog(false);
-        setShowVerifiedList(false);
+        try {
+            await Promise.all(verifiedRequests.map(r => updateTransferStatus(r.id, "PENDING_ADMIN")));
+            
+            // Reload all after successful update
+            await loadRequests();
+            setShowConfirmDialog(false);
+            setShowVerifiedList(false);
+        } catch (error) {
+            console.error("Failed to submit to admin", error);
+        }
     };
 
     // ── Filtered list ─────────────────────────────────────────────────

@@ -5,8 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-// ── Types ───────────────────────────────────────────────────────────
-type RequestStatus = 'New' | 'Submitted for Certification' | 'Approved' | 'Rejected';
+import { WelfareRequest, getAllWelfareRequests, createWelfareRequest, updateWelfareRequest, RequestStatus } from "@/lib/api/welfareRequests";
 
 interface DocumentSlot {
     key: 'supporting_document';
@@ -17,28 +16,12 @@ interface DocumentSlot {
     existingName?: string;
 }
 
-export interface WelfareRequest {
-    id: string;
-    status: RequestStatus;
-    welfareType: string;
-    employeeType: string;
-    amount: string;
-    specialRemark: string;
-    dateOfRequest: string;
-    documents: {
-        supporting_document?: string;
-    };
-    submittedAt?: string;
-    createdAt: string;
-}
-
 // ── Zod Validation Schema ───────────────────────────────────────────
 const welfareSchema = z.object({
     welfareType: z.string().min(1, 'Welfare type is required'),
     employeeType: z.string().min(1, 'Employee type is required'),
     amount: z.string().min(1, 'Amount is required'),
     specialRemark: z.string().optional(),
-    dateOfRequest: z.string().min(1, 'Date of request is required'),
 });
 
 type WelfareFormData = z.infer<typeof welfareSchema>;
@@ -64,22 +47,6 @@ const employeeProfile = {
     branch: "Colombo Headquarters"
 };
 
-// Initial Mock Requests (Past ones)
-const initialRequests: WelfareRequest[] = [
-    {
-        id: "WLF-2024-882",
-        status: "Approved",
-        welfareType: "Family Funeral",
-        employeeType: "Permanent",
-        amount: "50000",
-        specialRemark: "Past request.",
-        dateOfRequest: "2024-10-22",
-        documents: { supporting_document: "doc_882.pdf" },
-        submittedAt: "2024-10-22T10:00:00Z",
-        createdAt: "2024-10-22T10:00:00Z"
-    }
-];
-
 // ── Confirmation Modal ──────────────────────────────────────────────
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -92,7 +59,7 @@ const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onCo
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <span className="material-symbols-outlined text-[#8B3A00]">warning</span>
@@ -292,38 +259,79 @@ const ActiveRequestBanner: React.FC<{ request: WelfareRequest }> = ({ request })
 
 // ── Main Component ──────────────────────────────────────────────────
 export default function WelfareRequestPage() {
-    const [requests, setRequests] = useState<WelfareRequest[]>(initialRequests);
+    const [requests, setRequests] = useState<WelfareRequest[]>([]);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-
-    const activeRequest = requests.find((r) => r.status !== 'Approved' && r.status !== 'Rejected');
-    const draftRequest = requests.find((r) => r.status === 'New');
-    const isEditing = draftRequest !== undefined;
-    const submittedRequest = activeRequest && activeRequest.status === 'Submitted for Certification' ? activeRequest : null;
+    const [editingDraft, setEditingDraft] = useState<WelfareRequest | null>(null);
+    const [viewRequest, setViewRequest] = useState<WelfareRequest | null>(null);
+    const [formKey, setFormKey] = useState(0);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [pendingAction, setPendingAction] = useState<'draft' | 'submit' | null>(null);
 
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
-        { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null, existingName: draftRequest?.documents['supporting_document'] },
+        { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null },
     ]);
-
-    const todayISO = new Date().toISOString().split('T')[0];
 
     const {
         register,
         handleSubmit,
         getValues,
+        reset,
         formState: { errors },
     } = useForm<WelfareFormData>({
         resolver: zodResolver(welfareSchema),
         defaultValues: {
-            welfareType: draftRequest?.welfareType || '',
-            employeeType: draftRequest?.employeeType || '',
-            amount: draftRequest?.amount || '',
-            specialRemark: draftRequest?.specialRemark || '',
-            dateOfRequest: draftRequest?.dateOfRequest || todayISO,
+            welfareType: '',
+            employeeType: '',
+            amount: '',
+            specialRemark: '',
         },
     });
 
+    useEffect(() => {
+        loadRequests();
+    }, []);
 
+    // When editingDraft changes, populate form with draft data
+    useEffect(() => {
+        if (editingDraft) {
+            reset({
+                welfareType: editingDraft.welfareType || '',
+                employeeType: editingDraft.employeeType || '',
+                amount: editingDraft.amount || '',
+                specialRemark: editingDraft.specialRemark || '',
+            });
+            // Also populate docSlots with existing document name
+            setDocSlots(prev => prev.map(slot => ({
+                ...slot,
+                file: null,
+                existingName: editingDraft.documents[slot.key]
+            })));
+        }
+    }, [editingDraft, reset]);
+
+    const loadRequests = async () => {
+        try {
+            const data = await getAllWelfareRequests();
+            setRequests(data);
+        } catch (error) {
+            console.error("Failed to load requests", error);
+        }
+    };
+
+    const resetForm = () => {
+        setEditingDraft(null);
+        reset({ welfareType: '', employeeType: '', amount: '', specialRemark: '' });
+        setDocSlots([
+            { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null },
+        ]);
+        setFormKey(prev => prev + 1);
+    };
+
+    const showSuccess = (msg: string) => {
+        setSuccessMessage(msg);
+        setTimeout(() => setSuccessMessage(null), 3000);
+    };
 
     const handleDocUpload = useCallback((key: DocumentSlot['key'], file: File) => {
         setDocSlots((prev) =>
@@ -345,40 +353,81 @@ export default function WelfareRequestPage() {
         .filter((s) => s.mandatory)
         .some((s) => s.file === null && s.existingName === undefined);
 
-    const buildPayload = (data: WelfareFormData, status: RequestStatus): WelfareRequest => ({
-        id: draftRequest?.id || `WLF-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
-        status,
-        welfareType: data.welfareType,
-        employeeType: data.employeeType,
-        amount: data.amount,
-        specialRemark: data.specialRemark || '',
-        dateOfRequest: data.dateOfRequest,
-        documents: {
-            supporting_document: docSlots.find((s) => s.key === 'supporting_document')?.file?.name
-                || docSlots.find((s) => s.key === 'supporting_document')?.existingName,
-        },
-        createdAt: draftRequest?.createdAt || new Date().toISOString(),
-        submittedAt: status === 'Submitted for Certification' ? new Date().toISOString() : undefined,
-    });
+    const buildPayload = (data: WelfareFormData, status: RequestStatus): Partial<WelfareRequest> => {
+        const supportingDoc = docSlots.find(s => s.key === 'supporting_document');
+        const docName = supportingDoc?.file?.name || supportingDoc?.existingName;
 
-    const handleSaveAsDraft = () => {
-        const values = getValues();
-        const payload = buildPayload(values, 'New');
-        const updated = requests.filter((r) => r.id !== payload.id);
-        setRequests([...updated, payload]);
+        return {
+            status,
+            welfareType: data.welfareType,
+            employeeType: data.employeeType,
+            amount: data.amount,
+            specialRemark: data.specialRemark || '',
+            documents: {
+                supporting_document: docName
+            }
+        };
     };
 
-    const onSubmitValid = () => {
-        if (mandatoryDocsMissing) return;
-        setShowConfirmModal(true);
+    const triggerSaveAsDraft = () => {
+        setPendingAction('draft');
     };
 
-    const handleConfirmSubmit = () => {
+    const triggerSubmit = () => {
+        setPendingAction('submit');
+    };
+
+    // Called when form validation passes (for both draft save and submit)
+    const onFormValid = async (data: WelfareFormData) => {
+        if (pendingAction === 'draft') {
+            const payload = buildPayload(data, 'New');
+            try {
+                if (editingDraft) {
+                    const updated = await updateWelfareRequest(editingDraft.id, payload);
+                    setRequests(prev => prev.map(r => r.id === editingDraft.id ? updated : r));
+                    showSuccess(`Draft ${updated.id} updated successfully`);
+                } else {
+                    const savedReq = await createWelfareRequest(payload);
+                    setRequests(prev => [...prev, savedReq]);
+                    showSuccess(`Draft ${savedReq.id} saved successfully`);
+                }
+                resetForm();
+            } catch (error) {
+                console.error("Failed to save draft", error);
+            }
+        } else if (pendingAction === 'submit') {
+            if (mandatoryDocsMissing) {
+                setPendingAction(null);
+                return;
+            }
+            setShowConfirmModal(true);
+        }
+        setPendingAction(null);
+    };
+
+    const handleConfirmSubmit = async () => {
         const values = getValues();
         const payload = buildPayload(values, 'Submitted for Certification');
-        const updated = requests.filter((r) => r.id !== payload.id);
-        setRequests([...updated, payload]);
-        setShowConfirmModal(false);
+        try {
+            if (editingDraft) {
+                const updated = await updateWelfareRequest(editingDraft.id, payload);
+                setRequests(prev => prev.map(r => r.id === editingDraft.id ? updated : r));
+                showSuccess(`Request ${updated.id} submitted for certification`);
+            } else {
+                const savedReq = await createWelfareRequest(payload);
+                setRequests(prev => [...prev, savedReq]);
+                showSuccess(`Request ${savedReq.id} submitted for certification`);
+            }
+            setShowConfirmModal(false);
+            resetForm();
+        } catch (error) {
+            console.error("Failed to submit request", error);
+        }
+    };
+
+    const handleEditDraft = (req: WelfareRequest) => {
+        setEditingDraft(req);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const StatusBadge = ({ status }: { status: RequestStatus }) => {
@@ -390,213 +439,223 @@ export default function WelfareRequestPage() {
         };
         return (
             <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${config[status]}`}>
-                {status}
+                {status === 'New' ? 'Saved' : status}
             </span>
         );
     };
 
-    const filteredRequests = requests.filter(req => 
-        req.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredRequests = requests.filter(req =>
+        req.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         req.welfareType.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const draftCount = requests.filter(r => r.status === 'New').length;
 
     return (
         <div className="max-w-[1400px] w-full mx-auto grid grid-cols-12 gap-8">
             <div className="col-span-12 lg:col-span-9 space-y-8">
                 <h1 className="text-2xl font-bold text-primary">Welfare Request Management</h1>
 
-                {/* Submitted Active Request View */}
-                {submittedRequest ? (
-                    <ActiveRequestBanner request={submittedRequest} />
-                ) : (
-                    /* Create/Edit Request Form */
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-                        <form onSubmit={handleSubmit(onSubmitValid)}>
-                            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                {/* Success Toast */}
+                {successMessage && (
+                    <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <span className="material-symbols-outlined text-green-600">check_circle</span>
+                        <p className="text-sm font-semibold text-green-700">{successMessage}</p>
+                    </div>
+                )}
+
+                {/* Create/Edit Request Form */}
+                <div key={formKey} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+                    <form onSubmit={handleSubmit(onFormValid)}>
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary text-[20px]">assignment</span>
+                                <h2 className="font-bold text-slate-800 text-sm uppercase tracking-tight">
+                                    {editingDraft ? `Edit Draft — ${editingDraft.id}` : 'Create New Welfare Request'}
+                                </h2>
+                            </div>
+                            {editingDraft && (
                                 <div className="flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-primary text-[20px]">assignment</span>
-                                    <h2 className="font-bold text-slate-800 text-sm uppercase tracking-tight">
-                                        {isEditing ? 'Edit New Welfare Request' : 'Create Welfare Request'}
-                                    </h2>
-                                </div>
-                                {isEditing && (
-                                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded uppercase tracking-wider">
-                                        Status: New (Unsubmitted)
+                                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded uppercase tracking-wider">
+                                        Editing Draft
                                     </span>
-                                )}
+                                    <button
+                                        type="button"
+                                        onClick={resetForm}
+                                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                                        title="Cancel editing and start new"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">close</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-8 space-y-8">
+                            {/* Profile Display Info */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6">
+                                <h3 className="text-xs font-bold text-slate-800 mb-4 uppercase tracking-tight">Employee Details</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">EPF Number</p>
+                                        <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.epfNumber}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">Employee Name</p>
+                                        <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.employeeName}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">Designation</p>
+                                        <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.designation}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">Date Joined</p>
+                                        <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.dateJoined}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">Branch</p>
+                                        <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.branch}</p>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="p-8 space-y-8">
-                                {/* Profile Display Info */}
-                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6">
-                                    <h3 className="text-xs font-bold text-slate-800 mb-4 uppercase tracking-tight">Employee Details</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase">EPF Number</p>
-                                            <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.epfNumber}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase">Employee Name</p>
-                                            <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.employeeName}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase">Designation</p>
-                                            <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.designation}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase">Date Joined</p>
-                                            <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.dateJoined}</p>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase">Branch</p>
-                                            <p className="text-sm font-semibold text-slate-700 mt-1">{employeeProfile.branch}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Form Fields Matrix */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Welfare Type Selection <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            {...register('welfareType')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 bg-white ${errors.welfareType ? 'border-red-400' : 'border-slate-200'}`}
-                                        >
-                                            <option value="">Select Welfare Type</option>
-                                            {welfareTypes.map((type) => (
-                                                <option key={type} value={type}>{type}</option>
-                                            ))}
-                                        </select>
-                                        {errors.welfareType && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.welfareType.message}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Employee Type <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            {...register('employeeType')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 bg-white ${errors.employeeType ? 'border-red-400' : 'border-slate-200'}`}
-                                        >
-                                            <option value="">Select Employee Type</option>
-                                            {employeeTypes.map((type) => (
-                                                <option key={type} value={type}>{type}</option>
-                                            ))}
-                                        </select>
-                                        {errors.employeeType && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.employeeType.message}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Request Amount (LKR) <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="number"
-                                            {...register('amount')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 ${errors.amount ? 'border-red-400' : 'border-slate-200'}`}
-                                            placeholder="Special workplace allowance amount"
-                                        />
-                                        {errors.amount && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.amount.message}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Date of Request <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="date"
-                                            {...register('dateOfRequest')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 ${errors.dateOfRequest ? 'border-red-400' : 'border-slate-200'}`}
-                                        />
-                                        {errors.dateOfRequest && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.dateOfRequest.message}</p>
-                                        )}
-                                    </div>
+                            {/* Form Fields Matrix */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        Welfare Type Selection <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        {...register('welfareType')}
+                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 bg-white ${errors.welfareType ? 'border-red-400' : 'border-slate-200'}`}
+                                    >
+                                        <option value="">Select Welfare Type</option>
+                                        {welfareTypes.map((type) => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
+                                    {errors.welfareType && (
+                                        <p className="text-xs text-red-500 mt-1">{errors.welfareType.message}</p>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                        Special Remark
+                                        Employee Type <span className="text-red-500">*</span>
                                     </label>
-                                    <textarea
-                                        {...register('specialRemark')}
-                                        rows={4}
-                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 resize-none ${errors.specialRemark ? 'border-red-400' : 'border-slate-200'}`}
-                                        placeholder="Add any special remarks regarding your request here..."
-                                    />
-                                    {errors.specialRemark && (
-                                        <p className="text-xs text-red-500 mt-1">{errors.specialRemark.message}</p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Supporting Documents
-                                        </label>
-                                        {mandatoryDocsMissing && (
-                                            <span className="text-[10px] text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-xs">warning</span>
-                                                Upload supporting document to submit
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2">
-                                        {docSlots.map((slot) => (
-                                            <DocUploadCard
-                                                key={slot.key}
-                                                slot={slot}
-                                                onUpload={handleDocUpload}
-                                                onRemove={handleDocRemove}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="px-8 py-6 border-t border-slate-100 flex items-center justify-between">
-                                <button
-                                    type="button"
-                                    onClick={handleSaveAsDraft}
-                                    className="px-8 py-3 bg-white border border-slate-200 rounded-lg font-bold text-slate-600 text-sm hover:bg-slate-100 transition-all"
-                                >
-                                    Save
-                                </button>
-                                <div className="relative group">
-                                    <button
-                                        type="submit"
-                                        disabled={mandatoryDocsMissing}
-                                        className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${mandatoryDocsMissing
-                                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                            : 'bg-primary text-white hover:opacity-90 shadow-lg shadow-orange-500/20'
-                                            }`}
+                                    <select
+                                        {...register('employeeType')}
+                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 bg-white ${errors.employeeType ? 'border-red-400' : 'border-slate-200'}`}
                                     >
-                                        <span className="material-symbols-outlined text-[20px]">send</span>
-                                        Submit for Certification
-                                    </button>
-                                    {mandatoryDocsMissing && (
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-[10px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                            Upload a supporting document to submit
-                                        </div>
+                                        <option value="">Select Employee Type</option>
+                                        {employeeTypes.map((type) => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
+                                    {errors.employeeType && (
+                                        <p className="text-xs text-red-500 mt-1">{errors.employeeType.message}</p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        Request Amount (LKR) <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        {...register('amount')}
+                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 ${errors.amount ? 'border-red-400' : 'border-slate-200'}`}
+                                        placeholder="Special workplace allowance amount"
+                                    />
+                                    {errors.amount && (
+                                        <p className="text-xs text-red-500 mt-1">{errors.amount.message}</p>
                                     )}
                                 </div>
                             </div>
-                        </form>
-                    </div>
-                )}
+
+                            <div className="space-y-2">
+                                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                    Special Remark
+                                </label>
+                                <textarea
+                                    {...register('specialRemark')}
+                                    rows={4}
+                                    className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 resize-none ${errors.specialRemark ? 'border-red-400' : 'border-slate-200'}`}
+                                    placeholder="Add any special remarks regarding your request here..."
+                                />
+                                {errors.specialRemark && (
+                                    <p className="text-xs text-red-500 mt-1">{errors.specialRemark.message}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        Supporting Documents
+                                    </label>
+                                    {mandatoryDocsMissing && (
+                                        <span className="text-[10px] text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-xs">warning</span>
+                                            Upload supporting document to submit
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2">
+                                    {docSlots.map((slot) => (
+                                        <DocUploadCard
+                                            key={slot.key}
+                                            slot={slot}
+                                            onUpload={handleDocUpload}
+                                            onRemove={handleDocRemove}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="px-8 py-6 border-t border-slate-100 flex items-center justify-between">
+                            <button
+                                type="submit"
+                                onClick={triggerSaveAsDraft}
+                                className="px-8 py-3 bg-white border border-slate-200 rounded-lg font-bold text-slate-600 text-sm hover:bg-slate-100 transition-all"
+                            >
+                                {editingDraft ? 'Update Draft' : 'Save as Draft'}
+                            </button>
+                            <div className="relative group">
+                                <button
+                                    type="submit"
+                                    onClick={triggerSubmit}
+                                    disabled={mandatoryDocsMissing}
+                                    className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${mandatoryDocsMissing
+                                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                        : 'bg-primary text-white hover:opacity-90 shadow-lg shadow-orange-500/20'
+                                        }`}
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">send</span>
+                                    Submit for Certification
+                                </button>
+                                {mandatoryDocsMissing && (
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-[10px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                        Upload a supporting document to submit
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </form>
+                </div>
 
                 {/* Status Table */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                        <h2 className="font-bold text-slate-800 uppercase tracking-tight text-sm">Welfare Request Status</h2>
+                        <div className="flex items-center gap-3">
+                            <h2 className="font-bold text-slate-800 uppercase tracking-tight text-sm">Welfare Request Status</h2>
+                            {draftCount > 0 && (
+                                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-xs">edit_note</span>
+                                    {draftCount} draft{draftCount > 1 ? 's' : ''}
+                                </span>
+                            )}
+                        </div>
                         <div className="relative w-64">
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
                             <input
@@ -616,23 +675,49 @@ export default function WelfareRequestPage() {
                                     <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase">Welfare Type</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase">Request Date</th>
                                     <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase text-center">Status</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {filteredRequests.length > 0 ? (
                                     filteredRequests.map((req) => (
-                                        <tr key={req.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <tr key={req.id} className={`hover:bg-slate-50/50 transition-colors ${req.status === 'New' ? 'bg-amber-50/30' : ''}`}>
                                             <td className="px-6 py-4 text-xs font-bold text-slate-800">{req.id}</td>
                                             <td className="px-6 py-4 text-xs text-slate-600">{req.welfareType}</td>
-                                            <td className="px-6 py-4 text-xs text-slate-600">{req.dateOfRequest}</td>
+                                            <td className="px-6 py-4 text-xs text-slate-600">{req.dateOfRequest || '—'}</td>
                                             <td className="px-6 py-4 text-center">
-                                                <StatusBadge status={req.status} />
+                                                <StatusBadge status={req.status as RequestStatus} />
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {req.status === 'New' && (
+                                                        <button
+                                                            onClick={() => handleEditDraft(req)}
+                                                            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                                                editingDraft?.id === req.id
+                                                                    ? 'bg-amber-100 text-amber-700'
+                                                                    : 'bg-slate-100 text-slate-600 hover:bg-primary hover:text-white'
+                                                            }`}
+                                                        >
+                                                            <span className="material-symbols-outlined text-[16px]">
+                                                                {editingDraft?.id === req.id ? 'edit_document' : 'edit'}
+                                                            </span>
+                                                            {editingDraft?.id === req.id ? 'Editing...' : 'Edit & Submit'}
+                                                        </button>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => setViewRequest(req)}
+                                                        className="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-slate-100"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[20px]">visibility</span>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">
+                                        <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-500">
                                             No requests found.
                                         </td>
                                     </tr>
@@ -692,7 +777,89 @@ export default function WelfareRequestPage() {
                     </div>
                 </div>
             </div>
-            
+
+            {/* View Welfare Request Modal */}
+            {viewRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-primary">volunteer_activism</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800">Welfare Request Details</h3>
+                                    <p className="text-[11px] text-slate-500 font-medium">{viewRequest.id}</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setViewRequest(null)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors text-slate-400"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                            <div className="grid grid-cols-2 gap-8">
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Request Date</p>
+                                    <p className="text-sm text-slate-700 font-semibold">{viewRequest.dateOfRequest || '—'}</p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
+                                    <StatusBadge status={viewRequest.status as RequestStatus} />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Welfare Type</p>
+                                    <p className="text-sm text-slate-700 font-semibold">{viewRequest.welfareType}</p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Requested</p>
+                                    <p className="text-sm text-slate-700 font-semibold text-primary">LKR {viewRequest.amount}</p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Employee Type</p>
+                                    <p className="text-sm text-slate-700 font-semibold">{viewRequest.employeeType}</p>
+                                </div>
+                            </div>
+
+                            {viewRequest.specialRemark && (
+                                <div className="space-y-2 pt-4 border-t border-slate-100">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Special Remark</p>
+                                    <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl italic">"{viewRequest.specialRemark}"</p>
+                                </div>
+                            )}
+
+                            {viewRequest.documents.supporting_document && (
+                                <div className="space-y-3 pt-4 border-t border-slate-100">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attached Documents</p>
+                                    <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white shadow-sm max-w-sm">
+                                        <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-slate-400 text-lg">description</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-bold text-slate-700 truncate">Supporting Document</p>
+                                            <p className="text-[10px] text-slate-400 truncate">{viewRequest.documents.supporting_document}</p>
+                                        </div>
+                                        <button className="text-slate-300 hover:text-primary transition-colors">
+                                            <span className="material-symbols-outlined text-lg">download</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-6 bg-slate-50 flex justify-end">
+                            <button 
+                                onClick={() => setViewRequest(null)}
+                                className="px-8 py-2.5 bg-slate-800 text-white text-sm font-bold rounded-xl hover:opacity-90 shadow-lg shadow-slate-900/10 transition-all"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <ConfirmSubmitModal
                 isOpen={showConfirmModal}
                 onClose={() => setShowConfirmModal(false)}

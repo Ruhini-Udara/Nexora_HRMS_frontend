@@ -1,10 +1,12 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+import { createTransferRequest, updateTransferRequest, TransferRequest, TransferStatus } from '@/lib/api/transferRequests';
+
 // ── Types ───────────────────────────────────────────────────────────
-type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+type RequestStatus = 'NEW' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
 interface DocumentSlot {
     key: 'justification_letter' | 'proof_documents';
@@ -15,27 +17,14 @@ interface DocumentSlot {
     existingName?: string;
 }
 
-export interface TransferRequest {
-    id: string;
-    status: RequestStatus;
-    currentLocation: string;
-    targetLocation: string;
-    expectedDate: string;
-    validReason: string;
-    documents: {
-        justification_letter?: string;
-        proof_documents?: string;
-    };
-    submittedAt?: string;
-    createdAt: string;
-}
+// TransferRequest interface is imported from API
 
 // ── Zod Validation Schema ───────────────────────────────────────────
 const transferSchema = z.object({
     currentLocation: z.string().min(1, 'Current location is required'),
     targetLocation: z.string().min(1, 'Target location is required'),
-    expectedDate: z.string().min(1, 'Expected date is required'),
-    validReason: z.string().min(1, 'Valid reason is required'),
+    expectedDate: z.string().min(1, 'Effective date is required'),
+    validReason: z.string().min(1, 'Reason is required'),
 });
 
 type TransferFormData = z.infer<typeof transferSchema>;
@@ -178,13 +167,15 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
 
 // ── Active Request Banner ───────────────────────────────────────────
 const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }) => {
-    const statusConfig: Record<RequestStatus, { label: string; color: string; bg: string }> = {
-        DRAFT: { label: 'Draft', color: 'text-slate-600', bg: 'bg-slate-100' },
+    const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+        NEW: { label: 'Draft', color: 'text-slate-600', bg: 'bg-slate-100' },
         SUBMITTED: { label: 'Pending Approval', color: 'text-yellow-600', bg: 'bg-yellow-50' },
         APPROVED: { label: 'Approved', color: 'text-green-600', bg: 'bg-green-50' },
         REJECTED: { label: 'Rejected', color: 'text-red-600', bg: 'bg-red-50' },
+        VERIFIED_BY_HR: { label: 'Verified', color: 'text-blue-600', bg: 'bg-blue-50' },
+        PENDING_ADMIN: { label: 'Pending Admin', color: 'text-purple-600', bg: 'bg-purple-50' },
     };
-    const cfg = statusConfig[request.status];
+    const cfg = statusConfig[request.status] || statusConfig.NEW;
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -212,19 +203,19 @@ const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }
                 <div className="mt-6 grid grid-cols-2 gap-6">
                     <div className="space-y-1">
                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Current Location</p>
-                        <p className="text-sm text-slate-700">{request.currentLocation}</p>
+                        <p className="text-sm text-slate-700">{request.currentBranch}</p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Target Location</p>
-                        <p className="text-sm text-slate-700">{request.targetLocation}</p>
+                        <p className="text-sm text-slate-700">{request.targetBranch}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Expected Date</p>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Effective Date</p>
                         <p className="text-sm text-slate-700">{request.expectedDate}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Valid Reason</p>
-                        <p className="text-sm text-slate-700">{request.validReason}</p>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Reason</p>
+                        <p className="text-sm text-slate-700">{request.reason}</p>
                     </div>
                 </div>
 
@@ -232,12 +223,12 @@ const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }
                 <div className="mt-6 space-y-2">
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Documents Submitted</p>
                     <div className="flex flex-wrap gap-2">
-                        {request.documents.justification_letter && (
+                        {request.documents?.some(d => d.key === 'justification') && (
                             <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
                                 <span className="material-symbols-outlined text-xs">check_circle</span> Transfer Justification
                             </span>
                         )}
-                        {request.documents.proof_documents && (
+                        {request.documents?.some(d => d.key === 'proof') && (
                             <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
                                 <span className="material-symbols-outlined text-xs">check_circle</span> Proof Documents
                             </span>
@@ -255,8 +246,20 @@ interface TransferRequestPageProps {
     onRequestChange: (requests: TransferRequest[]) => void;
 }
 
-const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onRequestChange }) => {
+const TransferRequestPage = forwardRef<any, TransferRequestPageProps>(({ requests, onRequestChange }, ref) => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    useImperativeHandle(ref, () => ({
+        setEditingDraft: (req: TransferRequest) => {
+            setEditingDraft(req);
+        }
+    }));
+
+    const showSuccess = (msg: string) => {
+        setSuccessMessage(msg);
+        setTimeout(() => setSuccessMessage(null), 3000);
+    };
 
     // ── Document slots state ────────────────────────────────────────
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
@@ -264,12 +267,15 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
         { key: 'proof_documents', label: 'Proof Documents', icon: 'folder_open', mandatory: false, file: null },
     ]);
 
-    // ── Determine active request & form mode ────────────────────────
-    const activeRequest = requests.find((r) => r.status !== 'REJECTED');
-    const draftRequest = requests.find((r) => r.status === 'DRAFT');
-    const isEditing = draftRequest !== undefined;
-    const showForm = !activeRequest || activeRequest.status === 'DRAFT';
-    const submittedRequest = activeRequest && activeRequest.status !== 'DRAFT' ? activeRequest : null;
+    const [editingDraft, setEditingDraft] = useState<TransferRequest | null>(null);
+    const [pendingAction, setPendingAction] = useState<'draft' | 'submit' | null>(null);
+    const [formKey, setFormKey] = useState(0);
+
+    // Filter requests to find if there is a NEW draft (legacy check, but we now support multiple drafts)
+    const isEditing = !!editingDraft;
+    const submittedRequests = requests.filter(r => r.status !== 'NEW');
+    
+
 
     // ── Dynamic data ────────────────────────────────────────────────
     const currentDepartment = "Operations Division - Level 4";
@@ -279,28 +285,50 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
         register,
         handleSubmit,
         getValues,
+        reset,
         formState: { errors },
     } = useForm<TransferFormData>({
         resolver: zodResolver(transferSchema),
         defaultValues: {
-            currentLocation: draftRequest?.currentLocation || '',
-            targetLocation: draftRequest?.targetLocation || '',
-            expectedDate: draftRequest?.expectedDate || '',
-            validReason: draftRequest?.validReason || '',
+            currentLocation: '',
+            targetLocation: '',
+            expectedDate: '',
+            validReason: '',
         },
     });
 
-    // Initialize doc slots from draft if editing
+    // reset form whenever editingDraft changes
     React.useEffect(() => {
-        if (draftRequest) {
-            setDocSlots((prev) =>
-                prev.map((slot) => ({
-                    ...slot,
-                    existingName: draftRequest.documents[slot.key] || undefined,
-                }))
-            );
+        if (editingDraft) {
+            reset({
+                currentLocation: editingDraft.currentBranch || '',
+                targetLocation: editingDraft.targetBranch || '',
+                expectedDate: editingDraft.expectedDate || '',
+                validReason: editingDraft.reason || '',
+            });
+            setDocSlots(prev => prev.map(slot => ({
+                ...slot,
+                file: null,
+                existingName: editingDraft.documents?.find(d => 
+                    (slot.key === 'justification_letter' && d.key === 'justification') ||
+                    (slot.key === 'proof_documents' && d.key === 'proof')
+                )?.filename
+            })));
+        } else {
+            reset({
+                currentLocation: '',
+                targetLocation: '',
+                expectedDate: '',
+                validReason: '',
+            });
+            setDocSlots([
+                { key: 'justification_letter', label: 'Transfer Justification Letter', icon: 'description', mandatory: true, file: null },
+                { key: 'proof_documents', label: 'Proof Documents', icon: 'folder_open', mandatory: false, file: null },
+            ]);
         }
-    }, [draftRequest]);
+    }, [editingDraft, reset]);
+
+
 
     // ── Doc handlers ────────────────────────────────────────────────
     const handleDocUpload = useCallback((key: DocumentSlot['key'], file: File) => {
@@ -325,80 +353,116 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
         .some((s) => s.file === null && s.existingName === undefined);
 
     // ── Build payload helper ────────────────────────────────────────
-    const buildPayload = (data: TransferFormData, status: RequestStatus): TransferRequest => ({
-        id: draftRequest?.id || `TRF-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
-        status,
-        currentLocation: data.currentLocation,
-        targetLocation: data.targetLocation,
-        expectedDate: data.expectedDate,
-        validReason: data.validReason,
-        documents: {
-            justification_letter: docSlots.find((s) => s.key === 'justification_letter')?.file?.name
-                || docSlots.find((s) => s.key === 'justification_letter')?.existingName,
-            proof_documents: docSlots.find((s) => s.key === 'proof_documents')?.file?.name
-                || docSlots.find((s) => s.key === 'proof_documents')?.existingName,
-        },
-        createdAt: draftRequest?.createdAt || new Date().toISOString(),
-        submittedAt: status === 'SUBMITTED' ? new Date().toISOString() : undefined,
-    });
+    const buildPayload = (data: TransferFormData, status: TransferStatus): Partial<TransferRequest> => {
+        const docs = [];
+        const justificationFileName = docSlots.find((s) => s.key === 'justification_letter')?.file?.name
+                || docSlots.find((s) => s.key === 'justification_letter')?.existingName;
+        if (justificationFileName) {
+            docs.push({ key: 'justification', label: 'Transfer Justification Letter', filename: justificationFileName });
+        }
+        
+        const proofFileName = docSlots.find((s) => s.key === 'proof_documents')?.file?.name
+                || docSlots.find((s) => s.key === 'proof_documents')?.existingName;
+        if (proofFileName) {
+            docs.push({ key: 'proof', label: 'Proof Document', filename: proofFileName });
+        }
+
+        return {
+            status,
+            currentBranch: data.currentLocation,
+            targetBranch: data.targetLocation,
+            expectedDate: data.expectedDate,
+            reason: data.validReason,
+            transferType: 'Requested by Employee',
+            documents: docs,
+            requestDate: new Date().toISOString().split('T')[0],
+        };
+    };
 
     // ── Actions ─────────────────────────────────────────────────────
-    const handleSaveAsDraft = () => {
-        const values = getValues();
-        const payload = buildPayload(values, 'DRAFT');
-        // TODO: Replace with actual API call
-        console.log('Draft saved:', payload);
-        const updated = requests.filter((r) => r.id !== payload.id);
-        updated.push(payload);
-        onRequestChange(updated);
+    const resetForm = () => {
+        setEditingDraft(null);
+        setFormKey(prev => prev + 1);
+        reset({
+            currentLocation: '',
+            targetLocation: '',
+            expectedDate: '',
+            validReason: '',
+        });
+        setDocSlots([
+            { key: 'justification_letter', label: 'Transfer Justification Letter', icon: 'description', mandatory: true, file: null },
+            { key: 'proof_documents', label: 'Proof Documents', icon: 'folder_open', mandatory: false, file: null },
+        ]);
     };
 
-    const onSubmitValid = () => {
-        if (mandatoryDocsMissing) return;
-        setShowConfirmModal(true);
+    const triggerSaveAsDraft = () => {
+        setPendingAction('draft');
     };
 
-    const handleConfirmSubmit = () => {
+    const triggerSubmit = () => {
+        setPendingAction('submit');
+    };
+
+    const onFormValid = async (data: TransferFormData) => {
+        if (pendingAction === 'draft') {
+            const payload = buildPayload(data, 'NEW');
+            try {
+                if (editingDraft) {
+                    const updated = await updateTransferRequest(editingDraft.id, payload);
+                    onRequestChange(requests.map(r => r.id === updated.id ? updated : r));
+                    showSuccess(`Draft ${updated.id} updated successfully`);
+                } else {
+                    const savedReq = await createTransferRequest(payload);
+                    onRequestChange([...requests, savedReq]);
+                    showSuccess(`Draft ${savedReq.id} saved successfully`);
+                }
+                resetForm();
+            } catch (error) {
+                console.error('Failed to save draft:', error);
+            }
+        } else if (pendingAction === 'submit') {
+            if (mandatoryDocsMissing) {
+                setPendingAction(null);
+                return;
+            }
+            setShowConfirmModal(true);
+        }
+        setPendingAction(null);
+    };
+
+    const handleConfirmSubmit = async () => {
         const values = getValues();
         const payload = buildPayload(values, 'SUBMITTED');
-        // TODO: Replace with actual API call
-        console.log('Submitted:', payload);
-        const updated = requests.filter((r) => r.id !== payload.id);
-        updated.push(payload);
-        onRequestChange(updated);
-        setShowConfirmModal(false);
+        try {
+            if (editingDraft) {
+                const updated = await updateTransferRequest(editingDraft.id, payload);
+                onRequestChange(requests.map(r => r.id === updated.id ? updated : r));
+                showSuccess(`Request ${updated.id} submitted for approval`);
+            } else {
+                const savedReq = await createTransferRequest(payload);
+                onRequestChange([...requests, savedReq]);
+                showSuccess(`Request ${savedReq.id} submitted for approval`);
+            }
+            setShowConfirmModal(false);
+            resetForm();
+        } catch (error) {
+            console.error('Failed to submit request:', error);
+        }
     };
 
-    // ── Render: Active submitted request banner ─────────────────────
-    if (submittedRequest) {
-        return (
-            <div className="max-w-7xl w-full mx-auto">
-                <h1 className="text-2xl font-bold text-[#8B3A00] mb-8">Transfer Request</h1>
-                <div className="flex flex-col lg:flex-row gap-8">
-                    <div className="flex-1">
-                        <ActiveRequestBanner request={submittedRequest} />
-                    </div>
-                    <div className="w-full lg:w-80 space-y-6">
-                        <SidebarPanel />
-                    </div>
-                </div>
-                <ConfirmSubmitModal
-                    isOpen={showConfirmModal}
-                    onClose={() => setShowConfirmModal(false)}
-                    onConfirm={handleConfirmSubmit}
-                />
-            </div>
-        );
-    }
-
-    // ── Render: Form (new or edit draft) ────────────────────────────
+    // ── Render ─────────────────────────────────────────────────────
     return (
-        <div className="max-w-7xl w-full mx-auto">
-            <h1 className="text-2xl font-bold text-[#8B3A00] mb-8">Transfer Request</h1>
-
+        <div className="max-w-7xl w-full mx-auto" key={formKey}>
+            <h1 className="text-2xl font-bold text-[#8B3A00] mb-8">Transfer Request Management</h1>
+            
             <div className="flex flex-col lg:flex-row gap-8">
-                <div className="flex-1">
-                    <form onSubmit={handleSubmit(onSubmitValid)}>
+                <div className="flex-1 space-y-8">
+                    {/* List active submitted requests here if needed, but they are in the table below in page.tsx */}
+                    {submittedRequests.map(req => (
+                        <ActiveRequestBanner key={req.id} request={req} />
+                    ))}
+                    
+                    <form onSubmit={handleSubmit(onFormValid)}>
                         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                             <div className="p-8 space-y-10">
 
@@ -459,7 +523,7 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
                                     </div>
                                     <div className="space-y-2">
                                         <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Expected Date <span className="text-red-500">*</span>
+                                            Effective Date <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="date"
@@ -475,7 +539,7 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
                                 {/* Valid Reason */}
                                 <div className="space-y-2">
                                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                        Valid Reason <span className="text-red-500">*</span>
+                                        Reason <span className="text-red-500">*</span>
                                     </label>
                                     <textarea
                                         {...register('validReason')}
@@ -517,19 +581,17 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
                             {/* Footer Actions */}
                             <div className="px-8 py-6 border-t border-slate-100 flex items-center justify-between">
                                 <button
-                                    type="button"
+                                    type="submit"
                                     className="px-8 py-3 bg-white border border-slate-200 rounded-lg font-bold text-slate-600 text-sm hover:bg-slate-100 transition-all"
-                                    onClick={handleSaveAsDraft}
+                                    onClick={triggerSaveAsDraft}
                                 >
                                     {isEditing ? 'Update Draft' : 'Save as Draft'}
                                 </button>
-                                <div className="flex items-center gap-3">
-                                    <button type="button" className="px-8 py-3 border border-slate-200 rounded-lg font-bold text-slate-400 text-sm">
-                                        Back
-                                    </button>
+                                <div className="flex items-center gap-3 ml-auto">
                                     <div className="relative group">
                                         <button
                                             type="submit"
+                                            onClick={triggerSubmit}
                                             disabled={mandatoryDocsMissing}
                                             className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${mandatoryDocsMissing
                                                     ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
@@ -562,9 +624,21 @@ const TransferRequestPage: React.FC<TransferRequestPageProps> = ({ requests, onR
                 onClose={() => setShowConfirmModal(false)}
                 onConfirm={handleConfirmSubmit}
             />
+
+            {/* Success Toast */}
+            {successMessage && (
+                <div className="fixed bottom-8 right-8 z-50 animate-in slide-in-from-bottom-5 fade-in">
+                    <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700">
+                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-white text-lg">check</span>
+                        </div>
+                        <p className="text-sm font-bold tracking-tight">{successMessage}</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
-};
+});
 
 // ── Sidebar Panel ───────────────────────────────────────────────────
 const SidebarPanel = () => (
