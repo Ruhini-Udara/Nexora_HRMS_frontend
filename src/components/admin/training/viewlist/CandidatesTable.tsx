@@ -26,23 +26,36 @@ export default function CandidatesTable({ eventId }: CandidatesTableProps) {
             setIsLoading(true);
             try {
                 const res = await api.get(`/api/training/events/${eventId}/requests`);
+                
+                if (!res.data || !Array.isArray(res.data)) {
+                    setCandidates([]);
+                    return;
+                }
+
                 interface CandidateRequest {
                     id: number;
                     status: string;
                     employeeName: string;
                     department: string;
                     workEmail?: string;
+                    personalEmail?: string;
                 }
-                // Only show approved candidates in the list for admin review
-                const approvedCandidates: Candidate[] = (res.data as CandidateRequest[])
-                    .filter((req: CandidateRequest) => req.status === 'Approved')
+
+                // Map and filter candidates. 
+                // We show 'Approved' and 'Pending' candidates for the admin to review.
+                const mappedCandidates: Candidate[] = (res.data as CandidateRequest[])
+                    .filter((req: CandidateRequest) => {
+                        const status = req.status?.toLowerCase();
+                        return status === 'approved' || status === 'pending';
+                    })
                     .map((req: CandidateRequest) => ({
                         id: req.id,
                         name: req.employeeName,
                         department: req.department,
-                        email: req.workEmail || "N/A"
+                        email: req.personalEmail || req.workEmail || "N/A"
                     }));
-                setCandidates(approvedCandidates);
+                
+                setCandidates(mappedCandidates);
             } catch (err) {
                 console.error("Failed to fetch candidates for admin review", err);
             } finally {
@@ -61,7 +74,7 @@ export default function CandidatesTable({ eventId }: CandidatesTableProps) {
                     Selected Candidates
                 </h4>
                 <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-                    {candidates.length} Approved
+                    {candidates.length} Total Candidates
                 </span>
             </div>
             <div className="overflow-x-auto min-h-[150px] relative">

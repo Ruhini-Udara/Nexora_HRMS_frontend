@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import TrainingListModal from './viewlist/TrainingListModal';
 import api from '@/lib/axiosInstance';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface RequestModel {
     id: number;
@@ -27,6 +28,7 @@ interface TrainingTableProps {
 }
 
 export default function TrainingTable({ requests, setRequests }: TrainingTableProps) {
+    const { user } = useAuthStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTraining, setSelectedTraining] = useState<{ id: number, title: string, type: string, date: string, status: string, time: string, location: string, trainer: string, expectedParticipants: number } | null>(null);
     const [filterType, setFilterType] = useState("All");
@@ -72,7 +74,8 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
         try {
             await api.put(`/api/training/events/${selectedTraining.id}/status`, {
                 status: newStatus,
-                reason: confirmModal.type === 'Reject' ? rejectionReason : undefined
+                reason: confirmModal.type === 'Reject' ? rejectionReason : undefined,
+                approvedBy: confirmModal.type === 'Approve' ? user?.name : undefined
             });
 
             setRequests(prev => prev.map(req =>

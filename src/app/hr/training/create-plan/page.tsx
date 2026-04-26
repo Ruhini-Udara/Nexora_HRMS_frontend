@@ -22,12 +22,14 @@ type TrainingEvent = {
     location?: string;
     budget?: string;
     instructor?: string;
+    status?: string;
 };
 
 
 export default function CreateTrainingPlanPage() {
     const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [selectedCategory, setSelectedCategory] = useState("All");
+    const [selectedStatus, setSelectedStatus] = useState("All");
     const [selectedViewEvent, setSelectedViewEvent] = useState<TrainingEvent | null>(null);
     const [eventToDelete, setEventToDelete] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -44,9 +46,14 @@ export default function CreateTrainingPlanPage() {
 
     const categories = ["All", ...Array.from(new Set(events.map(e => e.category)))];
 
-    const filteredEvents = selectedCategory === "All"
-        ? events
-        : events.filter(e => e.category === selectedCategory);
+    const filteredEvents = events.filter(e => {
+        const matchesCategory = selectedCategory === "All" || e.category === selectedCategory;
+        const isSent = e.status === 'Pending Admin Approval' || e.status === 'Approved';
+        const matchesStatus = selectedStatus === "All" ||
+            (selectedStatus === "Sent" && isSent) ||
+            (selectedStatus === "Not Sent" && !isSent);
+        return matchesCategory && matchesStatus;
+    });
 
     // Pagination logic
     const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
@@ -60,7 +67,7 @@ export default function CreateTrainingPlanPage() {
 
     const confirmDelete = () => {
         if (!eventToDelete) return;
-        
+
         setIsDeleting(true);
         api.delete(`/api/training/events/${eventToDelete}`)
             .then(() => {
@@ -113,24 +120,44 @@ export default function CreateTrainingPlanPage() {
                         </span>
                         Available Training Events
                     </h2>
-                    <div className="relative">
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => {
-                                setSelectedCategory(e.target.value);
-                                setCurrentPage(1); // Reset to first page on filter change
-                            }}
-                            className="appearance-none bg-white text-stone-700 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 outline-none cursor-pointer hover:bg-stone-50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
-                        >
-                            {categories.map((category) => (
-                                <option key={category} value={category}>
-                                    {category === "All" ? "All Types" : category}
-                                </option>
-                            ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none text-lg">
-                            expand_more
-                        </span>
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) => {
+                                    setSelectedCategory(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="appearance-none bg-white text-stone-700 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 outline-none cursor-pointer hover:bg-stone-50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
+                            >
+                                {categories.map((category) => (
+                                    <option key={category} value={category}>
+                                        {category === "All" ? "All Types" : category}
+                                    </option>
+                                ))}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none text-lg">
+                                expand_more
+                            </span>
+                        </div>
+
+                        <div className="relative">
+                            <select
+                                value={selectedStatus}
+                                onChange={(e) => {
+                                    setSelectedStatus(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="appearance-none bg-white text-stone-700 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 outline-none cursor-pointer hover:bg-stone-50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
+                            >
+                                <option value="All">All Status</option>
+                                <option value="Sent">Already Sent</option>
+                                <option value="Not Sent">Not Sent Yet</option>
+                            </select>
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none text-lg">
+                                expand_more
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -141,6 +168,7 @@ export default function CreateTrainingPlanPage() {
                             date={event.proposedStartDate || "TBD"}
                             time={formatTime(event.time)}
                             category={event.category}
+                            status={event.status}
                             onView={() => setSelectedViewEvent(event)}
                             onEdit={() => handleEditEvent(event.id)}
                             onDelete={() => handleDeleteEvent(event.id)}
@@ -150,31 +178,30 @@ export default function CreateTrainingPlanPage() {
 
                 {filteredEvents.length > itemsPerPage && (
                     <div className="mt-10 flex items-center justify-center gap-4">
-                        <button 
+                        <button
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                             className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                         >
                             <span className="material-symbols-outlined">chevron_left</span>
                         </button>
-                        
+
                         <div className="flex items-center gap-2">
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
-                                    className={`w-10 h-10 rounded-xl font-bold text-sm transition-all shadow-sm ${
-                                        currentPage === page 
-                                        ? 'bg-primary text-white' 
-                                        : 'bg-white border border-stone-200 text-stone-600 hover:border-primary hover:text-primary'
-                                    }`}
+                                    className={`w-10 h-10 rounded-xl font-bold text-sm transition-all shadow-sm ${currentPage === page
+                                            ? 'bg-primary text-white'
+                                            : 'bg-white border border-stone-200 text-stone-600 hover:border-primary hover:text-primary'
+                                        }`}
                                 >
                                     {page}
                                 </button>
                             ))}
                         </div>
 
-                        <button 
+                        <button
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                             className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
@@ -324,10 +351,10 @@ export default function CreateTrainingPlanPage() {
 
             {/* Toast Notifications */}
             {toast && (
-                <Toast 
-                    message={toast.message} 
-                    type={toast.type} 
-                    onClose={() => setToast(null)} 
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
                 />
             )}
         </div>
