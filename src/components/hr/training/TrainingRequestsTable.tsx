@@ -129,7 +129,7 @@ export default function TrainingRequestsTable() {
                 setRequests([]);
             }
         }
-    }, [filteredEvents]);
+    }, [filteredEvents, selectedEventId]);
 
     const filteredRequests = selectedEventId && filteredEvents.some(e => e.id === selectedEventId)
         ? requests.filter(req => req.eventId === selectedEventId)
