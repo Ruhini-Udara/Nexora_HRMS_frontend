@@ -35,6 +35,12 @@ const deathSchema = z.object({
     nomineeAccount: z.string().optional(),
 });
 
+interface DeathDocuments {
+    deathCertificate?: string;
+    nomineeId?: string;
+    requestLetter?: string;
+}
+
 type DeathFormData = z.infer<typeof deathSchema>;
 
 interface DocUploadCardProps {
@@ -132,10 +138,11 @@ export function DeathRequestForm({
     useEffect(() => {
         if (initialData) {
             reset(initialData);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setDocSlots(prev => prev.map(slot => ({
                 ...slot,
                 file: null,
-                existingName: initialData.documents[slot.key as keyof typeof initialData.documents] || undefined
+                existingName: initialData.documents[slot.key as keyof DeathDocuments] || undefined
             })));
         }
     }, [initialData, reset]);
@@ -153,7 +160,7 @@ export function DeathRequestForm({
         return docSlots.some(s => s.mandatory && !s.file && !s.existingName);
     };
 
-    const onSubmit = (data: DeathFormData) => {
+    const onSubmit = () => {
         if (isAnyDocMissing()) {
             setDocError(true);
             return;
@@ -176,7 +183,7 @@ export function DeathRequestForm({
             specialRemark: formData.specialRemark || '',
             id: initialData?.id || `DTH-${Date.now()}`, 
             status: 'SUBMITTED', 
-            documents: documents as any
+            documents: documents as DeathDocuments
         });
         setShowAckPopup(false);
     };
@@ -189,7 +196,7 @@ export function DeathRequestForm({
             specialRemark: formData.specialRemark || '',
             id: initialData?.id || `DTH-${Date.now()}`, 
             status: 'NEW', 
-            documents: documents as any
+            documents: documents as DeathDocuments
         });
     };
 

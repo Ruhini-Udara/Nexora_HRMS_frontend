@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createTransferRequest, updateTransferRequest, TransferRequest, TransferStatus } from '@/lib/api/transferRequests';
 
 // ── Types ───────────────────────────────────────────────────────────
-type RequestStatus = 'NEW' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+// ── Types ───────────────────────────────────────────────────────────
 
 interface DocumentSlot {
     key: 'justification_letter' | 'proof_documents';
@@ -246,9 +246,15 @@ interface TransferRequestPageProps {
     onRequestChange: (requests: TransferRequest[]) => void;
 }
 
-const TransferRequestPage = forwardRef<any, TransferRequestPageProps>(({ requests, onRequestChange }, ref) => {
+export interface TransferRequestPageRef {
+    setEditingDraft: (req: TransferRequest) => void;
+}
+
+const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPageProps>(({ requests, onRequestChange }, ref) => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    const [editingDraft, setEditingDraft] = useState<TransferRequest | null>(null);
 
     useImperativeHandle(ref, () => ({
         setEditingDraft: (req: TransferRequest) => {
@@ -267,7 +273,6 @@ const TransferRequestPage = forwardRef<any, TransferRequestPageProps>(({ request
         { key: 'proof_documents', label: 'Proof Documents', icon: 'folder_open', mandatory: false, file: null },
     ]);
 
-    const [editingDraft, setEditingDraft] = useState<TransferRequest | null>(null);
     const [pendingAction, setPendingAction] = useState<'draft' | 'submit' | null>(null);
     const [formKey, setFormKey] = useState(0);
 
@@ -639,6 +644,8 @@ const TransferRequestPage = forwardRef<any, TransferRequestPageProps>(({ request
         </div>
     );
 });
+
+TransferRequestPage.displayName = "TransferRequestPage";
 
 // ── Sidebar Panel ───────────────────────────────────────────────────
 const SidebarPanel = () => (
