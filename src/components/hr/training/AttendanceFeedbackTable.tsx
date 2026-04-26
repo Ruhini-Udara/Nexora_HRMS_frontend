@@ -229,7 +229,7 @@ export default function AttendanceFeedbackTable() {
                 </h2>
                 {selectedEvent && eventFeedback.length > 0 && (
                     <button
-                        onClick={() => alert(`Generating feedback report for ${selectedEvent.title}...`)}
+                        onClick={() => setToast({ message: `Generating feedback report for ${selectedEvent.title}...`, type: 'info' })}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
                     >
                         <span className="material-symbols-outlined text-[18px]">summarize</span>

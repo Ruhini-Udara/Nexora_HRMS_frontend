@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '@/lib/axiosInstance';
+import { Toast } from '@/components/ui/Toast';
 
 interface RequestDetails {
     id: number;
@@ -23,6 +24,7 @@ interface ApprovedTrainingListModalProps {
 
 export default function ApprovedTrainingListModal({ isOpen, onClose, requests, eventName, eventId, onStatusUpdate }: ApprovedTrainingListModalProps) {
     const [isConfirming, setIsConfirming] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
     if (!isOpen) return null;
 
@@ -46,7 +48,7 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                     </div>
                     <div className="flex items-center gap-4">
                         <button 
-                            onClick={() => alert("Add Employee feature to be implemented")}
+                            onClick={() => setToast({ message: "Add Employee feature to be implemented", type: 'info' })}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-semibold transition-colors"
                         >
                             <span className="material-symbols-outlined text-[18px]">person_add</span>
@@ -154,14 +156,16 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                                         if (eventId) {
                                             api.put(`/api/training/events/${eventId}/status`, { status: 'Pending Admin Approval' })
                                                 .then(() => {
-                                                    alert("Training list sent to Admin for approval!");
+                                                    setToast({ message: "Training list sent to Admin for approval!", type: 'success' });
                                                     if (onStatusUpdate) onStatusUpdate();
-                                                    setIsConfirming(false);
-                                                    onClose();
+                                                    setTimeout(() => {
+                                                        setIsConfirming(false);
+                                                        onClose();
+                                                    }, 1500);
                                                 })
                                                 .catch(err => {
                                                     console.error("Failed to send to admin", err);
-                                                    alert("Failed to send for Admin approval. Please try again.");
+                                                    setToast({ message: "Failed to send for Admin approval. Please try again.", type: 'error' });
                                                     setIsConfirming(false);
                                                 });
                                         } else {
@@ -175,6 +179,14 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                             </div>
                         </div>
                     </div>
+                )}
+                {/* Toast Notifications */}
+                {toast && (
+                    <Toast 
+                        message={toast.message} 
+                        type={toast.type} 
+                        onClose={() => setToast(null)} 
+                    />
                 )}
             </div>
         </div>
