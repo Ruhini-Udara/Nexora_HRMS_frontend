@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import axiosInstance from "@/lib/axios";
+import api from "@/lib/axiosInstance";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface TrainingFeedbackModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
     courseName,
     eventId,
 }) => {
+    const { user } = useAuthStore();
     const [ratings, setRatings] = useState({
         "Course Content": 0,
         "Instructor": 0,
@@ -34,13 +36,13 @@ const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
     };
 
     const handleFinalSubmit = async () => {
-        if (!eventId) return;
+        if (!eventId || !user) return;
 
         setIsSubmitting(true);
         try {
             const payload = {
                 eventId: eventId,
-                employeeId: 1, // Hardcoded for demo
+                employeeId: user.id,
                 attendanceStatus: "Present",
                 feedback: suggestions, // Using suggestions as the main feedback text
                 courseContentRating: ratings["Course Content"],
@@ -49,7 +51,7 @@ const TrainingFeedbackModal: React.FC<TrainingFeedbackModalProps> = ({
                 suggestions: suggestions
             };
 
-            await axiosInstance.post('/training/feedback', payload);
+            await api.post('/api/training/feedback', payload);
             
             // Reset form and close
             setRatings({ "Course Content": 0, "Instructor": 0, "Overall Experience": 0 });

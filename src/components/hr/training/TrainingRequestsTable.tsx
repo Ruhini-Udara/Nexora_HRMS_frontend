@@ -5,7 +5,7 @@ import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import TrainingRequestDetailsModal from "@/components/hr/training/TrainingRequestDetailsModal";
 import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTrainingListModal";
 import { TrainingRequest } from '@/types/training';
-import axiosInstance from '@/lib/axios';
+import api from '@/lib/axiosInstance';
 import { formatTime } from '@/lib/utils';
 
 
@@ -17,6 +17,7 @@ type TrainingEvent = {
     time?: string;
     category: string;
     status: string;
+    expectedParticipants?: number;
     reason?: string;
 };
 
@@ -36,32 +37,48 @@ export default function TrainingRequestsTable() {
     const requestsPerPage = 10;
 
     useEffect(() => {
-        axiosInstance.get('/training/events')
+        let isMounted = true;
+        api.get('/api/training/events')
             .then(res => {
-                const sorted = res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
-                setEvents(sorted);
-                if (sorted.length > 0) {
-                    setSelectedEventId(sorted[0].id);
+                if (isMounted) {
+                    const sorted = res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
+                    setEvents(sorted);
+                    if (sorted.length > 0) {
+                        setSelectedEventId(sorted[0].id);
+                    }
                 }
             })
             .catch(err => {
-                console.error("Failed to fetch events", err);
-                setToast({ message: "Failed to load training events.", type: 'error' });
+                if (isMounted) {
+                    console.error("Failed to fetch events", err);
+                    setToast({ message: "Failed to load training events.", type: 'error' });
+                }
             });
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     useEffect(() => {
+        let isMounted = true;
         if (selectedEventId) {
-            axiosInstance.get(`/training/events/${selectedEventId}/requests`)
+            api.get(`/api/training/events/${selectedEventId}/requests`)
                 .then(res => {
-                    setRequests(res.data);
-                    setCurrentPageRequests(1); // Reset requests page when event changes
+                    if (isMounted) {
+                        setRequests(res.data);
+                        setCurrentPageRequests(1); // Reset requests page when event changes
+                    }
                 })
                 .catch(() => {
-                    console.error("Failed to fetch requests");
-                    setToast({ message: "Failed to load requests for this event.", type: 'error' });
+                    if (isMounted) {
+                        console.error("Failed to fetch requests");
+                        setToast({ message: "Failed to load requests for this event.", type: 'error' });
+                    }
                 });
         }
+        return () => {
+            isMounted = false;
+        };
     }, [selectedEventId]);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -287,8 +304,14 @@ export default function TrainingRequestsTable() {
 
             {/* Table Header Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <h2 className="text-xl font-bold">
+                <h2 className="text-xl font-bold flex items-center gap-3">
                     Requests for {selectedEvent ? `"${selectedEvent.title}"` : "Selected Training"}
+                    {selectedEvent?.expectedParticipants && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-lg text-xs font-bold border border-primary/20">
+                            <span className="material-symbols-outlined text-[16px]">groups</span>
+                            Expected Participants: {selectedEvent.expectedParticipants}
+                        </span>
+                    )}
                 </h2>
                 <div className="flex items-center gap-2">
                     <button 
@@ -358,28 +381,32 @@ export default function TrainingRequestsTable() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <button 
-                                                    onClick={() => {
-                                                        axiosInstance.put(`/training/requests/${request.id}/status`, { status: 'Approved' })
-                                                            .then(() => {
-                                                                setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
-                                                                setToast({ message: `Request from ${request.employeeName} approved!`, type: 'success' });
-                                                            })
-                                                            .catch(err => {
-                                                                console.error("Failed to approve request", err);
-                                                                setToast({ message: "Failed to approve request. Please try again.", type: 'error' });
-                                                            });
-                                                    }}
-                                                    className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Approve">
-                                                    <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                                                </button>
-                                                <button 
-                                                    onClick={() => {
-                                                        setRejectionModal({ isOpen: true, requestId: request.id });
-                                                    }}
-                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Reject">
-                                                    <span className="material-symbols-outlined text-[20px]">cancel</span>
-                                                </button>
+                                                {request.status !== 'Approved' && (
+                                                    <button 
+                                                        onClick={() => {
+                                                            api.put(`/api/training/requests/${request.id}/status`, { status: 'Approved' })
+                                                                .then(() => {
+                                                                    setRequests(requests.map(r => r.id === request.id ? { ...r, status: "Approved" } : r));
+                                                                    setToast({ message: `Request from ${request.employeeName} approved!`, type: 'success' });
+                                                                })
+                                                                .catch(err => {
+                                                                    console.error("Failed to approve request", err);
+                                                                    setToast({ message: "Failed to approve request. Please try again.", type: 'error' });
+                                                                });
+                                                        }}
+                                                        className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Approve">
+                                                        <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                                                    </button>
+                                                )}
+                                                {request.status !== 'Rejected' && (
+                                                    <button 
+                                                        onClick={() => {
+                                                            setRejectionModal({ isOpen: true, requestId: request.id });
+                                                        }}
+                                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Reject">
+                                                        <span className="material-symbols-outlined text-[20px]">cancel</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 w-48">
@@ -456,6 +483,14 @@ export default function TrainingRequestsTable() {
                 onClose={() => setIsListModalOpen(false)}
                 requests={filteredRequests}
                 eventName={selectedEvent?.title || "Selected Training"}
+                eventId={selectedEvent?.id}
+                onStatusUpdate={() => {
+                    // Refresh events to show updated status
+                    api.get('/api/training/events')
+                        .then(res => {
+                            setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id));
+                        });
+                }}
             />
 
             {rejectionModal.isOpen && (
@@ -491,7 +526,7 @@ export default function TrainingRequestsTable() {
                             <button
                                 onClick={() => {
                                     if (rejectionModal.requestId) {
-                                        axiosInstance.put(`/training/requests/${rejectionModal.requestId}/status`, { 
+                                        api.put(`/api/training/requests/${rejectionModal.requestId}/status`, { 
                                             status: 'Rejected', 
                                             rejectionReason 
                                         })

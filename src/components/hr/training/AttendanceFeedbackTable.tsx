@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '@/lib/axios';
+import api from '@/lib/axiosInstance';
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import FeedbackDetailsModal from "@/components/hr/training/FeedbackDetailsModal";
 import { formatTime } from '@/lib/utils';
@@ -47,7 +47,7 @@ export default function AttendanceFeedbackTable() {
     const feedbackPerPage = 10;
 
     useEffect(() => {
-        axiosInstance.get('/training/events')
+        api.get('/api/training/events')
             .then(res => {
                 const sorted = res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
                 setEvents(sorted);
@@ -63,7 +63,7 @@ export default function AttendanceFeedbackTable() {
 
     useEffect(() => {
         if (selectedEventId) {
-            axiosInstance.get(`/training/events/${selectedEventId}/feedback`)
+            api.get(`/api/training/events/${selectedEventId}/feedback`)
                 .then(res => {
                     setEventFeedback(res.data);
                     setCurrentPageFeedback(1); // Reset feedback pagination on event change

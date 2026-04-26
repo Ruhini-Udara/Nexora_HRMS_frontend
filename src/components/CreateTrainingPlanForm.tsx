@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'; 
 import { useRouter, useSearchParams } from 'next/navigation'; 
-import axiosInstance from '@/lib/axios';
+import api from '@/lib/axiosInstance';
 
 // create training plan form
 export default function CreateTrainingPlanForm() {
@@ -18,10 +18,42 @@ export default function CreateTrainingPlanForm() {
     const [location, setLocation] = useState('');
     const [budget, setBudget] = useState('');
     const [instructor, setInstructor] = useState('');
+    const [isTitleConflict, setIsTitleConflict] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const editId = searchParams.get('editId');
+
+    // Real-time duplicate check
+    useEffect(() => {
+        let isMounted = true;
+        if (title.trim() && !editId) {
+            console.log("Checking existence for title:", title);
+            const delayDebounceFn = setTimeout(() => {
+                api.get(`/api/training/events/exists?title=${encodeURIComponent(title)}`)
+                    .then(res => {
+                        console.log("Existence check result:", res.data);
+                        if (isMounted) setIsTitleConflict(res.data);
+                    })
+                    .catch(err => {
+                        console.error("Existence check failed:", err);
+                        if (isMounted) setIsTitleConflict(false);
+                    });
+            }, 500); // Debounce for 500ms
+
+            return () => {
+                isMounted = false;
+                clearTimeout(delayDebounceFn);
+            };
+        } else {
+            Promise.resolve().then(() => {
+                if (isMounted) setIsTitleConflict(false);
+            });
+        }
+        return () => {
+            isMounted = false;
+        };
+    }, [title, editId]);
 
     // form validation logic
     const participantsNum = parseInt(participants);
@@ -37,15 +69,17 @@ export default function CreateTrainingPlanForm() {
         isBudgetValid &&
         date !== '' && 
         applyBefore !== '' &&
-        isDateLogicValid;
+        isDateLogicValid &&
+        !isTitleConflict;
 
     // Fetch existing data if editing
     useEffect(() => {
+        let isMounted = true;
         if (editId) {
-            axiosInstance.get(`/training/events/${editId}`)
+            api.get(`/api/training/events/${editId}`)
                 .then(response => {
                     const eventToEdit = response.data;
-                    if (eventToEdit) {
+                    if (eventToEdit && isMounted) {
                         setTitle(eventToEdit.title || '');
                         setCategory(eventToEdit.category || '');
                         setDate(eventToEdit.proposedStartDate || '');
@@ -62,6 +96,9 @@ export default function CreateTrainingPlanForm() {
                     console.error("Failed to fetch training event", error);
                 });
         }
+        return () => {
+            isMounted = false;
+        };
     }, [editId]);
 
     // create training plan form
@@ -89,12 +126,18 @@ export default function CreateTrainingPlanForm() {
                         <div className="col-span-2">
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Training Programe Name <span className="text-red-500">*</span></label>
                             <input
-                                className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${isTitleConflict ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                                 placeholder="e.g. Q3 Leadership Excellence Workshop"
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                             />
+                            {isTitleConflict && (
+                                <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px]">warning</span>
+                                    This training program already exists.
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Training Type <span className="text-red-500">*</span></label>
@@ -294,7 +337,7 @@ export default function CreateTrainingPlanForm() {
 
                                     // update training event
                                     if (editId) {
-                                        axiosInstance.put(`/training/events/${editId}`, payload)
+                                        api.put(`/api/training/events/${editId}`, payload)
                                             .then(() => {
                                                 setToast({ message: "Training plan updated successfully!", type: 'success' });
                                                 setTimeout(() => {
@@ -303,12 +346,13 @@ export default function CreateTrainingPlanForm() {
                                                 }, 1500);
                                             })
                                             .catch(error => {
-                                                setToast({ message: "Failed to update training plan. Please try again.", type: 'error' });
+                                                const errorMessage = error.response?.data?.message || "Failed to update training plan. Please try again.";
+                                                setToast({ message: errorMessage, type: 'error' });
                                                 console.error("Failed to update training event", error);
                                                 setIsLoading(false);
                                             });
                                     } else {
-                                        axiosInstance.post('/training/events', payload)
+                                        api.post('/api/training/events', payload)
                                             .then(() => {
                                                 setToast({ message: "Training plan published successfully!", type: 'success' });
                                                 setTimeout(() => {
@@ -317,7 +361,8 @@ export default function CreateTrainingPlanForm() {
                                                 }, 1500);
                                             })
                                             .catch(error => {
-                                                setToast({ message: "Failed to publish training plan. Please try again.", type: 'error' });
+                                                const errorMessage = error.response?.data?.message || "Failed to publish training plan. Please try again.";
+                                                setToast({ message: errorMessage, type: 'error' });
                                                 console.error("Failed to create training event", error);
                                                 setIsLoading(false);
                                             });

@@ -12,7 +12,9 @@ export interface TrainingRequest {
     initials?: string;
     dateSubmitted: string;
     status: string;
+    eventStatus?: string;
     justification: string;
-    attachments: { name: string; url: string }[];
+    attachmentPath?: string;
+    attachments?: { name: string; url: string }[];
     rejectionReason?: string;
 }

@@ -14,14 +14,22 @@ const api = axios.create({
 // Request interceptor to add JWT token
 api.interceptors.request.use(
     (config) => {
-        // We import useAuthStore dynamically to avoid circular dependencies
-        // or issues during SSR if not handled carefully
-        const token = typeof window !== 'undefined' 
-            ? JSON.parse(localStorage.getItem('nexora-auth-storage') || '{}')?.state?.token 
-            : null;
+        const storage = typeof window !== 'undefined' ? localStorage.getItem('nexora-auth-storage') : null;
+        let token = null;
+        if (storage) {
+            try {
+                const parsed = JSON.parse(storage);
+                token = parsed.state?.token;
+            } catch (e) {
+                console.error("Error parsing auth storage", e);
+            }
+        }
 
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+            console.log(`[AXIOS REQUEST] ${config.method?.toUpperCase()} ${config.url} | Token: ${token.substring(0, 10)}...`);
+        } else {
+            console.warn(`[AXIOS REQUEST] ${config.method?.toUpperCase()} ${config.url} | NO TOKEN FOUND`);
         }
         return config;
     },
@@ -32,7 +40,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // You can centralize logging or global error alerts here
+        if (error.response?.status === 403) {
+            console.error(`[AXIOS 403 ERROR] URL: ${error.config.url}`, {
+                data: error.response.data,
+                headers: error.config.headers
+            });
+        }
         const message = error.response?.data?.message || error.message || 'An unexpected error occurred';
         console.error('API Error:', message);
         return Promise.reject(error);

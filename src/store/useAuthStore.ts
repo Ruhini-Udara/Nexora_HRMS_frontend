@@ -7,6 +7,8 @@ interface User {
     role: string;
     name: string;
     designation: string;
+    epfNumber?: string;
+    department?: string;
 }
 
 interface AuthState {

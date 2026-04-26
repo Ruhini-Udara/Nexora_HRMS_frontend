@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import axiosInstance from "@/lib/axios";
+import api from "@/lib/axiosInstance";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
@@ -37,7 +37,7 @@ export default function CreateTrainingPlanPage() {
     const router = useRouter();
 
     useEffect(() => {
-        axiosInstance.get('/training/events')
+        api.get('/api/training/events')
             .then(res => setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id)))
             .catch(err => console.error("Failed to fetch events:", err));
     }, []);
@@ -62,7 +62,7 @@ export default function CreateTrainingPlanPage() {
         if (!eventToDelete) return;
         
         setIsDeleting(true);
-        axiosInstance.delete(`/training/events/${eventToDelete}`)
+        api.delete(`/api/training/events/${eventToDelete}`)
             .then(() => {
                 setEvents(events.filter(event => event.id !== eventToDelete));
                 setToast({ message: "Training plan deleted successfully!", type: 'success' });

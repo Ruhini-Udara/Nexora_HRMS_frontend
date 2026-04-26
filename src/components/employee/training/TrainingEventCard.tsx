@@ -12,6 +12,7 @@ interface TrainingEventProps {
     time: string;
     imageAlt: string;
     applyBefore?: string;
+    isApplied?: boolean;
 }
 
 const TrainingEventCard: React.FC<TrainingEventProps> = ({
@@ -20,10 +21,11 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
     date,
     time,
     applyBefore,
+    isApplied
 }) => {
     return (
-        <div className="bg-white rounded-xl border border-stone-200 hover:border-[var(--color-training-primary)] transition-all hover:shadow-lg flex flex-col group">
-            <div className="bg-[var(--color-training-primary)]/5 rounded-t-xl p-2.5 flex justify-end">
+        <div className={`bg-white rounded-xl border transition-all flex flex-col group ${isApplied ? 'border-emerald-100 dark:border-emerald-900/30' : 'border-stone-200 hover:border-[var(--color-training-primary)] hover:shadow-lg'}`}>
+            <div className={`rounded-t-xl p-2.5 flex justify-end items-center ${isApplied ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'bg-[var(--color-training-primary)]/5'}`}>
                 <span className="bg-white/90 backdrop-blur px-1.5 py-0.5 rounded text-[9px] font-black text-[var(--color-training-primary)] uppercase shadow-sm">
                     {category}
                 </span>
@@ -42,19 +44,26 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
                 </div>
 
                 <div className="mt-auto flex items-center justify-between gap-2 border-t border-stone-100 pt-2.5">
-                    {applyBefore && (
+                    {applyBefore && !isApplied && (
                         <div className="flex items-center gap-1 text-[10px] text-orange-600 font-bold bg-orange-50 px-1.5 py-1 rounded-md border border-orange-100">
                             <span className="material-symbols-outlined text-[14px]">event_busy</span>
                             Apply Before: {applyBefore}
                         </div>
                     )}
-                    <Link
-                        href={`/employee/training-request/${title.toLowerCase().replace(/ /g, '-')}`}
-                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 w-max bg-[var(--color-training-primary)] text-white rounded-md font-bold text-[10px] hover:bg-[#853500] transition-colors cursor-pointer ml-auto"
-                    >
-                        <span className="material-symbols-outlined text-[12px]">send</span>
-                        Apply Now
-                    </Link>
+                    {isApplied ? (
+                        <div className="inline-flex items-center justify-center gap-1 px-3 py-1.5 w-max bg-emerald-500/10 text-emerald-600 rounded-md font-bold text-[10px] ml-auto border border-emerald-200">
+                            <span className="material-symbols-outlined text-[12px]">verified</span>
+                            Applied
+                        </div>
+                    ) : (
+                        <Link
+                            href={`/employee/training-request/${title.toLowerCase().replace(/ /g, '-')}`}
+                            className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 w-max bg-[var(--color-training-primary)] text-white rounded-md font-bold text-[10px] hover:bg-[#853500] transition-colors cursor-pointer ml-auto"
+                        >
+                            <span className="material-symbols-outlined text-[12px]">send</span>
+                            Apply Now
+                        </Link>
+                    )}
                 </div>
             </div>
         </div>
