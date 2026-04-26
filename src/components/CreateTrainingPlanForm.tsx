@@ -26,24 +26,31 @@ export default function CreateTrainingPlanForm() {
 
     // Real-time duplicate check
     useEffect(() => {
+        let isMounted = true;
         if (title.trim() && !editId) {
             console.log("Checking existence for title:", title);
             const delayDebounceFn = setTimeout(() => {
                 api.get(`/api/training/events/exists?title=${encodeURIComponent(title)}`)
                     .then(res => {
                         console.log("Existence check result:", res.data);
-                        setIsTitleConflict(res.data);
+                        if (isMounted) setIsTitleConflict(res.data);
                     })
                     .catch(err => {
                         console.error("Existence check failed:", err);
-                        setIsTitleConflict(false);
+                        if (isMounted) setIsTitleConflict(false);
                     });
             }, 500); // Debounce for 500ms
 
-            return () => clearTimeout(delayDebounceFn);
+            return () => {
+                isMounted = false;
+                clearTimeout(delayDebounceFn);
+            };
         } else {
-            setIsTitleConflict(false);
+            if (isMounted) setIsTitleConflict(false);
         }
+        return () => {
+            isMounted = false;
+        };
     }, [title, editId]);
 
     // form validation logic
@@ -65,11 +72,12 @@ export default function CreateTrainingPlanForm() {
 
     // Fetch existing data if editing
     useEffect(() => {
+        let isMounted = true;
         if (editId) {
             api.get(`/api/training/events/${editId}`)
                 .then(response => {
                     const eventToEdit = response.data;
-                    if (eventToEdit) {
+                    if (eventToEdit && isMounted) {
                         setTitle(eventToEdit.title || '');
                         setCategory(eventToEdit.category || '');
                         setDate(eventToEdit.proposedStartDate || '');
@@ -86,6 +94,9 @@ export default function CreateTrainingPlanForm() {
                     console.error("Failed to fetch training event", error);
                 });
         }
+        return () => {
+            isMounted = false;
+        };
     }, [editId]);
 
     // create training plan form

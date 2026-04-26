@@ -31,13 +31,21 @@ export default function TrainingRequestDetailsModal({ isOpen, onClose, request }
     const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
     useEffect(() => {
+        let isMounted = true;
         if (isOpen && request?.attachmentPath) {
             getSignedUrl(request.attachmentPath)
-                .then(url => setSignedUrl(url))
-                .catch(err => console.error("Failed to get signed URL", err));
+                .then(url => {
+                    if (isMounted) setSignedUrl(url);
+                })
+                .catch(err => {
+                    if (isMounted) console.error("Failed to get signed URL", err);
+                });
         } else {
-            setSignedUrl(null);
+            if (isMounted) setSignedUrl(null);
         }
+        return () => {
+            isMounted = false;
+        };
     }, [isOpen, request?.attachmentPath]);
 
     if (!isOpen || !request) return null;

@@ -37,32 +37,48 @@ export default function TrainingRequestsTable() {
     const requestsPerPage = 10;
 
     useEffect(() => {
+        let isMounted = true;
         api.get('/api/training/events')
             .then(res => {
-                const sorted = res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
-                setEvents(sorted);
-                if (sorted.length > 0) {
-                    setSelectedEventId(sorted[0].id);
+                if (isMounted) {
+                    const sorted = res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
+                    setEvents(sorted);
+                    if (sorted.length > 0) {
+                        setSelectedEventId(sorted[0].id);
+                    }
                 }
             })
             .catch(err => {
-                console.error("Failed to fetch events", err);
-                setToast({ message: "Failed to load training events.", type: 'error' });
+                if (isMounted) {
+                    console.error("Failed to fetch events", err);
+                    setToast({ message: "Failed to load training events.", type: 'error' });
+                }
             });
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     useEffect(() => {
+        let isMounted = true;
         if (selectedEventId) {
             api.get(`/api/training/events/${selectedEventId}/requests`)
                 .then(res => {
-                    setRequests(res.data);
-                    setCurrentPageRequests(1); // Reset requests page when event changes
+                    if (isMounted) {
+                        setRequests(res.data);
+                        setCurrentPageRequests(1); // Reset requests page when event changes
+                    }
                 })
                 .catch(() => {
-                    console.error("Failed to fetch requests");
-                    setToast({ message: "Failed to load requests for this event.", type: 'error' });
+                    if (isMounted) {
+                        console.error("Failed to fetch requests");
+                        setToast({ message: "Failed to load requests for this event.", type: 'error' });
+                    }
                 });
         }
+        return () => {
+            isMounted = false;
+        };
     }, [selectedEventId]);
     
     const [isModalOpen, setIsModalOpen] = useState(false);

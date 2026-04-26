@@ -36,25 +36,30 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
     const [selectedRejection, setSelectedRejection] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!employeeId) {
-            console.warn("TrainingStatusTable: No employeeId found in auth store.");
-            return;
+        let isMounted = true;
+        if (user?.id) {
+            setIsLoading(true);
+            api.get(`/api/training/employees/${user.id}/requests`)
+                .then(res => {
+                    if (isMounted) {
+                        setRequests(res.data.sort((a: any, b: any) => b.id - a.id));
+                    }
+                })
+                .catch(err => {
+                    if (isMounted) {
+                        console.error("Failed to fetch requests", err);
+                    }
+                })
+                .finally(() => {
+                    if (isMounted) {
+                        setIsLoading(false);
+                    }
+                });
         }
-        
-        console.log(`TrainingStatusTable: Fetching requests for employeeId: ${employeeId}`);
-        setIsLoading(true);
-        api.get(`/api/training/employees/${employeeId}/requests`)
-            .then(res => {
-                console.log("TrainingStatusTable: Requests received:", res.data);
-                setRequests(res.data);
-            })
-            .catch(err => {
-                console.error("TrainingStatusTable: Failed to fetch requests", err);
-            })
-            .finally(() => {
-                setIsLoading(false);
-            });
-    }, [employeeId]);
+        return () => {
+            isMounted = false;
+        };
+    }, [user?.id]);
 
     const handleConfirmAttendance = (requestId: number) => {
         // We'll simulate this by updating state for now or calling an endpoint if it exists

@@ -19,6 +19,17 @@ type TrainingEvent = {
     applyBefore?: string;
 };
 
+type TrainingRequestItem = {
+    id: number;
+    eventId: number;
+    status: 'Approved' | 'Pending' | 'Rejected' | 'HR Approved' | 'Confirmed';
+    trainingTitle: string;
+    trainingCategory: string;
+    trainingDate: string;
+    trainingTime: string;
+    rejectionReason?: string;
+};
+
 export default function TrainingRequestPage() {
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [selectedFeedbackCourse, setSelectedFeedbackCourse] = useState("");
@@ -29,19 +40,29 @@ export default function TrainingRequestPage() {
     const itemsPerPage = 6;
 
     const [events, setEvents] = useState<TrainingEvent[]>([]);
-    const [userRequests, setUserRequests] = useState<any[]>([]);
+    const [userRequests, setUserRequests] = useState<TrainingRequestItem[]>([]);
     const { user } = useAuthStore();
 
     useEffect(() => {
+        let isMounted = true;
+
         api.get('/api/training/events')
-            .then(res => setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id)))
+            .then(res => {
+                if (isMounted) setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id));
+            })
             .catch(err => console.error("Failed to fetch events", err));
             
         if (user?.id) {
             api.get(`/api/training/employees/${user.id}/requests`)
-                .then(res => setUserRequests(res.data))
+                .then(res => {
+                    if (isMounted) setUserRequests(res.data);
+                })
                 .catch(err => console.error("Failed to fetch user requests", err));
         }
+
+        return () => {
+            isMounted = false;
+        };
     }, [user?.id]);
 
     const categories = ["All", ...Array.from(new Set(events.map(event => event.category)))];
