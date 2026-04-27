@@ -24,6 +24,11 @@ interface ApiEmployee {
   employeeType?: string;
 }
 
+interface Designation {
+  designationId: number;
+  designationName: string;
+}
+
 interface EmployeeTableProps {
   department: string;
   jobTitle: string;
@@ -35,9 +40,20 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
   const isAdmin = user?.role === 'ROLE_ADMIN';
 
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [designations, setDesignations] = useState<Designation[]>([]);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [editForm, setEditForm] = useState<Employee | null>(null);
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [prevFilters, setPrevFilters] = useState({ department, jobTitle, status });
+
+  if (department !== prevFilters.department || jobTitle !== prevFilters.jobTitle || status !== prevFilters.status) {
+    setPrevFilters({ department, jobTitle, status });
+    setCurrentPage(1);
+  }
+  
+  const itemsPerPage = 5;
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -71,13 +87,18 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     };
 
     fetchEmployees();
+
+    fetch("http://localhost:8080/api/designations")
+      .then(res => res.json())
+      .then(data => setDesignations(data))
+      .catch(err => console.error("Error fetching designations:", err));
   }, []);
 
   // Filter employees based on selected filters
   const filteredEmployees = employees.filter((employee) => {
-    const matchesDepartment = !department || employee.department === department;
-    const matchesJobTitle = !jobTitle || employee.designation === jobTitle;
-    const matchesStatus = !status || employee.employmentStatus === status;
+    const matchesDepartment = !department || employee.department?.toLowerCase() === department.toLowerCase();
+    const matchesJobTitle = !jobTitle || employee.designation?.toLowerCase() === jobTitle.toLowerCase();
+    const matchesStatus = !status || employee.employmentStatus?.toLowerCase() === status.toLowerCase();
 
     return matchesDepartment && matchesJobTitle && matchesStatus;
   });
@@ -114,13 +135,43 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     setViewingEmployee(employee);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editForm) {
-      setEmployees(employees.map((emp) =>
-        emp.id === editForm.id ? editForm : emp
-      ));
-      setEditingEmployee(null);
-      setEditForm(null);
+      try {
+        const selectedDesig = designations.find(d => d.designationName === editForm.designation);
+        const designationId = selectedDesig ? selectedDesig.designationId : null;
+
+        const updateData = {
+          fullName: editForm.name,
+          email: editForm.email,
+          department: editForm.department,
+          employeeType: editForm.employmentStatus,
+          designationId: designationId
+        };
+
+        const response = await fetch(`http://localhost:8080/api/employees/${editForm.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify(updateData)
+        });
+
+        if (response.ok) {
+          setEmployees(employees.map((emp) =>
+            emp.id === editForm.id ? editForm : emp
+          ));
+          setEditingEmployee(null);
+          setEditForm(null);
+        } else {
+          console.error("Failed to update employee");
+          alert("Failed to update employee. Please try again.");
+        }
+      } catch (error) {
+        console.error("Error updating employee:", error);
+        alert("An error occurred while updating the employee.");
+      }
     }
   };
 
@@ -129,7 +180,15 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     setEditForm(null);
   };
 
-  const displayedEmployees = filteredEmployees;
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const displayedEmployees = filteredEmployees.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <>
       {/* View Modal */}
@@ -313,11 +372,11 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="">Select Designation</option>
-                  <option value="Senior Engineer">Senior Engineer</option>
-                  <option value="HR Manager">HR Manager</option>
-                  <option value="Backend Lead">Backend Lead</option>
-                  <option value="Marketing Head">Marketing Head</option>
-                  <option value="Operations Lead">Operations Lead</option>
+                  {designations.map((d) => (
+                    <option key={d.designationId} value={d.designationName}>
+                      {d.designationName}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -449,29 +508,34 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
         </table>
         <div className="px-6 py-4 flex items-center justify-between bg-slate-50 border-t border-slate-200">
           <p className="text-sm text-slate-500">
-            Showing {displayedEmployees.length > 0 ? 1 : 0} to {displayedEmployees.length} of {displayedEmployees.length} entries
+            Showing {filteredEmployees.length > 0 ? indexOfFirstItem + 1 : 0} to {Math.min(indexOfLastItem, filteredEmployees.length)} of {filteredEmployees.length} entries
           </p>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || totalPages === 0}
               className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-50"
-              disabled
             >
               <ChevronLeft size={16} />
             </button>
-            <button className="w-10 h-10 bg-amber-900 text-white rounded-lg font-medium">
-              1
-            </button>
-            <button className="w-10 h-10 border border-slate-200 rounded-lg font-medium hover:bg-white">
-              2
-            </button>
-            <button className="w-10 h-10 border border-slate-200 rounded-lg font-medium hover:bg-white">
-              3
-            </button>
-            <span className="text-slate-400 px-1">...</span>
-            <button className="w-10 h-10 border border-slate-200 rounded-lg font-medium hover:bg-white">
-              250
-            </button>
-            <button className="p-2 border border-slate-200 rounded-lg hover:bg-white">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`w-10 h-10 rounded-lg font-medium ${
+                  currentPage === page
+                    ? "bg-amber-900 text-white"
+                    : "border border-slate-200 hover:bg-white"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-50"
+            >
               <ChevronRight size={16} />
             </button>
           </div>
