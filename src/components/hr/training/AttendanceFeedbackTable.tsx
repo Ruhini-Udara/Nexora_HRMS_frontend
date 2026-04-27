@@ -15,6 +15,7 @@ type TrainingEvent = {
     category: string;
     instructor?: string;
     description?: string;
+    status: string;
 };
 
 type TrainingFeedback = {
@@ -34,7 +35,7 @@ export default function AttendanceFeedbackTable() {
     const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
-    const [eventFeedback, setEventFeedback] = useState<TrainingFeedback[]>([]);
+    const [eventParticipants, setEventParticipants] = useState<any[]>([]);
     const [selectedFeedback, setSelectedFeedback] = useState<TrainingFeedback | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -49,7 +50,9 @@ export default function AttendanceFeedbackTable() {
     useEffect(() => {
         api.get('/api/training/events')
             .then(res => {
-                const sorted = res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
+                // Only show events that have been Approved by Admin
+                const approvedEvents = res.data.filter((e: TrainingEvent) => e.status === "Approved");
+                const sorted = approvedEvents.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
                 setEvents(sorted);
                 if (sorted.length > 0) {
                     setSelectedEventId(sorted[0].id);
@@ -63,19 +66,49 @@ export default function AttendanceFeedbackTable() {
 
     useEffect(() => {
         if (selectedEventId) {
-            api.get(`/api/training/events/${selectedEventId}/feedback`)
-                .then(res => {
-                    setEventFeedback(res.data);
-                    setCurrentPageFeedback(1); // Reset feedback pagination on event change
-                })
-                .catch(() => {
-                    console.error("Failed to fetch feedback");
-                    setToast({ message: "Failed to load feedback for this event.", type: 'error' });
+            // Fetch both feedback and approved requests to show the full participant list
+            Promise.all([
+                api.get(`/api/training/events/${selectedEventId}/feedback`),
+                api.get(`/api/training/events/${selectedEventId}/requests`)
+            ])
+            .then(([feedbackRes, requestsRes]) => {
+                const feedbackData = feedbackRes.data;
+                const requestsData = requestsRes.data;
+
+                // Filter for approved requests
+                const approvedRequests = requestsData.filter((req: any) => req.status === "Approved");
+
+                // Merge them: Start with all approved requests
+                const participants = approvedRequests.map((req: any) => {
+                    // Find matching feedback if it exists
+                    const feedback = feedbackData.find((f: any) => f.employeeId === req.employeeId);
+                    
+                    return {
+                        id: feedback?.id || `req-${req.id}`,
+                        employeeId: req.employeeId,
+                        employeeName: req.employeeName,
+                        workEmail: req.workEmail,
+                        attendanceStatus: feedback?.attendanceStatus || "Pending",
+                        feedback: feedback?.feedback || null,
+                        courseContentRating: feedback?.courseContentRating || 0,
+                        instructorRating: feedback?.instructorRating || 0,
+                        overallExperienceRating: feedback?.overallExperienceRating || 0,
+                        suggestions: feedback?.suggestions || "",
+                        hasSubmitted: !!feedback
+                    };
                 });
+
+                setEventParticipants(participants);
+                setCurrentPageFeedback(1);
+            })
+            .catch(() => {
+                console.error("Failed to fetch event data");
+                setToast({ message: "Failed to load participant data for this event.", type: 'error' });
+            });
         }
 
         return () => {
-            setEventFeedback([]);
+            setEventParticipants([]);
         };
     }, [selectedEventId]);
 
@@ -89,11 +122,11 @@ export default function AttendanceFeedbackTable() {
     const indexOfFirstEvent = indexOfLastEvent - eventsPerPage;
     const currentEvents = filteredEvents.slice(indexOfFirstEvent, indexOfLastEvent);
 
-    // Feedback Pagination Logic
-    const totalPagesFeedback = Math.ceil(eventFeedback.length / feedbackPerPage);
+    // Feedback/Participants Pagination Logic
+    const totalPagesFeedback = Math.ceil(eventParticipants.length / feedbackPerPage);
     const indexOfLastFeedback = currentPageFeedback * feedbackPerPage;
     const indexOfFirstFeedback = indexOfLastFeedback - feedbackPerPage;
-    const currentFeedback = eventFeedback.slice(indexOfFirstFeedback, indexOfLastFeedback);
+    const currentFeedback = eventParticipants.slice(indexOfFirstFeedback, indexOfLastFeedback);
 
     const selectedEvent = events.find(e => e.id === selectedEventId);
 
@@ -227,7 +260,7 @@ export default function AttendanceFeedbackTable() {
                 <h2 className="text-xl font-bold">
                     Attendance & Feedback for {selectedEvent ? `"${selectedEvent.title}"` : "Selected Training"}
                 </h2>
-                {selectedEvent && eventFeedback.length > 0 && (
+                {selectedEvent && eventParticipants.some(p => p.hasSubmitted) && (
                     <button
                         onClick={() => setToast({ message: `Generating feedback report for ${selectedEvent.title}...`, type: 'info' })}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
@@ -241,7 +274,7 @@ export default function AttendanceFeedbackTable() {
             {/* Table Container */}
             <div className="bg-white dark:bg-background-dark/30 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
                 {selectedEventId ? (
-                    eventFeedback.length > 0 ? (
+                    eventParticipants.length > 0 ? (
                         <>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
@@ -271,12 +304,16 @@ export default function AttendanceFeedbackTable() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => setSelectedFeedback(record)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-white text-primary rounded-lg text-xs font-semibold hover:bg-primary/5 transition-colors"
-                                                    >
-                                                        <span className="material-symbols-outlined text-[16px]">visibility</span> View
-                                                    </button>
+                                                    {record.hasSubmitted ? (
+                                                        <button
+                                                            onClick={() => setSelectedFeedback(record)}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-white text-primary rounded-lg text-xs font-semibold hover:bg-primary/5 transition-colors"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[16px]">visibility</span> View
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400 italic">Not Submitted</span>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}
@@ -285,10 +322,10 @@ export default function AttendanceFeedbackTable() {
                             </div>
                             
                             {/* Feedback Table Pagination */}
-                            {eventFeedback.length > feedbackPerPage && (
+                            {eventParticipants.length > feedbackPerPage && (
                                 <div className="px-6 py-4 bg-slate-50 dark:bg-background-dark/20 border-t border-primary/10 flex items-center justify-between">
                                     <p className="text-xs font-medium text-slate-500">
-                                        Showing {indexOfFirstFeedback + 1} - {Math.min(indexOfLastFeedback, eventFeedback.length)} of {eventFeedback.length} records
+                                        Showing {indexOfFirstFeedback + 1} - {Math.min(indexOfLastFeedback, eventParticipants.length)} of {eventParticipants.length} records
                                     </p>
                                     <div className="flex items-center gap-2">
                                         <button 

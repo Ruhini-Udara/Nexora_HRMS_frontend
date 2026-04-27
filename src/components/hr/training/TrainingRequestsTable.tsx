@@ -9,7 +9,7 @@ import api from '@/lib/axiosInstance';
 import { formatTime } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
 
-
+// Props describing a training event
 type TrainingEvent = {
     id: number;
     title: string;
@@ -31,6 +31,7 @@ export default function TrainingRequestsTable() {
     const [selectedStatus, setSelectedStatus] = useState<string>("Not Sent");
     const [requests, setRequests] = useState<TrainingRequest[]>([]);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const [processingIds, setProcessingIds] = useState<number[]>([]);
     
     // Pagination for Events
     const [currentPageEvents, setCurrentPageEvents] = useState(1);
@@ -42,6 +43,7 @@ export default function TrainingRequestsTable() {
 
     const { user } = useAuthStore();
 
+    // Fetch events on mount
     useEffect(() => {
         let isMounted = true;
         api.get('/api/training/events')
@@ -62,6 +64,7 @@ export default function TrainingRequestsTable() {
         };
     }, []);
 
+    // Fetch requests when event selected
     useEffect(() => {
         let isMounted = true;
         if (selectedEventId) {
@@ -84,24 +87,27 @@ export default function TrainingRequestsTable() {
         };
     }, [selectedEventId]);
     
+    // Request details modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
 
+    // Approved list modal state
     const [isListModalOpen, setIsListModalOpen] = useState(false);
     
     // Rejection Modal State
     const [rejectionModal, setRejectionModal] = useState<{isOpen: boolean, requestId: number | null}>({isOpen: false, requestId: null});
     const [rejectionReason, setRejectionReason] = useState("");
 
+    // Filter events by category and status
     const filteredEvents = useMemo(() => {
         return events.filter(e => {
             const matchesCategory = selectedCategory === "All" || e.category === selectedCategory;
-            const isSent = e.status === 'Pending Admin Approval' || e.status === 'Approved';
-            const isRejected = e.status === 'Rejected';
+            const isSent = e.status === 'Pending Admin Approval' || e.status === 'Approved' || e.status === 'Rejected';
+            const isReturned = e.status === 'Returned';
             
             const matchesStatus = selectedStatus === "All" || 
                                  (selectedStatus === "Sent" && isSent) || 
-                                 (selectedStatus === "Not Sent" && (!isSent || isRejected));
+                                 (selectedStatus === "Not Sent" && (!isSent || isReturned));
             return matchesCategory && matchesStatus;
         });
     }, [events, selectedCategory, selectedStatus]);
@@ -134,6 +140,7 @@ export default function TrainingRequestsTable() {
         }
     }, [filteredEvents, selectedEventId]);
 
+    // Filter requests by event ID
     const filteredRequests = selectedEventId && filteredEvents.some(e => e.id === selectedEventId)
         ? requests.filter(req => req.eventId === selectedEventId)
         : [];
@@ -151,6 +158,7 @@ export default function TrainingRequestsTable() {
     const totalApproved = requests.filter(r => r.status === 'Approved').length;
     const totalRejected = requests.filter(r => r.status === 'Rejected').length;
 
+    // Main UI with event cards, filters, stats, and tables
     return (
         <div className="flex-1 p-8 bg-background-light dark:bg-background-dark/40">
             {/* Stats Grid */}
@@ -193,13 +201,17 @@ export default function TrainingRequestsTable() {
             {/* Section: Training Event Lists Table */}
             <section className="mb-10">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">
-                            list_alt
-                        </span>
-                        Rejected Training Event Lists
-                    </h2>
+                    <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
+                            <span className="material-symbols-outlined">assignment_return</span>
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white">Returned & Rejected Training Event Lists</h2>
+                            <p className="text-[13px] text-slate-500 font-medium">Programs sent back by Admin for adjustments or cancellation</p>
+                        </div>
+                    </div>
                 </div>
+
                 <div className="bg-white dark:bg-background-dark/30 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
@@ -213,7 +225,7 @@ export default function TrainingRequestsTable() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-primary/5">
-                                {events.filter(evt => evt.status === 'Rejected').map((evt) => (
+                                {events.filter(evt => evt.status === 'Returned' || evt.status === 'Rejected').map((evt) => (
                                     <tr 
                                         key={evt.id} 
                                         onClick={() => setSelectedEventId(evt.id)}
@@ -246,9 +258,9 @@ export default function TrainingRequestsTable() {
                                                 <span className="material-symbols-outlined text-[16px]">visibility</span> View List
                                             </button>
                                         </td>
-                                        <td className="px-6 py-4 w-48">
-                                            {evt.status === 'Rejected' && evt.reason && (
-                                                <p className="text-sm text-red-600 font-medium break-words line-clamp-2" title={evt.reason}>
+                                        <td className="px-6 py-4 min-w-[250px]">
+                                            {(evt.status === 'Rejected' || evt.status === 'Returned') && evt.reason && (
+                                                <p className={`text-sm font-medium break-words ${evt.status === 'Rejected' ? 'text-red-600' : 'text-orange-600'}`} title={evt.reason}>
                                                     {evt.reason}
                                                 </p>
                                             )}
@@ -270,6 +282,13 @@ export default function TrainingRequestsTable() {
                         </span>
                         Available Training Events
                     </h2>
+                    <div className="flex items-center gap-4">
+                    </div>
+                </div>
+
+
+                <div className="flex items-center justify-between mb-6">
+                    <p className="text-[13px] text-slate-500 font-medium">Select a program to review and manage participant approvals</p>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-slate-500">Type:</span>
@@ -448,7 +467,9 @@ export default function TrainingRequestsTable() {
                                             <div className="flex items-center justify-end gap-2">
                                                 {request.status !== 'Approved' && (
                                                     <button 
+                                                        disabled={processingIds.includes(request.id)}
                                                         onClick={() => {
+                                                            setProcessingIds(prev => [...prev, request.id]);
                                                             api.put(`/api/training/requests/${request.id}/status`, { 
                                                                 status: 'Approved',
                                                                 approverId: user?.id
@@ -460,10 +481,17 @@ export default function TrainingRequestsTable() {
                                                                 .catch(err => {
                                                                     console.error("Failed to approve request", err);
                                                                     setToast({ message: "Failed to approve request. Please try again.", type: 'error' });
+                                                                })
+                                                                .finally(() => {
+                                                                    setProcessingIds(prev => prev.filter(id => id !== request.id));
                                                                 });
                                                         }}
-                                                        className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Approve">
-                                                        <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                                                        className={`p-1.5 rounded transition-colors ${processingIds.includes(request.id) ? 'text-slate-300 cursor-not-allowed' : 'text-green-600 hover:bg-green-50'}`} title="Approve">
+                                                        {processingIds.includes(request.id) ? (
+                                                            <div className="size-[20px] border-2 border-slate-300 border-t-primary rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                                                        )}
                                                     </button>
                                                 )}
                                                 {request.status !== 'Rejected' && (
@@ -597,6 +625,7 @@ export default function TrainingRequestsTable() {
                             <button
                                 onClick={() => {
                                     if (rejectionModal.requestId) {
+                                        setProcessingIds(prev => [...prev, rejectionModal.requestId as number]);
                                         api.put(`/api/training/requests/${rejectionModal.requestId}/status`, { 
                                             status: 'Rejected', 
                                             rejectionReason,
@@ -611,16 +640,28 @@ export default function TrainingRequestsTable() {
                                         .catch(err => {
                                             console.error("Failed to reject request", err);
                                             setToast({ message: "Failed to reject request. Please try again.", type: 'error' });
+                                        })
+                                        .finally(() => {
+                                            if (rejectionModal.requestId) {
+                                                setProcessingIds(prev => prev.filter(id => id !== rejectionModal.requestId));
+                                            }
                                         });
                                     } else {
                                         setRejectionModal({ isOpen: false, requestId: null });
                                         setRejectionReason("");
                                     }
                                 }}
-                                disabled={!rejectionReason.trim()}
-                                className="flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!rejectionReason.trim() || (rejectionModal.requestId !== null && processingIds.includes(rejectionModal.requestId))}
+                                className="flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                Yes, Reject
+                                {rejectionModal.requestId !== null && processingIds.includes(rejectionModal.requestId) ? (
+                                    <>
+                                        <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        Processing...
+                                    </>
+                                ) : (
+                                    "Yes, Reject"
+                                )}
                             </button>
                         </div>
                     </div>
