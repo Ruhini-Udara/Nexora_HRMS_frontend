@@ -61,8 +61,9 @@ export default function MaternityApprovalsPage() {
         try {
             const res = await api.get(`/api/v1/leaves/maternity/status/${statusFilter}`);
             setRequests(res.data);
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Could not connect to the backend. Please ensure the server is running.");
+        } catch (err) {
+            const error = err as { response?: { data?: { message?: string } } };
+            setError(error.response?.data?.message || "Could not connect to the backend. Please ensure the server is running.");
         } finally {
             setLoading(false);
         }
@@ -120,8 +121,9 @@ export default function MaternityApprovalsPage() {
             
             handleCloseModal();
             fetchRequests();
-        } catch (err: any) {
-            setToast({ message: err.response?.data?.message || "Something went wrong. Please try again.", type: "error" });
+        } catch (err) {
+            const error = err as { response?: { data?: { message?: string } } };
+            setToast({ message: error.response?.data?.message || "Something went wrong. Please try again.", type: "error" });
             setTimeout(() => setToast(null), 4000);
         } finally {
             setSubmitting(false);

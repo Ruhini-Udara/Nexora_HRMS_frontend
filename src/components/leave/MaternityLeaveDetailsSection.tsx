@@ -1,14 +1,13 @@
-import React from "react";
-import { UseFormRegister, FieldErrors } from "react-hook-form";
+import { UseFormRegister, FieldErrors, FieldValues, Path } from "react-hook-form";
 
-interface Props {
-    register: UseFormRegister<any>;
-    errors: FieldErrors<any>;
+interface Props<T extends FieldValues> {
+    register: UseFormRegister<T>;
+    errors: FieldErrors<T>;
     isDisabled: boolean;
     noOfDays: string;
 }
 
-export function MaternityLeaveDetailsSection({ register, errors, isDisabled, noOfDays }: Props) {
+export function MaternityLeaveDetailsSection<T extends FieldValues>({ register, errors, isDisabled, noOfDays }: Props<T>) {
     return (
         <section>
             <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
@@ -21,12 +20,12 @@ export function MaternityLeaveDetailsSection({ register, errors, isDisabled, noO
                     </label>
                     <textarea
                         disabled={isDisabled}
-                        {...register("leaveReason")}
+                        {...register("leaveReason" as Path<T>)}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60 ${errors.leaveReason ? 'border-red-500 focus:ring-red-500' : ''}`}
                         placeholder="Please elaborate on your leave request..."
                         rows={3}
                     />
-                    {errors.leaveReason && <p className="text-red-500 text-xs mt-1">{errors.leaveReason.message as string}</p>}
+                    {errors.leaveReason && <p className="text-red-500 text-xs mt-1">{(errors.leaveReason as any).message}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -34,12 +33,12 @@ export function MaternityLeaveDetailsSection({ register, errors, isDisabled, noO
                     </label>
                     <input
                         disabled={isDisabled}
-                        {...register("startDate")}
+                        {...register("startDate" as Path<T>)}
                         min={new Date().toISOString().split("T")[0]}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                         type="date"
                     />
-                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message as string}</p>}
+                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{(errors.startDate as any).message}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -47,18 +46,18 @@ export function MaternityLeaveDetailsSection({ register, errors, isDisabled, noO
                     </label>
                     <input
                         disabled={isDisabled}
-                        {...register("endDate")}
+                        {...register("endDate" as Path<T>)}
                         min={new Date().toISOString().split("T")[0]}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                         type="date"
                     />
-                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message as string}</p>}
+                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{(errors.endDate as any).message}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Date of Request</label>
                     <input
                         disabled
-                        {...register("dateOfRequest")}
+                        {...register("dateOfRequest" as Path<T>)}
                         className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 p-2.5 outline-none cursor-not-allowed"
                         type="date"
                     />
@@ -80,7 +79,7 @@ export function MaternityLeaveDetailsSection({ register, errors, isDisabled, noO
                     </label>
                     <select
                         disabled={isDisabled}
-                        {...register("childNumber")}
+                        {...register("childNumber" as Path<T>)}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 appearance-none ${errors.childNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
                     >
                         <option value="" disabled>Select Child Number</option>
@@ -88,7 +87,7 @@ export function MaternityLeaveDetailsSection({ register, errors, isDisabled, noO
                         <option value="2">2nd Child</option>
                         <option value="3">3rd Child or more</option>
                     </select>
-                    {errors.childNumber && <p className="text-red-500 text-xs mt-1">{errors.childNumber.message as string}</p>}
+                    {errors.childNumber && <p className="text-red-500 text-xs mt-1">{(errors.childNumber as any).message}</p>}
                 </div>
             </div>
         </section>

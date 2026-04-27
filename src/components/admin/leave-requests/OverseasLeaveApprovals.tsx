@@ -152,16 +152,17 @@ export default function OverseasLeaveApprovals() {
             const opt = {
                 margin: 0.5,
                 filename: `Board_Agenda_${boardMeetingDate || 'Agenda'}.pdf`,
-                image: { type: 'jpeg' as 'jpeg', quality: 0.98 },
+                image: { type: 'jpeg' as const, quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as 'portrait' }
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
             };
             
             await html2pdf().set(opt).from(element).save();
             showToast("PDF Downloaded successfully.", "success");
-        } catch(e: any) {
+        } catch(e) {
+            const error = e as { message?: string };
             console.error("PDF generation failed:", e);
-            showToast(`PDF generation failed: ${e.message || "Please check console"}`, "error");
+            showToast(`PDF generation failed: ${error.message || "Please check console"}`, "error");
         }
     };
 
@@ -180,8 +181,9 @@ export default function OverseasLeaveApprovals() {
             setIsPrinting(false);
             await fetchLeaves();
             showToast("List successfully sent to Director.", "success");
-        } catch(e: any) {
-            showToast(`Failed to send to Director: ${e.message || 'Unknown error'}`, "error");
+        } catch(e) {
+            const error = e as { message?: string };
+            showToast(`Failed to send to Director: ${error.message || 'Unknown error'}`, "error");
         } finally {
             setSubmitting(false);
         }

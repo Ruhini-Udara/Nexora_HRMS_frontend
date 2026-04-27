@@ -88,13 +88,18 @@ const LeaveRequestsTable = () => {
                 api.get(`/api/v1/leaves/maternity/status/PENDING_DIRECTOR_REVIEW`)
             ]);
 
+            interface LeaveResponse {
+                id: number;
+                [key: string]: unknown;
+            }
             // Add refType to help identify them
-            const overseas = overseasRes.data.map((r: any) => ({ ...r, refType: 'OVERSEAS_LEAVE' }));
-            const maternity = maternityRes.data.map((r: any) => ({ ...r, refType: 'MATERNITY_LEAVE' }));
+            const overseas = overseasRes.data.map((r: LeaveResponse) => ({ ...r, refType: 'OVERSEAS_LEAVE' }));
+            const maternity = maternityRes.data.map((r: LeaveResponse) => ({ ...r, refType: 'MATERNITY_LEAVE' }));
 
             setRequests([...overseas, ...maternity]);
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Could not connect to the backend. Please ensure the server is running.");
+        } catch (err) {
+            const error = err as { response?: { data?: { message?: string } } };
+            setError(error.response?.data?.message || "Could not connect to the backend. Please ensure the server is running.");
         } finally {
             setLoading(false);
         }
@@ -126,7 +131,7 @@ const LeaveRequestsTable = () => {
         try {
             await api.post("/api/v1/approvals", {
                 refId: selectedRequest.id,
-                refType: (selectedRequest as any).refType || "OVERSEAS_LEAVE",
+                refType: (selectedRequest as { refType?: string }).refType || "OVERSEAS_LEAVE",
                 decision: decision,
                 remark: directorRemark,
                 approvedBy: { id: user?.id }, // Use actual director id from store
@@ -227,7 +232,7 @@ const LeaveRequestsTable = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-bold uppercase text-[10px]">{(request as any).refType === 'MATERNITY_LEAVE' ? 'Maternity Leave' : 'Overseas Leave'}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-bold uppercase text-[10px]">{(request as { refType?: string }).refType === 'MATERNITY_LEAVE' ? 'Maternity Leave' : 'Overseas Leave'}</p>
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">

@@ -1,14 +1,13 @@
-import React from "react";
-import { UseFormRegister, FieldErrors } from "react-hook-form";
+import { UseFormRegister, FieldErrors, FieldValues, Path } from "react-hook-form";
 
-interface Props {
-    register: UseFormRegister<any>;
-    errors: FieldErrors<any>;
+interface Props<T extends FieldValues> {
+    register: UseFormRegister<T>;
+    errors: FieldErrors<T>;
     isDisabled: boolean;
     children?: React.ReactNode;
 }
 
-export function EmployeeDetailsSection({ register, errors, isDisabled, children }: Props) {
+export function EmployeeDetailsSection<T extends FieldValues>({ register, errors, isDisabled, children }: Props<T>) {
     return (
         <section>
             <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
@@ -21,12 +20,12 @@ export function EmployeeDetailsSection({ register, errors, isDisabled, children 
                     </label>
                     <input
                         disabled={isDisabled}
-                        {...register("employeeName")}
+                        {...register("employeeName" as Path<T>)}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.employeeName ? 'border-red-500 focus:ring-red-500' : ''}`}
                         placeholder="Full name"
                         type="text"
                     />
-                    {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName.message as string}</p>}
+                    {errors.employeeName && <p className="text-red-500 text-xs mt-1">{(errors.employeeName as any).message}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -34,12 +33,12 @@ export function EmployeeDetailsSection({ register, errors, isDisabled, children 
                     </label>
                     <input
                         disabled={isDisabled}
-                        {...register("epfNumber")}
+                        {...register("epfNumber" as Path<T>)}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.epfNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
                         placeholder="Enter EPF Number"
                         type="text"
                     />
-                    {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{errors.epfNumber.message as string}</p>}
+                    {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{(errors.epfNumber as any).message}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -47,12 +46,12 @@ export function EmployeeDetailsSection({ register, errors, isDisabled, children 
                     </label>
                     <input
                         disabled={isDisabled}
-                        {...register("designation")}
+                        {...register("designation" as Path<T>)}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.designation ? 'border-red-500 focus:ring-red-500' : ''}`}
                         placeholder="Your role"
                         type="text"
                     />
-                    {errors.designation && <p className="text-red-500 text-xs mt-1">{errors.designation.message as string}</p>}
+                    {errors.designation && <p className="text-red-500 text-xs mt-1">{(errors.designation as any).message}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -60,12 +59,12 @@ export function EmployeeDetailsSection({ register, errors, isDisabled, children 
                     </label>
                     <input
                         disabled={isDisabled}
-                        {...register("branch")}
+                        {...register("branch" as Path<T>)}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.branch ? 'border-red-500 focus:ring-red-500' : ''}`}
                         placeholder="e.g. Head Office"
                         type="text"
                     />
-                    {errors.branch && <p className="text-red-500 text-xs mt-1">{errors.branch.message as string}</p>}
+                    {errors.branch && <p className="text-red-500 text-xs mt-1">{(errors.branch as any).message}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -73,12 +72,12 @@ export function EmployeeDetailsSection({ register, errors, isDisabled, children 
                     </label>
                     <input
                         disabled={isDisabled}
-                        {...register("contactNumber")}
+                        {...register("contactNumber" as Path<T>)}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.contactNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
                         placeholder="+94 77 XXXXXXX"
                         type="text"
                     />
-                    {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber.message as string}</p>}
+                    {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{(errors.contactNumber as any).message}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -86,12 +85,12 @@ export function EmployeeDetailsSection({ register, errors, isDisabled, children 
                     </label>
                     <input
                         disabled={isDisabled}
-                        {...register("email")}
+                        {...register("email" as Path<T>)}
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
                         placeholder="your.email@example.com"
                         type="email"
                     />
-                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message as string}</p>}
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{(errors.email as any).message}</p>}
                 </div>
                 {children}
             </div>
