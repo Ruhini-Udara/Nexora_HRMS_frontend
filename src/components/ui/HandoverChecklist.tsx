@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from "@/lib/axiosInstance";
 
 
 
@@ -52,20 +53,14 @@ export function HandoverChecklist({ className = "", onComplete, employeeName = "
         
         setIsSubmitting(true);
         try {
-            const response = await fetch("http://localhost:8080/api/v1/notifications/handover", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    employeeName: employeeName,
-                    tasks: tasks.map(t => ({
-                        taskTitle: t.title,
-                        colleagueName: t.assignedTo,
-                        colleagueEmail: t.colleagueEmail
-                    }))
-                })
+            await api.post("/api/v1/notifications/handover", {
+                employeeName: employeeName,
+                tasks: tasks.map(t => ({
+                    taskTitle: t.title,
+                    colleagueName: t.assignedTo,
+                    colleagueEmail: t.colleagueEmail
+                }))
             });
-
-            if (!response.ok) throw new Error("Failed to send notifications");
 
             setIsSuccess(true);
             if (onComplete) onComplete();

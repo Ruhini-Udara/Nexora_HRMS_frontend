@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
-import { TEMP_AUTH } from "@/lib/authConfig";
 import api from "@/lib/axiosInstance";
+import { useAuthStore } from "@/store/useAuthStore";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MaternityLeave {
@@ -37,6 +37,7 @@ interface LeaveDocument {
 }
 
 export default function MaternityLeaveApprovals() {
+    const { user } = useAuthStore();
     const [requests, setRequests] = useState<MaternityLeave[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedRequest, setSelectedRequest] = useState<MaternityLeave | null>(null);
@@ -94,7 +95,7 @@ export default function MaternityLeaveApprovals() {
                 refType: "MATERNITY_LEAVE",
                 decision: decision,
                 remark: adminRemark,
-                approvedBy: { id: TEMP_AUTH.ADMIN_ID }, // Temporary until User Management integration
+                approvedBy: { id: user?.id }, // Use actual logged-in admin's employee id
             });
             
             triggerNotification(
@@ -121,6 +122,9 @@ export default function MaternityLeaveApprovals() {
     };
 
     const filteredRequests = requests.filter(req => {
+        // Smart Routing: Hide my own requests from verification list
+        if (req.employee?.id === user?.id) return false;
+
         const fullName = `${req.employee?.fullName || req.employee?.firstName + " " + req.employee?.lastName}`.toLowerCase();
         return fullName.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });

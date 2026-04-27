@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
+import { useAuthStore } from "@/store/useAuthStore";
+import api from "@/lib/axiosInstance";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface LeaveDocument {
@@ -25,8 +27,13 @@ interface OverseasLeave {
         employeeCode: string;
         firstName: string;
         lastName: string;
+        fullName?: string;
         email: string;
         phoneNo: string;
+        designation?: {
+            id: number;
+            designationName: string;
+        };
     };
     passportNumber: string;
     passportExpDate: string;
@@ -84,8 +91,8 @@ function StatusBadge({ status }: { status: string }) {
         REJECTED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
     };
     const label: Record<string, string> = {
-        PENDING_HR_APPROVAL: "Pending HR Review",
-        PENDING_ADMIN_APPROVAL: "Pending Admin Approval",
+        PENDING_HR_APPROVAL: "Pending Verification",
+        PENDING_ADMIN_APPROVAL: "Verified (Pending Admin)",
         PENDING_DIRECTOR_REVIEW: "Pending Director Review",
         APPROVED: "Approved",
         REJECTED: "Rejected",
@@ -99,6 +106,7 @@ function StatusBadge({ status }: { status: string }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function LeaveApprovalsPage() {
+    const { user } = useAuthStore();
     const [requests, setRequests] = useState<OverseasLeave[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -109,20 +117,17 @@ export default function LeaveApprovalsPage() {
     const [submitting, setSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("PENDING_HR_APPROVAL");
+    const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
     // ── Fetch leaves from backend ──────────────────────────────────────────
     const fetchLeaves = useCallback(async () => {
         setLoading(true);
         setError("");
         try {
-            const res = await fetch(
-                `http://localhost:8080/api/v1/leaves/overseas/status/${statusFilter}`
-            );
-            if (!res.ok) throw new Error("Failed to fetch leave requests.");
-            const data: OverseasLeave[] = await res.json();
-            setRequests(data);
-        } catch {
-            setError("Could not connect to the backend. Make sure the server is running.");
+            const res = await api.get(`/api/v1/leaves/overseas/status/${statusFilter}`);
+            setRequests(res.data);
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Could not connect to the backend. Make sure the server is running.");
         } finally {
             setLoading(false);
         }
@@ -137,13 +142,8 @@ export default function LeaveApprovalsPage() {
         setDocuments([]);
         setDocsLoading(true);
         try {
-            const res = await fetch(
-                `http://localhost:8080/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`
-            );
-            if (res.ok) {
-                const docs: LeaveDocument[] = await res.json();
-                setDocuments(docs);
-            }
+            const res = await api.get(`/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`);
+            setDocuments(res.data);
         } catch {
             // non-critical — just show empty documents
         } finally {
@@ -154,29 +154,37 @@ export default function LeaveApprovalsPage() {
     // ── Approve / Reject ───────────────────────────────────────────────────
     const handleDecision = async (decision: "APPROVE" | "REJECT") => {
         if (!selectedRequest) return;
+
+        if (decision === "REJECT" && !hrRemark.trim()) {
+            setToast({ message: "Please provide a remark explaining the reason for rejection.", type: "error" });
+            setTimeout(() => setToast(null), 4000);
+            return;
+        }
+
         setSubmitting(true);
         try {
-            const res = await fetch("http://localhost:8080/api/v1/approvals", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    refId: selectedRequest.id,
-                    refType: "OVERSEAS_LEAVE",
-                    decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
-                    remark: hrRemark,
-                    approvedBy: { id: 1 }, // TODO: replace with logged-in HR user's employee id
-                }),
+            await api.post("/api/v1/approvals", {
+                refId: selectedRequest.id,
+                refType: "OVERSEAS_LEAVE",
+                decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
+                remark: hrRemark,
+                approvedBy: { id: user?.id }, // Use actual HR id from store
             });
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(text || "Decision submission failed.");
+            
+            if (decision === "REJECT") {
+                setToast({ message: "Rejection reason has been successfully sent to the employee.", type: "success" });
+            } else {
+                setToast({ message: "Request has been verified and forwarded successfully.", type: "success" });
             }
+            setTimeout(() => setToast(null), 4000);
+
             setSelectedRequest(null);
             setHrRemark("");
             await fetchLeaves(); // Refresh the list
-        } catch (err) {
+        } catch (err: any) {
             console.error("Decision error:", err);
-            alert("Something went wrong. Please try again.");
+            setToast({ message: err.response?.data?.message || "Something went wrong. Please try again.", type: "error" });
+            setTimeout(() => setToast(null), 4000);
         } finally {
             setSubmitting(false);
         }
@@ -184,6 +192,9 @@ export default function LeaveApprovalsPage() {
 
     // ── Filter ─────────────────────────────────────────────────────────────
     const filtered = requests.filter(req => {
+        // Smart Routing: Hide my own requests from verification list
+        if (req.employee?.id === user?.id) return false;
+        
         const name = `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.toLowerCase();
         const id = String(req.id);
         return name.includes(searchTerm.toLowerCase()) || id.includes(searchTerm);
@@ -225,7 +236,7 @@ export default function LeaveApprovalsPage() {
                         </span>
                         <input
                             type="text"
-                            placeholder="Search by ID or name..."
+                            placeholder="Search by ID or Name..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
@@ -238,10 +249,10 @@ export default function LeaveApprovalsPage() {
                             onChange={e => setStatusFilter(e.target.value)}
                             className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
                         >
-                            <option value="PENDING_HR_APPROVAL">Pending My Review</option>
-                            <option value="PENDING_ADMIN_APPROVAL">Sent to Admin</option>
-                            <option value="PENDING_DIRECTOR_REVIEW">Sent to Director</option>
-                            <option value="APPROVED">Approved</option>
+                            <option value="PENDING_HR_APPROVAL">Pending Verification</option>
+                            <option value="PENDING_ADMIN_APPROVAL">Verified (Pending Admin)</option>
+                            <option value="PENDING_DIRECTOR_REVIEW">Pending Director Review</option>
+                            <option value="APPROVED">Approved (Final)</option>
                             <option value="REJECTED">Rejected</option>
                         </select>
                     </div>
@@ -276,12 +287,14 @@ export default function LeaveApprovalsPage() {
                                         <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
                                             <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">#{req.id}</td>
                                             <td className="py-4 px-6">
-                                                <div className="font-semibold text-slate-800 dark:text-white">
-                                                    {req.employee?.firstName} {req.employee?.lastName}
-                                                </div>
-                                                <div className="text-xs text-slate-500">
-                                                    {req.employee?.employeeCode} • {req.branch}
-                                                </div>
+                                                    <div>
+                                                        <div className="font-semibold text-slate-800 dark:text-white whitespace-nowrap">
+                                                            {req.employee?.fullName || `${req.employee?.firstName} ${req.employee?.lastName}`}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {req.employee?.employeeCode} • {req.branch}
+                                                        </div>
+                                                    </div>
                                             </td>
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
                                                 {req.fromDate} → {req.endDate}
@@ -339,11 +352,16 @@ export default function LeaveApprovalsPage() {
                             {/* Details Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Employee Info</h4>
+                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wider">Employee Info</h4>
+                                    <div className="mb-4">
+                                        <div className="font-bold text-slate-900 dark:text-white text-lg">
+                                            {selectedRequest.employee?.fullName || `${selectedRequest.employee?.firstName} ${selectedRequest.employee?.lastName}`}
+                                        </div>
+                                        <div className="text-sm text-slate-500">
+                                            {selectedRequest.employee?.employeeCode} • {selectedRequest.branch}
+                                        </div>
+                                    </div>
                                     <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.firstName} {selectedRequest.employee?.lastName}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">EPF No:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.employeeCode}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Branch:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.branch}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Contact:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.contactNumber}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Email:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
                                     </div>
@@ -424,7 +442,12 @@ export default function LeaveApprovalsPage() {
                                             ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                                             : <span className="material-symbols-outlined text-[18px]">verified</span>
                                         }
-                                        Verify & Forward to Admin
+                                        {(selectedRequest.employee?.designation?.designationName?.toLowerCase().includes("admin") || 
+                                          selectedRequest.employee?.fullName?.toLowerCase().includes("admin") ||
+                                          selectedRequest.employee?.employeeCode?.includes("000"))
+                                            ? "Verify & Forward to Director" 
+                                            : "Verify & Forward to Admin"
+                                        }
                                     </button>
                                 </>
                             ) : (
@@ -437,6 +460,25 @@ export default function LeaveApprovalsPage() {
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
+                    toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
+                }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                        toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                    }`}>
+                        <span className="material-symbols-outlined text-[18px] text-white">
+                            {toast.type === 'success' ? 'check' : 'close'}
+                        </span>
+                    </div>
+                    <p className="text-sm font-bold tracking-tight">{toast.message}</p>
+                    <button onClick={() => setToast(null)} className="ml-4 text-white/50 hover:text-white transition-colors flex">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
                 </div>
             )}
         </div>

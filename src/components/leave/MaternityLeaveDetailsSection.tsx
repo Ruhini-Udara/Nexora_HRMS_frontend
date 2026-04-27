@@ -1,0 +1,96 @@
+import React from "react";
+import { UseFormRegister, FieldErrors } from "react-hook-form";
+
+interface Props {
+    register: UseFormRegister<any>;
+    errors: FieldErrors<any>;
+    isDisabled: boolean;
+    noOfDays: string;
+}
+
+export function MaternityLeaveDetailsSection({ register, errors, isDisabled, noOfDays }: Props) {
+    return (
+        <section>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+                Leave Details
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        Leave Request Reason <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                        disabled={isDisabled}
+                        {...register("leaveReason")}
+                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60 ${errors.leaveReason ? 'border-red-500 focus:ring-red-500' : ''}`}
+                        placeholder="Please elaborate on your leave request..."
+                        rows={3}
+                    />
+                    {errors.leaveReason && <p className="text-red-500 text-xs mt-1">{errors.leaveReason.message as string}</p>}
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        Start Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        disabled={isDisabled}
+                        {...register("startDate")}
+                        min={new Date().toISOString().split("T")[0]}
+                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
+                        type="date"
+                    />
+                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message as string}</p>}
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        End Date <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        disabled={isDisabled}
+                        {...register("endDate")}
+                        min={new Date().toISOString().split("T")[0]}
+                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
+                        type="date"
+                    />
+                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message as string}</p>}
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Date of Request</label>
+                    <input
+                        disabled
+                        {...register("dateOfRequest")}
+                        className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 p-2.5 outline-none cursor-not-allowed"
+                        type="date"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        No. of Requesting Dates
+                    </label>
+                    <input
+                        disabled
+                        value={noOfDays}
+                        className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 p-2.5 outline-none font-bold"
+                        type="text"
+                    />
+                </div>
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                        Child Number <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                        disabled={isDisabled}
+                        {...register("childNumber")}
+                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 appearance-none ${errors.childNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    >
+                        <option value="" disabled>Select Child Number</option>
+                        <option value="1">1st Child</option>
+                        <option value="2">2nd Child</option>
+                        <option value="3">3rd Child or more</option>
+                    </select>
+                    {errors.childNumber && <p className="text-red-500 text-xs mt-1">{errors.childNumber.message as string}</p>}
+                </div>
+            </div>
+        </section>
+    );
+}

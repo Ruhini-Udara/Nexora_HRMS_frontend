@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import axiosInstance from "@/lib/axios";
-import { useAuthStore } from "@/store/useAuthStore";
 
 type TrainingRequest = {
     id: number;
@@ -25,8 +24,7 @@ interface TrainingStatusTableProps {
 }
 
 const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackClick }) => {
-    const { user } = useAuthStore();
-    const employeeId = user?.id;
+    const employeeId = 1; // Hardcoded back as requested
     const [requests, setRequests] = useState<TrainingRequest[]>([]);
     const [isConfirmingAttendance, setIsConfirmingAttendance] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<TrainingRequest | null>(null);
