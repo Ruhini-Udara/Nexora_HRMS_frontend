@@ -28,6 +28,7 @@ interface TrainingStatusTableProps {
 
 const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackClick }) => {
     const { user } = useAuthStore();
+    const employeeId = 1; // Hardcoded back as requested
     const [requests, setRequests] = useState<TrainingRequest[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isConfirmingAttendance, setIsConfirmingAttendance] = useState(false);

@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Download, Check, X, Send, Eye, FileText } from 'lucide-react';
 import { getSignedUrl } from "@/lib/supabaseClient";
+import { useAuthStore } from "@/store/useAuthStore";
+import api from "@/lib/axiosInstance";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface LeaveDocument {
@@ -28,8 +30,10 @@ interface OverseasLeave {
     employee: {
         id: number;
         employeeCode: string;
-        firstName: string;
-        lastName: string;
+        firstName?: string;
+        lastName?: string;
+        fullName?: string;
+        surname?: string;
     };
 }
 
@@ -59,6 +63,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 const LeaveRequestsTable = () => {
+    const { user } = useAuthStore();
     const [requests, setRequests] = useState<OverseasLeave[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -78,12 +83,23 @@ const LeaveRequestsTable = () => {
         setLoading(true);
         setError("");
         try {
-            const res = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/PENDING_DIRECTOR_REVIEW`);
-            if (!res.ok) throw new Error("Failed to fetch requests");
-            const data = await res.json();
-            setRequests(data);
+            const [overseasRes, maternityRes] = await Promise.all([
+                api.get(`/api/v1/leaves/overseas/status/PENDING_DIRECTOR_REVIEW`),
+                api.get(`/api/v1/leaves/maternity/status/PENDING_DIRECTOR_REVIEW`)
+            ]);
+
+            interface LeaveResponse {
+                id: number;
+                [key: string]: unknown;
+            }
+            // Add refType to help identify them
+            const overseas = overseasRes.data.map((r: LeaveResponse) => ({ ...r, refType: 'OVERSEAS_LEAVE' }));
+            const maternity = maternityRes.data.map((r: LeaveResponse) => ({ ...r, refType: 'MATERNITY_LEAVE' }));
+
+            setRequests([...overseas, ...maternity]);
         } catch (err) {
-            setError("Could not connect to the backend. Please ensure the server is running.");
+            const error = err as { response?: { data?: { message?: string } } };
+            setError(error.response?.data?.message || "Could not connect to the backend. Please ensure the server is running.");
         } finally {
             setLoading(false);
         }
@@ -100,11 +116,8 @@ const LeaveRequestsTable = () => {
         setDocuments([]);
         setDocsLoading(true);
         try {
-            const res = await fetch(`http://localhost:8080/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`);
-            if (res.ok) {
-                const docs = await res.json();
-                setDocuments(docs);
-            }
+            const res = await api.get(`/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`);
+            setDocuments(res.data);
         } catch (err) {
             console.error("Error fetching documents", err);
         } finally {
@@ -116,18 +129,13 @@ const LeaveRequestsTable = () => {
         if (!selectedRequest) return;
         setSubmitting(true);
         try {
-            const res = await fetch("http://localhost:8080/api/v1/approvals", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    refId: selectedRequest.id,
-                    refType: "OVERSEAS_LEAVE",
-                    decision: decision,
-                    remark: directorRemark,
-                    approvedBy: { id: 1 }, // TODO: use actual director id
-                }),
+            await api.post("/api/v1/approvals", {
+                refId: selectedRequest.id,
+                refType: (selectedRequest as { refType?: string }).refType || "OVERSEAS_LEAVE",
+                decision: decision,
+                remark: directorRemark,
+                approvedBy: { id: user?.id }, // Use actual director id from store
             });
-            if (!res.ok) throw new Error("Approval failed");
             
             setReviewModalOpen(false);
             setSelectedRequest(null);
@@ -156,7 +164,10 @@ const LeaveRequestsTable = () => {
     };
 
     const filteredRequests = requests.filter(req => {
-        const fullName = `${req.employee?.firstName} ${req.employee?.lastName}`.toLowerCase();
+        // Smart Routing: Hide my own requests from verification list
+        if (req.employee?.id === user?.id) return false;
+
+        const fullName = `${req.employee?.fullName || req.employee?.firstName + " " + req.employee?.lastName}`.toLowerCase();
         return fullName.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
@@ -213,20 +224,15 @@ const LeaveRequestsTable = () => {
                             filteredRequests.map((request) => (
                                 <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase">
-                                                {request.employee?.firstName?.[0] || ""}{request.employee?.lastName?.[0] || (request.employee?.firstName ? "" : "?")}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    {request.employee?.firstName} {request.employee?.lastName}
-                                                </p>
-                                                <p className="text-xs text-gray-500">{request.employee?.employeeCode} • {request.branch}</p>
-                                            </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                {request.employee?.fullName || `${request.employee?.firstName || ""} ${request.employee?.lastName || ""}`.trim()}
+                                            </p>
+                                            <p className="text-xs text-gray-500">{request.employee?.employeeCode} • {request.branch}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Overseas Leave</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-bold uppercase text-[10px]">{(request as { refType?: string }).refType === 'MATERNITY_LEAVE' ? 'Maternity Leave' : 'Overseas Leave'}</p>
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
@@ -272,7 +278,9 @@ const LeaveRequestsTable = () => {
                                 <div className="space-y-4">
                                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Employee Details</h4>
                                     <div className="space-y-2">
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedRequest.employee?.firstName} {selectedRequest.employee?.lastName}</p>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            {selectedRequest.employee?.fullName || `${selectedRequest.employee?.firstName || ""} ${selectedRequest.employee?.lastName || ""}`.trim()}
+                                        </p>
                                         <p className="text-xs text-gray-500">EPF: {selectedRequest.employee?.employeeCode}</p>
                                         <p className="text-xs text-gray-500">Branch: {selectedRequest.branch}</p>
                                         <p className="text-xs text-gray-500">Email: {selectedRequest.email}</p>

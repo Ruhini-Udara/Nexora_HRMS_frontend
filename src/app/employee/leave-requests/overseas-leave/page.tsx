@@ -1,6 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { OverseasGuidelines } from "@/components/leave/OverseasGuidelines";
+import { EmployeeDetailsSection } from "@/components/leave/EmployeeDetailsSection";
+import { OverseasTravelDetailsSection } from "@/components/leave/OverseasTravelDetailsSection";
+import { SuccessBanner } from "@/components/leave/SuccessBanner";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,25 +17,25 @@ import { uploadDocument } from "@/lib/supabaseClient";
 import dynamic from 'next/dynamic';
 const PdfPreviewModal = dynamic(() => import('@/components/ui/PdfPreviewModal').then(mod => mod.PdfPreviewModal), { ssr: false });
 import api from "@/lib/axiosInstance";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { TEMP_AUTH } from "@/lib/authConfig";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useAuthStore } from "@/store/useAuthStore";
+import { Card, CardContent } from "@/components/ui/card";
 
 
 import { overseasSchema } from "@/lib/validations";
 
 type OverseasFormValues = z.infer<typeof overseasSchema>;
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+const OVERSEAS_LEAVE_TYPE_ID = 1;
+const STATUS_DRAFT = "draft";
+const STATUS_SUBMITTED = "submitted";
+const STATUS_EDITING = "editing";
+
 export default function OverseasLeaveRequestPage() {
-    const { register, handleSubmit, control, getValues, reset, formState: { errors } } = useForm<OverseasFormValues>({
+    const { user } = useAuthStore();
+    const { register, handleSubmit, control, getValues, reset, setValue, formState: { errors } } = useForm<OverseasFormValues>({
         resolver: zodResolver(overseasSchema),
         defaultValues: {
             dateOfRequest: new Date().toISOString().split("T")[0],
@@ -44,7 +50,7 @@ export default function OverseasLeaveRequestPage() {
         flightTickets: null as File | null,
     });
 
-    const [status, setStatus] = useState<"editing" | "draft" | "submitted">("editing");
+    const [status, setStatus] = useState<"editing" | "draft" | "submitted">(STATUS_EDITING);
     const [fileError, setFileError] = useState("");
 
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
@@ -60,11 +66,13 @@ export default function OverseasLeaveRequestPage() {
         const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         window.addEventListener('resize', handleResize);
         
+        // Rationale: We check localStorage for a draft on mount. This ensures the user 
+        // doesn't lose their progress if the browser crashes or is refreshed.
         const draft = localStorage.getItem("overseasLeaveDraft");
         if (draft) {
             try {
                 reset(JSON.parse(draft));
-                setTimeout(() => setStatus("draft"), 0);
+                setTimeout(() => setStatus(STATUS_DRAFT), 0);
             } catch (e) {
                 console.error("Failed to parse draft", e);
             }
@@ -75,6 +83,27 @@ export default function OverseasLeaveRequestPage() {
             window.removeEventListener('resize', handleResize);
         }
     }, [reset]);
+
+    const { data: employeeData } = useQuery({
+        queryKey: ['employee', user?.id],
+        queryFn: async () => {
+            const res = await api.get(`/api/employees/${user?.id}`);
+            return res.data;
+        },
+        enabled: !!user?.id
+    });
+
+    useEffect(() => {
+        if (employeeData && status !== STATUS_DRAFT) {
+            const draft = localStorage.getItem("overseasLeaveDraft");
+            if (!draft) {
+                setValue("employeeName", employeeData.fullName || user?.name || "");
+                setValue("email", employeeData.email || user?.email || "");
+                setValue("designation", employeeData.designation?.designationName || user?.designation || "");
+                setValue("branch", employeeData.department || "");
+            }
+        }
+    }, [employeeData, setValue, status, user]);
 
     const noOfDays = useLeaveDays(control, "startDate", "endDate").toString();
 
@@ -96,7 +125,7 @@ export default function OverseasLeaveRequestPage() {
     const handleSaveDraft = (e: React.MouseEvent) => {
         e.preventDefault();
         localStorage.setItem("overseasLeaveDraft", JSON.stringify(getValues()));
-        setStatus("draft");
+        setStatus(STATUS_DRAFT);
         setFileError("");
     };
 
@@ -106,7 +135,8 @@ export default function OverseasLeaveRequestPage() {
         mutationFn: async (data: OverseasFormValues) => {
             setFileError("Uploading documents to secure storage...");
 
-            // Upload all documents to Supabase Storage in parallel
+            // Rationale: We use Promise.all to upload all documents to Supabase Storage in parallel.
+            // This significantly improves user experience by reducing wait time compared to sequential uploads.
             const [leaveLetterUrl, passportCopyUrl, visaCopyUrl, confirmationLetterUrl, flightTicketsUrl] = await Promise.all([
                 files.leaveLetter ? uploadDocument(files.leaveLetter, "overseas-leave") : Promise.resolve(null),
                 uploadDocument(files.passportCopy!, "overseas-leave"),
@@ -121,9 +151,13 @@ export default function OverseasLeaveRequestPage() {
 
             setFileError("Documents uploaded! Submitting your request...");
 
+            if (!user?.id) {
+                throw new Error("User session not found. Please log in again.");
+            }
+
             const payload = {
-                employee: { id: TEMP_AUTH.EMPLOYEE_ID }, // Centralized temporary auth config
-                leaveType: { id: 1 },
+                employee: { id: user.id }, // Dynamic logged-in user ID
+                leaveType: { id: OVERSEAS_LEAVE_TYPE_ID },
                 fromDate: data.startDate,
                 endDate: data.endDate,
                 totalDays: Number(noOfDays),
@@ -166,11 +200,11 @@ export default function OverseasLeaveRequestPage() {
         },
         onSuccess: () => {
             setFileError("");
-            setStatus("submitted");
+            setStatus(STATUS_SUBMITTED);
             localStorage.removeItem("overseasLeaveDraft");
             window.scrollTo({ top: 0, behavior: 'smooth' });
             // Invalidate the 'leaves' query to refresh the dashboard
-            queryClient.invalidateQueries({ queryKey: ['leaves', TEMP_AUTH.EMPLOYEE_ID] });
+            queryClient.invalidateQueries({ queryKey: ['leaves', user?.id] });
         },
         onError: (error: Error) => {
             console.error("Submission error:", error);
@@ -186,7 +220,7 @@ export default function OverseasLeaveRequestPage() {
         submitMutation.mutate(data);
     };
 
-    const isDisabled = status === "submitted" || submitMutation.isPending;
+    const isDisabled = status === STATUS_SUBMITTED || submitMutation.isPending;
 
 
 
@@ -210,7 +244,7 @@ export default function OverseasLeaveRequestPage() {
                 </div>
 
                 {/* Status Banners */}
-                {status === "draft" && (
+                {status === STATUS_DRAFT && (
                     <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/30 flex items-center gap-3 mb-6">
                         <span className="material-symbols-outlined text-amber-500">save</span>
                         <div className="text-sm font-medium">
@@ -219,39 +253,15 @@ export default function OverseasLeaveRequestPage() {
                     </div>
                 )}
 
-                {status === "submitted" && (
-                    <Card className="mb-8 overflow-hidden relative text-center py-8">
-                        <CardContent>
-                            <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <span className="material-symbols-outlined text-4xl">check_circle</span>
-                            </div>
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Overseas Leave Submitted!</h2>
-                            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
-                                Your request has been successfully received. 
-                                You can track the approval status on your dashboard.
-                            </p>
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <Link 
-                                    href="/employee/leave-requests"
-                                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
-                                >
-                                    <span className="material-symbols-outlined text-sm">dashboard</span>
-                                    Go to Dashboard
-                                </Link>
-                                <Button
-                                    onClick={() => {
-                                        reset();
-                                        setStatus("editing");
-                                    }}
-                                    variant="outline"
-                                    className="px-6 py-2.5 font-bold transition-colors flex items-center gap-2"
-                                >
-                                    <span className="material-symbols-outlined text-sm">add</span>
-                                    Submit New Request
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                {status === STATUS_SUBMITTED && (
+                    <SuccessBanner 
+                        title="Overseas Leave Submitted!"
+                        message="Your request has been successfully received. You can track the approval status on your dashboard."
+                        onReset={() => {
+                            reset();
+                            setStatus(STATUS_EDITING);
+                        }}
+                    />
                 )}
 
                 {fileError && (
@@ -262,457 +272,264 @@ export default function OverseasLeaveRequestPage() {
                 )}
             </div>
 
-            <div className="col-span-12 lg:col-span-8">
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                    <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
-                        {/* 1. Employee Details Section */}
-                        <section>
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
-                                Employee Details
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Employee Name <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("employeeName")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.employeeName ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="Full name"
-                                        type="text"
-                                    />
-                                    {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        EPF Number <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("epfNumber")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.epfNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="e.g. 12345"
-                                        type="text"
-                                    />
-                                    {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{errors.epfNumber.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Designation <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("designation")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.designation ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="Your role"
-                                        type="text"
-                                    />
-                                    {errors.designation && <p className="text-red-500 text-xs mt-1">{errors.designation.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Branch <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("branch")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.branch ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="e.g. Head Office"
-                                        type="text"
-                                    />
-                                    {errors.branch && <p className="text-red-500 text-xs mt-1">{errors.branch.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Contact Number <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("contactNumber")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.contactNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="+94 77 XXXXXXX"
-                                        type="text"
-                                    />
-                                    {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        E-mail Address <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("email")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="your.email@example.com"
-                                        type="email"
-                                    />
-                                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-                                </div>
-                            </div>
-                        </section>
+            {!isDisabled && (
+                <div className="contents">
+                    <div className="col-span-12 lg:col-span-8">
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                            <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
+                                {/* 1. Employee Details Section */}
+                                <EmployeeDetailsSection register={register} errors={errors} isDisabled={isDisabled} />
 
-                        {/* 2. Leave & Travel Details Section */}
-                        <section>
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
-                                Leave &amp; Travel Details
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Leave Request Reason <span className="text-red-500">*</span>
-                                    </label>
+                                <OverseasTravelDetailsSection register={register} errors={errors} isDisabled={isDisabled} noOfDays={noOfDays} />
+
+                                {/* 3. Document Upload Section */}
+                                <section>
+                                    <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+                                        Mandatory Documents
+                                    </h2>
+
+                                    <div className="space-y-4">
+                                        {/* Flight Tickets / Itinerary */}
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            <div className="flex gap-4 items-center">
+                                                <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                                                    <span className="material-symbols-outlined">airplane_ticket</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                                                        Flight Tickets / Itinerary <span className="text-red-500">*</span>
+                                                    </h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Upload your confirmed flight booking.</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                {isDisabled ? (
+                                                    <span className="text-xs font-semibold text-slate-400">Locked</span>
+                                                ) : (
+                                                    <FileUploadDropzone 
+                                                        onFileAccepted={(f) => handleFileChange(f, "flightTickets")}
+                                                        currentFile={files.flightTickets}
+                                                        label="Itinerary (PDF)"
+                                                    />
+                                                )}
+                                                {files.flightTickets && (
+                                                    <button type="button" onClick={() => setPreviewFile(files.flightTickets)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                        <span className="material-symbols-outlined text-[14px]">visibility</span> Preview File
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Passport Copy */}
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            <div className="flex gap-4 items-center">
+                                                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                                    <span className="material-symbols-outlined">badge</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                                                        Copy of Passport <span className="text-red-500">*</span>
+                                                    </h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Please upload the primary info page.</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                {isDisabled ? (
+                                                    <span className="text-xs font-semibold text-slate-400">Locked</span>
+                                                ) : (
+                                                    <FileUploadDropzone 
+                                                        onFileAccepted={(f) => handleFileChange(f, "passportCopy")}
+                                                        currentFile={files.passportCopy}
+                                                        label="Passport Copy"
+                                                    />
+                                                )}
+                                                {files.passportCopy && (
+                                                    <button type="button" onClick={() => setPreviewFile(files.passportCopy)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                        <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Visa Copy */}
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            <div className="flex gap-4 items-center">
+                                                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                                    <span className="material-symbols-outlined">airplane_ticket</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                                                        Visa Copy <span className="text-red-500">*</span>
+                                                    </h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Valid visa for the destination.</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                {isDisabled ? (
+                                                    <span className="text-xs font-semibold text-slate-400">Locked</span>
+                                                ) : (
+                                                    <FileUploadDropzone 
+                                                        onFileAccepted={(f) => handleFileChange(f, "visaCopy")}
+                                                        currentFile={files.visaCopy}
+                                                        label="Visa Copy"
+                                                    />
+                                                )}
+                                                {files.visaCopy && (
+                                                    <button type="button" onClick={() => setPreviewFile(files.visaCopy)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                        <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Confirmation Letter */}
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            <div className="flex gap-4 items-center">
+                                                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                                    <span className="material-symbols-outlined">verified</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                                                        Overseas Org. Confirmation <span className="text-red-500">*</span>
+                                                    </h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Letter from the overseas organization.</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                {isDisabled ? (
+                                                    <span className="text-xs font-semibold text-slate-400">Locked</span>
+                                                ) : (
+                                                    <FileUploadDropzone 
+                                                        onFileAccepted={(f) => handleFileChange(f, "confirmationLetter")}
+                                                        currentFile={files.confirmationLetter}
+                                                        label="Confirmation Letter"
+                                                    />
+                                                )}
+                                                {files.confirmationLetter && (
+                                                    <button type="button" onClick={() => setPreviewFile(files.confirmationLetter)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                        <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Leave Letter (Optional) */}
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            <div className="flex gap-4 items-center">
+                                                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                                                    <span className="material-symbols-outlined">description</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">Leave Request Letter</h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Optional written or formal request letter.</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                {isDisabled ? (
+                                                    <span className="text-xs font-semibold text-slate-400">Locked</span>
+                                                ) : (
+                                                    <FileUploadDropzone 
+                                                        onFileAccepted={(f) => handleFileChange(f, "leaveLetter")}
+                                                        currentFile={files.leaveLetter}
+                                                        label="Leave Letter"
+                                                    />
+                                                )}
+                                                {files.leaveLetter && (
+                                                    <button type="button" onClick={() => setPreviewFile(files.leaveLetter)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                        <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* 4. Special Remark */}
+                                <section>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Special Remark</label>
                                     <textarea
                                         disabled={isDisabled}
-                                        {...register("leaveReason")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60 ${errors.leaveReason ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="Please elaborate on your travel plans..."
-                                        rows={3}
+                                        {...register("specialRemark")}
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60"
+                                        placeholder="Any additional information..."
+                                        rows={2}
                                     />
-                                    {errors.leaveReason && <p className="text-red-500 text-xs mt-1">{errors.leaveReason.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Start Date <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("startDate")}
-                                        min={new Date().toISOString().split("T")[0]}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 transition-colors ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        type="date"
-                                    />
-                                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        End Date <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("endDate")}
-                                        min={new Date().toISOString().split("T")[0]}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 transition-colors ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        type="date"
-                                    />
-                                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Date of Request</label>
-                                    <input
-                                        disabled
-                                        {...register("dateOfRequest")}
-                                        className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 p-2.5 outline-none cursor-not-allowed"
-                                        type="date"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        No. of Requesting Dates
-                                    </label>
-                                    <input
-                                        disabled
-                                        value={noOfDays}
-                                        className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 p-2.5 outline-none font-bold"
-                                        type="text"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Passport Number <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("passportNumber")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.passportNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        placeholder="e.g. NXXXXXXX"
-                                        type="text"
-                                    />
-                                    {errors.passportNumber && <p className="text-red-500 text-xs mt-1">{errors.passportNumber.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                        Passport Expired Date <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        disabled={isDisabled}
-                                        {...register("passportExpDate")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.passportExpDate ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        type="date"
-                                    />
-                                    {errors.passportExpDate && <p className="text-red-500 text-xs mt-1">{errors.passportExpDate.message}</p>}
-                                </div>
-                            </div>
-                        </section>
+                                </section>
 
-                        {/* 3. Document Upload Section */}
-                        <section>
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
-                                Mandatory Documents
-                            </h2>
+                                {/* Form Actions with Acknowledgment */}
+                                <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="mb-6">
+                                        <label className="flex items-start gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center justify-center mt-0.5">
+                                                <input
+                                                    type="checkbox"
+                                                    disabled={isDisabled}
+                                                    {...register("acknowledgement")}
+                                                    className={`appearance-none w-5 h-5 border-2 border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 checked:bg-primary checked:border-primary disabled:opacity-60 disabled:cursor-not-allowed transition-all peer ${errors.acknowledgement ? 'border-red-500 ring-2 ring-red-500/20' : ''}`}
+                                                />
+                                                <span className="material-symbols-outlined absolute text-white text-[14px] opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">
+                                                    check
+                                                </span>
+                                            </div>
+                                            <span className={`text-sm ${isDisabled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'} transition-colors leading-snug`}>
+                                                I acknowledge that all provided details and mandatory documents are accurate.
+                                                I understand that <strong className="text-slate-800 dark:text-slate-200">once submitted, this overseas leave request cannot be edited</strong> or modified.
+                                            </span>
+                                        </label>
+                                        {errors.acknowledgement && <p className="text-red-500 text-xs mt-2 font-medium">{errors.acknowledgement.message}</p>}
+                                    </div>
 
-                            <div className="space-y-4">
-                                {/* Flight Tickets / Itinerary */}
-                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                                    <div className="flex gap-4 items-center">
-                                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center text-orange-600 dark:text-orange-400">
-                                            <span className="material-symbols-outlined">airplane_ticket</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                Flight Tickets / Itinerary <span className="text-red-500">*</span>
-                                            </h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Upload your confirmed flight booking.</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        {isDisabled ? (
-                                            <span className="text-xs font-semibold text-slate-400">Locked</span>
-                                        ) : (
-                                            <FileUploadDropzone 
-                                                onFileAccepted={(f) => handleFileChange(f, "flightTickets")}
-                                                currentFile={files.flightTickets}
-                                                label="Itinerary (PDF)"
-                                            />
-                                        )}
-                                        {files.flightTickets && (
-                                            <button type="button" onClick={() => setPreviewFile(files.flightTickets)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
-                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview File
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                                    <div className="flex items-center gap-4">
+                                        {!isDisabled && (
+                                            <>
+                                                {/* Submit: must be type="submit" so form onSubmit runs */}
+                                                <button
+                                                    className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    type="submit"
+                                                    disabled={submitMutation.isPending}
+                                                >
+                                                    {submitMutation.isPending ? (
+                                                        <>
+                                                            <span className="material-symbols-outlined animate-spin text-sm">sync</span>
+                                                            Submitting...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className="material-symbols-outlined text-sm">send</span>
+                                                            Submit Request
+                                                        </>
+                                                    )}
+                                                </button>
 
-                                {/* Passport Copy */}
-                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                                    <div className="flex gap-4 items-center">
-                                        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                                            <span className="material-symbols-outlined">badge</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                Copy of Passport <span className="text-red-500">*</span>
-                                            </h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Please upload the primary info page.</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        {isDisabled ? (
-                                            <span className="text-xs font-semibold text-slate-400">Locked</span>
-                                        ) : (
-                                            <FileUploadDropzone 
-                                                onFileAccepted={(f) => handleFileChange(f, "passportCopy")}
-                                                currentFile={files.passportCopy}
-                                                label="Passport Copy"
-                                            />
+                                                <button
+                                                    onClick={handleSaveDraft}
+                                                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 px-8 py-2.5 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+                                                    type="button"
+                                                    disabled={isDisabled}
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">save</span>
+                                                    Save as Draft
+                                                </button>
+                                            </>
                                         )}
-                                        {files.passportCopy && (
-                                            <button type="button" onClick={() => setPreviewFile(files.passportCopy)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
-                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Visa Copy */}
-                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                                    <div className="flex gap-4 items-center">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                            <span className="material-symbols-outlined">airplane_ticket</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                Visa Copy <span className="text-red-500">*</span>
-                                            </h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Valid visa for the destination.</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        {isDisabled ? (
-                                            <span className="text-xs font-semibold text-slate-400">Locked</span>
-                                        ) : (
-                                            <FileUploadDropzone 
-                                                onFileAccepted={(f) => handleFileChange(f, "visaCopy")}
-                                                currentFile={files.visaCopy}
-                                                label="Visa Copy"
-                                            />
-                                        )}
-                                        {files.visaCopy && (
-                                            <button type="button" onClick={() => setPreviewFile(files.visaCopy)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
-                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Confirmation Letter */}
-                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                                    <div className="flex gap-4 items-center">
-                                        <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                                            <span className="material-symbols-outlined">verified</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                Overseas Org. Confirmation <span className="text-red-500">*</span>
-                                            </h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Letter from the overseas organization.</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        {isDisabled ? (
-                                            <span className="text-xs font-semibold text-slate-400">Locked</span>
-                                        ) : (
-                                            <FileUploadDropzone 
-                                                onFileAccepted={(f) => handleFileChange(f, "confirmationLetter")}
-                                                currentFile={files.confirmationLetter}
-                                                label="Confirmation Letter"
-                                            />
-                                        )}
-                                        {files.confirmationLetter && (
-                                            <button type="button" onClick={() => setPreviewFile(files.confirmationLetter)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
-                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Leave Letter (Optional) */}
-                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                                    <div className="flex gap-4 items-center">
-                                        <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                                            <span className="material-symbols-outlined">description</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">Leave Request Letter</h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Optional written or formal request letter.</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        {isDisabled ? (
-                                            <span className="text-xs font-semibold text-slate-400">Locked</span>
-                                        ) : (
-                                            <FileUploadDropzone 
-                                                onFileAccepted={(f) => handleFileChange(f, "leaveLetter")}
-                                                currentFile={files.leaveLetter}
-                                                label="Leave Letter"
-                                            />
-                                        )}
-                                        {files.leaveLetter && (
-                                            <button type="button" onClick={() => setPreviewFile(files.leaveLetter)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
-                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* 4. Special Remark */}
-                        <section>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Special Remark</label>
-                            <textarea
-                                disabled={isDisabled}
-                                {...register("specialRemark")}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60"
-                                placeholder="Any additional information..."
-                                rows={2}
-                            />
-                        </section>
-
-                        {/* Form Actions with Acknowledgment */}
-                        <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
-                            <div className="mb-6">
-                                <label className="flex items-start gap-3 cursor-pointer group">
-                                    <div className="relative flex items-center justify-center mt-0.5">
-                                        <input
-                                            type="checkbox"
-                                            disabled={isDisabled}
-                                            {...register("acknowledgement")}
-                                            className={`appearance-none w-5 h-5 border-2 border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 checked:bg-primary checked:border-primary disabled:opacity-60 disabled:cursor-not-allowed transition-all peer ${errors.acknowledgement ? 'border-red-500 ring-2 ring-red-500/20' : ''}`}
-                                        />
-                                        <span className="material-symbols-outlined absolute text-white text-[14px] opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">
-                                            check
-                                        </span>
-                                    </div>
-                                    <span className={`text-sm ${isDisabled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'} transition-colors leading-snug`}>
-                                        I acknowledge that all provided details and mandatory documents are accurate.
-                                        I understand that <strong className="text-slate-800 dark:text-slate-200">once submitted, this overseas leave request cannot be edited</strong> or modified.
-                                    </span>
-                                </label>
-                                {errors.acknowledgement && <p className="text-red-500 text-xs mt-2 font-medium">{errors.acknowledgement.message}</p>}
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                {!isDisabled && (
-                                    <>
-                                        {/* Submit: must be type="submit" so form onSubmit runs */}
-                                        <button
-                                            className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            type="submit"
-                                            disabled={submitMutation.isPending}
+                                        <Link
+                                            href="/employee/leave-requests"
+                                            className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4 transition-colors"
                                         >
-                                            {submitMutation.isPending ? (
-                                                <>
-                                                    <span className="material-symbols-outlined animate-spin text-sm">sync</span>
-                                                    Submitting...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="material-symbols-outlined text-sm">send</span>
-                                                    Submit Request
-                                                </>
-                                            )}
-                                        </button>
-
-                                        <button
-                                            onClick={handleSaveDraft}
-                                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 px-8 py-2.5 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
-                                            type="button"
-                                            disabled={isDisabled}
-                                        >
-                                            <span className="material-symbols-outlined text-sm">save</span>
-                                            Save as Draft
-                                        </button>
-                                    </>
-                                )}
-                                <Link
-                                    href="/employee/leave-requests"
-                                    className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4 transition-colors"
-                                >
-                                    {isDisabled ? "Back to Dashboard" : "Cancel"}
-                                </Link>
-                            </div>
+                                            {isDisabled ? "Back to Dashboard" : "Cancel"}
+                                        </Link>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
-                    </form>
-                </div>
-            </div>
+                    </div>
 
-            {/* Right Column - Sidebar */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-                {/* Guidelines Card */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                    <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">gavel</span>
-                        Important Guidelines
-                    </h3>
-                    <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-400">
-                        <li className="flex gap-3">
-                            <span className="material-symbols-outlined text-[16px] text-amber-500 mt-0.5">warning</span>
-                            <span>All mandatory documents must be uploaded correctly. Incorrect documents will lead to rejection.</span>
-                        </li>
-                        <li className="flex gap-3">
-                            <span className="material-symbols-outlined text-[16px] text-blue-500 mt-0.5">schedule</span>
-                            <span>Submit the application at least 14 days prior to your travel date to ensure timely processing.</span>
-                        </li>
-                        <li className="flex gap-3">
-                            <span className="material-symbols-outlined text-[16px] text-emerald-500 mt-0.5">verified_user</span>
-                            <span>
-                                Save as Draft will keep your information safely until you collect all documents. Once submitted, it cannot be edited.
-                            </span>
-                        </li>
-                    </ul>
+                    {/* Right Column - Sidebar */}
+                    <div className="col-span-12 lg:col-span-4 space-y-6">
+                        <OverseasGuidelines />
+                    </div>
                 </div>
-            </div>
+            )}
 
             <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
