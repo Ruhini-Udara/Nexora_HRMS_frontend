@@ -46,11 +46,14 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [prevFilters, setPrevFilters] = useState({ department, jobTitle, status });
 
-  useEffect(() => {
+  if (department !== prevFilters.department || jobTitle !== prevFilters.jobTitle || status !== prevFilters.status) {
+    setPrevFilters({ department, jobTitle, status });
     setCurrentPage(1);
-  }, [department, jobTitle, status]);
+  }
+  
+  const itemsPerPage = 5;
 
   useEffect(() => {
     const fetchEmployees = async () => {
