@@ -25,7 +25,7 @@ export function OverseasTravelDetailsSection<T extends FieldValues>({ register, 
                         placeholder="Please elaborate on your travel plans..."
                         rows={3}
                     />
-                    {errors.leaveReason && <p className="text-red-500 text-xs mt-1">{(errors.leaveReason as any).message}</p>}
+                    {errors.leaveReason && <p className="text-red-500 text-xs mt-1">{errors.leaveReason.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -38,7 +38,7 @@ export function OverseasTravelDetailsSection<T extends FieldValues>({ register, 
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 transition-colors ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                         type="date"
                     />
-                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{(errors.startDate as any).message}</p>}
+                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -51,7 +51,7 @@ export function OverseasTravelDetailsSection<T extends FieldValues>({ register, 
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 transition-colors ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                         type="date"
                     />
-                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{(errors.endDate as any).message}</p>}
+                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Date of Request</label>
@@ -84,7 +84,7 @@ export function OverseasTravelDetailsSection<T extends FieldValues>({ register, 
                         placeholder="e.g. NXXXXXXX"
                         type="text"
                     />
-                    {errors.passportNumber && <p className="text-red-500 text-xs mt-1">{(errors.passportNumber as any).message}</p>}
+                    {errors.passportNumber && <p className="text-red-500 text-xs mt-1">{errors.passportNumber.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -96,7 +96,7 @@ export function OverseasTravelDetailsSection<T extends FieldValues>({ register, 
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.passportExpDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                         type="date"
                     />
-                    {errors.passportExpDate && <p className="text-red-500 text-xs mt-1">{(errors.passportExpDate as any).message}</p>}
+                    {errors.passportExpDate && <p className="text-red-500 text-xs mt-1">{errors.passportExpDate.message?.toString()}</p>}
                 </div>
             </div>
         </section>

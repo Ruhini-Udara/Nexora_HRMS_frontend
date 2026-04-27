@@ -25,7 +25,7 @@ export function MaternityLeaveDetailsSection<T extends FieldValues>({ register, 
                         placeholder="Please elaborate on your leave request..."
                         rows={3}
                     />
-                    {errors.leaveReason && <p className="text-red-500 text-xs mt-1">{(errors.leaveReason as any).message}</p>}
+                    {errors.leaveReason && <p className="text-red-500 text-xs mt-1">{errors.leaveReason.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -38,7 +38,7 @@ export function MaternityLeaveDetailsSection<T extends FieldValues>({ register, 
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                         type="date"
                     />
-                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{(errors.startDate as any).message}</p>}
+                    {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -51,7 +51,7 @@ export function MaternityLeaveDetailsSection<T extends FieldValues>({ register, 
                         className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                         type="date"
                     />
-                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{(errors.endDate as any).message}</p>}
+                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Date of Request</label>
@@ -87,7 +87,7 @@ export function MaternityLeaveDetailsSection<T extends FieldValues>({ register, 
                         <option value="2">2nd Child</option>
                         <option value="3">3rd Child or more</option>
                     </select>
-                    {errors.childNumber && <p className="text-red-500 text-xs mt-1">{(errors.childNumber as any).message}</p>}
+                    {errors.childNumber && <p className="text-red-500 text-xs mt-1">{errors.childNumber.message?.toString()}</p>}
                 </div>
             </div>
         </section>

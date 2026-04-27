@@ -94,8 +94,9 @@ export default function OverseasLeaveApprovals() {
             // Always fetch board agenda items (ADMIN_APPROVED status)
             const boardRes = await api.get(`/api/v1/leaves/overseas/status/ADMIN_APPROVED`);
             setBoardItems(boardRes.data);
-        } catch (err: any) { 
-            setError(err.response?.data?.message || "Could not connect to the backend. Make sure the server is running."); 
+        } catch (err) { 
+            const error = err as { response?: { data?: { message?: string } } };
+            setError(error.response?.data?.message || "Could not connect to the backend. Make sure the server is running."); 
         } finally { setLoading(false); }
     }, [statusFilter]);
 
@@ -123,8 +124,9 @@ export default function OverseasLeaveApprovals() {
             setSelectedRequest(null); setAdminRemark("");
             await fetchLeaves();
             showToast("Request processed successfully.", "success");
-        } catch (err: any) { 
-            showToast(err.response?.data?.message || "Something went wrong. Please try again.", "error"); 
+        } catch (err) { 
+            const error = err as { response?: { data?: { message?: string } } };
+            showToast(error.response?.data?.message || "Something went wrong. Please try again.", "error"); 
         } finally { setSubmitting(false); }
     };
 

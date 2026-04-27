@@ -25,7 +25,7 @@ export function EmployeeDetailsSection<T extends FieldValues>({ register, errors
                         placeholder="Full name"
                         type="text"
                     />
-                    {errors.employeeName && <p className="text-red-500 text-xs mt-1">{(errors.employeeName as any).message}</p>}
+                    {errors.employeeName && <p className="text-red-500 text-xs mt-1">{errors.employeeName.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -38,7 +38,7 @@ export function EmployeeDetailsSection<T extends FieldValues>({ register, errors
                         placeholder="Enter EPF Number"
                         type="text"
                     />
-                    {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{(errors.epfNumber as any).message}</p>}
+                    {errors.epfNumber && <p className="text-red-500 text-xs mt-1">{errors.epfNumber.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -51,7 +51,7 @@ export function EmployeeDetailsSection<T extends FieldValues>({ register, errors
                         placeholder="Your role"
                         type="text"
                     />
-                    {errors.designation && <p className="text-red-500 text-xs mt-1">{(errors.designation as any).message}</p>}
+                    {errors.designation && <p className="text-red-500 text-xs mt-1">{errors.designation.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -64,7 +64,7 @@ export function EmployeeDetailsSection<T extends FieldValues>({ register, errors
                         placeholder="e.g. Head Office"
                         type="text"
                     />
-                    {errors.branch && <p className="text-red-500 text-xs mt-1">{(errors.branch as any).message}</p>}
+                    {errors.branch && <p className="text-red-500 text-xs mt-1">{errors.branch.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -77,7 +77,7 @@ export function EmployeeDetailsSection<T extends FieldValues>({ register, errors
                         placeholder="+94 77 XXXXXXX"
                         type="text"
                     />
-                    {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{(errors.contactNumber as any).message}</p>}
+                    {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -90,7 +90,7 @@ export function EmployeeDetailsSection<T extends FieldValues>({ register, errors
                         placeholder="your.email@example.com"
                         type="email"
                     />
-                    {errors.email && <p className="text-red-500 text-xs mt-1">{(errors.email as any).message}</p>}
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message?.toString()}</p>}
                 </div>
                 {children}
             </div>
