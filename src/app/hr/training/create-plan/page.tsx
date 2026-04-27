@@ -27,25 +27,38 @@ type TrainingEvent = {
 
 
 export default function CreateTrainingPlanPage() {
+    // Stores all training events fetched from backend
     const [events, setEvents] = useState<TrainingEvent[]>([]);
+
+    // Filters for main events display
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedStatus, setSelectedStatus] = useState("All");
+    
+    // State for viewing a training event in detail (opens a modal/overlay)
     const [selectedViewEvent, setSelectedViewEvent] = useState<TrainingEvent | null>(null);
+    
+    // State for tracking which event is selected for deletion
     const [eventToDelete, setEventToDelete] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Tracks toast notification state (message + type)
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    
+    // Pagination state for main events display
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
     const router = useRouter();
-
+    // fetches events list on component mount
     useEffect(() => {
         api.get('/api/training/events')
             .then(res => setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id)))
             .catch(err => console.error("Failed to fetch events:", err));
     }, []);
-
+     
+    // Extracts unique categories from events for filter
     const categories = ["All", ...Array.from(new Set(events.map(e => e.category)))];
 
+    // Filter logic for displaying events based on category and status
     const filteredEvents = events.filter(e => {
         const matchesCategory = selectedCategory === "All" || e.category === selectedCategory;
         const isSent = e.status === 'Pending Admin Approval' || e.status === 'Approved';
@@ -65,6 +78,7 @@ export default function CreateTrainingPlanPage() {
         setEventToDelete(id);
     };
 
+    // Handles deletion of a training event
     const confirmDelete = () => {
         if (!eventToDelete) return;
 
@@ -84,6 +98,7 @@ export default function CreateTrainingPlanPage() {
             });
     };
 
+    // Navigates to edit page with event ID passed as query param
     const handleEditEvent = (id: number) => {
         router.push(`/hr/training/create-plan/new?editId=${id}`);
     };

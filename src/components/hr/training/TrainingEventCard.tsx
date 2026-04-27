@@ -2,6 +2,7 @@
 
 import React from "react";
 
+// Props describing a single training event card
 interface TrainingEventCardProps {
     title: string;
     date: string;
@@ -17,6 +18,7 @@ interface TrainingEventCardProps {
     reason?: string;
 }
 
+// HR card UI
 export default function TrainingEventCard({
     title,
     date,
@@ -69,7 +71,8 @@ export default function TrainingEventCard({
                         )}
                     </div>
                 </div>
-
+                
+                {/* HR card actions: View / Edit / Delete */}
                 {hideActions !== true && (
                     <div className="flex gap-1.5 mt-auto">
                         <button

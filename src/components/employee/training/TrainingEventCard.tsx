@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { formatTime } from "@/lib/utils";
 
+// Props describing a single training event card
 interface TrainingEventProps {
     category: string;
     imageSrc: string;
@@ -12,7 +13,7 @@ interface TrainingEventProps {
     time: string;
     imageAlt: string;
     applyBefore?: string;
-    isApplied?: boolean;
+    isApplied?: boolean;  // Determines whether user has already applied for this event
 }
 
 const TrainingEventCard: React.FC<TrainingEventProps> = ({
@@ -23,6 +24,10 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
     applyBefore,
     isApplied
 }) => {
+
+    // Card UI changes based on whether the user already applied:
+    // - Applied → green styling + "Applied" badge
+    // - Not applied → show "Apply Now" button
     return (
         <div className={`bg-white rounded-xl border transition-all flex flex-col group ${isApplied ? 'border-emerald-100 dark:border-emerald-900/30' : 'border-stone-200 hover:border-[var(--color-training-primary)] hover:shadow-lg'}`}>
             <div className={`rounded-t-xl p-2.5 flex justify-end items-center ${isApplied ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'bg-[var(--color-training-primary)]/5'}`}>
@@ -33,6 +38,7 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
             <div className="p-3 flex-1 flex flex-col">
                 <h3 className="font-bold text-sm mb-1 text-stone-800 line-clamp-1" title={title}>{title}</h3>
                 <div className="space-y-1 mb-3">
+                    {/* Date & time display using material icons */}
                     <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
                         <span className="material-symbols-outlined text-xs">calendar_month</span>
                         {date}
@@ -43,6 +49,7 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
                     </div>
                 </div>
 
+                {/* Bottom bar: show "Apply Before" (if applicable) or "Applied" badge */}
                 <div className="mt-auto flex items-center justify-between gap-2 border-t border-stone-100 pt-2.5">
                     {applyBefore && !isApplied && (
                         <div className="flex items-center gap-1 text-[10px] text-orange-600 font-bold bg-orange-50 px-1.5 py-1 rounded-md border border-orange-100">

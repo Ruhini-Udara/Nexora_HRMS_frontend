@@ -82,12 +82,22 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
         };
     }, [user?.id]);
 
-    const handleConfirmAttendance = (requestId: number) => {
-        // We'll simulate this by updating state for now or calling an endpoint if it exists
-        // Assuming we update the status locally for demo
-        setRequests(prev => prev.map(r => r.id === requestId ? { ...r, attendanceConfirmed: true } : r));
-        setIsConfirmingAttendance(false);
-        setSelectedRequest(null);
+    const handleConfirmAttendance = async (requestId: number) => {
+        if (!selectedRequest) return;
+        try {
+            await api.post('/api/training/feedback', {
+                eventId: selectedRequest.eventId,
+                employeeId: selectedRequest.employeeId,
+                attendanceStatus: 'Confirmed'
+            });
+            setRequests(prev => prev.map(r => r.id === requestId ? { ...r, attendanceConfirmed: true } : r));
+        } catch (err) {
+            console.error("Failed to confirm attendance", err);
+            alert("Failed to confirm attendance. Please try again.");
+        } finally {
+            setIsConfirmingAttendance(false);
+            setSelectedRequest(null);
+        }
     };
 
     const handleDeclineInvitation = async (requestId: number) => {
@@ -150,7 +160,9 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                     ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
                                                     : request.eventStatus === "Rejected"
                                                         ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-                                                        : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                                                        : request.eventStatus === "Returned"
+                                                            ? "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400"
+                                                            : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                                                 : request.status === "Pending"
                                                     ? "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
                                                     : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
@@ -161,17 +173,21 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                         ? "bg-emerald-500"
                                                         : request.eventStatus === "Rejected"
                                                             ? "bg-red-500"
-                                                            : "bg-blue-500"
+                                                            : request.eventStatus === "Returned"
+                                                                ? "bg-orange-500"
+                                                                : "bg-blue-500"
                                                     : request.status === "Pending"
                                                         ? "bg-amber-500"
                                                         : "bg-red-500"
                                             }`}></span>
-                                            {request.status === "Approved" 
+                                             {request.status === "Approved" 
                                                 ? request.eventStatus === "Approved" 
                                                     ? "Approved" 
                                                     : request.eventStatus === "Rejected"
-                                                        ? "Rejected (List)"
-                                                        : "HR Approved" 
+                                                        ? "Rejected (Final)"
+                                                        : request.eventStatus === "Returned"
+                                                            ? "Returned to HR"
+                                                            : "HR Approved" 
                                                 : request.status}
                                         </span>
                                     </td>
@@ -211,11 +227,14 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                         </button>
                                                     </div>
                                                 )
-                                            ) : request.eventStatus === "Rejected" ? (
+                                            ) : (request.eventStatus === "Rejected" || request.eventStatus === "Returned") ? (
                                                 <div className="flex items-center justify-center">
                                                     <button 
                                                         onClick={() => {
-                                                            setSelectedRejection(request.eventRejectionReason || "The training list was rejected by the administrator. HR will update and resubmit shortly.");
+                                                            const reason = request.eventStatus === "Rejected" 
+                                                                ? (request.eventRejectionReason || "This training program has been cancelled/rejected by the administrator.")
+                                                                : (request.eventRejectionReason || "The training list was returned to HR for adjustments. Please wait for an update.");
+                                                            setSelectedRejection(reason);
                                                             setIsRejectionModalOpen(true);
                                                         }}
                                                         className="text-red-500 text-[11px] font-semibold hover:text-red-700 hover:underline cursor-pointer transition-colors flex items-center gap-1"
