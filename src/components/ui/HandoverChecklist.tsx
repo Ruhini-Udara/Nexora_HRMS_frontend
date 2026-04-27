@@ -114,7 +114,7 @@ export function HandoverChecklist({ className = "", onComplete, employeeName = "
 
             {/* List of Tasks */}
             <div className="space-y-4 mb-8">
-                {tasks.map((task, index) => (
+                {tasks.map((task) => (
                     <div key={task.id} className="relative bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700/50 flex flex-col sm:flex-row gap-4 sm:items-center justify-between group transition-colors hover:border-blue-200 dark:hover:border-blue-800/50">
                         {/* Task Info */}
                         <div className="flex items-start gap-3 flex-grow">
