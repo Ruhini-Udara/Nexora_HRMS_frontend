@@ -21,6 +21,7 @@ type TrainingEvent = {
 type TrainingFeedback = {
     id: number;
     eventId: number;
+    employeeId: number;
     employeeName: string;
     workEmail: string;
     feedback: string;
@@ -31,12 +32,34 @@ type TrainingFeedback = {
     suggestions: string;
 };
 
+type TrainingRequest = {
+    id: number;
+    employeeId: number;
+    employeeName: string;
+    workEmail: string;
+    status: string;
+};
+
+type EventParticipant = {
+    id: number | string;
+    employeeId: number;
+    employeeName: string;
+    workEmail: string;
+    attendanceStatus: string;
+    feedback: string | null;
+    courseContentRating: number;
+    instructorRating: number;
+    overallExperienceRating: number;
+    suggestions: string;
+    hasSubmitted: boolean;
+};
+
 export default function AttendanceFeedbackTable() {
     const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
-    const [eventParticipants, setEventParticipants] = useState<any[]>([]);
-    const [selectedFeedback, setSelectedFeedback] = useState<TrainingFeedback | null>(null);
+    const [eventParticipants, setEventParticipants] = useState<EventParticipant[]>([]);
+    const [selectedFeedback, setSelectedFeedback] = useState<EventParticipant | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
     // Pagination for Events
@@ -72,16 +95,16 @@ export default function AttendanceFeedbackTable() {
                 api.get(`/api/training/events/${selectedEventId}/requests`)
             ])
             .then(([feedbackRes, requestsRes]) => {
-                const feedbackData = feedbackRes.data;
-                const requestsData = requestsRes.data;
+                const feedbackData: TrainingFeedback[] = feedbackRes.data;
+                const requestsData: TrainingRequest[] = requestsRes.data;
 
                 // Filter for approved requests
-                const approvedRequests = requestsData.filter((req: any) => req.status === "Approved");
+                const approvedRequests = requestsData.filter((req: TrainingRequest) => req.status === "Approved");
 
                 // Merge them: Start with all approved requests
-                const participants = approvedRequests.map((req: any) => {
+                const participants: EventParticipant[] = approvedRequests.map((req: TrainingRequest) => {
                     // Find matching feedback if it exists
-                    const feedback = feedbackData.find((f: any) => f.employeeId === req.employeeId);
+                    const feedback = feedbackData.find((f: TrainingFeedback) => f.employeeId === req.employeeId);
                     
                     return {
                         id: feedback?.id || `req-${req.id}`,
