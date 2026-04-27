@@ -3,6 +3,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
+import { useAuthStore } from "@/store/useAuthStore";
+import api from "@/lib/axiosInstance";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface LeaveDocument { id: number; documentType: string; filePathUrl: string; description: string; }
@@ -10,7 +12,7 @@ interface OverseasLeave {
     id: number; reason: string; fromDate: string; endDate: string; totalDays: number;
     status: string; branch: string; contactNumber: string; email: string; specialRemark: string;
     passportNumber: string; passportExpDate: string;
-    employee: { id: number; employeeCode: string; firstName: string; lastName: string; };
+    employee: { id: number; employeeCode: string; firstName?: string; lastName?: string; fullName?: string; surname?: string; };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -31,14 +33,14 @@ function StatusBadge({ status }: { status: string }) {
     return <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${map[status] ?? "bg-slate-100 text-slate-600"}`}>{label[status] ?? status}</span>;
 }
 
-function DocumentCard({ label, path }: { label: string; path: string }) {
+function DocumentCard({ label, path, onError }: { label: string; path: string; onError: (msg: string) => void }) {
     const [loading, setLoading] = useState(false);
     const handleView = async () => {
         setLoading(true);
         const url = await getSignedUrl(path, 3600);
         setLoading(false);
         if (url) window.open(url, "_blank");
-        else alert("Could not generate a secure link. Please try again.");
+        else onError("Could not generate a secure link. Please try again.");
     };
     return (
         <div onClick={handleView} className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 group hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
@@ -57,6 +59,7 @@ function DocumentCard({ label, path }: { label: string; path: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function OverseasLeaveApprovals() {
+    const { user } = useAuthStore();
     const [requests, setRequests] = useState<OverseasLeave[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -74,20 +77,26 @@ export default function OverseasLeaveApprovals() {
     const [adminRemark, setAdminRemark] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
+    const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+    const showToast = useCallback((message: string, type: 'success' | 'error' = 'error') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    }, []);
 
     // ── Fetch ──────────────────────────────────────────────────────────────
     const fetchLeaves = useCallback(async () => {
         setLoading(true); setError("");
         try {
             // Fetch pending actions
-            const res = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/${statusFilter}`);
-            if (!res.ok) throw new Error();
-            setRequests(await res.json());
+            const res = await api.get(`/api/v1/leaves/overseas/status/${statusFilter}`);
+            setRequests(res.data);
             // Always fetch board agenda items (ADMIN_APPROVED status)
-            const boardRes = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/ADMIN_APPROVED`);
-            if (boardRes.ok) setBoardItems(await boardRes.json());
-        } catch { setError("Could not connect to the backend. Make sure the server is running."); }
-        finally { setLoading(false); }
+            const boardRes = await api.get(`/api/v1/leaves/overseas/status/ADMIN_APPROVED`);
+            setBoardItems(boardRes.data);
+        } catch (err: any) { 
+            setError(err.response?.data?.message || "Could not connect to the backend. Make sure the server is running."); 
+        } finally { setLoading(false); }
     }, [statusFilter]);
 
     useEffect(() => { fetchLeaves(); }, [fetchLeaves]);
@@ -95,8 +104,8 @@ export default function OverseasLeaveApprovals() {
     const handleOpenReview = async (req: OverseasLeave) => {
         setSelectedRequest(req); setAdminRemark(""); setDocuments([]); setDocsLoading(true);
         try {
-            const res = await fetch(`http://localhost:8080/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`);
-            if (res.ok) setDocuments(await res.json());
+            const res = await api.get(`/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`);
+            setDocuments(res.data);
         } catch { /* non-critical */ } finally { setDocsLoading(false); }
     };
 
@@ -105,61 +114,97 @@ export default function OverseasLeaveApprovals() {
         if (!selectedRequest) return;
         setSubmitting(true);
         try {
-            const res = await fetch("http://localhost:8080/api/v1/approvals", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    refId: selectedRequest.id, refType: "OVERSEAS_LEAVE",
-                    decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
-                    remark: adminRemark,
-                    approvedBy: { id: 1 }, // TODO: logged-in admin's employee id
-                }),
+            await api.post("/api/v1/approvals", {
+                refId: selectedRequest.id, refType: "OVERSEAS_LEAVE",
+                decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
+                remark: adminRemark,
+                approvedBy: { id: user?.id }, // Logged-in admin's employee id
             });
-            if (!res.ok) throw new Error();
             setSelectedRequest(null); setAdminRemark("");
             await fetchLeaves();
-        } catch { alert("Something went wrong. Please try again."); }
-        finally { setSubmitting(false); }
+            showToast("Request processed successfully.", "success");
+        } catch (err: any) { 
+            showToast(err.response?.data?.message || "Something went wrong. Please try again.", "error"); 
+        } finally { setSubmitting(false); }
     };
 
-    // ── Print & Send selected board items to Director (combined action) ────────
-    const handlePrintAndSend = async () => {
+    // ── Preview & Download board items ──────────────────────────────────────
+    const handlePreviewAgenda = () => {
         if (selectedIds.length === 0) return;
-        if (!boardMeetingDate) { alert("Please set a Board Meeting Date before printing."); return; }
-
-        // Step 1: show print view and trigger browser print dialog
+        if (!boardMeetingDate) {
+            showToast("Please set a Board Meeting Date before previewing.", "error");
+            return;
+        }
         setIsPrinting(true);
-        await new Promise(resolve => setTimeout(resolve, 400));
-        window.print();
-        setIsPrinting(false);
+    };
 
-        // Step 2: After printing, forward all selected items to the Director
-        for (const id of selectedIds) {
-            await fetch("http://localhost:8080/api/v1/approvals", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+    const handleDownloadOnly = async () => {
+        try {
+            const html2pdfModule = await import('html2pdf.js');
+            const html2pdf = html2pdfModule.default || html2pdfModule;
+
+            const element = document.getElementById("print-agenda-view");
+            if (!element) {
+                showToast("Could not find the agenda sheet element.", "error");
+                return;
+            }
+
+            const opt = {
+                margin: 0.5,
+                filename: `Board_Agenda_${boardMeetingDate || 'Agenda'}.pdf`,
+                image: { type: 'jpeg' as 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as 'portrait' }
+            };
+            
+            await html2pdf().set(opt).from(element).save();
+            showToast("PDF Downloaded successfully.", "success");
+        } catch(e: any) {
+            console.error("PDF generation failed:", e);
+            showToast(`PDF generation failed: ${e.message || "Please check console"}`, "error");
+        }
+    };
+
+    const handleSendToDirector = async () => {
+        setSubmitting(true);
+        try {
+            for (const id of selectedIds) {
+                await api.post("/api/v1/approvals", {
                     refId: id, refType: "OVERSEAS_LEAVE",
                     decision: "APPROVED",
                     remark: `Presented at board meeting on ${boardMeetingDate}`,
-                    approvedBy: { id: 1 },
-                }),
-            });
+                    approvedBy: { id: user?.id },
+                });
+            }
+            setSelectedIds([]);
+            setIsPrinting(false);
+            await fetchLeaves();
+            showToast("List successfully sent to Director.", "success");
+        } catch(e: any) {
+            showToast(`Failed to send to Director: ${e.message || 'Unknown error'}`, "error");
+        } finally {
+            setSubmitting(false);
         }
-        setSelectedIds([]);
-        await fetchLeaves();
+    };
+
+    const handlePrintAndSendToDirector = async () => {
+        window.print();
+        await handleSendToDirector();
     };
 
     // ── Filter (pending tab) ───────────────────────────────────────────────
     const filtered = requests.filter(req => {
-        const name = `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.toLowerCase();
-        return name.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
+        // Smart Routing: Hide my own requests from verification list
+        if (req.employee?.id === user?.id) return false;
+
+        const name = req.employee?.fullName || `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.trim();
+        return name.toLowerCase().includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
     // ── Filter (board tab) ────────────────────────────────────────────────
     const filteredBoard = boardItems.filter(req => {
-        const name = `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.toLowerCase();
-        return name.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
+        const name = req.employee?.fullName || `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.trim();
+        return name.toLowerCase().includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
     const activeRows = activeTab === "pending" ? filtered : filteredBoard;
@@ -168,41 +213,90 @@ export default function OverseasLeaveApprovals() {
     const selectedBoardItems = filteredBoard.filter(r => selectedIds.includes(r.id));
     if (isPrinting) {
         return (
-            <div className="fixed inset-0 z-[9999] bg-white text-black p-10 overflow-auto">
-                <div className="text-center mb-10">
-                    <h1 className="text-3xl font-bold uppercase underline mb-2">Overseas Leave — Board Meeting Agenda</h1>
-                    <h2 className="text-xl font-semibold">Selected Requests for Director Review</h2>
-                    <p className="text-lg mt-1 font-bold text-red-700">Board Meeting Date: {boardMeetingDate}</p>
-                    <p className="mt-2 text-gray-500 text-sm">Printed on: {new Date().toLocaleDateString()}</p>
+            <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-sm overflow-auto flex flex-col p-4">
+                <div className="bg-white max-w-5xl w-full mx-auto rounded-2xl shadow-2xl flex flex-col overflow-hidden my-auto">
+                    <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
+                        <div className="text-sm font-bold text-slate-800">Preview Agenda Document</div>
+                        <div className="flex items-center gap-2">
+                            <button disabled={submitting} onClick={() => setIsPrinting(false)} className="px-4 py-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg text-sm font-bold transition-colors disabled:opacity-50">
+                                Cancel
+                            </button>
+                            <button disabled={submitting} onClick={handleDownloadOnly} className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors disabled:opacity-50">
+                                <span className="material-symbols-outlined text-[18px]">download</span>
+                                Download PDF
+                            </button>
+                            <button disabled={submitting} onClick={handlePrintAndSendToDirector} className="px-4 py-2 bg-primary text-white hover:bg-primary/90 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-all disabled:opacity-50">
+                                {submitting ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">print</span>}
+                                Print & Send to Director
+                            </button>
+                        </div>
+                    </div>
+                    <div className="p-10 bg-white overflow-auto max-h-[80vh]">
+                        <div id="print-agenda-view" style={{ backgroundColor: '#ffffff', color: '#000000', fontFamily: 'Arial, sans-serif' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                                <h1 style={{ fontSize: '28px', fontWeight: 'bold', textTransform: 'uppercase', textDecoration: 'underline', marginBottom: '8px' }}>Overseas Leave — Board Meeting Agenda</h1>
+                                <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Selected Requests for Director Review</h2>
+                                <p style={{ fontSize: '16px', marginTop: '4px', fontWeight: 'bold', color: '#b91c1c' }}>Board Meeting Date: {boardMeetingDate}</p>
+                                <p style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>Generated on: {new Date().toLocaleDateString()}</p>
+                            </div>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000000', fontSize: '12px' }}>
+                                <thead>
+                                    <tr style={{ backgroundColor: '#f3f4f6' }}>
+                                        <th style={{ border: '1px solid #000000', padding: '10px', textAlign: 'left' }}>ID</th>
+                                        <th style={{ border: '1px solid #000000', padding: '10px', textAlign: 'left' }}>Employee</th>
+                                        <th style={{ border: '1px solid #000000', padding: '10px', textAlign: 'left' }}>Reason</th>
+                                        <th style={{ border: '1px solid #000000', padding: '10px', textAlign: 'center' }}>Dates</th>
+                                        <th style={{ border: '1px solid #000000', padding: '10px', textAlign: 'center' }}>Days</th>
+                                        <th style={{ border: '1px solid #000000', padding: '10px', textAlign: 'left' }}>Passport No.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {selectedBoardItems.map(req => (
+                                        <tr key={req.id}>
+                                            <td style={{ border: '1px solid #000000', padding: '10px', fontWeight: 'bold' }}>#{req.id}</td>
+                                            <td style={{ border: '1px solid #000000', padding: '10px' }}>
+                                                <div style={{ fontWeight: 'bold' }}>{req.employee?.fullName || `${req.employee?.firstName || ""} ${req.employee?.lastName || ""}`.trim()}</div>
+                                                <div style={{ color: '#6b7280', fontSize: '10px' }}>{req.employee?.employeeCode} • {req.branch}</div>
+                                            </td>
+                                            <td style={{ border: '1px solid #000000', padding: '10px' }}>{req.reason}</td>
+                                            <td style={{ border: '1px solid #000000', padding: '10px', textAlign: 'center' }}>{req.fromDate} to {req.endDate}</td>
+                                            <td style={{ border: '1px solid #000000', padding: '10px', textAlign: 'center', fontWeight: 'bold' }}>{req.totalDays}</td>
+                                            <td style={{ border: '1px solid #000000', padding: '10px' }}>{req.passportNumber}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <div style={{ marginTop: '60px', display: 'flex', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px' }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ borderTop: '1px solid #000000', width: '180px', marginBottom: '8px' }} />
+                                    <p style={{ fontWeight: 'bold', fontSize: '12px' }}>Prepared By (Admin)</p>
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ borderTop: '1px solid #000000', width: '180px', marginBottom: '8px' }} />
+                                    <p style={{ fontWeight: 'bold', fontSize: '12px' }}>Director / Board Approval</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <table className="w-full border-collapse border border-gray-800 text-sm">
-                    <thead>
-                        <tr className="bg-gray-100 border-b-2 border-gray-800">
-                            <th className="border border-gray-800 p-3 text-left">ID</th>
-                            <th className="border border-gray-800 p-3 text-left">Employee</th>
-                            <th className="border border-gray-800 p-3 text-left">Reason</th>
-                            <th className="border border-gray-800 p-3 text-center">Dates</th>
-                            <th className="border border-gray-800 p-3 text-center">Days</th>
-                            <th className="border border-gray-800 p-3 text-left">Passport No.</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {selectedBoardItems.map(req => (
-                            <tr key={req.id}>
-                                <td className="border border-gray-800 p-3 font-semibold">#{req.id}</td>
-                                <td className="border border-gray-800 p-3">{req.employee?.firstName} {req.employee?.lastName}<br /><span className="text-gray-500 text-xs">{req.employee?.employeeCode} • {req.branch}</span></td>
-                                <td className="border border-gray-800 p-3">{req.reason}</td>
-                                <td className="border border-gray-800 p-3 text-center">{req.fromDate} to {req.endDate}</td>
-                                <td className="border border-gray-800 p-3 text-center font-bold">{req.totalDays}</td>
-                                <td className="border border-gray-800 p-3">{req.passportNumber}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <div className="mt-20 flex justify-between px-10">
-                    <div className="text-center"><div className="border-t border-black w-48 mb-2" /><p className="font-semibold">Prepared By (Admin)</p></div>
-                    <div className="text-center"><div className="border-t border-black w-48 mb-2" /><p className="font-semibold">Director / Board Approval</p></div>
-                </div>
+                {/* Toast Notification */}
+                {toast && (
+                    <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
+                        toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
+                    }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                            toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                        }`}>
+                            <span className="material-symbols-outlined text-[18px] text-white">
+                                {toast.type === 'success' ? 'check' : 'close'}
+                            </span>
+                        </div>
+                        <p className="text-sm font-bold tracking-tight">{toast.message}</p>
+                        <button onClick={() => setToast(null)} className="ml-4 text-white/50 hover:text-white transition-colors flex">
+                            <span className="material-symbols-outlined text-[18px]">close</span>
+                        </button>
+                    </div>
+                )}
             </div>
         );
     }
@@ -273,9 +367,9 @@ export default function OverseasLeaveApprovals() {
                     ) : (
                         <div className="flex items-center gap-3">
                             <span className="text-sm text-slate-600 dark:text-slate-400">Will print a board list and automatically forward to Director.</span>
-                            <button onClick={handlePrintAndSend} className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm">
-                                <span className="material-symbols-outlined text-[18px]">print</span>
-                                Print List &amp; Send to Director
+                            <button onClick={handlePreviewAgenda} className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm">
+                                <span className="material-symbols-outlined text-[18px]">preview</span>
+                                Preview List &amp; Send to Director
                             </button>
                         </div>
                     )}
@@ -312,7 +406,7 @@ export default function OverseasLeaveApprovals() {
                                         <td className="py-4 px-4"><input type="checkbox" className="w-4 h-4 rounded" checked={selectedIds.includes(req.id)} onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, req.id] : prev.filter(id => id !== req.id))} /></td>
                                         <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">#{req.id}</td>
                                         <td className="py-4 px-6">
-                                            <div className="font-semibold text-slate-800 dark:text-white">{req.employee?.firstName} {req.employee?.lastName}</div>
+                                            <div className="font-semibold text-slate-800 dark:text-white">{req.employee?.fullName || `${req.employee?.firstName || ""} ${req.employee?.lastName || ""}`.trim()}</div>
                                             <div className="text-xs text-slate-500">{req.employee?.employeeCode} • {req.branch}</div>
                                         </td>
                                         <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
@@ -360,7 +454,7 @@ export default function OverseasLeaveApprovals() {
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Employee Info</h4>
                                     <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.firstName} {selectedRequest.employee?.lastName}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.fullName || `${selectedRequest.employee?.firstName || ""} ${selectedRequest.employee?.lastName || ""}`.trim()}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">EPF:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.employeeCode}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Branch:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.branch}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Contact:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.contactNumber}</span></div>
@@ -391,7 +485,7 @@ export default function OverseasLeaveApprovals() {
                                     <p className="text-xs text-amber-600 flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">warning</span> No documents uploaded.</p>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                        {documents.map(doc => <DocumentCard key={doc.id} label={doc.description || doc.documentType} path={doc.filePathUrl} />)}
+                                        {documents.map(doc => <DocumentCard key={doc.id} label={doc.description || doc.documentType} path={doc.filePathUrl} onError={(msg) => showToast(msg, "error")} />)}
                                     </div>
                                 )}
                             </div>
@@ -416,12 +510,31 @@ export default function OverseasLeaveApprovals() {
                                     </button>
                                     <button onClick={() => handleDecision("APPROVE")} disabled={submitting} className="px-5 py-2.5 bg-primary text-white font-bold hover:bg-primary/90 rounded-lg text-sm flex items-center gap-2 shadow-sm disabled:opacity-50">
                                         {submitting ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">fact_check</span>}
-                                        Approve & Add to Board Agenda
+                                        Approve
                                     </button>
                                 </>
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
+                    toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
+                }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                        toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                    }`}>
+                        <span className="material-symbols-outlined text-[18px] text-white">
+                            {toast.type === 'success' ? 'check' : 'close'}
+                        </span>
+                    </div>
+                    <p className="text-sm font-bold tracking-tight">{toast.message}</p>
+                    <button onClick={() => setToast(null)} className="ml-4 text-white/50 hover:text-white transition-colors flex">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
                 </div>
             )}
         </div>

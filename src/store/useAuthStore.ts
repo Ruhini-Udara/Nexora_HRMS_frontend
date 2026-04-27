@@ -50,6 +50,8 @@ export const useAuthStore = create<AuthState>()(
             },
         }),
         {
+            // Rationale: We use 'persist' middleware to ensure that user session data 
+            // survives page refreshes by automatically syncing with localStorage.
             name: 'nexora-auth-storage',
             storage: createJSONStorage(() => localStorage),
         }

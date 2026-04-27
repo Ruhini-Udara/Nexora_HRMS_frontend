@@ -43,7 +43,8 @@ export default function LeaveRequestsDashboard() {
             const res = await api.get(`/api/employees/${employeeId}`);
             const data = res.data;
             return data;
-        }
+        },
+        enabled: !!employeeId
     });
 
     // 2. Fetch All Leave Requests
@@ -63,7 +64,8 @@ export default function LeaveRequestsDashboard() {
                 ...overseasData.map((r: LeaveResponse) => ({ ...r, type: "Overseas Leave" })),
                 ...maternityData.map((r: LeaveResponse) => ({ ...r, type: "Maternity Leave" }))
             ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        }
+        },
+        enabled: !!employeeId
     });
 
 
