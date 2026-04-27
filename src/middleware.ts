@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    
+
     // 1. Get cookies
     const token = request.cookies.get('nexora-token')?.value;
     const role = request.cookies.get('nexora-role')?.value;
@@ -33,7 +33,7 @@ export function middleware(request: NextRequest) {
         if (isEmployeeRoute) {
             // All authenticated users have an employee identity
             if (!role.startsWith('ROLE_')) {
-                 return NextResponse.redirect(new URL('/login', request.url));
+                return NextResponse.redirect(new URL('/login', request.url));
             }
         }
 
@@ -41,13 +41,15 @@ export function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/login', request.url));
         }
 
+       
+
         // Redirect logged-in users away from the login page
         if (isAuthPage) {
             let redirectPath = '/employee';
             if (role === 'ROLE_ADMIN') redirectPath = '/admin';
             else if (role === 'ROLE_HR') redirectPath = '/hr';
             else if (role === 'ROLE_DIRECTOR') redirectPath = '/director';
-            
+
             return NextResponse.redirect(new URL(redirectPath, request.url));
         }
     }
