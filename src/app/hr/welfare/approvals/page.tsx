@@ -60,7 +60,9 @@ export default function WelfareApprovalsPage() {
     }, []);
 
     useEffect(() => {
-        loadRequests();
+        (async () => {
+            await loadRequests();
+        })();
     }, [loadRequests]);
 
     // ── Data Filtering ──────────────────────────────────────────────

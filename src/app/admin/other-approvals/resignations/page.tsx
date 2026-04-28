@@ -23,7 +23,9 @@ export default function AdminResignationsPage() {
     }, []);
 
     useEffect(() => {
-        fetchRequests();
+        (async () => {
+            await fetchRequests();
+        })();
     }, [fetchRequests]);
 
     const handleCheckboxToggle = (id: string) => {

@@ -65,7 +65,9 @@ export default function EmployeeDeath() {
     }, []);
 
     useEffect(() => {
-        loadRequests();
+        (async () => {
+            await loadRequests();
+        })();
     }, [loadRequests]);
 
     const showSuccess = (msg: string) => {
