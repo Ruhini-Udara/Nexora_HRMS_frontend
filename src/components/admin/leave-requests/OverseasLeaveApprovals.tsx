@@ -9,10 +9,25 @@ import api from "@/lib/axiosInstance";
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface LeaveDocument { id: number; documentType: string; filePathUrl: string; description: string; }
 interface OverseasLeave {
-    id: number; reason: string; fromDate: string; endDate: string; totalDays: number;
-    status: string; branch: string; contactNumber: string; email: string; specialRemark: string;
-    passportNumber: string; passportExpDate: string;
-    employee: { id: number; employeeCode: string; firstName?: string; lastName?: string; fullName?: string; surname?: string; };
+    id: number;
+    employeeId: number;
+    employeeName: string;
+    employeeCode: string;
+    epfNumber: string;
+    leaveTypeId: number;
+    leaveTypeName: string;
+    reason: string;
+    fromDate: string;
+    endDate: string;
+    totalDays: number;
+    status: string;
+    branch: string;
+    department: string;
+    contactNumber: string;
+    email: string;
+    specialRemark: string;
+    passportNumber: string;
+    passportExpDate: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -199,16 +214,16 @@ export default function OverseasLeaveApprovals() {
     // ── Filter (pending tab) ───────────────────────────────────────────────
     const filtered = requests.filter(req => {
         // Smart Routing: Hide my own requests from verification list
-        if (req.employee?.id === user?.id) return false;
+        if (req.employeeId === user?.id) return false;
 
-        const name = req.employee?.fullName || `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.trim();
-        return name.toLowerCase().includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
+        const name = (req.employeeName || "").toLowerCase();
+        return name.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
     // ── Filter (board tab) ────────────────────────────────────────────────
     const filteredBoard = boardItems.filter(req => {
-        const name = req.employee?.fullName || `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.trim();
-        return name.toLowerCase().includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
+        const name = (req.employeeName || "").toLowerCase();
+        return name.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
     const activeRows = activeTab === "pending" ? filtered : filteredBoard;
@@ -259,8 +274,8 @@ export default function OverseasLeaveApprovals() {
                                         <tr key={req.id}>
                                             <td style={{ border: '1px solid #000000', padding: '10px', fontWeight: 'bold' }}>#{req.id}</td>
                                             <td style={{ border: '1px solid #000000', padding: '10px' }}>
-                                                <div style={{ fontWeight: 'bold' }}>{req.employee?.fullName || `${req.employee?.firstName || ""} ${req.employee?.lastName || ""}`.trim()}</div>
-                                                <div style={{ color: '#6b7280', fontSize: '10px' }}>{req.employee?.employeeCode} • {req.branch}</div>
+                                                <div style={{ fontWeight: 'bold' }}>{req.employeeName}</div>
+                                                <div style={{ color: '#6b7280', fontSize: '10px' }}>{req.employeeCode} • {req.department}</div>
                                             </td>
                                             <td style={{ border: '1px solid #000000', padding: '10px' }}>{req.reason}</td>
                                             <td style={{ border: '1px solid #000000', padding: '10px', textAlign: 'center' }}>{req.fromDate} to {req.endDate}</td>
@@ -410,8 +425,8 @@ export default function OverseasLeaveApprovals() {
                                         <td className="py-4 px-4"><input type="checkbox" className="w-4 h-4 rounded" checked={selectedIds.includes(req.id)} onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, req.id] : prev.filter(id => id !== req.id))} /></td>
                                         <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">#{req.id}</td>
                                         <td className="py-4 px-6">
-                                            <div className="font-semibold text-slate-800 dark:text-white">{req.employee?.fullName || `${req.employee?.firstName || ""} ${req.employee?.lastName || ""}`.trim()}</div>
-                                            <div className="text-xs text-slate-500">{req.employee?.employeeCode} • {req.branch}</div>
+                                            <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
+                                            <div className="text-xs text-slate-500">{req.employeeCode} • {req.department}</div>
                                         </td>
                                         <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
                                             {req.fromDate} → {req.endDate}<br />
@@ -458,9 +473,9 @@ export default function OverseasLeaveApprovals() {
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Employee Info</h4>
                                     <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.fullName || `${selectedRequest.employee?.firstName || ""} ${selectedRequest.employee?.lastName || ""}`.trim()}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">EPF:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.employeeCode}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Branch:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.branch}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employeeName}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">EPF:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employeeCode}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Department:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.department}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Contact:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.contactNumber}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Email:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
                                     </div>

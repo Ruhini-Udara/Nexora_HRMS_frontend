@@ -41,13 +41,13 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 403) {
-            console.error(`[AXIOS 403 ERROR] URL: ${error.config.url}`, {
-                data: error.response.data,
-                headers: error.config.headers
+            console.warn(`[AXIOS 403 ERROR] URL: ${error.config.url}`, {
+                data: error.response?.data,
+                headers: error.config?.headers
             });
         }
         const message = error.response?.data?.message || error.message || 'An unexpected error occurred';
-        console.error('API Error:', message);
+        console.warn('API Warning:', message);
         return Promise.reject(error);
     }
 );
