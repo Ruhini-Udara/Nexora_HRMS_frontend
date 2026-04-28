@@ -47,8 +47,8 @@ const SupervisorSidebar = () => {
                             key={href}
                             href={href}
                             className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors ${isActive
-                                    ? "bg-primary-light text-primary border-r-4 border-primary"
-                                    : "text-sidebar-text hover:bg-gray-50"
+                                ? "bg-primary-light text-primary border-r-4 border-primary"
+                                : "text-sidebar-text hover:bg-gray-50"
                                 }`}
                         >
                             <Icon className="w-5 h-5" />

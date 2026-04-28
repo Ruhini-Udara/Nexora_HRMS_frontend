@@ -56,7 +56,7 @@ export default function LoginPage() {
             if (userData.role === 'ROLE_ADMIN') redirectPath = '/admin';
             else if (userData.role === 'ROLE_HR') redirectPath = '/hr';
             else if (userData.role === 'ROLE_DIRECTOR') redirectPath = '/director';
-            
+
             router.push(redirectPath);
         } catch (err) {
             if (axios.isAxiosError(err)) {
@@ -173,7 +173,7 @@ export default function LoginPage() {
                     &copy; 2024 Nexora Solutions. All rights reserved.
                 </p>
             </div>
-            
+
             {/* Dark Mode Toggle */}
             <div className="absolute top-6 right-6">
                 <DarkModeToggle />

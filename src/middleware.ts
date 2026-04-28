@@ -41,7 +41,7 @@ export function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/login', request.url));
         }
 
-       
+
 
         // Redirect logged-in users away from the login page
         if (isAuthPage) {
