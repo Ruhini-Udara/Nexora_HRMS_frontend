@@ -9,6 +9,7 @@ interface User {
     designation: string;
     epfNumber?: string;
     department?: string;
+    branch?: string;
 }
 
 interface AuthState {

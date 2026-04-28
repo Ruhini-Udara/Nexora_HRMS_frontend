@@ -16,25 +16,19 @@ interface LeaveDocument {
 
 interface OverseasLeave {
     id: number;
+    employeeId: number;
+    employeeName: string;
+    employeeCode: string;
+    epfNumber: string;
+    leaveTypeId: number;
+    leaveTypeName: string;
     reason: string;
     fromDate: string;
     endDate: string;
     totalDays: number;
     status: string;
     createdAt: string;
-    employee: {
-        id: number;
-        employeeCode: string;
-        firstName: string;
-        lastName: string;
-        fullName?: string;
-        email: string;
-        phoneNo: string;
-        designation?: {
-            id: number;
-            designationName: string;
-        };
-    };
+    department: string;
     passportNumber: string;
     passportExpDate: string;
     branch: string;
@@ -195,9 +189,9 @@ export default function LeaveApprovalsPage() {
     // ── Filter ─────────────────────────────────────────────────────────────
     const filtered = requests.filter(req => {
         // Smart Routing: Hide my own requests from verification list
-        if (req.employee?.id === user?.id) return false;
+        if (req.employeeId === user?.id) return false;
 
-        const name = `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.toLowerCase();
+        const name = (req.employeeName || "").toLowerCase();
         const id = String(req.id);
         return name.includes(searchTerm.toLowerCase()) || id.includes(searchTerm);
     });
@@ -291,10 +285,10 @@ export default function LeaveApprovalsPage() {
                                             <td className="py-4 px-6">
                                                 <div>
                                                     <div className="font-semibold text-slate-800 dark:text-white whitespace-nowrap">
-                                                        {req.employee?.fullName || `${req.employee?.firstName} ${req.employee?.lastName}`}
+                                                        {req.employeeName}
                                                     </div>
                                                     <div className="text-xs text-slate-500 dark:text-slate-400">
-                                                        {req.employee?.employeeCode} • {req.branch}
+                                                        {req.employeeCode} • {req.department}
                                                     </div>
                                                 </div>
                                             </td>
@@ -357,10 +351,10 @@ export default function LeaveApprovalsPage() {
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wider">Employee Info</h4>
                                     <div className="mb-4">
                                         <div className="font-bold text-slate-900 dark:text-white text-lg">
-                                            {selectedRequest.employee?.fullName || `${selectedRequest.employee?.firstName} ${selectedRequest.employee?.lastName}`}
+                                            {selectedRequest.employeeName}
                                         </div>
                                         <div className="text-sm text-slate-500">
-                                            {selectedRequest.employee?.employeeCode} • {selectedRequest.branch}
+                                            {selectedRequest.employeeCode} • {selectedRequest.department}
                                         </div>
                                     </div>
                                     <div className="space-y-3 text-sm">
@@ -444,9 +438,8 @@ export default function LeaveApprovalsPage() {
                                             ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                                             : <span className="material-symbols-outlined text-[18px]">verified</span>
                                         }
-                                        {(selectedRequest.employee?.designation?.designationName?.toLowerCase().includes("admin") ||
-                                            selectedRequest.employee?.fullName?.toLowerCase().includes("admin") ||
-                                            selectedRequest.employee?.employeeCode?.includes("000"))
+                                        {(selectedRequest.employeeName?.toLowerCase().includes("admin") ||
+                                            selectedRequest.employeeCode?.includes("000"))
                                             ? "Verify & Forward to Director"
                                             : "Verify & Forward to Admin"
                                         }

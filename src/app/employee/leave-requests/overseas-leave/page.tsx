@@ -100,7 +100,7 @@ export default function OverseasLeaveRequestPage() {
                 setValue("employeeName", employeeData.fullName || user?.name || "");
                 setValue("email", employeeData.email || user?.email || "");
                 setValue("designation", employeeData.designation?.designationName || user?.designation || "");
-                setValue("branch", employeeData.department || "");
+                setValue("branch", employeeData.branch || user?.branch || "");
             }
         }
     }, [employeeData, setValue, status, user]);
@@ -156,8 +156,9 @@ export default function OverseasLeaveRequestPage() {
             }
 
             const payload = {
-                employee: { id: user.id }, // Dynamic logged-in user ID
-                leaveType: { id: OVERSEAS_LEAVE_TYPE_ID },
+                employeeId: user.id,
+                employeeName: data.employeeName,
+                leaveTypeId: OVERSEAS_LEAVE_TYPE_ID,
                 fromDate: data.startDate,
                 endDate: data.endDate,
                 totalDays: Number(noOfDays),
