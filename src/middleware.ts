@@ -16,9 +16,10 @@ export function middleware(request: NextRequest) {
     const isEmployeeRoute = pathname === '/employee' || pathname.startsWith('/employee/');
     const isHRRoute = pathname === '/hr' || pathname.startsWith('/hr/');
     const isDirectorRoute = pathname === '/director' || pathname.startsWith('/director/');
+    const isSupervisorRoute = pathname === '/supervisor' || pathname.startsWith('/supervisor/');
 
     // 3. Authentication Check: If trying to access protected route without token
-    if ((isAdminRoute || isEmployeeRoute || isHRRoute || isDirectorRoute) && !token) {
+    if ((isAdminRoute || isEmployeeRoute || isHRRoute || isDirectorRoute || isSupervisorRoute) && !token) {
         console.log(`Redirecting to login: Protected route ${pathname} accessed without token`);
         return NextResponse.redirect(new URL('/login', request.url));
     }
@@ -41,7 +42,9 @@ export function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/login', request.url));
         }
 
-
+        if (isSupervisorRoute && role !== 'ROLE_SUPERVISOR' && role !== 'ROLE_ADMIN') {
+            return NextResponse.redirect(new URL('/login', request.url));
+        }
 
         // Redirect logged-in users away from the login page
         if (isAuthPage) {
@@ -49,6 +52,7 @@ export function middleware(request: NextRequest) {
             if (role === 'ROLE_ADMIN') redirectPath = '/admin';
             else if (role === 'ROLE_HR') redirectPath = '/hr';
             else if (role === 'ROLE_DIRECTOR') redirectPath = '/director';
+            else if (role === 'ROLE_SUPERVISOR') redirectPath = '/supervisor';
 
             return NextResponse.redirect(new URL(redirectPath, request.url));
         }
@@ -74,6 +78,8 @@ export const config = {
         '/hr',
         '/director/:path*',
         '/director',
+        '/supervisor/:path*',
+        '/supervisor',
         '/login',
     ],
 };
