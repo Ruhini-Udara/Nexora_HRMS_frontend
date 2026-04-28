@@ -2,7 +2,8 @@
 
 import React, { useState, useRef } from 'react';
 import TransferRequestPage from '@/components/TransferRequestPage';
-import { TransferRequest, getAllTransferRequests } from '@/lib/api/transferRequests';
+import { TransferRequest, getAllTransferRequests, getTransferRequestsByEmployee } from '@/lib/api/transferRequests';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const statusStyles: Record<string, { label: string; classes: string }> = {
     NEW: { label: 'Draft', classes: 'bg-slate-100 text-slate-600' },
@@ -19,17 +20,27 @@ export default function Page() {
     const [viewRequest, setViewRequest] = useState<TransferRequest | null>(null);
     const formRef = useRef<{ setEditingDraft: (req: TransferRequest) => void }>(null);
 
+    const { user } = useAuthStore();
+    const [isLoading, setIsLoading] = useState(true);
+
+    const loadRequests = React.useCallback(async () => {
+        if (!user?.id) return;
+        setIsLoading(true);
+        try {
+            const data = user.role === 'ROLE_ADMIN'
+                ? await getAllTransferRequests()
+                : await getTransferRequestsByEmployee(user.id);
+            setRequests(data);
+        } catch (err) {
+            console.error("Failed to fetch transfer requests", err);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user]);
+
     React.useEffect(() => {
-        const load = async () => {
-            try {
-                const data = await getAllTransferRequests();
-                setRequests(data);
-            } catch (err) {
-                console.error("Failed to fetch transfer requests", err);
-            }
-        };
-        load();
-    }, []);
+        loadRequests();
+    }, [loadRequests]);
 
     // Show all requests in the table
     const visibleRequests = requests.filter(
@@ -91,7 +102,16 @@ export default function Page() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {visibleRequests.length > 0 ? (
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center">
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="w-6 h-6 border-2 border-[#8B3A00] border-t-transparent rounded-full animate-spin"></div>
+                                                <p className="text-sm text-slate-400">Loading requests...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : visibleRequests.length > 0 ? (
                                     visibleRequests.map((req) => {
                                         const st = statusStyles[req.status] || statusStyles.NEW;
                                         return (
@@ -112,7 +132,7 @@ export default function Page() {
                                                                 onClick={() => handleEditDraft(req)}
                                                                 className="flex items-center gap-1 text-[11px] font-bold text-[#8B3A00] hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors border border-orange-100"
                                                             >
-                                                                <span className="material-symbols-outlined text-sm">edit</span>
+                                                                 <span className="material-symbols-outlined text-sm">edit</span>
                                                                 Edit & Submit
                                                             </button>
                                                         )}

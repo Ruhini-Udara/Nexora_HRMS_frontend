@@ -1,58 +1,49 @@
-"use client";
-
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Filter, Check, X, Send, Eye } from 'lucide-react';
-
-const mockRequests = [
-    {
-        id: "TRF-2024-006",
-        employee: "Ruwanthi Perera",
-        initials: "RP",
-        currentDept: "Colombo Branch",
-        targetDept: "Galle Branch",
-        date: "2024-10-10",
-        boardMeetingDate: "2024-11-01", // Past Date
-        status: "Submitted to Director",
-        email: "ruwanthi@example.com",
-    },
-    {
-        id: "TRF-2024-007",
-        employee: "Asela Gunaratne",
-        initials: "AG",
-        currentDept: "Jaffna Branch",
-        targetDept: "Trincomalee Branch",
-        date: "2024-10-09",
-        boardMeetingDate: new Date().toISOString().split('T')[0], // Today
-        status: "Submitted to Director",
-        email: "asela@example.com",
-    },
-    {
-        id: "TRF-2024-008",
-        employee: "Chathurangi De Silva",
-        initials: "CS",
-        currentDept: "Kegalle Branch",
-        targetDept: "Kandy Branch",
-        date: "2024-10-11",
-        boardMeetingDate: "2026-12-15", // Future Date
-        status: "Submitted to Director",
-        email: "chathurangi@example.com",
-    },
-    {
-        id: "TRF-2024-011",
-        employee: "Test User",
-        initials: "TU",
-        currentDept: "Kandy Branch",
-        targetDept: "Colombo Branch",
-        date: "2024-10-15",
-        boardMeetingDate: "2024-10-25", // Past Date
-        status: "Board Approved",
-        email: "test@example.com",
-    }
-];
+import { 
+    getAllTransferRequests, 
+    updateTransferStatus, 
+    TransferRequest 
+} from '@/lib/api/transferRequests';
 
 export default function TransferTable() {
-    const [requests, setRequests] = useState(mockRequests);
-    const [tabFilter, setTabFilter] = useState<"Today/Previous" | "Upcoming">("Today/Previous");
+    const [requests, setRequests] = useState<TransferRequest[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [boardFilter, setBoardFilter] = useState("All");
+
+    const loadRequests = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getAllTransferRequests();
+            
+            // Filter: Only show "legit" requests (real employees, not mock/hardcoded data)
+            const isLegit = (req: TransferRequest) => {
+                return (req.employeeName || "").trim().length > 0 && 
+                       (req.epfNumber || "").trim().length > 0 && 
+                       req.epfNumber !== '0' &&
+                       !req.employeeName.toLowerCase().includes("test") &&
+                       !req.employeeName.toLowerCase().includes("kasun");
+            };
+
+            // Show only those submitted to director or already approved/rejected by director
+            const filtered = data.filter(r => 
+                isLegit(r) && (
+                    String(r.status) === "SUBMITTED_TO_DIRECTOR" || 
+                    String(r.status) === "APPROVED" || 
+                    String(r.status) === "REJECTED"
+                )
+            );
+            setRequests(filtered);
+        } catch (error) {
+            console.error("Failed to load requests", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadRequests();
+    }, [loadRequests]);
 
     // Modal State
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -60,18 +51,25 @@ export default function TransferTable() {
     const [rejectReason, setRejectReason] = useState("");
 
     // View Modal State
-    const [viewingRequest, setViewingRequest] = useState<typeof mockRequests[0] | null>(null);
+    const [viewingRequest, setViewingRequest] = useState<TransferRequest | null>(null);
 
     // Toast State for simulating SMS/Email
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     const todayString = new Date().toISOString().split('T')[0];
 
-    const handleApprove = (id: string, name: string, email: string) => {
-        setRequests(prev => prev.map(req => req.id === id ? { ...req, status: "Board Approved" } : req));
-        setToastMessage(`Approval email sent to ${name} (${email})`);
-        setTimeout(() => setToastMessage(null), 4000);
+    const handleApprove = async (id: string) => {
+        try {
+            await updateTransferStatus(id, "APPROVED");
+            await loadRequests();
+            setToastMessage(`Transfer application approved successfully`);
+            setTimeout(() => setToastMessage(null), 4000);
+        } catch (error) {
+            console.error("Failed to approve", error);
+        }
     };
+
+    const availableBoardDates = Array.from(new Set(requests.map(r => r.boardMeetingDate))).filter(d => d).sort();
 
     const openRejectModal = (id: string) => {
         setRequestToReject(id);
@@ -79,43 +77,40 @@ export default function TransferTable() {
         setRejectModalOpen(true);
     };
 
-    const handleRejectSubmit = () => {
+    const handleRejectSubmit = async () => {
         if (!rejectReason.trim() || !requestToReject) return;
-        const targetReq = requests.find(r => r.id === requestToReject);
-
-        setRequests(prev => prev.map(req => req.id === requestToReject ? { ...req, status: "Board Rejected" } : req));
-        if (targetReq) {
-            setToastMessage(`Rejection email sent to ${targetReq.employee} (${targetReq.email})`);
+        try {
+            await updateTransferStatus(requestToReject, "REJECTED", rejectReason);
+            await loadRequests();
+            setToastMessage(`Transfer application rejected`);
+            setTimeout(() => setToastMessage(null), 4000);
+            setRejectModalOpen(false);
+            setRequestToReject(null);
+        } catch (error) {
+            console.error("Failed to reject", error);
         }
-
-        setTimeout(() => setToastMessage(null), 4000);
-        setRejectModalOpen(false);
-        setRequestToReject(null);
     };
 
 
-    const filteredRequests = requests.filter(req => {
-        const isUpcoming = req.boardMeetingDate > todayString;
-        return tabFilter === "Upcoming" ? isUpcoming : !isUpcoming;
-    });
+    const filteredRequests = requests.filter(req =>
+        boardFilter === "All" || req.boardMeetingDate === boardFilter
+    );
 
     return (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="font-bold text-gray-900">Board Transfer Reviews</h3>
-                <div className="flex bg-gray-100 p-1 rounded-lg">
-                    <button
-                        onClick={() => setTabFilter("Today/Previous")}
-                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${tabFilter === "Today/Previous" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                <div className="flex items-center gap-3">
+                    <select
+                        value={boardFilter}
+                        onChange={(e) => setBoardFilter(e.target.value)}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm outline-none focus:border-primary"
                     >
-                        Today / Previous
-                    </button>
-                    <button
-                        onClick={() => setTabFilter("Upcoming")}
-                        className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${tabFilter === "Upcoming" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                    >
-                        Upcoming
-                    </button>
+                        <option value="All">All Board Dates</option>
+                        {availableBoardDates.map(date => (
+                            <option key={date} value={date}>{date}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
@@ -137,29 +132,29 @@ export default function TransferTable() {
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                                            {req.initials}
+                                            {req.employeeName.charAt(0)}
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-900">{req.employee}</p>
+                                            <p className="font-medium text-gray-900">{req.employeeName}</p>
                                             <p className="text-xs text-gray-500">{req.id}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <p className="font-medium text-gray-700 text-xs">From: {req.currentDept}</p>
-                                    <p className="font-medium text-blue-600 text-xs">To: {req.targetDept}</p>
+                                    <p className="font-medium text-gray-700 text-xs">From: {req.currentBranch}</p>
+                                    <p className="font-medium text-blue-600 text-xs">To: {req.targetBranch}</p>
                                 </td>
-                                <td className="px-6 py-4 text-gray-600">{req.date}</td>
+                                <td className="px-6 py-4 text-gray-600">{req.requestDate}</td>
                                 <td className="px-6 py-4 text-primary font-bold">
                                     {req.boardMeetingDate}
                                     {req.boardMeetingDate === todayString && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded animate-pulse">TODAY</span>}
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                        ${req.status === 'Board Approved' ? 'bg-green-100 text-green-800' :
-                                            req.status === 'Board Rejected' ? 'bg-red-100 text-red-800' :
+                                        ${String(req.status) === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                                            String(req.status) === 'REJECTED' ? 'bg-red-100 text-red-800' :
                                                 'bg-blue-100 text-blue-800'}`}>
-                                        {req.status}
+                                        {String(req.status).replace(/_/g, ' ')}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
@@ -171,20 +166,18 @@ export default function TransferTable() {
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
-                                        {req.status === 'Submitted to Director' && (
+                                        {String(req.status) === 'SUBMITTED_TO_DIRECTOR' && (
                                             <>
                                                 <button
-                                                    onClick={() => handleApprove(req.id, req.employee, req.email)}
-                                                    disabled={tabFilter === "Upcoming"}
-                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${tabFilter === "Upcoming" ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                                                    onClick={() => handleApprove(req.id)}
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 text-green-600 hover:bg-green-100"
                                                     title="Approve"
                                                 >
                                                     <Check className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => openRejectModal(req.id)}
-                                                    disabled={tabFilter === "Upcoming"}
-                                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${tabFilter === "Upcoming" ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 text-red-600 hover:bg-red-100"
                                                     title="Reject"
                                                 >
                                                     <X className="w-4 h-4" />
@@ -219,11 +212,11 @@ export default function TransferTable() {
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900">{viewingRequest.employee}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Email</p><p className="font-semibold text-gray-900">{viewingRequest.email}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">From</p><p className="font-semibold text-gray-900">{viewingRequest.currentDept}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">To</p><p className="font-semibold text-blue-600">{viewingRequest.targetDept}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Request Date</p><p className="font-semibold text-gray-900">{viewingRequest.date}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900">{viewingRequest.employeeName}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">EPF Number</p><p className="font-semibold text-gray-900">{viewingRequest.epfNumber}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">From</p><p className="font-semibold text-gray-900">{viewingRequest.currentBranch}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">To</p><p className="font-semibold text-blue-600">{viewingRequest.targetBranch}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Request Date</p><p className="font-semibold text-gray-900">{viewingRequest.requestDate}</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting Date</p><p className="font-semibold text-primary">{viewingRequest.boardMeetingDate}</p></div>
                             </div>
                         </div>

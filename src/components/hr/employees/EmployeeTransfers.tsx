@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { getAllTransferRequests, updateTransferStatus, TransferRequest, TransferStatus } from "@/lib/api/transferRequests";
+import { Toast } from "@/components/ui/Toast";
 
 // Mock Data removed, using real API data.
 
@@ -27,6 +28,18 @@ const statusConfig: Record<TransferStatus, { label: string; classes: string }> =
     NEW: {
         label: "Draft",
         classes: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400",
+    },
+    PENDING_BOARD_APPROVAL: {
+        label: "Pending Board",
+        classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    },
+    SUBMITTED_TO_DIRECTOR: {
+        label: "Submitted to Director",
+        classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+    },
+    APPROVED: {
+        label: "Approved",
+        classes: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
     },
 };
 
@@ -72,6 +85,7 @@ export default function EmployeeTransfers() {
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
     const [rejectReasonError, setRejectReasonError] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const loadRequests = React.useCallback(async () => {
         try {
@@ -117,6 +131,9 @@ export default function EmployeeTransfers() {
         try {
             const updatedReq = await updateTransferStatus(selectedRequest.id, "REJECTED", rejectReason);
             setRequests((prev) => prev.map((req) => req.id === updatedReq.id ? updatedReq : req));
+            
+            setSuccessMessage(`Email successfully sent to ${updatedReq.employeeName}`);
+            
             handleCloseRejectDialog();
             handleCloseModal();
         } catch (error) {
@@ -129,6 +146,9 @@ export default function EmployeeTransfers() {
         try {
             const updatedReq = await updateTransferStatus(selectedRequest.id, "VERIFIED_BY_HR");
             setRequests((prev) => prev.map((req) => req.id === updatedReq.id ? updatedReq : req));
+            
+            setSuccessMessage(`Request verified for ${updatedReq.employeeName}`);
+            
             handleCloseModal();
         } catch (error) {
             console.error("Failed to verify request", error);
@@ -149,7 +169,7 @@ export default function EmployeeTransfers() {
     };
 
     const handleConfirmSubmitToAdmin = async () => {
-        const verifiedRequests = requests.filter((r) => r.status === "VERIFIED_BY_HR");
+        const verifiedRequests = legitRequests.filter((r) => r.status === "VERIFIED_BY_HR");
         
         try {
             await Promise.all(verifiedRequests.map(r => updateTransferStatus(r.id, "PENDING_ADMIN")));
@@ -164,8 +184,16 @@ export default function EmployeeTransfers() {
     };
 
     // ── Filtered list ─────────────────────────────────────────────────
+    const isLegit = (req: TransferRequest) => {
+        return (req.employeeName || "").trim().length > 0 && 
+               (req.epfNumber || "").trim().length > 0 && 
+               req.epfNumber !== '0' &&
+               !req.employeeName.toLowerCase().includes("test") &&
+               !req.employeeName.toLowerCase().includes("kasun");
+    };
+
     const getFilteredRequests = () => {
-        let list = requests;
+        let list = requests.filter(isLegit);
         if (showVerifiedList) {
             list = list.filter((r) => r.status === "VERIFIED_BY_HR");
         }
@@ -182,11 +210,12 @@ export default function EmployeeTransfers() {
     const filteredRequests = getFilteredRequests();
     const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
     const paginatedRequests = filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-    const verifiedCount = requests.filter((r) => r.status === "VERIFIED_BY_HR").length;
+    const legitRequests = requests.filter(isLegit);
+    const verifiedCount = legitRequests.filter((r) => r.status === "VERIFIED_BY_HR").length;
 
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col">
             <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
 
                 {/* Header */}
@@ -318,7 +347,7 @@ export default function EmployeeTransfers() {
                                 <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
                                 <div>
                                     <p className="text-2xl font-bold text-slate-800 dark:text-white">
-                                        {requests.filter((r) => r.status === status).length}
+                                        {legitRequests.filter((r) => r.status === status).length}
                                     </p>
                                     <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
                                 </div>
@@ -343,7 +372,10 @@ export default function EmployeeTransfers() {
                             </thead>
                             <tbody className="text-sm">
                                 {paginatedRequests.map((req) => {
-                                    const st = statusConfig[req.status];
+                                    const st = statusConfig[req.status] || { 
+                                        label: req.status, 
+                                        classes: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400" 
+                                    };
                                     return (
                                         <tr
                                             key={req.id}
@@ -478,9 +510,18 @@ export default function EmployeeTransfers() {
                                                             <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{doc.label}</p>
                                                             <span className="text-[9px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded uppercase">Uploaded</span>
                                                         </div>
-                                                        <div className="mt-2 flex items-center gap-2">
-                                                            <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
-                                                            <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{doc.filename}</p>
+                                                        <div className="mt-2 flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                                <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
+                                                                <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{doc.filename}</p>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => console.log('Downloading', doc.filename)}
+                                                                className="text-slate-400 hover:text-primary transition-colors cursor-pointer"
+                                                                title="Download Document"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[18px]">download</span>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -602,6 +643,16 @@ export default function EmployeeTransfers() {
                     </div>
                 )}
             </div>
+
+            {/* ── Toast Notifications ────────────────────────────── */}
+            {successMessage && (
+                <Toast
+                    message={successMessage}
+                    type="success"
+                    position="right"
+                    onClose={() => setSuccessMessage(null)}
+                />
+            )}
         </div>
     );
 }

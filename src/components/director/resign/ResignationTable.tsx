@@ -1,99 +1,18 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { Check, X, Send, Printer, Eye } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { User, Calendar, MapPin, Briefcase, FileText, CheckCircle2, XCircle, Search, Clock, ArrowRight, Printer, Eye, Mail, Phone, ExternalLink, Check, X, Send } from "lucide-react";
 import ResignationStats from "./ResignationStats";
+import { getAllResignationRequests, updateResignationStatus, ResignationRequest } from "@/lib/api/resignationRequests";
 
-// ── Types ────────────────────────────────────────────────────────────
-type ResignStatus = "Pending Director" | "Board Approved" | "Board Rejected";
+type RequestStatus = ResignationRequest['status'];
 
-interface ResignationRequest {
-    id: string;
-    epfNumber: string;
-    employee: string;
-    initials: string;
-    designation: string;
-    branch: string;
-    reason: string;
-    initiationDate: string;
-    effectiveDate: string;
-    boardMeetingDate: string;
-    status: ResignStatus;
-    email: string;
-    phone: string;
-    hrRemark: string;
-    directorRemark: string;
-    // Post-approval flags (simulated)
-    payrollClosed: boolean;
-    accountDeactivated: boolean;
-}
-
-// ── Mock Data ────────────────────────────────────────────────────────
-const today = new Date().toISOString().split("T")[0];
-
-const MOCK: ResignationRequest[] = [
-    {
-        id: "RES-2024-001",
-        epfNumber: "12345",
-        employee: "Kasun Perera",
-        initials: "KP",
-        designation: "Software Engineer",
-        branch: "Colombo Branch",
-        reason: "Career Growth",
-        initiationDate: "2024-10-01",
-        effectiveDate: "2024-11-01",
-        boardMeetingDate: today,
-        status: "Pending Director",
-        email: "kasun@example.com",
-        phone: "+94771234567",
-        hrRemark: "All documents verified. Eligible for director approval.",
-        directorRemark: "",
-        payrollClosed: false,
-        accountDeactivated: false,
-    },
-    {
-        id: "RES-2024-003",
-        epfNumber: "34567",
-        employee: "Tharindu Jayawardena",
-        initials: "TJ",
-        designation: "Senior Accountant",
-        branch: "Head Office",
-        reason: "Better Opportunity",
-        initiationDate: "2024-09-28",
-        effectiveDate: "2024-10-31",
-        boardMeetingDate: "2024-11-15",
-        status: "Pending Director",
-        email: "tharindu@example.com",
-        phone: "+94779876543",
-        hrRemark: "Handover complete. Release letter requested urgently.",
-        directorRemark: "",
-        payrollClosed: false,
-        accountDeactivated: false,
-    },
-    {
-        id: "RES-2024-004",
-        epfNumber: "89012",
-        employee: "Amaya Bandara",
-        initials: "AB",
-        designation: "HR Executive",
-        branch: "Galle Branch",
-        reason: "Relocation",
-        initiationDate: "2024-09-15",
-        effectiveDate: "2024-10-15",
-        boardMeetingDate: "2025-01-20",
-        status: "Board Approved",
-        email: "amaya@example.com",
-        phone: "+94772345678",
-        hrRemark: "All cleared.",
-        directorRemark: "Approved. Best wishes.",
-        payrollClosed: true,
-        accountDeactivated: true,
-    },
-];
+// ── Mock Data (Removed per user request) ───────────────────────────
+const MOCK: ResignationRequest[] = [];
 
 // ── Status Badge Config ──────────────────────────────────────────────
-const statusConfig: Record<ResignStatus, { label: string; classes: string }> = {
-    "Pending Director": {
+const statusConfig: Record<string, { label: string; classes: string }> = {
+    "PENDING_ADMIN": {
         label: "Pending Director",
         classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     },
@@ -108,15 +27,49 @@ const statusConfig: Record<ResignStatus, { label: string; classes: string }> = {
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────
-const fmt = (iso: string) => {
+const fmt = (iso?: string) => {
     if (!iso) return "—";
     return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const InfoRow = ({ label, value }: { label: string; value: string }) => (
+    <div className="flex justify-between text-sm py-1 border-b border-gray-100 dark:border-zinc-700/50">
+        <span className="text-gray-500">{label}</span>
+        <span className="font-medium text-gray-900 dark:text-white">{value}</span>
+    </div>
+);
+
+const FlagRow = ({ label, active, note }: { label: string; active: boolean; note: string }) => (
+    <div className="flex items-center gap-3">
+        {active ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-gray-300" />}
+        <div className="text-sm">
+            <p className="font-medium text-gray-700 dark:text-zinc-300">{label}</p>
+            <p className="text-[10px] text-gray-400">{note}</p>
+        </div>
+    </div>
+);
+
 
 // ── Main Component ───────────────────────────────────────────────────
 export default function ResignationTable() {
-    const [requests, setRequests] = useState<ResignationRequest[]>(MOCK);
+    const [requests, setRequests] = useState<ResignationRequest[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchRequests = async () => {
+        setLoading(true);
+        try {
+            const data = await getAllResignationRequests();
+            setRequests(data);
+        } catch (error) {
+            console.error("Failed to fetch resignations:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRequests();
+    }, []);
     const [tabFilter, setTabFilter] = useState<"Today/Previous" | "Upcoming">("Today/Previous");
 
     // Reject popup
@@ -143,27 +96,26 @@ export default function ResignationTable() {
 
     // ── Stats derived from state ──────────────────────────────────────
     const total = requests.length;
-    const pending = requests.filter((r) => r.status === "Pending Director").length;
+    const pending = requests.filter((r) => r.status === "PENDING_ADMIN").length;
     const approved = requests.filter((r) => r.status === "Board Approved").length;
     const rejected = requests.filter((r) => r.status === "Board Rejected").length;
 
     // ── Filtered list ─────────────────────────────────────────────────
     const filteredRequests = requests.filter((req) => {
-        const upcoming = req.boardMeetingDate > today;
+        const today = new Date().toISOString().split("T")[0];
+        const upcoming = (req.boardMeetingDate || "") > today;
         return tabFilter === "Upcoming" ? upcoming : !upcoming;
     });
 
     // ── Handlers ─────────────────────────────────────────────────────
-    const handleApprove = (id: string) => {
-        const req = requests.find((r) => r.id === id)!;
-        setRequests((prev) =>
-            prev.map((r) =>
-                r.id === id
-                    ? { ...r, status: "Board Approved", payrollClosed: true, accountDeactivated: true }
-                    : r
-            )
-        );
-        showToast(`✅ Approved — SMS & Email sent to ${req.employee} (${req.email}, ${req.phone})`);
+    const handleApprove = async (id: string) => {
+        try {
+            await updateResignationStatus(id, "Board Approved");
+            await fetchRequests();
+            showToast(`✅ Approved — SMS & Email notification sent`);
+        } catch (error) {
+            console.error("Failed to approve:", error);
+        }
     };
 
     const openRejectPopup = (id: string) => {
@@ -172,18 +124,16 @@ export default function ResignationTable() {
         setRejectError(false);
     };
 
-    const handleConfirmReject = () => {
-        if (!rejectReason.trim()) { setRejectError(true); return; }
-        const req = requests.find((r) => r.id === rejectId)!;
-        setRequests((prev) =>
-            prev.map((r) =>
-                r.id === rejectId
-                    ? { ...r, status: "Board Rejected", directorRemark: rejectReason }
-                    : r
-            )
-        );
-        showToast(`❌ Rejected — SMS & Email notification sent to ${req.employee}`);
-        setRejectId(null);
+    const handleConfirmReject = async () => {
+        if (!rejectId || !rejectReason.trim()) return;
+        try {
+            await updateResignationStatus(rejectId, "Board Rejected", rejectReason);
+            await fetchRequests();
+            showToast(`❌ Rejected — SMS & Email notification sent`);
+            setRejectId(null);
+        } catch (error) {
+            console.error("Failed to reject:", error);
+        }
     };
 
     return (
@@ -228,10 +178,12 @@ export default function ResignationTable() {
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-700/50">
                             {filteredRequests.map((req) => {
-                                const st = statusConfig[req.status];
-                                const isToday = req.boardMeetingDate === today;
+                                const st = statusConfig[req.status] || { label: req.status, classes: "bg-slate-100 text-slate-600" };
+                                const todayStr = new Date().toISOString().split("T")[0];
+                                const isToday = req.boardMeetingDate === todayStr;
                                 const isExpanded = expandedId === req.id;
-                                const isPending = req.status === "Pending Director";
+                                const isPending = req.status === "PENDING_ADMIN";
+                                const initials = req.employeeName ? req.employeeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : "??";
                                 const actionsDisabled = tabFilter === "Upcoming";
 
                                 return (
@@ -244,10 +196,10 @@ export default function ResignationTable() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                                        {req.initials}
+                                                        {initials}
                                                     </div>
                                                     <div>
-                                                        <p className="font-medium text-gray-900 dark:text-white">{req.employee}</p>
+                                                        <p className="font-medium text-gray-900 dark:text-white">{req.employeeName}</p>
                                                         <p className="text-xs text-gray-500">{req.id} · {req.designation}</p>
                                                     </div>
                                                 </div>
@@ -255,7 +207,7 @@ export default function ResignationTable() {
                                             {/* Reason */}
                                             <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{req.reason}</td>
                                             {/* Effective Date */}
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{fmt(req.effectiveDate)}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{fmt(req.lastWorkingDate)}</td>
                                             {/* Board Date */}
                                             <td className="px-6 py-4 font-bold text-primary">
                                                 {fmt(req.boardMeetingDate)}
@@ -323,9 +275,9 @@ export default function ResignationTable() {
                                                             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Employee Details</p>
                                                             <InfoRow label="EPF Number" value={req.epfNumber} />
                                                             <InfoRow label="Branch" value={req.branch} />
-                                                            <InfoRow label="Initiation Date" value={fmt(req.initiationDate)} />
-                                                            <InfoRow label="Email" value={req.email} />
-                                                            <InfoRow label="Phone" value={req.phone} />
+                                                            <InfoRow label="Initiation Date" value={fmt(req.resignationDate)} />
+                                                            <InfoRow label="Email" value="N/A" />
+                                                            <InfoRow label="Phone" value="N/A" />
                                                         </div>
                                                         {/* Remarks */}
                                                         <div className="space-y-3">
@@ -336,8 +288,8 @@ export default function ResignationTable() {
                                                         {/* Post-Approval Flags */}
                                                         <div className="space-y-3">
                                                             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Post-Approval Workflow</p>
-                                                            <FlagRow label="Payroll Closure" active={req.payrollClosed} note={`Effective: ${fmt(req.effectiveDate)}`} />
-                                                            <FlagRow label="Account Deactivation" active={req.accountDeactivated} note={`Scheduled: ${fmt(req.effectiveDate)}`} />
+                                                            <FlagRow label="Payroll Closure" active={false} note={`Effective: ${fmt(req.lastWorkingDate)}`} />
+                                                            <FlagRow label="Account Deactivation" active={false} note={`Scheduled: ${fmt(req.lastWorkingDate)}`} />
 
                                                         </div>
                                                     </div>
@@ -366,16 +318,16 @@ export default function ResignationTable() {
                         <div className="p-6 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center">
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Resignation Details</h3>
-                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id} · {viewingRequest.employee}</p>
+                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id} · {viewingRequest.employeeName}</p>
                             </div>
                             <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
                         </div>
                         <div className="p-6 grid grid-cols-2 gap-4 text-sm">
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.employee}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.employeeName}</p></div>
                             <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Designation</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.designation}</p></div>
                             <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Branch</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.branch}</p></div>
                             <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Reason</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.reason}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Effective Date</p><p className="font-semibold text-gray-900 dark:text-white">{fmt(viewingRequest.effectiveDate)}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Effective Date</p><p className="font-semibold text-gray-900 dark:text-white">{fmt(viewingRequest.lastWorkingDate)}</p></div>
                             <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Date</p><p className="font-semibold text-primary">{fmt(viewingRequest.boardMeetingDate)}</p></div>
                             <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg col-span-2"><p className="text-xs font-bold text-gray-500 uppercase mb-1">HR Remark</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.hrRemark || '—'}</p></div>
                         </div>
@@ -397,7 +349,7 @@ export default function ResignationTable() {
                             <div>
                                 <h3 className="text-base font-bold text-gray-900 dark:text-white">Reject Resignation</h3>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                    {requests.find((r) => r.id === rejectId)?.employee} · {rejectId}
+                                    {requests.find((r) => r.id === rejectId)?.employeeName} · {rejectId}
                                 </p>
                             </div>
                         </div>
@@ -490,7 +442,7 @@ export default function ResignationTable() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-gray-800">Resignation Acceptance Letter</p>
-                                        <p className="text-xs text-gray-500">{r.id} · {r.employee}</p>
+                                        <p className="text-xs text-gray-500">{r.id} · {r.employeeName}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -527,7 +479,7 @@ export default function ResignationTable() {
 
                                 {/* Recipient address block */}
                                 <div className="space-y-0.5 mt-2">
-                                    <p className="font-semibold">{r.employee}</p>
+                                    <p className="font-semibold">{r.employeeName}</p>
                                     <p className="text-gray-600">{r.designation}</p>
                                     <p className="text-gray-600">{r.branch}</p>
                                     <p className="text-gray-600">EPF No: {r.epfNumber}</p>
@@ -539,12 +491,12 @@ export default function ResignationTable() {
                                 </p>
 
                                 {/* Salutation */}
-                                <p>Dear {r.employee.split(" ")[0]},</p>
+                                <p>Dear {r.employeeName.split(" ")[0]},</p>
 
                                 {/* Body */}
                                 <p>
                                     We write with reference to your resignation letter dated{" "}
-                                    <span className="font-semibold">{fmt(r.initiationDate)}</span>. After due consideration
+                                    <span className="font-semibold">{fmt(r.resignationDate)}</span>. After due consideration
                                     by the Board of Directors, we hereby formally accept your resignation from the position
                                     of <span className="font-semibold">{r.designation}</span>, {r.branch}.
                                 </p>
@@ -553,7 +505,7 @@ export default function ResignationTable() {
                                 </p>
                                 <p>
                                     Your last day of service is confirmed as{" "}
-                                    <span className="font-semibold">{fmt(r.effectiveDate)}</span>. We kindly request
+                                    <span className="font-semibold">{fmt(r.lastWorkingDate)}</span>. We kindly request
                                     that you ensure a proper handover of all responsibilities, assets, and documentation
                                     before your departure.
                                 </p>
@@ -592,30 +544,6 @@ export default function ResignationTable() {
                     </div>
                 );
             })()}
-        </div>
-    );
-}
-
-// ── Small helper components ──────────────────────────────────────────
-function InfoRow({ label, value }: { label: string; value: string }) {
-    return (
-        <div>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">{label}</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{value}</p>
-        </div>
-    );
-}
-
-function FlagRow({ label, active, note }: { label: string; active: boolean; note: string }) {
-    return (
-        <div className="flex items-start gap-2">
-            <div className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${active ? "bg-emerald-500" : "bg-gray-200 dark:bg-zinc-600"}`}>
-                {active && <Check className="w-2.5 h-2.5 text-white" />}
-            </div>
-            <div>
-                <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{label}</p>
-                <p className="text-[10px] text-gray-400">{note}</p>
-            </div>
         </div>
     );
 }

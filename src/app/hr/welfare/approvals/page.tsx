@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { getAllWelfareRequests, updateWelfareStatus, WelfareRequest } from "@/lib/api/welfareRequests";
 
 // ── Types ───────────────────────────────────────────────────────────
-type WelfareStatus = "PENDING_BRANCH" | "PENDING_HO" | "PENDING_GM" | "APPROVED" | "REJECTED";
+type WelfareStatus = "SUBMITTED" | "APPROVED" | "REJECTED" | "NEW";
 type Role = "Branch DGM" | "HO DGM" | "Final GM/AO";
 
 interface WelfareDocument {
@@ -29,101 +30,61 @@ interface WelfareApprovalRequest {
     hrRemarks: string; // Used for rejection reasons or internal notes
 }
 
-// ── Mock Data ───────────────────────────────────────────────────────
-const MOCK_REQUESTS: WelfareApprovalRequest[] = [
-    {
-        id: "WLF-2024-882",
-        epfNumber: "12345",
-        employeeName: "Kasun Perera",
-        designation: "Software Engineer",
-        branch: "Colombo Branch",
-        welfareType: "Family Funeral",
-        amount: 50000,
-        adjustedAmount: 50000,
-        specialRemark: "Immediate requirement for funeral expenses.",
-        requestDate: "2024-10-01",
-        status: "PENDING_BRANCH",
-        documents: [
-            { key: "cert", label: "Supporting Document", filename: "death_certificate.pdf" },
-        ],
-        hrRemarks: "",
-    },
-    {
-        id: "WLF-2024-883",
-        epfNumber: "67890",
-        employeeName: "Nimali Silva",
-        designation: "Marketing Manager",
-        branch: "Kandy Branch",
-        welfareType: "Festival Advance",
-        amount: 25000,
-        adjustedAmount: 25000,
-        specialRemark: "Sinhala and Tamil New Year advance.",
-        requestDate: "2024-10-05",
-        status: "PENDING_HO",
-        documents: [],
-        hrRemarks: "Branch DGM certified.",
-    },
-    {
-        id: "WLF-2024-884",
-        epfNumber: "34567",
-        employeeName: "Tharindu Jayawardena",
-        designation: "Senior Accountant",
-        branch: "Head Office",
-        welfareType: "Accident Claims",
-        amount: 150000,
-        adjustedAmount: 140000,
-        specialRemark: "Vehicle accident while on duty. Original bills attached.",
-        requestDate: "2024-09-28",
-        status: "PENDING_GM",
-        documents: [
-            { key: "police", label: "Police Report", filename: "police_report_345.pdf" },
-            { key: "medical", label: "Medical Bills", filename: "hospital_bills.pdf" },
-        ],
-        hrRemarks: "HO DGM certified, amount adjusted to max policy limit (140,000).",
-    },
-];
+// ── Mock Data Removed ───────────────────────────────────────────────
 
 // ── Role & Status Configs ───────────────────────────────────────────
 const statusConfig: Record<WelfareStatus, { label: string; classes: string }> = {
-    PENDING_BRANCH: { label: "Pending Branch DGM", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
-    PENDING_HO: { label: "Pending HO DGM", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-    PENDING_GM: { label: "Pending Final GM", classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
+    NEW: { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400" },
+    SUBMITTED: { label: "Pending Review", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
     APPROVED: { label: "Approved", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
     REJECTED: { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
 };
 
 export default function WelfareApprovalsPage() {
-    const [requests, setRequests] = useState<WelfareApprovalRequest[]>(MOCK_REQUESTS);
-    const [selectedRequest, setSelectedRequest] = useState<WelfareApprovalRequest | null>(null);
+    const [requests, setRequests] = useState<WelfareRequest[]>([]);
+    const [selectedRequest, setSelectedRequest] = useState<WelfareRequest | null>(null);
     const [currentRole, setCurrentRole] = useState<Role>("Branch DGM");
     const [searchTerm, setSearchTerm] = useState("");
 
-    // Modal Form State
     const [adjustedAmountStr, setAdjustedAmountStr] = useState<string>("");
     const [hrRemarksStr, setHrRemarksStr] = useState<string>("");
     const [actionError, setActionError] = useState<string>("");
 
+    const loadRequests = useCallback(async () => {
+        try {
+            const data = await getAllWelfareRequests();
+            setRequests(data);
+        } catch (error) {
+            console.error("Failed to load welfare requests", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadRequests();
+    }, [loadRequests]);
+
     // ── Data Filtering ──────────────────────────────────────────────
     const filteredRequests = requests.filter((req) => {
         const matchesSearch =
-            req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            req.id.toLowerCase().includes(searchTerm.toLowerCase());
+            (req.employeeName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (req.id || "").toLowerCase().includes(searchTerm.toLowerCase());
         
-        // Show all in the list initially, or filter by role? Let's show all, but visually distinguish actionable ones.
-        return matchesSearch;
+        // Strict filtering: Only show 'SUBMITTED' requests from legitimate registered employees.
+        const hasValidEmployee = (req.employeeName || "").trim().length > 0 && 
+                                (req.epfNumber || "").trim() !== "" && 
+                                (req.epfNumber || "").trim() !== "N/A";
+
+        return matchesSearch && req.status === "SUBMITTED" && hasValidEmployee;
     });
 
-    const isActionable = (req: WelfareApprovalRequest) => {
-        if (currentRole === "Branch DGM" && req.status === "PENDING_BRANCH") return true;
-        if (currentRole === "HO DGM" && req.status === "PENDING_HO") return true;
-        if (currentRole === "Final GM/AO" && req.status === "PENDING_GM") return true;
-        return false;
+    const isActionable = (req: WelfareRequest) => {
+        return req.status === "SUBMITTED";
     };
 
     // ── Event Handlers ──────────────────────────────────────────────
-    const handleView = (req: WelfareApprovalRequest) => {
+    const handleView = (req: WelfareRequest) => {
         setSelectedRequest(req);
-        setAdjustedAmountStr(req.adjustedAmount.toString());
+        setAdjustedAmountStr(req.amount.toString());
         setHrRemarksStr("");
         setActionError("");
     };
@@ -132,54 +93,30 @@ export default function WelfareApprovalsPage() {
         setSelectedRequest(null);
     };
 
-    const processAction = (action: "CERTIFY" | "REJECT") => {
+    const processAction = async (action: "CERTIFY" | "REJECT") => {
         if (!selectedRequest) return;
         
-        // Validation
         if (action === "REJECT" && !hrRemarksStr.trim()) {
             setActionError("Mandatory Remarks are required for rejection.");
             return;
         }
 
-        const numericAmount = parseFloat(adjustedAmountStr) || selectedRequest.adjustedAmount;
+        const newStatus = action === "REJECT" ? "REJECTED" : "APPROVED";
 
-        let newStatus = selectedRequest.status;
-        if (action === "REJECT") {
-            newStatus = "REJECTED";
-        } else if (action === "CERTIFY") {
-            if (currentRole === "Branch DGM") newStatus = "PENDING_HO";
-            else if (currentRole === "HO DGM") newStatus = "PENDING_GM";
-            else if (currentRole === "Final GM/AO") newStatus = "APPROVED";
+        try {
+            const updatedReq = await updateWelfareStatus(selectedRequest.id, newStatus, hrRemarksStr.trim());
+            setRequests((prev) =>
+                prev.map((r) => (r.id === updatedReq.id ? updatedReq : r))
+            );
+            handleCloseModal();
+        } catch (error) {
+            console.error("Failed to update status", error);
+            setActionError("Failed to update status. Please try again.");
         }
-
-        const combinedRemarks = hrRemarksStr.trim() 
-            ? `${selectedRequest.hrRemarks ? selectedRequest.hrRemarks + '\n' : ''}[${currentRole}]: ${hrRemarksStr.trim()}`
-            : selectedRequest.hrRemarks;
-
-        setRequests((prev) =>
-            prev.map((r) =>
-                r.id === selectedRequest.id
-                    ? { ...r, status: newStatus, adjustedAmount: numericAmount, hrRemarks: combinedRemarks }
-                    : r
-            )
-        );
-
-        if (newStatus === "APPROVED") {
-            // Post-Approval Webhook/API Stub
-            console.log("PAYMENT_HOOK_STUB_TRIGERRED:", {
-                id: selectedRequest.id,
-                epf: selectedRequest.epfNumber,
-                amountApproved: numericAmount,
-                type: selectedRequest.welfareType
-            });
-            alert(`API Hook Triggered: Sent LKR ${numericAmount} payment instruction to Finance Dept.`);
-        }
-
-        handleCloseModal();
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col">
             <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
                 {/* Header Sequence */}
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -277,11 +214,11 @@ export default function WelfareApprovalsPage() {
                                                 {req.welfareType}
                                             </td>
                                             <td className="py-4 px-6 text-slate-800 dark:text-slate-200">
-                                                LKR {req.adjustedAmount.toLocaleString()}
+                                                LKR {req.amount.toLocaleString()}
                                             </td>
                                             <td className="py-4 px-6">
-                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${st.classes}`}>
-                                                    {st.label}
+                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${statusConfig[req.status as WelfareStatus]?.classes || ''}`}>
+                                                    {statusConfig[req.status as WelfareStatus]?.label || req.status}
                                                 </span>
                                             </td>
                                             <td className="py-4 px-6 text-right">
@@ -340,10 +277,10 @@ export default function WelfareApprovalsPage() {
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <h2 className="text-lg font-bold text-slate-900 dark:text-white">{selectedRequest.welfareType}</h2>
-                                            <p className="text-sm text-slate-500 mt-1">Requested by {selectedRequest.employeeName} ({selectedRequest.epfNumber}) on {selectedRequest.requestDate}</p>
+                                            <p className="text-sm text-slate-500 mt-1">Requested by {selectedRequest.employeeName} ({selectedRequest.epfNumber}) on {selectedRequest.dateOfRequest}</p>
                                         </div>
-                                        <span className={`text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider ${statusConfig[selectedRequest.status].classes}`}>
-                                            {statusConfig[selectedRequest.status].label}
+                                        <span className={`text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider ${statusConfig[selectedRequest.status as WelfareStatus]?.classes || ''}`}>
+                                            {statusConfig[selectedRequest.status as WelfareStatus]?.label || selectedRequest.status}
                                         </span>
                                     </div>
 
@@ -378,7 +315,7 @@ export default function WelfareApprovalsPage() {
                                             className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-700 dark:text-slate-300 resize-none"
                                             readOnly
                                             rows={2}
-                                            value={selectedRequest.specialRemark || "No special remarks provided."}
+                                            value={selectedRequest.employeeRemarks || "No special remarks provided."}
                                         />
                                     </div>
 
@@ -441,7 +378,7 @@ export default function WelfareApprovalsPage() {
                                                         }`}
                                                     />
                                                     {isActionable(selectedRequest) && (
-                                                        <p className="text-[10px] text-slate-500 mt-1">You may adjust this amount before certification based on Hexa Co. allocation policies.</p>
+                                                        <p className="text-[10px] text-slate-500 mt-1">You may adjust this amount before certification.</p>
                                                     )}
                                                 </div>
                                             </div>

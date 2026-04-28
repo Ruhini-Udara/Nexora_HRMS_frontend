@@ -84,12 +84,6 @@ export default function DirectorDashboard() {
                         href="/director/death"
                     />
                     <ModuleCard
-                        title="Welfare Requests"
-                        description="Handle employee benefit claims, health insurance inquiries, and wellness program enrollments."
-                        icon={<Heart className="w-5 h-5" />}
-                        href="/director/welfare"
-                    />
-                    <ModuleCard
                         title="Leave Requests"
                         description="Review and approve annual leave, sick leave, and other time-off applications."
                         icon={<Calendar className="w-5 h-5" />}

@@ -8,9 +8,11 @@ import {
     createDeathRequest, 
     updateDeathRequest, 
     verifyDeathRequest, 
-    rejectDeathRequest 
+    rejectDeathRequest,
+    submitDeathRequestToAdmin
 } from '@/lib/api/deathRequests';
 import api from '@/lib/axiosInstance';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const statusConfig: Record<string, { label: string; classes: string }> = {
     NEW: {
@@ -36,6 +38,7 @@ const statusConfig: Record<string, { label: string; classes: string }> = {
 };
 
 export default function EmployeeDeath() {
+    const { user } = useAuthStore();
     const [requests, setRequests] = useState<DeathRequest[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<DeathRequest | null>(null);
@@ -46,10 +49,10 @@ export default function EmployeeDeath() {
     const [showBatchConfirm, setShowBatchConfirm] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     
-    // Reject states
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
     
+    // Detailed view state from user's version
     const [viewRequest, setViewRequest] = useState<DeathRequest | null>(null);
 
     const loadRequests = useCallback(async () => {
@@ -62,7 +65,6 @@ export default function EmployeeDeath() {
     }, []);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadRequests();
     }, [loadRequests]);
 
@@ -94,7 +96,7 @@ export default function EmployeeDeath() {
                 setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
                 showSuccess("Application updated successfully");
             } else {
-                const created = await createDeathRequest(data);
+                const created = await createDeathRequest(data, { id: user?.id || 1 });
                 setRequests(prev => [...prev, created]);
                 showSuccess("Application saved as draft");
             }
@@ -138,10 +140,7 @@ export default function EmployeeDeath() {
         if (selectedIds.length === 0) return;
         
         try {
-            await Promise.all(selectedIds.map(id => {
-                const numericId = parseInt(id.replace('DTH-', ''), 10);
-                return api.post(`/death-requests/${numericId}/submit-admin`);
-            }));
+            await Promise.all(selectedIds.map(idStr => submitDeathRequestToAdmin(idStr)));
             
             await loadRequests();
             const count = selectedIds.length;
@@ -153,7 +152,13 @@ export default function EmployeeDeath() {
         }
     };
 
-    const filteredRequests = requests.filter(req => {
+    const isLegit = (req: DeathRequest) => {
+        return (req.employeeName || "").trim().length > 0 && 
+               (req.epfNumber || "").trim().length > 0 && 
+               req.epfNumber !== '0';
+    };
+
+    const filteredRequests = requests.filter(isLegit).filter(req => {
         const matchesSearch = req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             req.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
             req.epfNumber.toLowerCase().includes(searchTerm.toLowerCase());
@@ -164,9 +169,10 @@ export default function EmployeeDeath() {
         return matchesSearch;
     });
 
-    const draftCount = requests.filter(r => r.status === 'NEW').length;
-    const pendingCount = requests.filter(r => r.status === 'SUBMITTED').length;
-    const submittedToAdminCount = requests.filter(r => r.status === 'PENDING_ADMIN').length;
+    const legitRequests = requests.filter(isLegit);
+    const draftCount = legitRequests.filter(r => r.status === 'NEW').length;
+    const pendingCount = legitRequests.filter(r => r.status === 'SUBMITTED').length;
+    const submittedToAdminCount = legitRequests.filter(r => r.status === 'PENDING_ADMIN').length;
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return '—';
@@ -187,7 +193,7 @@ export default function EmployeeDeath() {
     };
 
     return (
-        <div className="max-w-7xl w-full mx-auto p-8 pb-24">
+        <div className="flex-1 max-w-7xl w-full mx-auto p-8 flex flex-col bg-slate-50 dark:bg-slate-900">
 
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
@@ -213,7 +219,7 @@ export default function EmployeeDeath() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Applications</p>
-                    <p className="text-2xl font-black text-slate-900 dark:text-white">{requests.length}</p>
+                    <p className="text-2xl font-black text-slate-900 dark:text-white">{legitRequests.length}</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                     <p className="text-[11px] font-bold text-amber-500 uppercase tracking-widest mb-1">Active Drafts</p>
@@ -433,7 +439,7 @@ export default function EmployeeDeath() {
                 </div>
             )}
 
-            {/* Detail View Modal */}
+            {/* Detail View Modal (from your version) */}
             {viewRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -536,6 +542,7 @@ export default function EmployeeDeath() {
                 </div>
             )}
 
+
             {/* Reject Dialog */}
             {showRejectDialog && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
@@ -550,7 +557,7 @@ export default function EmployeeDeath() {
                                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-red-500/20 transition-all resize-none h-32"
                                 placeholder="Enter rejection reason..."
                                 value={rejectReason}
-                                onChange={(e) => setRejectReason(e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRejectReason(e.target.value)}
                             />
                         </div>
                         <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
@@ -563,3 +570,4 @@ export default function EmployeeDeath() {
         </div>
     );
 }
+

@@ -1,60 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-
-type ResignationStatus = "SUBMITTED_FOR_ADMIN_APPROVAL" | "PENDING_BOARD_APPROVAL" | "APPROVED" | "REJECTED" | "SUBMITTED_TO_DIRECTOR";
-
-interface ResignationApplication {
-    id: string;
-    employeeName: string;
-    designation: string;
-    branch: string;
-    resignationDate: string;
-    lastWorkingDate: string;
-    status: ResignationStatus;
-    boardMeetingDate?: string;
-}
-
-const INITIAL_REQUESTS: ResignationApplication[] = [
-    {
-        id: "RES-2024-001",
-        employeeName: "Saman Kumara",
-        designation: "Frontend Developer",
-        branch: "Colombo HQ",
-        resignationDate: "2024-10-15",
-        lastWorkingDate: "2024-11-15",
-        status: "SUBMITTED_FOR_ADMIN_APPROVAL",
-    },
-    {
-        id: "RES-2024-002",
-        employeeName: "Nuwan Pradeep",
-        designation: "DevOps Engineer",
-        branch: "Kandy Branch",
-        resignationDate: "2024-10-18",
-        lastWorkingDate: "2024-11-18",
-        status: "SUBMITTED_FOR_ADMIN_APPROVAL",
-    },
-    {
-        id: "RES-2024-003",
-        employeeName: "Malshan Jayarathne",
-        designation: "UI/UX Designer",
-        branch: "Galle Branch",
-        resignationDate: "2024-10-16",
-        lastWorkingDate: "2024-11-16",
-        status: "PENDING_BOARD_APPROVAL",
-        boardMeetingDate: "2024-11-01",
-    }
-];
+import { getAllResignationRequests, updateResignationStatus, ResignationRequest } from "@/lib/api/resignationRequests";
 
 export default function AdminResignationsPage() {
-    const [requests, setRequests] = useState<ResignationApplication[]>(INITIAL_REQUESTS);
+    const [requests, setRequests] = useState<ResignationRequest[]>([]);
     const [activeTab, setActiveTab] = useState<"preparation" | "management">("preparation");
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [boardDate, setBoardDate] = useState<string>("");
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const [filterDate, setFilterDate] = useState<string>("All");
+
+    const fetchRequests = useCallback(async () => {
+        try {
+            const data = await getAllResignationRequests();
+            setRequests(data);
+        } catch (error) {
+            console.error('Failed to fetch resignations:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchRequests();
+    }, [fetchRequests]);
 
     const handleCheckboxToggle = (id: string) => {
         setSelectedIds((prev) =>
@@ -64,14 +34,14 @@ export default function AdminResignationsPage() {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            const approvedIds = requests.filter(r => r.status === "SUBMITTED_FOR_ADMIN_APPROVAL").map(r => r.id);
+            const approvedIds = requests.filter(r => r.status === "PENDING_ADMIN").map(r => r.id);
             setSelectedIds(approvedIds);
         } else {
             setSelectedIds([]);
         }
     };
 
-    const handlePrepareList = () => {
+    const handlePrepareList = async () => {
         if (!boardDate) {
             alert("Please select a Board Gathering Date first.");
             return;
@@ -81,40 +51,47 @@ export default function AdminResignationsPage() {
             return;
         }
 
-        setRequests((prev) =>
-            prev.map((req) =>
-                selectedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_BOARD_APPROVAL", boardMeetingDate: boardDate }
-                    : req
-            )
-        );
-
-        setSelectedIds([]);
-        setFilterDate(boardDate);
-        setBoardDate("");
-        setActiveTab("management");
+        try {
+            await Promise.all(
+                selectedIds.map((id) => updateResignationStatus(id, "SUBMITTED_FOR_ADMIN_APPROVAL", undefined, boardDate))
+            );
+            await fetchRequests();
+            setSelectedIds([]);
+            setFilterDate(boardDate);
+            setBoardDate("");
+            setActiveTab("management");
+        } catch (error) {
+            console.error('Failed to prepare list:', error);
+        }
     };
 
     const handlePrintList = () => {
         window.print();
     };
 
-    const handleConfirmSubmitToDirector = () => {
-        setRequests((prev) =>
-            prev.map((req) => {
-                if (req.status !== "PENDING_BOARD_APPROVAL") return req;
-                if (filterDate !== "All" && req.boardMeetingDate !== filterDate) return req;
-                return { ...req, status: "SUBMITTED_TO_DIRECTOR" as ResignationStatus };
-            })
-        );
-        setShowConfirmModal(false);
+    const handleConfirmSubmitToDirector = async () => {
+        try {
+            const batchToSubmit = requests.filter(r => {
+                if (r.status !== "SUBMITTED_FOR_ADMIN_APPROVAL") return false;
+                if (filterDate !== "All" && r.boardMeetingDate !== filterDate) return false;
+                return true;
+            });
+
+            await Promise.all(
+                batchToSubmit.map((req) => updateResignationStatus(req.id, "Pending Director"))
+            );
+            await fetchRequests();
+            setShowConfirmModal(false);
+        } catch (error) {
+            console.error('Failed to submit to director:', error);
+        }
     };
 
-    const preparationList = requests.filter(r => r.status === "SUBMITTED_FOR_ADMIN_APPROVAL");
-    const availableDates = Array.from(new Set(requests.filter(r => r.status === "PENDING_BOARD_APPROVAL" && r.boardMeetingDate).map(r => r.boardMeetingDate as string)));
+    const preparationList = requests.filter(r => r.status === "PENDING_ADMIN");
+    const availableDates = Array.from(new Set(requests.filter(r => r.status === "SUBMITTED_FOR_ADMIN_APPROVAL" && r.boardMeetingDate).map(r => r.boardMeetingDate as string)));
     
     const managementList = requests.filter(r => {
-        if (r.status !== "PENDING_BOARD_APPROVAL") return false;
+        if (r.status !== "SUBMITTED_FOR_ADMIN_APPROVAL") return false;
         if (filterDate !== "All" && r.boardMeetingDate !== filterDate) return false;
         return true;
     });
@@ -168,9 +145,9 @@ export default function AdminResignationsPage() {
                             <span className="flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[18px]">gavel</span>
                                 2. Management of Pending Board Approvals
-                                {requests.filter(r => r.status === "PENDING_BOARD_APPROVAL").length > 0 && (
+                                {requests.filter(r => r.status === "SUBMITTED_FOR_ADMIN_APPROVAL").length > 0 && (
                                     <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs ml-1">
-                                        {requests.filter(r => r.status === "PENDING_BOARD_APPROVAL").length}
+                                        {requests.filter(r => r.status === "SUBMITTED_FOR_ADMIN_APPROVAL").length}
                                     </span>
                                 )}
                             </span>
@@ -353,7 +330,7 @@ export default function AdminResignationsPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="text-sm print:text-xs">
-                                        {managementList.map((req, i) => (
+                                        {managementList.map((req) => (
                                             <tr key={req.id} className="border-b border-slate-50 dark:border-slate-700/50 print:border-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                                 <td className="py-4 px-6 font-semibold text-slate-900 dark:text-white print:py-3 print:text-black">{req.id}</td>
                                                 <td className="py-4 px-6 print:py-3 print:text-black">{req.employeeName}</td>
