@@ -93,7 +93,7 @@ export default function LoginPage() {
                         {error && (
                             <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl text-red-600 dark:text-red-400 text-sm">
                                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                                <span>{error}</span> /*Shows login error text.*/
+                                <span>{error}</span>
                             </div>
                         )}
 
@@ -140,7 +140,7 @@ export default function LoginPage() {
                                 />
                             </div>
                             {errors.password && (
-                                <p className="text-xs text-red-500 ml-1 mt-1 font-medium">{errors.password.message}</p> //Password must be at least 6 characters
+                                <p className="text-xs text-red-500 ml-1 mt-1 font-medium">{errors.password.message}</p>
                             )}
                         </div>
 

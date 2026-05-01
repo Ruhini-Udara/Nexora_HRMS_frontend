@@ -250,7 +250,7 @@ export default function OverseasLeaveRequestPage() {
                         <div className="text-sm font-medium">
                             Your request has been saved with a <strong className="font-bold">&quot;New&quot;</strong> status. You can continue editing or submit it later.
                         </div>
-                    </div> //Draft banner appears if:
+                    </div>
                 )}
 
                 {status === STATUS_SUBMITTED && (
@@ -262,7 +262,7 @@ export default function OverseasLeaveRequestPage() {
                             setStatus(STATUS_EDITING);
                         }}
                     />
-                )} //Success banner appears if: Submission success.
+                )}
 
                 {fileError && (
                     <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-xl border border-red-200 dark:border-red-800/30 flex items-center gap-3 mb-6">
@@ -270,7 +270,7 @@ export default function OverseasLeaveRequestPage() {
                         <div className="text-sm font-medium">{fileError}</div>
                     </div>
                 )}
-            </div> //Error banner appears if:
+            </div>
 
             {!isDisabled && (
                 <div className="contents">
