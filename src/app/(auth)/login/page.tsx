@@ -11,7 +11,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { DarkModeToggle } from "@/components/DarkModeToggle";
 
-// Validation Schema
+
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -24,6 +24,7 @@ export default function LoginPage() {
     const login = useAuthStore((state) => state.login);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
 
     const {
         register,
@@ -47,7 +48,7 @@ export default function LoginPage() {
 
             // Rationale: We save to Cookies because Middleware (server-side) cannot access 
             // Zustand or localStorage. This enables secure route protection.
-            document.cookie = `nexora-token=${token}; path=/; max-age=86400; SameSite=Strict`;
+            document.cookie = `nexora-token=${token}; path=/; max-age=86400; SameSite=Strict`; //Stores JWT in cookie for middleware, max-age=86400 means 24 hours.
             document.cookie = `nexora-role=${userData.role}; path=/; max-age=86400; SameSite=Strict`;
 
             // Rationale: Role-based redirection ensures users land on the dashboard 
@@ -56,7 +57,7 @@ export default function LoginPage() {
             if (userData.role === 'ROLE_ADMIN') redirectPath = '/admin';
             else if (userData.role === 'ROLE_HR') redirectPath = '/hr';
             else if (userData.role === 'ROLE_DIRECTOR') redirectPath = '/director';
-            
+
             router.push(redirectPath);
         } catch (err) {
             if (axios.isAxiosError(err)) {
@@ -92,7 +93,7 @@ export default function LoginPage() {
                         {error && (
                             <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl text-red-600 dark:text-red-400 text-sm">
                                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                                <span>{error}</span>
+                                <span>{error}</span> /*Shows login error text.*/
                             </div>
                         )}
 
@@ -112,7 +113,7 @@ export default function LoginPage() {
                                     className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none text-slate-900 dark:text-white"
                                 />
                             </div>
-                            {errors.email && (
+                            {errors.email && ( /*Shows email validation error only if email is invalid.*/
                                 <p className="text-xs text-red-500 ml-1 mt-1 font-medium">{errors.email.message}</p>
                             )}
                         </div>
@@ -139,7 +140,7 @@ export default function LoginPage() {
                                 />
                             </div>
                             {errors.password && (
-                                <p className="text-xs text-red-500 ml-1 mt-1 font-medium">{errors.password.message}</p>
+                                <p className="text-xs text-red-500 ml-1 mt-1 font-medium">{errors.password.message}</p> //Password must be at least 6 characters
                             )}
                         </div>
 
@@ -173,7 +174,7 @@ export default function LoginPage() {
                     &copy; 2024 Nexora Solutions. All rights reserved.
                 </p>
             </div>
-            
+
             {/* Dark Mode Toggle */}
             <div className="absolute top-6 right-6">
                 <DarkModeToggle />

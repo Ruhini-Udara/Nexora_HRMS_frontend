@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, User, X, Mail, Building2, Briefcase, BadgeCheck } from "lucide-react";
+import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, User, X, Mail, Building2, Briefcase, BadgeCheck, Fingerprint } from "lucide-react";
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -12,6 +12,10 @@ interface Employee {
   designation: string;
   joiningDate: string;
   employmentStatus: string;
+  fingerprintUserId: number | null;
+  fingerprintEnrolled: boolean;
+  fingerprintEnrolledAt?: string | null;
+  lastFingerprintSyncAt?: string | null;
 }
 
 interface ApiEmployee {
@@ -22,6 +26,10 @@ interface ApiEmployee {
   designation?: { designationName?: string };
   dateJoined?: string;
   employeeType?: string;
+  fingerprintUserId?: number | null;
+  fingerprintEnrolled?: boolean | null;
+  fingerprintEnrolledAt?: string | null;
+  lastFingerprintSyncAt?: string | null;
 }
 
 interface Designation {
@@ -44,6 +52,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [editForm, setEditForm] = useState<Employee | null>(null);
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
+  const [fingerprintUpdatingCode, setFingerprintUpdatingCode] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [prevFilters, setPrevFilters] = useState({ department, jobTitle, status });
@@ -76,6 +85,10 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
           designation: emp.designation?.designationName || "",
           joiningDate: emp.dateJoined || "",
           employmentStatus: emp.employeeType || "",
+          fingerprintUserId: emp.fingerprintUserId ?? null,
+          fingerprintEnrolled: Boolean(emp.fingerprintEnrolled),
+          fingerprintEnrolledAt: emp.fingerprintEnrolledAt ?? null,
+          lastFingerprintSyncAt: emp.lastFingerprintSyncAt ?? null,
         }));
 
         // Sort employees by Employee Code in ascending order
@@ -133,6 +146,34 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
 
   const handleView = (employee: Employee) => {
     setViewingEmployee(employee);
+  };
+
+  const handleToggleFingerprintEnrollment = async (employee: Employee) => {
+    try {
+      setFingerprintUpdatingCode(employee.id);
+      const nextStatus = !employee.fingerprintEnrolled;
+      const response = await api.patch(`/api/employees/${employee.id}/fingerprint-status`, {
+        fingerprintEnrolled: nextStatus,
+      });
+      const updated = response.data as ApiEmployee;
+
+      setEmployees(employees.map((emp) =>
+        emp.id === employee.id
+          ? {
+              ...emp,
+              fingerprintUserId: updated.fingerprintUserId ?? emp.fingerprintUserId,
+              fingerprintEnrolled: Boolean(updated.fingerprintEnrolled),
+              fingerprintEnrolledAt: updated.fingerprintEnrolledAt ?? null,
+              lastFingerprintSyncAt: updated.lastFingerprintSyncAt ?? null,
+            }
+          : emp
+      ));
+    } catch (error) {
+      console.error("Error updating fingerprint status:", error);
+      alert("Failed to update fingerprint enrollment status.");
+    } finally {
+      setFingerprintUpdatingCode(null);
+    }
   };
 
   const handleSave = async () => {
@@ -274,6 +315,32 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                         : 'bg-blue-100 text-blue-800'
                     }`}>
                     {viewingEmployee.employmentStatus}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Fingerprint className="text-slate-600" size={18} />
+                    <label className="block text-sm font-medium text-slate-900">
+                      Fingerprint User ID
+                    </label>
+                  </div>
+                  <p className="text-base text-gray-900">{viewingEmployee.fingerprintUserId ?? "Not assigned"}</p>
+                </div>
+
+                <div className="bg-emerald-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BadgeCheck className="text-emerald-600" size={18} />
+                    <label className="block text-sm font-medium text-emerald-900">
+                      Fingerprint Enrollment
+                    </label>
+                  </div>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+                    viewingEmployee.fingerprintEnrolled
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-slate-100 text-slate-700"
+                  }`}>
+                    {viewingEmployee.fingerprintEnrolled ? "Enrolled" : "Not enrolled"}
                   </span>
                 </div>
               </div>
@@ -424,6 +491,9 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                 Employee Code
               </th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Fingerprint ID
+              </th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Full Name
               </th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -434,6 +504,9 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
               </th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Employee Type
+              </th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Fingerprint
               </th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 text-right uppercase tracking-wider">
                 Actions
@@ -448,6 +521,9 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
               >
                 <td className="px-6 py-5 font-bold text-amber-900">
                   {employee.id}
+                </td>
+                <td className="px-6 py-5 text-sm font-semibold text-slate-700">
+                  {employee.fingerprintUserId ?? "Pending"}
                 </td>
                 <td className="px-6 py-5">
                   <div className="flex items-center gap-3">
@@ -477,6 +553,31 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                 </td>
                 <td className="px-6 py-5 text-sm text-slate-600">
                   {employee.employmentStatus}
+                </td>
+                <td className="px-6 py-5">
+                  {isAdmin ? (
+                    <button
+                      onClick={() => handleToggleFingerprintEnrollment(employee)}
+                      disabled={fingerprintUpdatingCode === employee.id}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors disabled:opacity-60 ${
+                        employee.fingerprintEnrolled
+                          ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                    >
+                      <Fingerprint size={14} />
+                      {employee.fingerprintEnrolled ? "Enrolled" : "Not Enrolled"}
+                    </button>
+                  ) : (
+                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ${
+                      employee.fingerprintEnrolled
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-slate-100 text-slate-700"
+                    }`}>
+                      <Fingerprint size={14} />
+                      {employee.fingerprintEnrolled ? "Enrolled" : "Not Enrolled"}
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-5">
                   <div className="flex items-center justify-end gap-3 text-slate-500">
