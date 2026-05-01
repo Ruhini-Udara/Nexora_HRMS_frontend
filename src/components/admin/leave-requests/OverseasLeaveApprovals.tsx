@@ -92,7 +92,7 @@ export default function OverseasLeaveApprovals() {
     const [adminRemark, setAdminRemark] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
-    const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+    const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
     const showToast = useCallback((message: string, type: 'success' | 'error' = 'error') => {
         setToast({ message, type });
@@ -109,9 +109,9 @@ export default function OverseasLeaveApprovals() {
             // Always fetch board agenda items (ADMIN_APPROVED status)
             const boardRes = await api.get(`/api/v1/leaves/overseas/status/ADMIN_APPROVED`);
             setBoardItems(boardRes.data);
-        } catch (err) { 
+        } catch (err) {
             const error = err as { response?: { data?: { message?: string } } };
-            setError(error.response?.data?.message || "Could not connect to the backend. Make sure the server is running."); 
+            setError(error.response?.data?.message || "Could not connect to the backend. Make sure the server is running.");
         } finally { setLoading(false); }
     }, [statusFilter]);
 
@@ -139,9 +139,9 @@ export default function OverseasLeaveApprovals() {
             setSelectedRequest(null); setAdminRemark("");
             await fetchLeaves();
             showToast("Request processed successfully.", "success");
-        } catch (err) { 
+        } catch (err) {
             const error = err as { response?: { data?: { message?: string } } };
-            showToast(error.response?.data?.message || "Something went wrong. Please try again.", "error"); 
+            showToast(error.response?.data?.message || "Something went wrong. Please try again.", "error");
         } finally { setSubmitting(false); }
     };
 
@@ -173,10 +173,10 @@ export default function OverseasLeaveApprovals() {
                 html2canvas: { scale: 2, useCORS: true, letterRendering: true },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
             };
-            
+
             await html2pdf().set(opt).from(element).save();
             showToast("PDF Downloaded successfully.", "success");
-        } catch(e) {
+        } catch (e) {
             const error = e as { message?: string };
             console.error("PDF generation failed:", e);
             showToast(`PDF generation failed: ${error.message || "Please check console"}`, "error");
@@ -198,7 +198,7 @@ export default function OverseasLeaveApprovals() {
             setIsPrinting(false);
             await fetchLeaves();
             showToast("List successfully sent to Director.", "success");
-        } catch(e) {
+        } catch (e) {
             const error = e as { message?: string };
             showToast(`Failed to send to Director: ${error.message || 'Unknown error'}`, "error");
         } finally {
@@ -300,12 +300,10 @@ export default function OverseasLeaveApprovals() {
                 </div>
                 {/* Toast Notification */}
                 {toast && (
-                    <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
-                        toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
-                    }`}>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                            toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                    <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
                         }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                            }`}>
                             <span className="material-symbols-outlined text-[18px] text-white">
                                 {toast.type === 'success' ? 'check' : 'close'}
                             </span>
@@ -540,12 +538,10 @@ export default function OverseasLeaveApprovals() {
 
             {/* Toast Notification */}
             {toast && (
-                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
-                    toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
-                }`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                        toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
                     }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                        }`}>
                         <span className="material-symbols-outlined text-[18px] text-white">
                             {toast.type === 'success' ? 'check' : 'close'}
                         </span>

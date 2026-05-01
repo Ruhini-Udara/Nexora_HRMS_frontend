@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Mail, Shield, Lock, Eye, EyeOff, CheckCircle2, Circle, Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Mail, Shield, Lock, Eye, EyeOff, CheckCircle2, Sparkles, Loader2, AlertCircle, Fingerprint } from "lucide-react";
 import { useAdminNavigation } from "../AdminNavigationContext";
 import type { EmployeeFormData } from "./RegisterEmployee";
 import api from "@/lib/axiosInstance";
@@ -13,12 +13,17 @@ interface RegisterEmployeeStep3Props {
   onPrevious: () => void;
 }
 
+interface RegisteredEmployeeResponse {
+  fingerprintUserId?: number | null;
+}
+
 export default function RegisterEmployeeStep3({ formData, updateFormData, onPrevious }: RegisterEmployeeStep3Props) {
   const { setActiveView } = useAdminNavigation();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [registeredFingerprintUserId, setRegisteredFingerprintUserId] = useState<number | null>(null);
 
   // Initialize specific fields from formData or defaults
   useEffect(() => {
@@ -51,9 +56,11 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
   const handleComplete = async () => {
     setIsSubmitting(true);
     setSubmitError(null);
+    setRegisteredFingerprintUserId(null);
     try {
       // Send the combined data to the backend
-      await api.post("/api/employees", formData);
+      const response = await api.post<RegisteredEmployeeResponse>("/api/employees", formData);
+      setRegisteredFingerprintUserId(response.data.fingerprintUserId ?? null);
       setSubmitSuccess(true);
       
       // Navigate back to master list after success
@@ -223,6 +230,26 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
                   }`}
                 />
               </button>
+            </div>
+          </div>
+
+          {/* Fingerprint Identity */}
+          <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-2xl p-5 flex gap-4">
+            <div className="shrink-0">
+              <div className="w-6 h-6 rounded-lg bg-emerald-600 flex items-center justify-center">
+                <Fingerprint size={14} className="text-white" />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-300">Fingerprint Identity</h3>
+              <p className="text-sm text-emerald-700 dark:text-emerald-400 leading-relaxed mt-1">
+                A numeric fingerprint user ID will be assigned automatically after saving this employee.
+              </p>
+              {registeredFingerprintUserId !== null && (
+                <p className="text-sm font-bold text-emerald-900 dark:text-emerald-300 mt-2">
+                  Assigned ID: {registeredFingerprintUserId}
+                </p>
+              )}
             </div>
           </div>
 

@@ -73,7 +73,7 @@ const LeaveRequestsTable = () => {
     const [docsLoading, setDocsLoading] = useState(false);
     const [directorRemark, setDirectorRemark] = useState("");
     const [submitting, setSubmitting] = useState(false);
-    const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+    const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
     // Fetch Requests
     const fetchRequests = useCallback(async () => {
@@ -134,16 +134,16 @@ const LeaveRequestsTable = () => {
                 remark: directorRemark,
                 approvedBy: { id: user?.id }, // Use actual director id from store
             });
-            
+
             setReviewModalOpen(false);
             setSelectedRequest(null);
-            
+
             // Show Success Toast
-            setToast({ 
-                message: decision === "APPROVED" 
-                    ? "Final Approval Successful. E-mailed the status to the employee!" 
-                    : "Request Rejected. Notification sent to the employee.", 
-                type: 'success' 
+            setToast({
+                message: decision === "APPROVED"
+                    ? "Final Approval Successful. E-mailed the status to the employee!"
+                    : "Request Rejected. Notification sent to the employee.",
+                type: 'success'
             });
             setTimeout(() => setToast(null), 5000);
 
@@ -196,7 +196,7 @@ const LeaveRequestsTable = () => {
                         <option value="APPROVED">Approved</option>
                         <option value="REJECTED">Rejected</option>
                     </select>
-                    <button  
+                    <button
                         onClick={fetchRequests}
                         className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary transition-colors shadow-sm"
                     >
@@ -259,7 +259,7 @@ const LeaveRequestsTable = () => {
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         {request.status === "PENDING_DIRECTOR_REVIEW" ? (
-                                            <button 
+                                            <button
                                                 onClick={() => handleOpenReview(request)}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-all"
                                             >
@@ -286,7 +286,7 @@ const LeaveRequestsTable = () => {
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
-                        
+
                         <div className="p-6 overflow-y-auto space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-4">
@@ -336,7 +336,7 @@ const LeaveRequestsTable = () => {
                                 ) : (
                                     <div className="grid grid-cols-2 gap-3">
                                         {documents.map(doc => (
-                                            <div 
+                                            <div
                                                 key={doc.id}
                                                 onClick={() => handleViewDocument(doc.filePathUrl)}
                                                 className="flex items-center gap-3 p-3 border border-gray-200 dark:border-zinc-800 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
@@ -366,8 +366,8 @@ const LeaveRequestsTable = () => {
                         </div>
 
                         <div className="p-6 border-t border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 flex justify-end gap-3 shrink-0">
-                            <button 
-                                onClick={() => setReviewModalOpen(false)} 
+                            <button
+                                onClick={() => setReviewModalOpen(false)}
                                 className="px-6 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
                             >
                                 Cancel
@@ -392,12 +392,10 @@ const LeaveRequestsTable = () => {
             )}
             {/* Toast Notification */}
             {toast && (
-                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
-                    toast.type === 'success' ? 'bg-zinc-900 text-white' : 'bg-red-600 text-white'
-                }`}>
-                    <div className={`size-8 rounded-full flex items-center justify-center shrink-0 ${
-                        toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${toast.type === 'success' ? 'bg-zinc-900 text-white' : 'bg-red-600 text-white'
                     }`}>
+                    <div className={`size-8 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                        }`}>
                         {toast.type === 'success' ? <Check className="w-5 h-5 text-white" /> : <X className="w-5 h-5 text-white" />}
                     </div>
                     <p className="text-sm font-bold tracking-tight">{toast.message}</p>
