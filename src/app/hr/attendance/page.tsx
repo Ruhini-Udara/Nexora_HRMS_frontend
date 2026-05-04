@@ -115,12 +115,20 @@ export default function AttendancePage() {
                         View processed attendance records from fingerprint device punches.
                     </p>
                 </div>
-                <Link
-                    href="/hr/attendance/sync-runs"
-                    className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                    Sync Logs
-                </Link>
+                <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                        href="/hr/attendance/import"
+                        className="inline-flex h-10 items-center justify-center rounded-lg bg-amber-900 px-4 text-sm font-semibold text-white hover:bg-amber-800 transition-colors"
+                    >
+                        Import Attendance File
+                    </Link>
+                    <Link
+                        href="/hr/attendance/sync-runs"
+                        className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                        Import Logs
+                    </Link>
+                </div>
             </div>
 
             <form
