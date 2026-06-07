@@ -41,14 +41,17 @@ export default function LoginPage() {
             const response = await api.post('/api/auth/login', data);
             const { token, ...userData } = response.data;
 
-            // Save to Zustand store (persisted in localStorage for UI use)
+            // Rationale: We save to Zustand for immediate, reactive UI updates throughout 
+            // the React application without re-parsing cookies.
             login(token, userData);
 
-            // Save to Cookies (for Middleware use)
+            // Rationale: We save to Cookies because Middleware (server-side) cannot access 
+            // Zustand or localStorage. This enables secure route protection.
             document.cookie = `nexora-token=${token}; path=/; max-age=86400; SameSite=Strict`;
             document.cookie = `nexora-role=${userData.role}; path=/; max-age=86400; SameSite=Strict`;
 
-            // Redirect based on role
+            // Rationale: Role-based redirection ensures users land on the dashboard 
+            // specifically designed for their permissions.
             let redirectPath = '/employee';
             if (userData.role === 'ROLE_ADMIN') redirectPath = '/admin';
             else if (userData.role === 'ROLE_HR') redirectPath = '/hr';

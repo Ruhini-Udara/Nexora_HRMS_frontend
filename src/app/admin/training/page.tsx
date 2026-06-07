@@ -29,6 +29,7 @@ interface TrainingEvent {
     rejectionReason?: string;
 }
 
+// Clean, UI-friendly data model used by components
 interface MappedTrainingEvent {
     id: number;
     title: string;
@@ -46,13 +47,14 @@ interface MappedTrainingEvent {
 }
 
 export default function TrainingRequestsPage() {
-    const [requests, setRequests] = useState<MappedTrainingEvent[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [requests, setRequests] = useState<MappedTrainingEvent[]>([]);  // Stores processed training requests ready for display
+    const [isLoading, setIsLoading] = useState(true);  // Controls loading spinner visibility
 
     useEffect(() => {
+        // Utility to format time to 12-hour format
         const formatTime = (timeStr: string) => {
-            if (!timeStr || timeStr === "TBD") return "10:00 AM";
-            if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+            if (!timeStr || timeStr === "TBD") return "10:00 AM";  // Default time if not specified
+            if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;  // Already formatted
             
             try {
                 const [hours, minutes] = timeStr.split(':');
@@ -100,6 +102,10 @@ export default function TrainingRequestsPage() {
         fetchEvents();
     }, []);
 
+    /**
+     * Derived statistics for dashboard cards.
+     * These are recalculated on every render based on current state.
+     */
     const pendingCount = requests.filter(r => r.status === 'Pending' || r.status === 'Pending Admin Approval').length;
     const rejectedCount = requests.filter(r => r.status === 'Rejected').length;
     const approvedCount = requests.filter(r => r.status === 'Approved').length;

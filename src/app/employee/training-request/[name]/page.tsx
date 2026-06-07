@@ -27,28 +27,40 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
     const router = useRouter();
     const { user } = useAuthStore();
     
+    // File upload
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isConfirmingSubmit, setIsConfirmingSubmit] = useState(false);
+
+    // Submission flow state
     const [isDragging, setIsDragging] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
+    // Training event data fetched from API
     const [events, setEvents] = useState<TrainingEvent[]>([]);
+
+    // Form fields state
     const [justification, setJustification] = useState("");
     
-    // Employee details state
+    // Employee details state (pre-filled from logged-in user)
     const [employeeName, setEmployeeName] = useState("");
     const [epfNumber, setEpfNumber] = useState("");
     const [age, setAge] = useState("");
     const [department, setDepartment] = useState("");
     const [designation, setDesignation] = useState("");
     const [workEmail, setWorkEmail] = useState("");
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+    // Toast notifications (success/error feedback)
+    const [toast, setToast] = useState<{ 
+        message: string; 
+        type: 'success' | 'error' | 'info' 
+    } | null>(null);
 
     const decodedName = name ? decodeURIComponent(name) : "";
     const formattedTitle = decodedName
         ? decodedName.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
         : "Training Request";
 
+    // Fetch training events from backend on page load    
     useEffect(() => {
         api.get('/api/training/events')
             .then(res => setEvents(res.data))
@@ -70,6 +82,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
         event => event.title.toLowerCase() === formattedTitle.toLowerCase()
     );
 
+    // Fallback UI object if event not yet loaded
     const displayEvent = eventDetails || {
         id: -1,
         title: formattedTitle,
@@ -78,12 +91,18 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
         time: "TBD",
     };
 
+    // Submit training request:
+    // 1. Upload attachment (if any)
+    // 2. Build payload
+    // 3. Send request to backend
+    // 4. Show toast + redirect
     const handleSubmit = async () => {
         if (!eventDetails || !user) return;
         
         setIsSubmitting(true);
         try {
             let attachmentPath = "";
+            // Upload file to Supabase storage (if user attached one)
             if (selectedFile) {
                 const path = await uploadDocument(selectedFile, 'training-requests');
                 if (path) {
@@ -121,7 +140,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
         <form 
             onSubmit={(e) => {
                 e.preventDefault();
-                setIsConfirmingSubmit(true);
+                setIsConfirmingSubmit(true);  // open confirmation modal instead of direct submit
             }}
             className="max-w-[1400px] w-full mx-auto space-y-8 relative"
         >

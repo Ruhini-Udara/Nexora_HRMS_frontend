@@ -3,11 +3,20 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
+import { useAuthStore } from "@/store/useAuthStore";
+import api from "@/lib/axiosInstance";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MaternityLeave {
     id: number;
+    employeeId: number;
+    employeeName: string;
+    employeeCode: string;
+    epfNumber: string;
+    leaveTypeId: number;
+    leaveTypeName: string;
     childNumber: string;
+    department: string;
     branch: string;
     contactNumber: string;
     email: string;
@@ -17,14 +26,6 @@ interface MaternityLeave {
     fromDate: string;
     endDate: string;
     totalDays: number;
-    employee: {
-        id: number;
-        employeeCode: string;
-        firstName: string;
-        lastName: string;
-        fullName?: string;
-        surname?: string;
-    };
 }
 
 interface LeaveDocument {
@@ -35,6 +36,7 @@ interface LeaveDocument {
 }
 
 export default function MaternityApprovalsPage() {
+    const { user } = useAuthStore();
     const [requests, setRequests] = useState<MaternityLeave[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -45,18 +47,18 @@ export default function MaternityApprovalsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("PENDING_HR_APPROVAL");
     const [submitting, setSubmitting] = useState(false);
+    const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
     // Fetch Requests
     const fetchRequests = useCallback(async () => {
         setLoading(true);
         setError("");
         try {
-            const res = await fetch(`http://localhost:8080/api/v1/leaves/maternity/status/${statusFilter}`);
-            if (!res.ok) throw new Error("Failed to fetch requests");
-            const data = await res.json();
-            setRequests(data);
+            const res = await api.get(`/api/v1/leaves/maternity/status/${statusFilter}`);
+            setRequests(res.data);
         } catch (err) {
-            setError("Could not connect to the backend. Please ensure the server is running.");
+            const error = err as { response?: { data?: { message?: string } } };
+            setError(error.response?.data?.message || "Could not connect to the backend. Please ensure the server is running.");
         } finally {
             setLoading(false);
         }
@@ -72,11 +74,8 @@ export default function MaternityApprovalsPage() {
         setDocuments([]);
         setDocsLoading(true);
         try {
-            const res = await fetch(`http://localhost:8080/api/v1/documents?refId=${req.id}&refType=MATERNITY_LEAVE`);
-            if (res.ok) {
-                const docs = await res.json();
-                setDocuments(docs);
-            }
+            const res = await api.get(`/api/v1/documents?refId=${req.id}&refType=MATERNITY_LEAVE`);
+            setDocuments(res.data);
         } catch (err) {
             console.error("Error fetching documents", err);
         } finally {
@@ -89,27 +88,38 @@ export default function MaternityApprovalsPage() {
         setHrRemarkInput("");
     };
 
-    const handleVerifySubmit = async (decision: "APPROVED" | "REJECTED") => {
+    const handleDecision = async (decision: "APPROVE" | "REJECT") => {
         if (!selectedRequest) return;
+
+        if (decision === "REJECT" && !hrRemarkInput.trim()) {
+            setToast({ message: "Please provide a remark explaining the reason for rejection.", type: "error" });
+            setTimeout(() => setToast(null), 4000);
+            return;
+        }
+
         setSubmitting(true);
         try {
-            const res = await fetch("http://localhost:8080/api/v1/approvals", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    refId: selectedRequest.id,
-                    refType: "MATERNITY_LEAVE",
-                    decision: decision,
-                    remark: hrRemarkInput,
-                    approvedBy: { id: 1 }, // TODO: use actual HR id
-                }),
+            await api.post("/api/v1/approvals", {
+                refId: selectedRequest.id,
+                refType: "MATERNITY_LEAVE",
+                decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
+                remark: hrRemarkInput,
+                approvedBy: { id: user?.id },
             });
-            if (!res.ok) throw new Error("Verification failed");
+            
+            if (decision === "REJECT") {
+                setToast({ message: "Rejection reason has been successfully sent to the employee.", type: "success" });
+            } else {
+                setToast({ message: "Request has been verified and forwarded successfully.", type: "success" });
+            }
+            setTimeout(() => setToast(null), 4000);
             
             handleCloseModal();
             fetchRequests();
         } catch (err) {
-            alert("Something went wrong. Please try again.");
+            const error = err as { response?: { data?: { message?: string } } };
+            setToast({ message: error.response?.data?.message || "Something went wrong. Please try again.", type: "error" });
+            setTimeout(() => setToast(null), 4000);
         } finally {
             setSubmitting(false);
         }
@@ -122,7 +132,10 @@ export default function MaternityApprovalsPage() {
     };
 
     const filteredRequests = requests.filter(req => {
-        const fullName = `${req.employee?.fullName || req.employee?.firstName + " " + req.employee?.lastName}`.toLowerCase();
+        // Smart Routing: Hide my own requests from verification list
+        if (req.employeeId === user?.id) return false;
+
+        const fullName = (req.employeeName || "").toLowerCase();
         return fullName.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
@@ -135,9 +148,9 @@ export default function MaternityApprovalsPage() {
                             <Link href="/hr/leave" className="text-slate-400 hover:text-primary transition-colors">
                                 <span className="material-symbols-outlined">arrow_back</span>
                             </Link>
-                            <h2 className="text-3xl font-bold text-slate-800 dark:text-white">
+                            <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
                                 Maternity Leave Verification
-                            </h2>
+                            </h1>
                         </div>
                         <p className="text-slate-500 dark:text-slate-400 ml-9">
                             Review and verify maternity leave requests before administrator approval.
@@ -145,7 +158,6 @@ export default function MaternityApprovalsPage() {
                     </div>
                 </div>
 
-                {/* Filter & Search Bar */}
                 <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
                     <div className="relative w-full sm:w-96">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -174,7 +186,6 @@ export default function MaternityApprovalsPage() {
                     </div>
                 </div>
 
-                {/* Data Table */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
@@ -196,8 +207,14 @@ export default function MaternityApprovalsPage() {
                                     <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors">
                                         <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">#{req.id}</td>
                                         <td className="py-4 px-6">
-                                            <div className="font-semibold text-slate-800 dark:text-white">{req.employee?.fullName || `${req.employee?.firstName} ${req.employee?.lastName}`}</div>
-                                            <div className="text-xs text-slate-500">{req.employee?.employeeCode} • {req.branch}</div>
+                                                <div>
+                                                    <div className="font-semibold text-slate-800 dark:text-white whitespace-nowrap">
+                                                        {req.employeeName}
+                                                    </div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                        {req.employeeCode} • {req.department}
+                                                    </div>
+                                                </div>
                                         </td>
                                         <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
                                             {req.fromDate} to {req.endDate} <br />
@@ -205,12 +222,14 @@ export default function MaternityApprovalsPage() {
                                         </td>
                                         <td className="py-4 px-6">
                                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                                req.status === "PENDING_HR_APPROVAL" ? "bg-amber-100 text-amber-700" :
-                                                req.status === "PENDING_ADMIN_APPROVAL" ? "bg-blue-100 text-blue-700" :
-                                                req.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" :
-                                                "bg-red-100 text-red-700"
+                                                req.status === "PENDING_HR_APPROVAL" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                                                req.status === "PENDING_ADMIN_APPROVAL" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+                                                req.status === "APPROVED" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                                                "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                                             }`}>
-                                                {req.status.replace(/_/g, ' ')}
+                                                {req.status === "PENDING_HR_APPROVAL" ? "Pending Verification" :
+                                                 req.status === "PENDING_ADMIN_APPROVAL" ? "Verified (Pending Admin)" :
+                                                 req.status === "APPROVED" ? "Approved" : "Rejected"}
                                             </span>
                                         </td>
                                         <td className="py-4 px-6 text-right">
@@ -253,10 +272,15 @@ export default function MaternityApprovalsPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wider">Employee Info</h4>
+                                    <div className="mb-4">
+                                        <div className="font-bold text-slate-900 dark:text-white text-lg">
+                                            {selectedRequest.employeeName}
+                                        </div>
+                                        <div className="text-sm text-slate-500">
+                                            {selectedRequest.employeeCode} • {selectedRequest.department}
+                                        </div>
+                                    </div>
                                     <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.fullName || `${selectedRequest.employee?.firstName} ${selectedRequest.employee?.lastName}`}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Code:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.employeeCode}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Branch:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.branch}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Contact:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.contactNumber}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Email:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
                                     </div>
@@ -316,17 +340,20 @@ export default function MaternityApprovalsPage() {
                                 <>
                                     <button
                                         disabled={submitting}
-                                        onClick={() => handleVerifySubmit("REJECTED")}
+                                        onClick={() => handleDecision("REJECT")}
                                         className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-bold text-sm transition-colors disabled:opacity-50"
                                     >
                                         Reject Request
                                     </button>
                                     <button
                                         disabled={submitting}
-                                        onClick={() => handleVerifySubmit("APPROVED")}
+                                        onClick={() => handleDecision("APPROVE")}
                                         className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2 transition-all disabled:opacity-50"
                                     >
-                                        {submitting ? "Verifying..." : <><span className="material-symbols-outlined text-[18px]">verified</span> Verify & Forward</>}
+                                        {submitting 
+                                            ? "Verifying..." 
+                                            : <><span className="material-symbols-outlined text-[18px]">verified</span> {(selectedRequest.employeeName?.toLowerCase().includes("admin") || selectedRequest.employeeCode?.includes("000")) ? "Verify & Forward to Director" : "Verify & Forward to Admin"}</>
+                                        }
                                     </button>
                                 </>
                             ) : (
@@ -339,6 +366,25 @@ export default function MaternityApprovalsPage() {
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
+                    toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
+                }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                        toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                    }`}>
+                        <span className="material-symbols-outlined text-[18px] text-white">
+                            {toast.type === 'success' ? 'check' : 'close'}
+                        </span>
+                    </div>
+                    <p className="text-sm font-bold tracking-tight">{toast.message}</p>
+                    <button onClick={() => setToast(null)} className="ml-4 text-white/50 hover:text-white transition-colors flex">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
                 </div>
             )}
         </div>

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle, XCircle, Wallet } from 'lucide-react';
+import api from "@/lib/axiosInstance";
 
 const LeaveStats = () => {
     const [statsData, setStatsData] = useState({
@@ -15,27 +16,18 @@ const LeaveStats = () => {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                // In a real app, we'd have a summary endpoint. 
-                // For now, we'll fetch the main list to get the pending count.
-                const res = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/PENDING_DIRECTOR_REVIEW`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setStatsData(prev => ({ ...prev, pending: data.length }));
-                }
-
-                // Fetch total approved (final state)
-                const appRes = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/APPROVED`);
-                if (appRes.ok) {
-                    const appData = await appRes.json();
-                    setStatsData(prev => ({ ...prev, approved: appData.length }));
-                }
-
-                // Fetch total rejected
-                const rejRes = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/REJECTED`);
-                if (rejRes.ok) {
-                    const rejData = await rejRes.json();
-                    setStatsData(prev => ({ ...prev, rejected: rejData.length }));
-                }
+                const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+                    api.get('/api/v1/leaves/overseas/status/PENDING_DIRECTOR_REVIEW'),
+                    api.get('/api/v1/leaves/overseas/status/APPROVED'),
+                    api.get('/api/v1/leaves/overseas/status/REJECTED')
+                ]);
+                
+                setStatsData({
+                    pending: pendingRes.data.length,
+                    approved: approvedRes.data.length,
+                    rejected: rejectedRes.data.length,
+                    total: 0 // calculated below
+                });
             } catch (err) {
                 console.error("Error fetching stats", err);
             } finally {

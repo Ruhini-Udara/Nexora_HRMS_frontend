@@ -22,10 +22,11 @@ interface TrainingListModalProps {
     onClose: () => void;
     training: TrainingDetails | null;
     onApprove: () => void;
+    onReturn?: () => void;
     onReject: () => void;
 }
 
-export default function TrainingListModal({ isOpen, onClose, training, onApprove, onReject }: TrainingListModalProps) {
+export default function TrainingListModal({ isOpen, onClose, training, onApprove, onReturn, onReject }: TrainingListModalProps) {
     // Prevent scrolling when modal is open
     useEffect(() => {
         if (isOpen) {
@@ -96,17 +97,24 @@ export default function TrainingListModal({ isOpen, onClose, training, onApprove
                                     Ensure all statuses are accurate before broadcasting.
                                 </p>
                             </div>
-                            <div className="flex gap-4 w-full lg:w-auto">
+                            <div className="flex flex-row items-center gap-3 w-full lg:w-auto">
                                 <button 
                                     onClick={onReject}
-                                    className="flex-1 lg:flex-none px-6 py-3 bg-red-100 text-red-700 rounded-xl font-bold hover:bg-red-200 transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 lg:flex-none px-4 py-2.5 bg-red-100 text-red-700 rounded-xl font-bold hover:bg-red-200 transition-all flex items-center justify-center gap-2 text-sm whitespace-nowrap"
                                 >
-                                    Reject List
+                                    Final Reject
                                     <XCircle className="w-4 h-4" />
                                 </button>
                                 <button 
+                                    onClick={() => (onReturn ? onReturn() : onReject())}
+                                    className="flex-1 lg:flex-none px-4 py-2.5 bg-orange-100 text-orange-700 rounded-xl font-bold hover:bg-orange-200 transition-all flex items-center justify-center gap-2 text-sm whitespace-nowrap"
+                                >
+                                    Return to HR
+                                    <Send className="w-4 h-4" />
+                                </button>
+                                <button 
                                     onClick={onApprove}
-                                    className="flex-1 lg:flex-none px-6 py-3 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 lg:flex-none px-5 py-2.5 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/30 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 text-sm whitespace-nowrap"
                                 >
                                     Confirm & Send
                                     <Send className="w-4 h-4" />

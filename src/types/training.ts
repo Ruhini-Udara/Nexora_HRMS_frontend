@@ -8,6 +8,7 @@ export interface TrainingRequest {
     department: string;
     designation: string;
     workEmail: string;
+    personalEmail?: string;
     avatar?: string;
     initials?: string;
     dateSubmitted: string;

@@ -3,13 +3,20 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
-import { TEMP_AUTH } from "@/lib/authConfig";
 import api from "@/lib/axiosInstance";
+import { useAuthStore } from "@/store/useAuthStore";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MaternityLeave {
     id: number;
+    employeeId: number;
+    employeeName: string;
+    employeeCode: string;
+    epfNumber: string;
+    leaveTypeId: number;
+    leaveTypeName: string;
     childNumber: string;
+    department: string;
     branch: string;
     contactNumber: string;
     email: string;
@@ -19,14 +26,6 @@ interface MaternityLeave {
     fromDate: string;
     endDate: string;
     totalDays: number;
-    employee: {
-        id: number;
-        employeeCode: string;
-        firstName: string;
-        lastName: string;
-        fullName?: string;
-        surname?: string;
-    };
 }
 
 interface LeaveDocument {
@@ -37,6 +36,7 @@ interface LeaveDocument {
 }
 
 export default function MaternityLeaveApprovals() {
+    const { user } = useAuthStore();
     const [requests, setRequests] = useState<MaternityLeave[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedRequest, setSelectedRequest] = useState<MaternityLeave | null>(null);
@@ -94,7 +94,7 @@ export default function MaternityLeaveApprovals() {
                 refType: "MATERNITY_LEAVE",
                 decision: decision,
                 remark: adminRemark,
-                approvedBy: { id: TEMP_AUTH.ADMIN_ID }, // Temporary until User Management integration
+                approvedBy: { id: user?.id },
             });
             
             triggerNotification(
@@ -107,8 +107,10 @@ export default function MaternityLeaveApprovals() {
             setSelectedRequest(null);
             fetchRequests();
         } catch (error) {
-            console.error("Approval decision failed:", error);
-            alert("Something went wrong. Please try again.");
+            console.warn("Approval decision failed:", error);
+            const axiosError = error as { response?: { data?: { message?: string } } };
+            const errorMsg = axiosError.response?.data?.message || "Something went wrong. Please try again.";
+            triggerNotification(errorMsg, 'error');
         } finally {
             setSubmitting(false);
         }
@@ -121,7 +123,10 @@ export default function MaternityLeaveApprovals() {
     };
 
     const filteredRequests = requests.filter(req => {
-        const fullName = `${req.employee?.fullName || req.employee?.firstName + " " + req.employee?.lastName}`.toLowerCase();
+        // Smart Routing: Hide my own requests from verification list
+        if (req.employeeId === user?.id) return false;
+
+        const fullName = (req.employeeName || "").toLowerCase();
         return fullName.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
@@ -194,8 +199,8 @@ export default function MaternityLeaveApprovals() {
                                 <tr key={req.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors group">
                                     <td className="py-5 px-6 font-bold text-slate-900 dark:text-white">#{req.id}</td>
                                     <td className="py-5 px-6">
-                                        <div className="font-bold text-slate-800 dark:text-white">{req.employee?.fullName || `${req.employee?.firstName} ${req.employee?.lastName}`}</div>
-                                        <div className="text-xs text-slate-500 font-medium">{req.employee?.employeeCode} • {req.branch}</div>
+                                        <div className="font-bold text-slate-800 dark:text-white">{req.employeeName}</div>
+                                        <div className="text-xs text-slate-500 font-medium">{req.employeeCode} • {req.department}</div>
                                     </td>
                                     <td className="py-5 px-6">
                                         <div className="font-medium text-slate-600 dark:text-slate-300">{req.fromDate} to {req.endDate}</div>
@@ -244,9 +249,9 @@ export default function MaternityLeaveApprovals() {
                                 <div className="space-y-6">
                                     <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-4">Employee Information</h4>
                                     <div className="space-y-4 text-sm">
-                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Full Name</span> <span className="font-black text-slate-800 dark:text-slate-100">{selectedRequest.employee?.fullName || `${selectedRequest.employee?.firstName} ${selectedRequest.employee?.lastName}`}</span></div>
-                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">EPF Code</span> <span className="font-black text-slate-800 dark:text-slate-100">{selectedRequest.employee?.employeeCode}</span></div>
-                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Current Branch</span> <span className="font-black text-slate-800 dark:text-slate-100">{selectedRequest.branch}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Full Name</span> <span className="font-black text-slate-800 dark:text-slate-100">{selectedRequest.employeeName}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">EPF Code</span> <span className="font-black text-slate-800 dark:text-slate-100">{selectedRequest.employeeCode}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Department</span> <span className="font-black text-slate-800 dark:text-slate-100">{selectedRequest.department}</span></div>
                                         <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">E-mail Address</span> <span className="font-black text-slate-800 dark:text-slate-100">{selectedRequest.email}</span></div>
                                     </div>
                                 </div>

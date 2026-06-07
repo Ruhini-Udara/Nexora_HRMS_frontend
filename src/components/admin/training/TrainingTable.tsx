@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import { SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown, Loader2 } from 'lucide-react';
 import TrainingListModal from './viewlist/TrainingListModal';
 import api from '@/lib/axiosInstance';
 import { useAuthStore } from '@/store/useAuthStore';
 
+// Shape of each training request displayed in the table
 interface RequestModel {
     id: number;
     title: string;
@@ -29,18 +30,37 @@ interface TrainingTableProps {
 
 export default function TrainingTable({ requests, setRequests }: TrainingTableProps) {
     const { user } = useAuthStore();
+
+    // Controls main modal visibility (view training details)
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedTraining, setSelectedTraining] = useState<{ id: number, title: string, type: string, date: string, status: string, time: string, location: string, trainer: string, expectedParticipants: number } | null>(null);
+
+    // Holds data for the currently selected training to display in modal
+    const [selectedTraining, setSelectedTraining] = useState<{ 
+        id: number, 
+        title: string, 
+        type: string, 
+        date: string, 
+        status: string, 
+        time: string,
+        location: string, 
+        trainer: string, 
+        expectedParticipants: number 
+    } | null>(null);
+
     const [filterType, setFilterType] = useState("All");
     const [filterStatus, setFilterStatus] = useState("Pending");
     const [rejectionReason, setRejectionReason] = useState("");
 
-    // Confirmation Modal State
+    // Confirmation Modal State (used for approve/return/reject actions)
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean;
-        type: 'Approve' | 'Reject' | null;
+        type: 'Approve' | 'Return' | 'Reject' | null;
     }>({ isOpen: false, type: null });
 
+    // Tracks API request state to disable UI during processing
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // Opens the training details modal and sets selected training
     const handleViewList = (req: RequestModel) => {
         setSelectedTraining({
             id: req.id,
@@ -61,20 +81,32 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
         setConfirmModal({ isOpen: true, type: 'Approve' });
     };
 
+    const handleReturnClick = () => {
+        if (!selectedTraining) return;
+        setConfirmModal({ isOpen: true, type: 'Return' });
+    };
+
     const handleRejectClick = () => {
         if (!selectedTraining) return;
         setConfirmModal({ isOpen: true, type: 'Reject' });
     };
 
+    /**
+     * Handles final confirmation action:
+     * - Determines new status
+     * - Sends update to backend
+     * - Updates local state for immediate UI feedback
+     */
     const confirmAction = async () => {
         if (!selectedTraining || !confirmModal.type) return;
 
-        const newStatus = confirmModal.type === 'Approve' ? 'Approved' : 'Rejected';
+        const newStatus = confirmModal.type === 'Approve' ? 'Approved' : (confirmModal.type === 'Return' ? 'Returned' : 'Rejected');
 
+        setIsProcessing(true);
         try {
             await api.put(`/api/training/events/${selectedTraining.id}/status`, {
                 status: newStatus,
-                reason: confirmModal.type === 'Reject' ? rejectionReason : undefined,
+                reason: (confirmModal.type === 'Reject' || confirmModal.type === 'Return') ? rejectionReason : undefined,
                 approvedBy: confirmModal.type === 'Approve' ? user?.name : undefined
             });
 
@@ -83,7 +115,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                     ? {
                         ...req,
                         status: newStatus,
-                        ...(confirmModal.type === 'Reject' ? { rejectionReason } : {})
+                        ...((confirmModal.type === 'Reject' || confirmModal.type === 'Return') ? { rejectionReason } : {})
                     }
                     : req
             ));
@@ -91,6 +123,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
             console.error("Failed to update training event status", err);
             alert("Failed to update status. Please try again.");
         } finally {
+            setIsProcessing(false);
             setConfirmModal({ isOpen: false, type: null });
             setRejectionReason("");
             setIsModalOpen(false);
@@ -100,7 +133,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // Filter Logic
+    // Filter requests based on selected type and status
     const filteredRequests = requests.filter(req =>
         (filterType === "All" || req.type === filterType) &&
         (filterStatus === "All Statuses" || req.status === filterStatus)
@@ -113,6 +146,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
     const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
     const currentItems = filteredRequests.slice(startIndex, endIndex);
 
+    // Handles page navigation while preventing invalid page numbers
     const handlePageChange = (page: number) => {
         if (page >= 1 && page <= totalPages) {
             setCurrentPage(page);
@@ -151,6 +185,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                         <option value="All Statuses">All Statuses</option>
                         <option value="Pending">Pending</option>
                         <option value="Approved">Approved</option>
+                        <option value="Returned">Returned</option>
                         <option value="Rejected">Rejected</option>
                     </select>
                     <ChevronDown className="w-4 h-4 text-gray-500 absolute right-4 pointer-events-none" />
@@ -168,8 +203,8 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Submitted</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
-                                {filterStatus === "Rejected" && (
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-48">Rejection Reason</th>
+                                {(filterStatus === "Rejected" || filterStatus === "Returned") && (
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-48">Reason</th>
                                 )}
                             </tr>
                         </thead>
@@ -188,7 +223,8 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'Approved' ? 'bg-green-100 text-green-800' :
                                             req.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                                                'bg-orange-100 text-orange-800'
+                                                req.status === 'Returned' ? 'bg-orange-100 text-orange-800' :
+                                                    'bg-orange-100 text-orange-800'
                                             }`}>
                                             {req.status}
                                         </span>
@@ -201,10 +237,10 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                             View List
                                         </button>
                                     </td>
-                                    {filterStatus === "Rejected" && (
+                                    {(filterStatus === "Rejected" || filterStatus === "Returned") && (
                                         <td className="px-6 py-4 w-48">
-                                            <p className="text-sm text-gray-600 break-words line-clamp-3" title={req.rejectionReason || "No reason provided."}>
-                                                {req.rejectionReason || "No reason provided."}
+                                            <p className={`text-sm font-medium break-words line-clamp-3 ${req.status === 'Rejected' ? 'text-red-600' : 'text-orange-600'}`} title={req.rejectionReason || "No reason provided."}>
+                                                {req.rejectionReason || (req.status === 'Returned' ? "Returned for adjustments." : "No reason provided.")}
                                             </p>
                                         </td>
                                     )}
@@ -212,7 +248,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                             ))}
                             {currentItems.length === 0 && (
                                 <tr>
-                                    <td colSpan={filterStatus === "Rejected" ? 6 : 5} className="px-6 py-10 text-center text-gray-500 italic">
+                                    <td colSpan={(filterStatus === "Rejected" || filterStatus === "Returned") ? 6 : 5} className="px-6 py-10 text-center text-gray-500 italic">
                                         No programs found matching the selected filters.
                                     </td>
                                 </tr>
@@ -265,6 +301,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                 onClose={() => setIsModalOpen(false)}
                 training={selectedTraining}
                 onApprove={handleApproveClick}
+                onReturn={handleReturnClick}
                 onReject={handleRejectClick}
             />
 
@@ -273,46 +310,55 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col p-6 text-center border border-gray-100 dark:border-gray-800">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                            {confirmModal.type === 'Approve' ? 'Confirm Approval' : 'Confirm Rejection'}
+                            {confirmModal.type === 'Approve' ? 'Confirm Approval' : (confirmModal.type === 'Return' ? 'Return to HR' : 'Confirm Final Rejection')}
                         </h3>
                         <p className="text-gray-500 text-sm mb-6">
                             {confirmModal.type === 'Approve'
                                 ? `Are you sure you want to approve and send emails for the "${selectedTraining.title}" training list? This action cannot be undone.`
-                                : `Are you sure you want to reject the "${selectedTraining.title}" training list? This action cannot be undone.`
+                                : confirmModal.type === 'Return'
+                                    ? `Are you sure you want to return the "${selectedTraining.title}" training list to HR for adjustments?`
+                                    : `Are you sure you want to finally reject and cancel the "${selectedTraining.title}" training program? This action cannot be undone.`
                             }
                         </p>
-                        {confirmModal.type === 'Reject' && (
+                        {(confirmModal.type === 'Reject' || confirmModal.type === 'Return') && (
                             <div className="mb-6 text-left">
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    Reason for Rejection *
+                                    Reason for {confirmModal.type === 'Return' ? 'Return' : 'Rejection'} *
                                 </label>
                                 <textarea
                                     value={rejectionReason}
                                     onChange={(e) => setRejectionReason(e.target.value)}
                                     className="w-full h-24 p-3 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                                    placeholder="Enter the reason for rejecting this training list..."
+                                    placeholder={`Enter the reason for ${confirmModal.type === 'Return' ? 'returning' : 'rejecting'} this training list...`}
                                 />
                             </div>
                         )}
-                        <div className="flex gap-3">
+                        <div className="flex gap-4">
                             <button
-                                onClick={() => {
-                                    setConfirmModal({ isOpen: false, type: null });
-                                    setRejectionReason("");
-                                }}
-                                className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+                                onClick={() => !isProcessing && setConfirmModal({ isOpen: false, type: null })}
+                                disabled={isProcessing}
+                                className="flex-1 px-4 py-2.5 font-semibold rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={confirmAction}
-                                disabled={confirmModal.type === 'Reject' && !rejectionReason.trim()}
-                                className={`flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${confirmModal.type === 'Approve'
+                                disabled={isProcessing || ((confirmModal.type === 'Reject' || confirmModal.type === 'Return') && !rejectionReason.trim())}
+                                className={`flex-1 px-4 py-2.5 font-semibold rounded-xl text-white transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${confirmModal.type === 'Approve'
                                         ? 'bg-primary hover:bg-primary/90'
-                                        : 'bg-red-500 hover:bg-red-600'
+                                        : confirmModal.type === 'Return'
+                                            ? 'bg-orange-500 hover:bg-orange-600'
+                                            : 'bg-red-500 hover:bg-red-600'
                                     }`}
                             >
-                                {confirmModal.type === 'Approve' ? 'Yes, Approve' : 'Yes, Reject'}
+                                {isProcessing ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    confirmModal.type === 'Approve' ? 'Yes, Approve' : (confirmModal.type === 'Return' ? 'Yes, Return' : 'Yes, Reject')
+                                )}
                             </button>
                         </div>
                     </div>

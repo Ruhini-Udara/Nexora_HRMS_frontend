@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Download, Check, X, Send, Eye, FileText } from 'lucide-react';
 import { getSignedUrl } from "@/lib/supabaseClient";
+import { useAuthStore } from "@/store/useAuthStore";
+import api from "@/lib/axiosInstance";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface LeaveDocument {
@@ -25,12 +27,10 @@ interface OverseasLeave {
     specialRemark: string;
     passportNumber: string;
     passportExpDate: string;
-    employee: {
-        id: number;
-        employeeCode: string;
-        firstName: string;
-        lastName: string;
-    };
+    employeeId: number;
+    employeeName: string;
+    employeeCode: string;
+    department: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -59,10 +59,12 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 const LeaveRequestsTable = () => {
+    const { user } = useAuthStore();
     const [requests, setRequests] = useState<OverseasLeave[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("PENDING_DIRECTOR_REVIEW");
 
     // Modal State
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -78,20 +80,32 @@ const LeaveRequestsTable = () => {
         setLoading(true);
         setError("");
         try {
-            const res = await fetch(`http://localhost:8080/api/v1/leaves/overseas/status/PENDING_DIRECTOR_REVIEW`);
-            if (!res.ok) throw new Error("Failed to fetch requests");
-            const data = await res.json();
-            setRequests(data);
+            const endpointSuffix = statusFilter === "ALL" ? "" : `/status/${statusFilter}`;
+            const [overseasRes, maternityRes] = await Promise.all([
+                api.get(`/api/v1/leaves/overseas${endpointSuffix}`),
+                api.get(`/api/v1/leaves/maternity${endpointSuffix}`)
+            ]);
+
+            interface LeaveResponse {
+                id: number;
+                [key: string]: unknown;
+            }
+            // Add refType to help identify them
+            const overseas = overseasRes.data.map((r: LeaveResponse) => ({ ...r, refType: 'OVERSEAS_LEAVE' }));
+            const maternity = maternityRes.data.map((r: LeaveResponse) => ({ ...r, refType: 'MATERNITY_LEAVE' }));
+
+            setRequests([...overseas, ...maternity]);
         } catch (err) {
-            setError("Could not connect to the backend. Please ensure the server is running.");
+            const error = err as { response?: { data?: { message?: string } } };
+            setError(error.response?.data?.message || "Could not connect to the backend. Please ensure the server is running.");
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [statusFilter]);
 
     useEffect(() => {
         fetchRequests();
-    }, [fetchRequests]);
+    }, [fetchRequests, statusFilter]);
 
     const handleOpenReview = async (req: OverseasLeave) => {
         setSelectedRequest(req);
@@ -100,11 +114,8 @@ const LeaveRequestsTable = () => {
         setDocuments([]);
         setDocsLoading(true);
         try {
-            const res = await fetch(`http://localhost:8080/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`);
-            if (res.ok) {
-                const docs = await res.json();
-                setDocuments(docs);
-            }
+            const res = await api.get(`/api/v1/documents?refId=${req.id}&refType=OVERSEAS_LEAVE`);
+            setDocuments(res.data);
         } catch (err) {
             console.error("Error fetching documents", err);
         } finally {
@@ -116,18 +127,13 @@ const LeaveRequestsTable = () => {
         if (!selectedRequest) return;
         setSubmitting(true);
         try {
-            const res = await fetch("http://localhost:8080/api/v1/approvals", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    refId: selectedRequest.id,
-                    refType: "OVERSEAS_LEAVE",
-                    decision: decision,
-                    remark: directorRemark,
-                    approvedBy: { id: 1 }, // TODO: use actual director id
-                }),
+            await api.post("/api/v1/approvals", {
+                refId: selectedRequest.id,
+                refType: (selectedRequest as { refType?: string }).refType || "OVERSEAS_LEAVE",
+                decision: decision,
+                remark: directorRemark,
+                approvedBy: { id: user?.id }, // Use actual director id from store
             });
-            if (!res.ok) throw new Error("Approval failed");
             
             setReviewModalOpen(false);
             setSelectedRequest(null);
@@ -143,7 +149,10 @@ const LeaveRequestsTable = () => {
 
             fetchRequests();
         } catch (err) {
-            alert("Something went wrong. Please try again.");
+            const error = err as { response?: { data?: { message?: string } } };
+            const errorMsg = error.response?.data?.message || "Something went wrong. Please try again.";
+            setToast({ message: errorMsg, type: 'error' });
+            setTimeout(() => setToast(null), 5000);
         } finally {
             setSubmitting(false);
         }
@@ -156,7 +165,10 @@ const LeaveRequestsTable = () => {
     };
 
     const filteredRequests = requests.filter(req => {
-        const fullName = `${req.employee?.firstName} ${req.employee?.lastName}`.toLowerCase();
+        // Smart Routing: Hide my own requests from verification list
+        if (req.employeeId === user?.id) return false;
+
+        const fullName = (req.employeeName || "").toLowerCase();
         return fullName.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
@@ -174,12 +186,21 @@ const LeaveRequestsTable = () => {
                             className="pl-4 pr-10 py-2 border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium outline-none focus:border-primary"
                         />
                     </div>
-                    <button 
-                        onClick={fetchRequests}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                        title="Refresh"
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="py-2 pl-3 pr-8 border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium outline-none focus:border-primary appearance-none"
                     >
-                        <Send className="w-4 h-4 text-gray-500 rotate-180" />
+                        <option value="ALL">All Requests</option>
+                        <option value="PENDING_DIRECTOR_REVIEW">Pending Review</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                    </select>
+                    <button  
+                        onClick={fetchRequests}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary transition-colors shadow-sm"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">refresh</span> Refresh
                     </button>
                 </div>
             </div>
@@ -213,20 +234,15 @@ const LeaveRequestsTable = () => {
                             filteredRequests.map((request) => (
                                 <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold uppercase">
-                                                {request.employee?.firstName?.[0] || ""}{request.employee?.lastName?.[0] || (request.employee?.firstName ? "" : "?")}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    {request.employee?.firstName} {request.employee?.lastName}
-                                                </p>
-                                                <p className="text-xs text-gray-500">{request.employee?.employeeCode} • {request.branch}</p>
-                                            </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                {request.employeeName}
+                                            </p>
+                                            <p className="text-xs text-gray-500">{request.employeeCode} • {request.department}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Overseas Leave</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-bold uppercase text-[10px]">{(request as { refType?: string }).refType === 'MATERNITY_LEAVE' ? 'Maternity Leave' : 'Overseas Leave'}</p>
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
@@ -242,12 +258,16 @@ const LeaveRequestsTable = () => {
                                         <StatusBadge status={request.status} />
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <button 
-                                            onClick={() => handleOpenReview(request)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-all"
-                                        >
-                                            <Eye className="w-3.5 h-3.5" /> Review
-                                        </button>
+                                        {request.status === "PENDING_DIRECTOR_REVIEW" ? (
+                                            <button 
+                                                onClick={() => handleOpenReview(request)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-all"
+                                            >
+                                                <Eye className="w-3.5 h-3.5" /> Review
+                                            </button>
+                                        ) : (
+                                            <span className="text-xs text-gray-400 font-medium">Reviewed</span>
+                                        )}
                                     </td>
                                 </tr>
                             ))
@@ -272,9 +292,11 @@ const LeaveRequestsTable = () => {
                                 <div className="space-y-4">
                                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Employee Details</h4>
                                     <div className="space-y-2">
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedRequest.employee?.firstName} {selectedRequest.employee?.lastName}</p>
-                                        <p className="text-xs text-gray-500">EPF: {selectedRequest.employee?.employeeCode}</p>
-                                        <p className="text-xs text-gray-500">Branch: {selectedRequest.branch}</p>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                            {selectedRequest.employeeName}
+                                        </p>
+                                        <p className="text-xs text-gray-500">EPF: {selectedRequest.employeeCode}</p>
+                                        <p className="text-xs text-gray-500">Department: {selectedRequest.department}</p>
                                         <p className="text-xs text-gray-500">Email: {selectedRequest.email}</p>
                                     </div>
                                 </div>

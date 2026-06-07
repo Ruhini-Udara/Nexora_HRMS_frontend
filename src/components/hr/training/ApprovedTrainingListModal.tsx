@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import api from '@/lib/axiosInstance';
 import { Toast } from '@/components/ui/Toast';
 
+// Interface describing the structure of each training request
 interface RequestDetails {
     id: number;
     employeeName: string;
@@ -14,6 +15,7 @@ interface RequestDetails {
     initials?: string;
 }
 
+// Props for the Approved Training List Modal (shown to HR)
 interface ApprovedTrainingListModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -26,6 +28,7 @@ interface ApprovedTrainingListModalProps {
     onStatusUpdate?: () => void;
 }
 
+// Modal showing approved participants for a training event
 export default function ApprovedTrainingListModal({ isOpen, onClose, requests, eventName, eventId, eventStatus, approvedBy, approvedAt, onStatusUpdate }: ApprovedTrainingListModalProps) {
     const [isConfirming, setIsConfirming] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -33,12 +36,14 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
     // Filter only approved requests
     const approvedRequests = requests.filter(req => req.status === 'Approved');
 
+    // CSV download functionality
     const handleDownloadCSV = () => {
         if (approvedRequests.length === 0) {
             setToast({ message: "No approved participants to download.", type: 'info' });
             return;
         }
         
+        // CSV headers and content
         const headers = ["Employee Name", "Department", "Work Email"];
         const csvContent = [
             headers.join(","),
@@ -49,6 +54,7 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
             ].join(","))
         ].join("\n");
 
+        // Convert to CSV blob and trigger download
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -61,6 +67,7 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
         setToast({ message: "List downloaded as CSV", type: 'success' });
     };
 
+    // Print functionality (hides non-essential elements for clean printing)
     const handlePrint = () => {
         const printStyles = document.createElement('style');
         printStyles.innerHTML = `
@@ -89,7 +96,7 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
     if (!isOpen) return null;
 
 
-
+    // Main modal JSX - contains header, filters, list, and export buttons
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 h-screen max-h-screen">
             <div id="printable-modal" className="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[85vh]">

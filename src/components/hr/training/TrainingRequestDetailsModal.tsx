@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getSignedUrl } from '@/lib/supabaseClient';
 
+// Interface describing the structure of an attachment
 interface Attachment {
     name: string;
     url: string;
 }
 
+// Interface describing the structure of a training request (HR view)
 interface RequestDetails {
     employeeName: string;
     epfNumber?: string;
@@ -13,6 +15,7 @@ interface RequestDetails {
     department: string;
     designation?: string;
     workEmail?: string;
+    personalEmail?: string;
     justification?: string;
     attachmentPath?: string;
     attachments?: Attachment[];
@@ -21,15 +24,18 @@ interface RequestDetails {
     status: string;
 }
 
+// Props for the Training Request Details Modal (HR view)
 interface TrainingRequestDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     request: RequestDetails | null;
 }
 
+// Modal to display detailed training request information
 export default function TrainingRequestDetailsModal({ isOpen, onClose, request }: TrainingRequestDetailsModalProps) {
     const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
+    // Fetch signed URL for attachment when modal opens
     useEffect(() => {
         let isMounted = true;
         if (isOpen && request?.attachmentPath) {
@@ -49,7 +55,8 @@ export default function TrainingRequestDetailsModal({ isOpen, onClose, request }
             isMounted = false;
         };
     }, [isOpen, request?.attachmentPath]);
-
+ 
+    // Modal only renders when open and request is available
     if (!isOpen || !request) return null;
 
     return (
@@ -81,7 +88,7 @@ export default function TrainingRequestDetailsModal({ isOpen, onClose, request }
                                 <div className="flex justify-between"><span className="text-slate-500">Age:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{request.age || 'N/A'}</span></div>
                                 <div className="flex justify-between"><span className="text-slate-500">Department:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{request.department}</span></div>
                                 <div className="flex justify-between"><span className="text-slate-500">Designation:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{request.designation || 'N/A'}</span></div>
-                                <div className="flex justify-between"><span className="text-slate-500">Work Email:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{request.workEmail || 'N/A'}</span></div>
+                                <div className="flex justify-between"><span className="text-slate-500">Work Email:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{request.workEmail || request.personalEmail || 'N/A'}</span></div>
                             </div>
                         </div>
 

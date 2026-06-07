@@ -7,6 +7,7 @@ import TrainingFeedbackModal from "@/components/employee/training/TrainingFeedba
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
 
+// Training event coming from backend (catalog of courses)
 type TrainingEvent = {
     id: number;
     title: string;
@@ -19,6 +20,7 @@ type TrainingEvent = {
     applyBefore?: string;
 };
 
+// Training request submitted by employee
 type TrainingRequestItem = {
     id: number;
     eventId: number;
@@ -31,18 +33,27 @@ type TrainingRequestItem = {
 };
 
 export default function TrainingRequestPage() {
+    // UI state: feedback modal + selected course/event
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [selectedFeedbackCourse, setSelectedFeedbackCourse] = useState("");
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+
+    // Filters for event browsing
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [statusFilter, setStatusFilter] = useState("New"); // All, New, Applied
+
+    // Pagination state for event grid
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
 
+    // Data: training events + user-specific applications
     const [events, setEvents] = useState<TrainingEvent[]>([]);
     const [userRequests, setUserRequests] = useState<TrainingRequestItem[]>([]);
     const { user } = useAuthStore();
 
+    // Fetch:
+    // 1. All training events (public catalog)
+    // 2. Logged-in user's applied requests
     useEffect(() => {
         let isMounted = true;
 
@@ -51,7 +62,8 @@ export default function TrainingRequestPage() {
                 if (isMounted) setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id));
             })
             .catch(err => console.error("Failed to fetch events", err));
-            
+         
+        // Only fetch user requests if user exists    
         if (user?.id) {
             api.get(`/api/training/employees/${user.id}/requests`)
                 .then(res => {
@@ -60,13 +72,18 @@ export default function TrainingRequestPage() {
                 .catch(err => console.error("Failed to fetch user requests", err));
         }
 
+        // Cleanup to prevent state updates after unmount
         return () => {
             isMounted = false;
         };
     }, [user?.id]);
 
+    // Build category filter list dynamically from event data
     const categories = ["All", ...Array.from(new Set(events.map(event => event.category)))];
 
+    // Main filtering logic:
+    // category filter
+    // status filter (new vs applied)
     const filteredEvents = events.filter(event => {
         const matchesCategory = selectedCategory === "All" || event.category === selectedCategory;
         const isApplied = userRequests.some(req => req.eventId === event.id);
@@ -97,6 +114,7 @@ export default function TrainingRequestPage() {
                         Elevate your skills with our curated corporate training programs.
                     </p>
                 </div>
+                {/* Quick stats from API data */}
                 <div className="flex gap-2">
                     <span className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center justify-center">
                         {events.length} Available Courses
@@ -124,6 +142,8 @@ export default function TrainingRequestPage() {
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-stone-500">Filter by Type:</span>
+                            
+                            {/* Category filter */}
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => {
@@ -141,6 +161,8 @@ export default function TrainingRequestPage() {
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-stone-500">Status:</span>
+
+                            {/* Status filter: New / Applied / All */}
                             <select
                                 value={statusFilter}
                                 onChange={(e) => {
@@ -156,6 +178,8 @@ export default function TrainingRequestPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Event cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {currentItems.map((event) => {
                         const isApplied = userRequests.some(req => req.eventId === event.id);
@@ -175,6 +199,7 @@ export default function TrainingRequestPage() {
                     })}
                 </div>
 
+                {/* Pagination controls */}
                 {filteredEvents.length > itemsPerPage && (
                     <div className="mt-10 flex items-center justify-center gap-4">
                         <button 
@@ -222,6 +247,8 @@ export default function TrainingRequestPage() {
                         My Training Events Status
                     </h2>
                 </div>
+
+                {/* Training status table showing user's applications */} 
                 <TrainingStatusTable
                     onFeedbackClick={(request) => {
                         setSelectedFeedbackCourse(request.trainingTitle);
@@ -230,7 +257,8 @@ export default function TrainingRequestPage() {
                     }}
                 />
             </section>
-
+ 
+            {/* Feedback Modal (for completed trainings)*/}
             <TrainingFeedbackModal
                 isOpen={isFeedbackModalOpen}
                 onClose={() => setIsFeedbackModalOpen(false)}
