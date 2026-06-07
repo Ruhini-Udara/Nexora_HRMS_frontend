@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { createTransferRequest, updateTransferRequest, TransferRequest, TransferStatus } from '@/lib/api/transferRequests';
+import { useAuthStore } from '@/store/useAuthStore';
 
 // ── Types ───────────────────────────────────────────────────────────
 // ── Types ───────────────────────────────────────────────────────────
@@ -282,8 +283,17 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     
 
 
+    const { user } = useAuthStore();
+    
     // ── Dynamic data ────────────────────────────────────────────────
-    const currentDepartment = "Operations Division - Level 4";
+    const employeeProfile = {
+        epfNumber: user?.epfNumber || "N/A",
+        employeeName: user?.name || "N/A",
+        designation: user?.designation || "N/A",
+        branch: user?.department || "N/A"
+    };
+
+    const currentDepartment = employeeProfile.branch;
 
     // ── react-hook-form + Zod ───────────────────────────────────────
     const {
@@ -417,7 +427,14 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                     onRequestChange(requests.map(r => r.id === updated.id ? updated : r));
                     showSuccess(`Draft ${updated.id} updated successfully`);
                 } else {
-                    const savedReq = await createTransferRequest(payload);
+                    const userDetails = user ? { 
+                        id: user.id, 
+                        name: user.name, 
+                        epfNumber: user.epfNumber, 
+                        designation: user.designation, 
+                        department: user.department 
+                    } : undefined;
+                    const savedReq = await createTransferRequest(payload, userDetails);
                     onRequestChange([...requests, savedReq]);
                     showSuccess(`Draft ${savedReq.id} saved successfully`);
                 }
@@ -444,7 +461,14 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                 onRequestChange(requests.map(r => r.id === updated.id ? updated : r));
                 showSuccess(`Request ${updated.id} submitted for approval`);
             } else {
-                const savedReq = await createTransferRequest(payload);
+                const userDetails = user ? { 
+                    id: user.id, 
+                    name: user.name, 
+                    epfNumber: user.epfNumber, 
+                    designation: user.designation, 
+                    department: user.department 
+                } : undefined;
+                const savedReq = await createTransferRequest(payload, userDetails);
                 onRequestChange([...requests, savedReq]);
                 showSuccess(`Request ${savedReq.id} submitted for approval`);
             }

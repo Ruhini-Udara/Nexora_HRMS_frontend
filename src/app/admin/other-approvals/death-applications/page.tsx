@@ -1,57 +1,67 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { 
+    DeathRequest, 
+    getAllDeathRequests, 
+    updateDeathStatus 
+} from "@/lib/api/deathRequests";
+import api from "@/lib/axiosInstance";
 
-type DeathStatus = "VERIFIED_BY_HR" | "SUBMITTED_FOR_APPROVAL" | "APPROVED" | "PENDING_BOARD_APPROVAL" | "REJECTED" | "SUBMITTED_TO_DIRECTOR";
-
-interface DeathApplication {
-    id: string;
-    employeeName: string;
-    dateOfDeath: string;
-    natureOfDeath: string;
-    requesterName: string;
-    status: DeathStatus;
-    boardMeetingDate?: string;
-}
-
-const INITIAL_REQUESTS: DeathApplication[] = [
-    {
-        id: "DTH-2024-001",
-        employeeName: "Saman Kumara",
-        dateOfDeath: "2024-10-15",
-        natureOfDeath: "Natural",
-        requesterName: "Nimali Silva",
-        status: "APPROVED",
-    },
-    {
-        id: "DTH-2024-002",
-        employeeName: "Nuwan Pradeep",
-        dateOfDeath: "2024-10-18",
-        natureOfDeath: "Accident",
-        requesterName: "Kasun Pradeep",
-        status: "APPROVED",
-    },
-    {
-        id: "DTH-2024-003",
-        employeeName: "Malshan Jayarathne",
-        dateOfDeath: "2024-10-16",
-        natureOfDeath: "Illness",
-        requesterName: "Sunil Jayarathne",
-        status: "PENDING_BOARD_APPROVAL",
-        boardMeetingDate: "2024-11-01",
-    }
-];
+const isLegit = (req: DeathRequest) =>
+    (req.employeeName || "").trim().length > 0 &&
+    (req.epfNumber || "").trim().length > 0 &&
+    req.epfNumber !== "0";
 
 export default function AdminDeathApplicationsPage() {
-    const [requests, setRequests] = useState<DeathApplication[]>(INITIAL_REQUESTS);
+    const [requests, setRequests] = useState<DeathRequest[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<"preparation" | "management">("preparation");
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [boardDate, setBoardDate] = useState<string>("");
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-
-    // For management view
     const [filterDate, setFilterDate] = useState<string>("All");
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    // Local board-date tracking (not persisted to backend yet)
+    const [boardDateMap, setBoardDateMap] = useState<Record<string, string>>({});
+    // Local status overrides for board workflow
+    const [localStatusOverrides, setLocalStatusOverrides] = useState<Record<string, string>>({});
+
+    const loadRequests = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getAllDeathRequests();
+            setRequests(data.filter(isLegit));
+        } catch (error) {
+            console.error("Failed to load death requests", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadRequests();
+    }, [loadRequests]);
+
+    const showSuccess = (msg: string) => {
+        setSuccessMessage(msg);
+        setTimeout(() => setSuccessMessage(null), 3000);
+    };
+
+    const preparationList = requests.filter(r => r.status === "PENDING_ADMIN");
+
+    const managementList = requests.filter(r => {
+        if (r.status !== "PENDING_BOARD_APPROVAL") return false;
+        if (filterDate !== "All" && r.boardMeetingDate !== filterDate) return false;
+        return true;
+    });
+
+    const availableDates = Array.from(new Set(requests
+        .filter(r => r.status === "PENDING_BOARD_APPROVAL" && r.boardMeetingDate)
+        .map(r => r.boardMeetingDate || "")))
+        .filter(d => d !== "");
 
     const handleCheckboxToggle = (id: string) => {
         setSelectedIds((prev) =>
@@ -61,67 +71,82 @@ export default function AdminDeathApplicationsPage() {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            const approvedIds = requests.filter(r => r.status === "APPROVED").map(r => r.id);
-            setSelectedIds(approvedIds);
+            setSelectedIds(preparationList.map(r => r.id));
         } else {
             setSelectedIds([]);
         }
     };
 
-    const handlePrepareList = () => {
+    const handlePrepareList = async () => {
         if (!boardDate) {
             alert("Please select a Board Gathering Date first.");
             return;
         }
-        if (selectedIds.length === 0) {
-            alert("Please select at least one application.");
-            return;
+        try {
+            setLoading(true);
+            await Promise.all(selectedIds.map(id => 
+                updateDeathStatus(id, "PENDING_BOARD_APPROVAL", boardDate)
+            ));
+            await loadRequests();
+            setSelectedIds([]);
+            setFilterDate(boardDate);
+            setBoardDate("");
+            setActiveTab("management");
+            showSuccess(`${selectedIds.length} applications moved to board approval list`);
+        } catch (error) {
+            console.error("Failed to prepare list", error);
+        } finally {
+            setLoading(false);
         }
-
-        setRequests((prev) =>
-            prev.map((req) =>
-                selectedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_BOARD_APPROVAL", boardMeetingDate: boardDate }
-                    : req
-            )
-        );
-
-        setSelectedIds([]);
-        setFilterDate(boardDate);
-        setBoardDate("");
-        setActiveTab("management");
     };
 
     const handlePrintList = () => {
         window.print();
     };
 
-    const handleConfirmSubmitToDirector = () => {
-        // In a real application, this would trigger an API call.
-        // For now, we simulate success and update status.
-        setRequests((prev) =>
-            prev.map((req) => {
-                if (req.status !== "PENDING_BOARD_APPROVAL") return req;
-                if (filterDate !== "All" && req.boardMeetingDate !== filterDate) return req;
-                return { ...req, status: "SUBMITTED_TO_DIRECTOR" as DeathStatus };
-            })
-        );
-        setShowConfirmModal(false);
-    };
+    const handleConfirmSubmitToDirector = async () => {
+        try {
+            setLoading(true);
+            const idsToSubmit = managementList.map(r => r.id);
+            await Promise.all(idsToSubmit.map(idStr => 
+                updateDeathStatus(idStr, "SUBMITTED_TO_DIRECTOR")
+            ));
 
-    const preparationList = requests.filter(r => r.status === "APPROVED");
-    const availableDates = Array.from(new Set(requests.filter(r => r.status === "PENDING_BOARD_APPROVAL" && r.boardMeetingDate).map(r => r.boardMeetingDate as string)));
-    
-    const managementList = requests.filter(r => {
-        if (r.status !== "PENDING_BOARD_APPROVAL") return false;
-        if (filterDate !== "All" && r.boardMeetingDate !== filterDate) return false;
-        return true;
-    });
+            setShowConfirmModal(false);
+            showSuccess(`${idsToSubmit.length} applications finalized for board approval`);
+            await loadRequests();
+        } catch (error) {
+            console.error("Failed to submit to director", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const isAllSelected = preparationList.length > 0 && selectedIds.length === preparationList.length;
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-[#8B3A00]/30 border-t-[#8B3A00] rounded-full animate-spin" />
+                    <p className="text-sm text-slate-500 font-medium">Loading death applications...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+            {/* Success Toast */}
+            {successMessage && (
+                <div className="fixed bottom-6 right-6 z-50 animate-slide-in-right">
+                    <div className="bg-green-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-bold">
+                        <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                        {successMessage}
+                    </div>
+                </div>
+            )}
+
             <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between print:hidden">
@@ -135,7 +160,7 @@ export default function AdminDeathApplicationsPage() {
                             </h2>
                         </div>
                         <p className="text-slate-500 dark:text-slate-400 ml-9">
-                            Review Director approved death claims, prepare batches, and manage board gathering approvals.
+                            Review HR-approved death claims, prepare batches, and manage board gathering approvals.
                         </p>
                     </div>
                 </div>
@@ -149,11 +174,15 @@ export default function AdminDeathApplicationsPage() {
                                 ? "border-[#8B3A00] text-[#8B3A00]"
                                 : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                                 }`}
-                            disabled={activeTab === "preparation"}
                         >
                             <span className="flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[18px]">list_alt</span>
                                 1. Preparation of Pending List
+                                {preparationList.length > 0 && (
+                                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs ml-1">
+                                        {preparationList.length}
+                                    </span>
+                                )}
                             </span>
                         </button>
                         <button
@@ -162,14 +191,13 @@ export default function AdminDeathApplicationsPage() {
                                 ? "border-[#8B3A00] text-[#8B3A00]"
                                 : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                                 }`}
-                            disabled={activeTab === "management"}
                         >
                             <span className="flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[18px]">gavel</span>
                                 2. Management of Pending Board Approvals
-                                {requests.filter(r => r.status === "PENDING_BOARD_APPROVAL").length > 0 && (
+                                {managementList.length > 0 && (
                                     <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs ml-1">
-                                        {requests.filter(r => r.status === "PENDING_BOARD_APPROVAL").length}
+                                        {managementList.length}
                                     </span>
                                 )}
                             </span>
@@ -214,7 +242,7 @@ export default function AdminDeathApplicationsPage() {
                             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
                                 <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                     <span className="material-symbols-outlined text-green-600">check_circle</span>
-                                    Approved Applications Available Make Batch
+                                    HR-Approved Applications Available for Batch
                                 </h3>
                                 <span className="text-xs font-semibold text-slate-500 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full">
                                     {preparationList.length} Items Found
@@ -234,6 +262,7 @@ export default function AdminDeathApplicationsPage() {
                                             </th>
                                             <th className="py-4 px-6">Request ID</th>
                                             <th className="py-4 px-6">Employee Name</th>
+                                            <th className="py-4 px-6">EPF No.</th>
                                             <th className="py-4 px-6">Date of Death</th>
                                             <th className="py-4 px-6">Nature</th>
                                             <th className="py-4 px-6">Requester</th>
@@ -252,6 +281,7 @@ export default function AdminDeathApplicationsPage() {
                                                 </td>
                                                 <td className="py-4 px-6 font-semibold text-slate-900 dark:text-white">{req.id}</td>
                                                 <td className="py-4 px-6">{req.employeeName}</td>
+                                                <td className="py-4 px-6 text-slate-600 dark:text-slate-400">{req.epfNumber}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400">{req.dateOfDeath}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400">{req.natureOfDeath}</td>
                                                 <td className="py-4 px-6">{req.requesterName}</td>
@@ -259,10 +289,10 @@ export default function AdminDeathApplicationsPage() {
                                         ))}
                                         {preparationList.length === 0 && (
                                             <tr>
-                                                <td colSpan={6} className="py-12 text-center text-slate-500">
+                                                <td colSpan={7} className="py-12 text-center text-slate-500">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <span className="material-symbols-outlined text-4xl text-slate-300">done_all</span>
-                                                        <p>No approved requests pending batch creation.</p>
+                                                        <p>No HR-approved requests pending batch creation.</p>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -352,13 +382,13 @@ export default function AdminDeathApplicationsPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="text-sm print:text-xs">
-                                        {managementList.map((req, i) => (
+                                        {managementList.map((req) => (
                                             <tr key={req.id} className="border-b border-slate-50 dark:border-slate-700/50 print:border-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                                 <td className="py-4 px-6 font-semibold text-slate-900 dark:text-white print:py-3 print:text-black">{req.id}</td>
                                                 <td className="py-4 px-6 print:py-3 print:text-black">{req.employeeName}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400 print:py-3 print:text-black">{req.dateOfDeath}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400 print:py-3 print:text-black">{req.requesterName}</td>
-                                                <td className="py-4 px-6 font-semibold text-blue-700 dark:text-blue-400 print:py-3 print:text-black">{req.boardMeetingDate}</td>
+                                                <td className="py-4 px-6 font-semibold text-blue-700 dark:text-blue-400 print:py-3 print:text-black">{boardDateMap[req.id] || "—"}</td>
                                                 <td className="py-4 px-6 print:py-3 print:table-cell hidden text-center align-middle">
                                                     <div className="w-full h-8 border border-slate-300 bg-slate-50"></div>
                                                 </td>

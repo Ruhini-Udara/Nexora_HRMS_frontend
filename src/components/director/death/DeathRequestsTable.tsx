@@ -1,47 +1,54 @@
-"use client";
-
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Send, Eye, Check } from 'lucide-react';
-
-const mockRequests = [
-    {
-        id: "DTH-2024-002",
-        name: "Nimali Silva",
-        initials: "NS",
-        dateOfDeath: "Oct 25, 2024",
-        natureOfDeath: "Accident",
-        requester: "Kasun Silva",
-        status: "Pending Board Approval",
-        boardMeeting: "November 2024 Board",
-        email: "kasun@example.com",
-        phone: "+94719876543",
-        documents: {
-            deathCertificate: "death_certificate_nimali.pdf",
-            nomineeId: "id_kasun.pdf"
-        }
-    },
-    {
-        id: "DTH-2024-003",
-        name: "Kamal Perera",
-        initials: "KP",
-        dateOfDeath: "Oct 20, 2024",
-        natureOfDeath: "Natural",
-        requester: "Sunil Perera",
-        status: "Approved",
-        boardMeeting: "November 2024 Board",
-        email: "sunil@example.com",
-        phone: "+94771234567",
-        documents: {}
-    }
-];
+import { 
+    getAllDeathRequests, 
+    updateDeathStatus, 
+    rejectDeathRequest,
+    DeathRequest 
+} from '@/lib/api/deathRequests';
 
 const DeathRequestsTable = () => {
-    const [requests, setRequests] = useState(mockRequests);
+    const [requests, setRequests] = useState<DeathRequest[]>([]);
+    const [loading, setLoading] = useState(true);
     const [boardFilter, setBoardFilter] = useState("All");
+
+    const loadRequests = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getAllDeathRequests();
+            
+            // Filter: Only show "legit" requests (real employees, not mock/hardcoded data)
+            const isLegit = (req: DeathRequest) => {
+                return (req.employeeName || "").trim().length > 0 && 
+                       (req.epfNumber || "").trim().length > 0 && 
+                       req.epfNumber !== '0' &&
+                       !req.employeeName.toLowerCase().includes("test") &&
+                       !req.employeeName.toLowerCase().includes("kasun");
+            };
+
+            // Show only those submitted to director or already approved/rejected by director
+            const filtered = data.filter(r => 
+                isLegit(r) && (
+                    r.status === "SUBMITTED_TO_DIRECTOR" || 
+                    r.status === "APPROVED" || 
+                    r.status === "REJECTED"
+                )
+            );
+            setRequests(filtered);
+        } catch (error) {
+            console.error("Failed to load requests", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadRequests();
+    }, [loadRequests]);
 
     // Modal State
     const [viewModalOpen, setViewModalOpen] = useState(false);
-    const [selectedRequest, setSelectedRequest] = useState<typeof mockRequests[0] | null>(null);
+    const [selectedRequest, setSelectedRequest] = useState<DeathRequest | null>(null);
 
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [requestToReject, setRequestToReject] = useState<string | null>(null);
@@ -50,12 +57,16 @@ const DeathRequestsTable = () => {
     // Toast State for simulating SMS/Email
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    const handleApprove = (id: string) => {
-        const req = requests.find(r => r.id === id);
-        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: "Approved" } : r));
-        setViewModalOpen(false);
-        setToastMessage(`✅ Approved — email sent to ${req?.requester} (${req?.email})`);
-        setTimeout(() => setToastMessage(null), 4000);
+    const handleApprove = async (id: string) => {
+        try {
+            await updateDeathStatus(id, "APPROVED");
+            await loadRequests();
+            setViewModalOpen(false);
+            setToastMessage(`✅ Application Approved successfully`);
+            setTimeout(() => setToastMessage(null), 4000);
+        } catch (error) {
+            console.error("Failed to approve", error);
+        }
     };
 
     const openRejectModal = (id: string) => {
@@ -65,26 +76,32 @@ const DeathRequestsTable = () => {
         setViewModalOpen(false);
     };
 
-    const handleRejectSubmit = () => {
-        if (!rejectReason.trim()) return;
-        const req = requests.find(r => r.id === requestToReject);
-        setRequests(prev => prev.map(r => r.id === requestToReject ? { ...r, status: "Rejected" } : r));
-        setRejectModalOpen(false);
-        setRequestToReject(null);
-        setToastMessage(`❌ Rejected — email sent to ${req?.requester} (${req?.email})`);
-        setTimeout(() => setToastMessage(null), 4000);
+    const handleRejectSubmit = async () => {
+        if (!rejectReason.trim() || !requestToReject) return;
+        try {
+            await rejectDeathRequest(requestToReject, rejectReason);
+            await loadRequests();
+            setRejectModalOpen(false);
+            setRequestToReject(null);
+            setToastMessage(`❌ Application Rejected`);
+            setTimeout(() => setToastMessage(null), 4000);
+        } catch (error) {
+            console.error("Failed to reject", error);
+        }
     };
 
-    const handleShareStatus = (req: typeof mockRequests[0]) => {
-        setToastMessage(`Status update sent to ${req.requester} (${req.email} & ${req.phone})`);
+    const handleShareStatus = (req: DeathRequest) => {
+        setToastMessage(`Status update notification sent to ${req.requesterName}`);
         setTimeout(() => setToastMessage(null), 3000);
     };
 
     const filteredRequests = requests.filter(req =>
-        boardFilter === "All" || req.boardMeeting === boardFilter
+        boardFilter === "All" || req.boardMeetingDate === boardFilter
     );
 
-    const openViewModal = (req: typeof mockRequests[0]) => {
+    const availableBoardDates = Array.from(new Set(requests.map(r => r.boardMeetingDate))).filter(d => d);
+
+    const openViewModal = (req: DeathRequest) => {
         setSelectedRequest(req);
         setViewModalOpen(true);
     };
@@ -99,9 +116,10 @@ const DeathRequestsTable = () => {
                         onChange={(e) => setBoardFilter(e.target.value)}
                         className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm outline-none focus:border-primary"
                     >
-                        <option value="All">All Boards</option>
-                        <option value="November 2024 Board">November 2024 Board</option>
-                        <option value="December 2024 Board">December 2024 Board</option>
+                        <option value="All">All Board Dates</option>
+                        {availableBoardDates.map(date => (
+                            <option key={date} value={date}>{date}</option>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -123,23 +141,23 @@ const DeathRequestsTable = () => {
                                 <td className="px-6 py-4" onClick={() => openViewModal(request)}>
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                                            {request.initials}
+                                            {(request.employeeName || "E").charAt(0)}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-gray-900">{request.name}</p>
+                                            <p className="text-sm font-medium text-gray-900">{request.employeeName}</p>
                                             <p className="text-xs text-gray-500">{request.id}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-sm font-medium text-gray-500" onClick={() => openViewModal(request)}>{request.dateOfDeath}</td>
                                 <td className="px-6 py-4 text-sm font-medium text-gray-500" onClick={() => openViewModal(request)}>{request.natureOfDeath}</td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500" onClick={() => openViewModal(request)}>{request.requester}</td>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-500" onClick={() => openViewModal(request)}>{request.requesterName}</td>
                                 <td className="px-6 py-4" onClick={() => openViewModal(request)}>
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                        request.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                                        request.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
                                             'bg-orange-100 text-orange-800'
                                         }`}>
-                                        {request.status}
+                                        {request.status.replace(/_/g, ' ')}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
@@ -147,7 +165,7 @@ const DeathRequestsTable = () => {
                                         <button onClick={() => openViewModal(request)} className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors" title="View Details">
                                             <Eye className="w-4 h-4" />
                                         </button>
-                                        {request.status === 'Pending Board Approval' && (
+                                        {request.status === 'SUBMITTED_TO_DIRECTOR' && (
                                             <>
                                                 <button onClick={() => handleApprove(request.id)} className="w-8 h-8 rounded-md bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-colors" title="Approve">
                                                     <Check className="w-4 h-4" />
@@ -188,15 +206,15 @@ const DeathRequestsTable = () => {
                         </div>
                         <div className="p-6 overflow-y-auto space-y-4">
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee Name</p><p className="font-semibold text-gray-900">{selectedRequest.name}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee Name</p><p className="font-semibold text-gray-900">{selectedRequest.employeeName}</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Date of Death</p><p className="font-semibold text-gray-900">{selectedRequest.dateOfDeath}</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Nature of Death</p><p className="font-semibold text-gray-900">{selectedRequest.natureOfDeath}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Requester / Beneficiary</p><p className="font-semibold text-gray-900">{selectedRequest.requester}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Contact Email</p><p className="font-semibold text-gray-900">{selectedRequest.email}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Contact Phone</p><p className="font-semibold text-gray-900">{selectedRequest.phone}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting</p><p className="font-semibold text-primary">{selectedRequest.boardMeeting}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Requester / Beneficiary</p><p className="font-semibold text-gray-900">{selectedRequest.requesterName}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Contact Email</p><p className="font-semibold text-gray-900">N/A</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Contact Phone</p><p className="font-semibold text-gray-900">{selectedRequest.contactNumber}</p></div>
+                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting</p><p className="font-semibold text-primary">{selectedRequest.boardMeetingDate}</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Status</p>
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${selectedRequest.status === 'Approved' ? 'bg-green-100 text-green-800' : selectedRequest.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>{selectedRequest.status}</span>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${selectedRequest.status === 'APPROVED' ? 'bg-green-100 text-green-800' : selectedRequest.status === 'REJECTED' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>{selectedRequest.status.replace(/_/g, ' ')}</span>
                                 </div>
                             </div>
                             {Object.keys(selectedRequest.documents).length > 0 && (

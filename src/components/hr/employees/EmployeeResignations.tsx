@@ -1,152 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from "next/link";
-
-// ── Types ───────────────────────────────────────────────────────────
-type ResignationStatus =
-    | "SUBMITTED"
-    | "VERIFIED_BY_HR"
-    | "PENDING_ADMIN"
-    | "REJECTED";
-
-interface ResignationDocument {
-    key: string;
-    label: string;
-    filename: string;
-}
-
-interface LeaveBalance {
-    type: string;
-    total: number;
-    used: number;
-    remaining: number;
-    color: string;
-    bg: string;
-}
-
-interface ResignationRequest {
-    id: string;
-    epfNumber: string;
-    employeeName: string;
-    designation: string;
-    branch: string;
-    reason: string;
-    initiationDate: string;
-    effectiveDate: string;
-    obligationDetails: string;
-    specialRemark: string;
-    documents: ResignationDocument[];
-    leaveBalances: LeaveBalance[];
-    hrRemark: string;
-    status: ResignationStatus;
-}
-
-// ── Mock Data ───────────────────────────────────────────────────────
-const MOCK_REQUESTS: ResignationRequest[] = [
-    {
-        id: "RES-2024-001",
-        epfNumber: "12345",
-        employeeName: "Kasun Perera",
-        designation: "Software Engineer",
-        branch: "Colombo Branch",
-        reason: "Career Growth",
-        initiationDate: "2024-10-01",
-        effectiveDate: "2024-11-01",
-        obligationDetails:
-            "Handover of the Customer Portal project to Nimal Silva. Two pending sprint tasks will be completed before last working day. No direct reports.",
-        specialRemark: "Requesting early settlement of final dues.",
-        documents: [
-            { key: "resignation_letter", label: "Resignation Letter", filename: "resignation_letter_kasun.pdf" },
-            { key: "clearance_letter", label: "Obligations Clearance Letter", filename: "clearance_kasun.pdf" },
-            { key: "handover_checklist", label: "Employee Handover Checklist", filename: "handover_checklist_kasun.pdf" },
-        ],
-        leaveBalances: [
-            { type: "Annual Leave", total: 14, used: 6, remaining: 8, color: "#8B3A00", bg: "#FEF3EB" },
-            { type: "Sick Leave", total: 7, used: 2, remaining: 5, color: "#0D9488", bg: "#F0FDFA" },
-            { type: "Casual Leave", total: 7, used: 4, remaining: 3, color: "#6366F1", bg: "#EEF2FF" },
-        ],
-        hrRemark: "",
-        status: "SUBMITTED",
-    },
-    {
-        id: "RES-2024-002",
-        epfNumber: "67890",
-        employeeName: "Nimali Silva",
-        designation: "Marketing Manager",
-        branch: "Kandy Branch",
-        reason: "Personal Reasons",
-        initiationDate: "2024-10-05",
-        effectiveDate: "2024-11-10",
-        obligationDetails:
-            "All current campaigns handed over to Tharaka. Budget reports for Q4 have been filed. No pending external contracts.",
-        specialRemark: "",
-        documents: [
-            { key: "resignation_letter", label: "Resignation Letter", filename: "resignation_letter_nimali.pdf" },
-            { key: "clearance_letter", label: "Obligations Clearance Letter", filename: "clearance_nimali.pdf" },
-        ],
-        leaveBalances: [
-            { type: "Annual Leave", total: 14, used: 10, remaining: 4, color: "#8B3A00", bg: "#FEF3EB" },
-            { type: "Sick Leave", total: 7, used: 7, remaining: 0, color: "#0D9488", bg: "#F0FDFA" },
-            { type: "Casual Leave", total: 7, used: 2, remaining: 5, color: "#6366F1", bg: "#EEF2FF" },
-        ],
-        hrRemark: "",
-        status: "SUBMITTED",
-    },
-    {
-        id: "RES-2024-003",
-        epfNumber: "34567",
-        employeeName: "Tharindu Jayawardena",
-        designation: "Senior Accountant",
-        branch: "Head Office",
-        reason: "Better Opportunity",
-        initiationDate: "2024-09-28",
-        effectiveDate: "2024-10-31",
-        obligationDetails:
-            "All audit files have been archived. Year-end reconciliation handed to Priya. Infrastructure access revoked.",
-        specialRemark: "Please expedite the release letter for new employer.",
-        documents: [
-            { key: "resignation_letter", label: "Resignation Letter", filename: "resignation_letter_tharindu.pdf" },
-            { key: "clearance_letter", label: "Obligations Clearance Letter", filename: "clearance_tharindu.pdf" },
-            { key: "handover_checklist", label: "Employee Handover Checklist", filename: "handover_tharindu.pdf" },
-        ],
-        leaveBalances: [
-            { type: "Annual Leave", total: 14, used: 3, remaining: 11, color: "#8B3A00", bg: "#FEF3EB" },
-            { type: "Sick Leave", total: 7, used: 1, remaining: 6, color: "#0D9488", bg: "#F0FDFA" },
-            { type: "Casual Leave", total: 7, used: 0, remaining: 7, color: "#6366F1", bg: "#EEF2FF" },
-        ],
-        hrRemark: "",
-        status: "SUBMITTED",
-    },
-    {
-        id: "RES-2024-004",
-        epfNumber: "89012",
-        employeeName: "Amaya Bandara",
-        designation: "HR Executive",
-        branch: "Galle Branch",
-        reason: "Relocation",
-        initiationDate: "2024-09-15",
-        effectiveDate: "2024-10-15",
-        obligationDetails:
-            "All HR files digitised and transferred to the central repository. Payroll for September processed.",
-        specialRemark: "Relocating abroad permanently.",
-        documents: [
-            { key: "resignation_letter", label: "Resignation Letter", filename: "resignation_letter_amaya.pdf" },
-            { key: "clearance_letter", label: "Obligations Clearance Letter", filename: "clearance_amaya.pdf" },
-            { key: "handover_checklist", label: "Employee Handover Checklist", filename: "handover_amaya.pdf" },
-        ],
-        leaveBalances: [
-            { type: "Annual Leave", total: 14, used: 14, remaining: 0, color: "#8B3A00", bg: "#FEF3EB" },
-            { type: "Sick Leave", total: 7, used: 3, remaining: 4, color: "#0D9488", bg: "#F0FDFA" },
-            { type: "Casual Leave", total: 7, used: 7, remaining: 0, color: "#6366F1", bg: "#EEF2FF" },
-        ],
-        hrRemark: "All documents verified. Eligible for director approval.",
-        status: "VERIFIED_BY_HR",
-    },
-];
+import { Search, Filter, Calendar, CheckCircle2, XCircle, Clock, MoreVertical, Eye, Download, Printer, User, Building2, MapPin, Briefcase, FileText, ChevronRight, LayoutGrid, List as ListIcon, ShieldCheck, Mail, Phone, CalendarDays, History } from 'lucide-react';
+import { getAllResignationRequests, updateResignationStatus, ResignationRequest } from '@/lib/api/resignationRequests';
 
 // ── Status badge config ─────────────────────────────────────────────
-const statusConfig: Record<ResignationStatus, { label: string; classes: string }> = {
+const statusConfig: Record<string, { label: string; classes: string }> = {
+    NEW: {
+        label: "Draft",
+        classes: "bg-slate-100 text-slate-600",
+    },
     SUBMITTED: {
         label: "Submitted",
         classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
@@ -196,10 +60,25 @@ const ReadOnlyTextarea = ({ label, value, rows = 3 }: { label: string; value: st
 
 // ── Main Component ──────────────────────────────────────────────────
 export default function EmployeeResignations() {
-    const [requests, setRequests] = useState<ResignationRequest[]>(MOCK_REQUESTS);
+    const [requests, setRequests] = useState<ResignationRequest[]>([]);
+
+    const fetchRequests = useCallback(async () => {
+        try {
+            const data = await getAllResignationRequests();
+            setRequests(data);
+        } catch (error) {
+            console.error('Failed to fetch resignations:', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchRequests();
+    }, [fetchRequests]);
+
     const [selectedRequest, setSelectedRequest] = useState<ResignationRequest | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
+    const [statusFilter, setStatusFilter] = useState("SUBMITTED");
     const [showVerifiedList, setShowVerifiedList] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -230,33 +109,31 @@ export default function EmployeeResignations() {
         setRejectReasonError(false);
     };
 
-    const handleConfirmReject = () => {
+    const handleConfirmReject = async () => {
         if (!rejectReason.trim()) {
             setRejectReasonError(true);
             return;
         }
         if (!selectedRequest) return;
-        setRequests((prev) =>
-            prev.map((req) =>
-                req.id === selectedRequest.id
-                    ? { ...req, status: "REJECTED", hrRemark: rejectReason }
-                    : req
-            )
-        );
-        handleCloseRejectDialog();
-        handleCloseModal();
+        try {
+            await updateResignationStatus(selectedRequest.id, "REJECTED", rejectReason);
+            await fetchRequests();
+            handleCloseRejectDialog();
+            handleCloseModal();
+        } catch (error) {
+            console.error('Failed to reject:', error);
+        }
     };
 
-    const handleVerify = () => {
+    const handleVerify = async () => {
         if (!selectedRequest) return;
-        setRequests((prev) =>
-            prev.map((req) =>
-                req.id === selectedRequest.id
-                    ? { ...req, status: "VERIFIED_BY_HR" }
-                    : req
-            )
-        );
-        handleCloseModal();
+        try {
+            await updateResignationStatus(selectedRequest.id, "VERIFIED_BY_HR");
+            await fetchRequests();
+            handleCloseModal();
+        } catch (error) {
+            console.error('Failed to verify:', error);
+        }
     };
 
     const handleShowVerifiedList = () => {
@@ -272,20 +149,19 @@ export default function EmployeeResignations() {
         setCurrentPage(1);
     };
 
-    const handleConfirmSubmitToAdmin = () => {
-        const verifiedIds = requests
-            .filter((r) => r.status === "VERIFIED_BY_HR")
-            .map((r) => r.id);
+    const handleConfirmSubmitToAdmin = async () => {
+        const verifiedRequests = requests.filter((r) => r.status === "VERIFIED_BY_HR");
         
-        setRequests((prev) =>
-            prev.map((req) =>
-                verifiedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_ADMIN" as ResignationStatus }
-                    : req
-            )
-        );
-        setShowConfirmDialog(false);
-        setShowVerifiedList(false);
+        try {
+            await Promise.all(
+                verifiedRequests.map((req) => updateResignationStatus(req.id, "PENDING_ADMIN"))
+            );
+            await fetchRequests();
+            setShowConfirmDialog(false);
+            setShowVerifiedList(false);
+        } catch (error) {
+            console.error('Failed to submit to admin:', error);
+        }
     };
 
     // ── Filtered list ─────────────────────────────────────────────────
@@ -295,6 +171,9 @@ export default function EmployeeResignations() {
             list = list.filter((r) => r.status === "VERIFIED_BY_HR");
         }
         return list.filter((req) => {
+            // Exclude Drafts (NEW) from HR view
+            if (req.status === "NEW") return false;
+
             const matchesSearch =
                 req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 req.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -308,10 +187,6 @@ export default function EmployeeResignations() {
     const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
     const paginatedRequests = filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     const verifiedCount = requests.filter((r) => r.status === "VERIFIED_BY_HR").length;
-
-    const canVerify =
-        selectedRequest?.status === "SUBMITTED" &&
-        !showVerifiedList;
 
     // ── Format helpers ────────────────────────────────────────────────
     const formatDate = (iso: string) => {
@@ -349,29 +224,6 @@ export default function EmployeeResignations() {
                     </div>
                 </div>
 
-                {/* Sub-Tabs — hidden in verified-list view */}
-                {!showVerifiedList && (
-                    <div className="mb-6 border-b border-slate-200 dark:border-slate-700">
-                        <div className="flex gap-0">
-                            <button
-                                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer border-primary text-primary`}
-                            >
-                                <span className="flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[18px]">directions_walk</span>
-                                    Employee Resignations
-                                </span>
-                            </button>
-                            <button
-                                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300`}
-                            >
-                                <span className="flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[18px]">folder_shared</span>
-                                    Other Resignations
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                )}
 
                 {/* Filter & Search Bar */}
                 <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
@@ -419,9 +271,10 @@ export default function EmployeeResignations() {
                                         className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
                                     >
                                         <option value="All">All Statuses</option>
-                                        {Object.keys(statusConfig).map(st => (
-                                            <option key={st} value={st}>{statusConfig[st as ResignationStatus].label}</option>
-                                        ))}
+                                        <option value="SUBMITTED">Submitted</option>
+                                        <option value="VERIFIED_BY_HR">Verified</option>
+                                        <option value="PENDING_ADMIN">Pending Admin</option>
+                                        <option value="REJECTED">Rejected</option>
                                     </select>
                                 </div>
                                 {verifiedCount > 0 && (
@@ -478,7 +331,10 @@ export default function EmployeeResignations() {
                             </thead>
                             <tbody className="text-sm">
                                 {paginatedRequests.map((req) => {
-                                    const st = statusConfig[req.status];
+                                    const st = statusConfig[req.status] || { 
+                                        label: req.status, 
+                                        classes: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400" 
+                                    };
                                     return (
                                         <tr
                                             key={req.id}
@@ -491,8 +347,8 @@ export default function EmployeeResignations() {
                                                 <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
                                                 <div className="text-xs text-slate-500">EPF: {req.epfNumber}</div>
                                             </td>
-                                            <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-300">{formatDate(req.initiationDate)}</td>
-                                            <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-300">{formatDate(req.effectiveDate)}</td>
+                                            <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-300">{formatDate(req.resignationDate)}</td>
+                                            <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-300">{formatDate(req.lastWorkingDate)}</td>
                                             <td className="py-4 px-6 text-center">
                                                 <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${st.classes}`}>
                                                     {st.label}
@@ -589,12 +445,13 @@ export default function EmployeeResignations() {
                                 <div className="grid grid-cols-2 gap-6">
                                     <ReadOnlyField label="Current Designation" value={selectedRequest.designation} />
                                     <ReadOnlyField label="Branch" value={selectedRequest.branch} />
-                                    <ReadOnlyField label="Initiation Date" value={formatDate(selectedRequest.initiationDate)} />
-                                    <ReadOnlyField label="Effective Date" value={formatDate(selectedRequest.effectiveDate)} />
+                                    <ReadOnlyField label="Initiation Date" value={formatDate(selectedRequest.resignationDate)} />
+                                    <ReadOnlyField label="Last Working Date" value={formatDate(selectedRequest.lastWorkingDate)} />
                                 </div>
 
                                 <ReadOnlyTextarea label="Reason for Resignation" value={selectedRequest.reason} />
                                 <ReadOnlyTextarea label="Obligation Details" value={selectedRequest.obligationDetails} />
+                                <ReadOnlyTextarea label="Special Remarks" value={selectedRequest.specialRemark || "No special remarks provided."} />
 
                                 {/* Document Cards */}
                                 <div className="space-y-4">
@@ -602,28 +459,78 @@ export default function EmployeeResignations() {
                                         Required Documents
                                     </label>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {selectedRequest.documents.map((doc) => (
-                                            <div
-                                                key={doc.key}
-                                                className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10 p-5 transition-all"
-                                            >
+                                        {selectedRequest.documents.resignationLetter && (
+                                            <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10 p-5 transition-all">
                                                 <div className="flex items-start gap-3">
                                                     <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-100 dark:bg-green-900/30">
                                                         <span className="material-symbols-outlined text-lg text-green-600 dark:text-green-400">check_circle</span>
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2">
-                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{doc.label}</p>
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Resignation Letter</p>
                                                             <span className="text-[9px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded uppercase">Uploaded</span>
                                                         </div>
-                                                        <div className="mt-2 flex items-center gap-2">
-                                                            <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
-                                                            <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{doc.filename}</p>
+                                                        <div className="mt-2 flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                                <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
+                                                                <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{selectedRequest.documents.resignationLetter}</p>
+                                                            </div>
+                                                            <button className="text-slate-400 hover:text-primary transition-colors cursor-pointer">
+                                                                <span className="material-symbols-outlined text-[18px]">download</span>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
+                                        )}
+                                        {selectedRequest.documents.clearanceLetter && (
+                                            <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10 p-5 transition-all">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-100 dark:bg-green-900/30">
+                                                        <span className="material-symbols-outlined text-lg text-green-600 dark:text-green-400">check_circle</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Clearance Letter</p>
+                                                            <span className="text-[9px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded uppercase">Uploaded</span>
+                                                        </div>
+                                                        <div className="mt-2 flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                                <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
+                                                                <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{selectedRequest.documents.clearanceLetter}</p>
+                                                            </div>
+                                                            <button className="text-slate-400 hover:text-primary transition-colors cursor-pointer">
+                                                                <span className="material-symbols-outlined text-[18px]">download</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {selectedRequest.documents.handoverChecklist && (
+                                            <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10 p-5 transition-all">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-100 dark:bg-green-900/30">
+                                                        <span className="material-symbols-outlined text-lg text-green-600 dark:text-green-400">check_circle</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Handover Checklist</p>
+                                                            <span className="text-[9px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded uppercase">Uploaded</span>
+                                                        </div>
+                                                        <div className="mt-2 flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                                <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
+                                                                <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{selectedRequest.documents.handoverChecklist}</p>
+                                                            </div>
+                                                            <button className="text-slate-400 hover:text-primary transition-colors cursor-pointer">
+                                                                <span className="material-symbols-outlined text-[18px]">download</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

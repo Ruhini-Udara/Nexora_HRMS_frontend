@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { WelfareRequest, getAllWelfareRequests, createWelfareRequest, updateWelfareRequest, RequestStatus } from "@/lib/api/welfareRequests";
+import { WelfareRequest, getAllWelfareRequests, getWelfareRequestsByEmployee, createWelfareRequest, updateWelfareRequest, RequestStatus } from "@/lib/api/welfareRequests";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface DocumentSlot {
     key: 'supporting_document';
@@ -29,14 +30,14 @@ type WelfareFormData = z.infer<typeof welfareSchema>;
 // ── Status Badge Component ──────────────────────────────────────────
 const StatusBadge = ({ status }: { status: RequestStatus }) => {
     const config: Record<RequestStatus, string> = {
-        'New': 'bg-slate-100 text-slate-600',
-        'Submitted for Certification': 'bg-yellow-50 text-yellow-600',
-        'Approved': 'bg-green-50 text-green-600',
-        'Rejected': 'bg-red-50 text-red-600',
+        'NEW': 'bg-slate-100 text-slate-600',
+        'SUBMITTED': 'bg-yellow-50 text-yellow-600',
+        'APPROVED': 'bg-green-50 text-green-600',
+        'REJECTED': 'bg-red-50 text-red-600',
     };
     return (
         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${config[status]}`}>
-            {status === 'New' ? 'Saved' : status}
+            {status === 'NEW' ? 'Saved' : status}
         </span>
     );
 };
@@ -54,13 +55,7 @@ const employeeTypes = [
     'Casual'
 ];
 
-const employeeProfile = {
-    epfNumber: "EPF-1024",
-    employeeName: "John Doe",
-    designation: "Software Engineer",
-    dateJoined: "2022-01-15",
-    branch: "Colombo Headquarters"
-};
+// employeeProfile is now handled dynamically inside the component
 
 // ── Confirmation Modal ──────────────────────────────────────────────
 interface ConfirmModalProps {
@@ -209,6 +204,15 @@ export default function WelfareRequestPage() {
     const [formKey, setFormKey] = useState(0);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [pendingAction, setPendingAction] = useState<'draft' | 'submit' | null>(null);
+    const { user } = useAuthStore();
+
+    const employeeProfile = {
+        epfNumber: user?.epfNumber || "N/A",
+        employeeName: user?.name || "N/A",
+        designation: user?.designation || "N/A",
+        dateJoined: "N/A", // Not in auth store
+        branch: user?.department || "N/A"
+    };
 
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
         { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null },
@@ -231,13 +235,17 @@ export default function WelfareRequestPage() {
     });
 
     const loadRequests = useCallback(async () => {
+        if (!user?.id) return; // Prevent calling with id 0 or null during load
+        
         try {
-            const data = await getAllWelfareRequests();
+            const data = user.role === 'ROLE_ADMIN' 
+                ? await getAllWelfareRequests() 
+                : await getWelfareRequestsByEmployee(user.id);
             setRequests(data);
         } catch (error) {
             console.error("Failed to load requests", error);
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -250,15 +258,15 @@ export default function WelfareRequestPage() {
             reset({
                 welfareType: editingDraft.welfareType || '',
                 employeeType: editingDraft.employeeType || '',
-                amount: editingDraft.amount || '',
-                specialRemark: editingDraft.specialRemark || '',
+                amount: editingDraft.amount?.toString() || '',
+                specialRemark: editingDraft.employeeRemarks || '',
             });
             // Also populate docSlots with existing document name
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setDocSlots(prev => prev.map(slot => ({
                 ...slot,
                 file: null,
-                existingName: editingDraft.documents[slot.key]
+                existingName: editingDraft.documents.find(d => d.key === 'support')?.filename
             })));
         }
     }, [editingDraft, reset]);
@@ -305,11 +313,9 @@ export default function WelfareRequestPage() {
             status,
             welfareType: data.welfareType,
             employeeType: data.employeeType,
-            amount: data.amount,
-            specialRemark: data.specialRemark || '',
-            documents: {
-                supporting_document: docName
-            }
+            amount: parseFloat(data.amount) || 0,
+            employeeRemarks: data.specialRemark || '',
+            documents: docName ? [{ key: 'support', label: 'Supporting Document', filename: docName }] : []
         };
     };
 
@@ -324,14 +330,15 @@ export default function WelfareRequestPage() {
     // Called when form validation passes (for both draft save and submit)
     const onFormValid = async (data: WelfareFormData) => {
         if (pendingAction === 'draft') {
-            const payload = buildPayload(data, 'New');
+            const payload = buildPayload(data, 'NEW');
             try {
                 if (editingDraft) {
                     const updated = await updateWelfareRequest(editingDraft.id, payload);
                     setRequests(prev => prev.map(r => r.id === editingDraft.id ? updated : r));
                     showSuccess(`Draft ${updated.id} updated successfully`);
                 } else {
-                    const savedReq = await createWelfareRequest(payload);
+                    const userDetails = user ? { id: user.id, name: user.name, email: user.email } : undefined;
+                    const savedReq = await createWelfareRequest(payload, userDetails);
                     setRequests(prev => [...prev, savedReq]);
                     showSuccess(`Draft ${savedReq.id} saved successfully`);
                 }
@@ -351,14 +358,15 @@ export default function WelfareRequestPage() {
 
     const handleConfirmSubmit = async () => {
         const values = getValues();
-        const payload = buildPayload(values, 'Submitted for Certification');
+        const payload = buildPayload(values, 'SUBMITTED');
         try {
             if (editingDraft) {
                 const updated = await updateWelfareRequest(editingDraft.id, payload);
                 setRequests(prev => prev.map(r => r.id === editingDraft.id ? updated : r));
                 showSuccess(`Request ${updated.id} submitted for certification`);
             } else {
-                const savedReq = await createWelfareRequest(payload);
+                const userDetails = user ? { id: user.id, name: user.name, email: user.email } : undefined;
+                const savedReq = await createWelfareRequest(payload, userDetails);
                 setRequests(prev => [...prev, savedReq]);
                 showSuccess(`Request ${savedReq.id} submitted for certification`);
             }
@@ -379,7 +387,7 @@ export default function WelfareRequestPage() {
         req.welfareType.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const draftCount = requests.filter(r => r.status === 'New').length;
+    const draftCount = requests.filter(r => r.status === 'NEW').length;
 
     return (
         <div className="max-w-[1400px] w-full mx-auto grid grid-cols-12 gap-8">
@@ -611,7 +619,7 @@ export default function WelfareRequestPage() {
                             <tbody className="divide-y divide-slate-100">
                                 {filteredRequests.length > 0 ? (
                                     filteredRequests.map((req) => (
-                                        <tr key={req.id} className={`hover:bg-slate-50/50 transition-colors ${req.status === 'New' ? 'bg-amber-50/30' : ''}`}>
+                                        <tr key={req.id} className={`hover:bg-slate-50/50 transition-colors ${req.status === 'NEW' ? 'bg-amber-50/30' : ''}`}>
                                             <td className="px-6 py-4 text-xs font-bold text-slate-800">{req.id}</td>
                                             <td className="px-6 py-4 text-xs text-slate-600">{req.welfareType}</td>
                                             <td className="px-6 py-4 text-xs text-slate-600">{req.dateOfRequest || '—'}</td>
@@ -620,7 +628,7 @@ export default function WelfareRequestPage() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    {req.status === 'New' && (
+                                                    {req.status === 'NEW' && (
                                                         <button
                                                             onClick={() => handleEditDraft(req)}
                                                             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -753,28 +761,33 @@ export default function WelfareRequestPage() {
                                 </div>
                             </div>
 
-                            {viewRequest.specialRemark && (
+                            {viewRequest.employeeRemarks && (
                                 <div className="space-y-2 pt-4 border-t border-slate-100">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Special Remark</p>
-                                    <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl italic">&quot;{viewRequest.specialRemark}&quot;</p>
+                                    <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl italic">&quot;{viewRequest.employeeRemarks}&quot;</p>
                                 </div>
                             )}
 
-                            {viewRequest.documents.supporting_document && (
+                            {viewRequest.documents.length > 0 && (
                                 <div className="space-y-3 pt-4 border-t border-slate-100">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attached Documents</p>
-                                    <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white shadow-sm max-w-sm">
-                                        <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-slate-400 text-lg">description</span>
+                                    {viewRequest.documents.map((doc, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white shadow-sm max-w-sm">
+                                            <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center">
+                                                <span className="material-symbols-outlined text-slate-400 text-lg">description</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold text-slate-700 truncate">{doc.label}</p>
+                                                <p className="text-[10px] text-slate-500 truncate">{doc.filename}</p>
+                                            </div>
+                                            <button 
+                                                onClick={() => console.log('Downloading', doc.filename)}
+                                                className="text-slate-300 hover:text-primary transition-colors cursor-pointer"
+                                            >
+                                                <span className="material-symbols-outlined text-lg">download</span>
+                                            </button>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold text-slate-700 truncate">Supporting Document</p>
-                                            <p className="text-[10px] text-slate-400 truncate">{viewRequest.documents.supporting_document}</p>
-                                        </div>
-                                        <button className="text-slate-300 hover:text-primary transition-colors">
-                                            <span className="material-symbols-outlined text-lg">download</span>
-                                        </button>
-                                    </div>
+                                    ))}
                                 </div>
                             )}
                         </div>

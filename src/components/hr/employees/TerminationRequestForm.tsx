@@ -58,17 +58,24 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                         <p className="text-[10px] text-slate-500 truncate max-w-[150px]">{hasFile ? fileName : 'No file selected'}</p>
                     </div>
                 </div>
-                {!isReadOnly && (
-                    hasFile ? (
-                        <button onClick={() => onRemove(slot.key)} className="text-slate-400 hover:text-red-500 transition-colors">
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                <div className="flex items-center gap-2">
+                    {hasFile && (
+                        <button type="button" onClick={() => console.log('Downloading', fileName)} className="text-primary hover:text-primary/80 transition-colors">
+                            <span className="material-symbols-outlined text-[20px]">download</span>
                         </button>
-                    ) : (
-                        <button onClick={() => inputRef.current?.click()} className="text-primary hover:text-primary/80 transition-colors">
-                            <span className="material-symbols-outlined text-[20px]">upload</span>
-                        </button>
-                    )
-                )}
+                    )}
+                    {!isReadOnly && (
+                        hasFile ? (
+                            <button type="button" onClick={() => onRemove(slot.key)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                            </button>
+                        ) : (
+                            <button type="button" onClick={() => inputRef.current?.click()} className="text-primary hover:text-primary/80 transition-colors">
+                                <span className="material-symbols-outlined text-[20px]">upload</span>
+                            </button>
+                        )
+                    )}
+                </div>
             </div>
             <input type="file" ref={inputRef} onChange={handleChange} className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
         </div>
@@ -231,6 +238,10 @@ export function TerminationRequestForm({
                                 <input type="date" {...register('effectiveDate')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                             </div>
                         </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Special Remarks</label>
+                            <textarea {...register('specialRemark')} readOnly={isReadOnly} rows={2} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none" placeholder="Any additional comments or notes..." />
+                        </div>
                     </div>
 
                     {/* Section: Documents */}
@@ -255,6 +266,15 @@ export function TerminationRequestForm({
                                 />
                             ))}
                         </div>
+
+                        {isReadOnly && initialData?.hrRemark && (
+                            <div className="space-y-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <label className="text-[11px] font-bold text-red-500 uppercase ml-1">HR Remarks / Rejection Reason</label>
+                                <div className="w-full bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                                    {initialData.hrRemark}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

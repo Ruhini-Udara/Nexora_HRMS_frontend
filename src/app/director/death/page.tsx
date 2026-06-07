@@ -1,7 +1,40 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import { FileText, Clock, CheckCircle, XCircle, TrendingUp, AlertCircle } from 'lucide-react';
 import DeathRequestsTable from '@/components/director/death/DeathRequestsTable';
+import { getAllDeathRequests, DeathRequest } from '@/lib/api/deathRequests';
 
 export default function DeathApplicationsPage() {
+    const [requests, setRequests] = useState<DeathRequest[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadData = async () => {
+        try {
+            const data = await getAllDeathRequests();
+            // Show only those submitted to director or already approved/rejected by director
+            const directorScope = data.filter(r => 
+                r.status === "SUBMITTED_TO_DIRECTOR" || 
+                r.status === "APPROVED" || 
+                r.status === "REJECTED"
+            );
+            setRequests(directorScope);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const stats = {
+        total: requests.length,
+        pending: requests.filter(r => r.status === 'SUBMITTED_TO_DIRECTOR').length,
+        approved: requests.filter(r => r.status === 'APPROVED').length
+    };
     return (
         <div className="p-8 max-w-7xl mx-auto">
             {/* Header */}
@@ -21,7 +54,7 @@ export default function DeathApplicationsPage() {
                             <FileText className="w-5 h-5" />
                         </div>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900">48</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
                     <div className="flex items-center gap-1 mt-1 text-emerald-600">
                         <TrendingUp className="w-3.5 h-3.5" />
                         <span className="text-xs font-bold">This year</span>
@@ -35,7 +68,7 @@ export default function DeathApplicationsPage() {
                             <Clock className="w-5 h-5" />
                         </div>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900">5</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
                     <div className="flex items-center gap-1 mt-1 text-orange-600">
                         <AlertCircle className="w-3.5 h-3.5" />
                         <span className="text-xs font-bold">Action Required</span>
@@ -49,7 +82,7 @@ export default function DeathApplicationsPage() {
                             <CheckCircle className="w-5 h-5" />
                         </div>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900">43</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
                     <div className="flex items-center gap-1 mt-1 text-gray-500">
                         <span className="text-xs font-bold">All-time total</span>
                     </div>

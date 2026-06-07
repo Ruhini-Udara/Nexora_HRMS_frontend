@@ -21,7 +21,6 @@ const DirectorSidebar = () => {
         { label: "Termination Requests", href: "/director/termination", icon: UserMinus },
         { label: "Death Applications", href: "/director/death", icon: UserX },
         { label: "Resignation Requests", href: "/director/resign", icon: ShieldQuestion },
-        { label: "Welfare Requests", href: "/director/welfare", icon: Heart },
         { label: "Leave Requests", href: "/director/leave", icon: Calendar },
     ];
 

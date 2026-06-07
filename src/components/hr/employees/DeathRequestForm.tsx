@@ -16,6 +16,7 @@ interface DocumentSlot {
 }
 
 const deathSchema = z.object({
+    employeeId: z.string().min(1, 'Employee ID is required'),
     employeeName: z.string().min(1, 'Employee name is required'),
     epfNumber: z.string().min(1, 'EPF number is required'),
     dateOfDeath: z.string().min(1, 'Date of death is required'),
@@ -30,6 +31,10 @@ const deathSchema = z.object({
     
     // Nominee fields
     nomineeName: z.string().optional(),
+    nomineeRelationship: z.string().optional(),
+    nomineeNic: z.string().optional(),
+    nomineePhone: z.string().optional(),
+    nomineeAddress: z.string().optional(),
     nomineeBank: z.string().optional(),
     nomineeBranch: z.string().optional(),
     nomineeAccount: z.string().optional(),
@@ -74,6 +79,11 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                         <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{hasFile ? fileName : 'No file selected'}</p>
                     </div>
                 </div>
+                {hasFile && (
+                    <button type="button" onClick={() => {/* For now just logs, in real app would trigger download */ console.log('Downloading', fileName)}} className="text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors shrink-0 cursor-pointer mr-2">
+                        <span className="material-symbols-outlined text-[20px]">download</span>
+                    </button>
+                )}
                 {!isReadOnly && (
                     hasFile ? (
                         <button type="button" onClick={() => onRemove(slot.key)} className="text-slate-400 hover:text-red-500 transition-colors shrink-0">
@@ -118,9 +128,10 @@ export function DeathRequestForm({
         { key: 'requestLetter', label: 'Request Letter', icon: 'mail', mandatory: true, file: null },
     ]);
 
-    const { register, handleSubmit, formState: { errors }, getValues, reset } = useForm<DeathFormData>({
+    const { register, handleSubmit, formState: { errors }, getValues, reset, watch } = useForm<DeathFormData>({
         resolver: zodResolver(deathSchema),
         defaultValues: {
+            employeeId: '',
             employeeName: '',
             epfNumber: '',
             dateOfDeath: '',
@@ -212,7 +223,9 @@ export function DeathRequestForm({
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                             {initialData ? (isReadOnly ? 'Death Application Details' : 'Edit Death Application') : 'New Death Application'}
                         </h3>
-                        <p className="text-sm text-slate-500">Employee Death Benefit Claim Process</p>
+                        <p className="text-sm text-slate-500">
+                            {initialData?.id ? `Request ID: ${initialData.id}` : 'Employee Death Benefit Claim Process'}
+                        </p>
                     </div>
                 </div>
                 <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer">
@@ -227,7 +240,12 @@ export function DeathRequestForm({
                     {/* Section: Employee Information */}
                     <div className="space-y-6">
                         <h4 className="text-[11px] font-bold text-[#8B3A00] uppercase tracking-widest border-b border-[#8B3A00]/10 pb-2">Employee Information (Deceased)</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Employee ID *</label>
+                                <input {...register('employeeId')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.employeeId ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} placeholder="e.g. EMP-001" />
+                                {errors.employeeId && <p className="text-[10px] text-red-500 mt-1">{errors.employeeId.message}</p>}
+                            </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Employee Name *</label>
                                 <input {...register('employeeName')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.employeeName ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
@@ -308,6 +326,22 @@ export function DeathRequestForm({
                                 <input {...register('nomineeName')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
                             </div>
                             <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Relationship</label>
+                                <input {...register('nomineeRelationship')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" placeholder="e.g. Spouse, Son, Daughter" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">NIC Number</label>
+                                <input {...register('nomineeNic')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Contact Number</label>
+                                <input {...register('nomineePhone')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                            </div>
+                            <div className="space-y-1.5 md:col-span-2">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Address</label>
+                                <input {...register('nomineeAddress')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                            </div>
+                            <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Bank Name</label>
                                 <input {...register('nomineeBank')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
                             </div>
@@ -350,6 +384,15 @@ export function DeathRequestForm({
                         <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Special Remark</label>
                         <textarea {...register('specialRemark')} readOnly={isReadOnly} rows={3} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all resize-none" placeholder="Enter any additional information..." />
                     </div>
+
+                    {isReadOnly && initialData?.hrRemark && (
+                        <div className="space-y-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <label className="text-[11px] font-bold text-red-500 uppercase ml-1">HR Remarks / Rejection Reason</label>
+                            <div className="w-full bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                                {initialData.hrRemark}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Fixed Footer Actions */}

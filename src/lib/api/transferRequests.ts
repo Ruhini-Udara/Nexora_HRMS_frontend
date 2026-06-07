@@ -6,7 +6,7 @@ export interface TransferDocument {
     filename: string;
 }
 
-export type TransferStatus = "SUBMITTED" | "VERIFIED_BY_HR" | "PENDING_ADMIN" | "REJECTED" | "NEW";
+export type TransferStatus = "SUBMITTED" | "VERIFIED_BY_HR" | "PENDING_BOARD_APPROVAL" | "PENDING_ADMIN" | "SUBMITTED_TO_DIRECTOR" | "APPROVED" | "REJECTED" | "NEW";
 
 export interface TransferRequest {
     id: string;
@@ -25,6 +25,7 @@ export interface TransferRequest {
     submittedAt?: string;
     createdAt?: string;
     hrRemark?: string;
+    boardMeetingDate?: string;
 }
 
 // Internal mapping function to map DTO from backend to frontend interface
@@ -54,46 +55,47 @@ const mapDtoToFrontend = (dto: any): TransferRequest => {
         documents: docs,
         submittedAt: dto.createdAt || '',
         createdAt: dto.createdAt || '',
-        hrRemark: dto.remarks || '',
+        hrRemark: dto.hrRemark || '',
+        boardMeetingDate: dto.boardMeetingDate || '',
     };
 };
 
 export const getAllTransferRequests = async (): Promise<TransferRequest[]> => {
-    const response = await api.get('/transfer-requests');
+    const response = await api.get('/api/transfer-requests');
     return response.data.map(mapDtoToFrontend);
 };
 
 export const getTransferRequestsByEmployee = async (employeeId: number): Promise<TransferRequest[]> => {
-    const response = await api.get(`/transfer-requests/employee/${employeeId}`);
+    const response = await api.get(`/api/transfer-requests/employee/${employeeId}`);
     return response.data.map(mapDtoToFrontend);
 };
 
-export const createTransferRequest = async (request: Partial<TransferRequest>): Promise<TransferRequest> => {
+export const createTransferRequest = async (request: Partial<TransferRequest>, userDetails?: { id: number; name: string; epfNumber?: string; designation?: string; department?: string }): Promise<TransferRequest> => {
     const payload = {
-        employeeId: 1, // Placeholder until auth is available
-        employeeName: request.employeeName,
-        epfNumber: request.epfNumber,
-        designation: request.designation,
-        branch: request.branch,
+        employeeId: userDetails?.id || 1, 
+        employeeName: userDetails?.name || request.employeeName,
+        epfNumber: userDetails?.epfNumber || request.epfNumber,
+        designation: userDetails?.designation || request.designation,
+        branch: userDetails?.department || request.branch,
         currentBranch: request.currentBranch,
         targetBranch: request.targetBranch,
         transferType: request.transferType,
         reason: request.reason,
         requestDate: request.requestDate,
         expectedDate: request.expectedDate,
-        status: request.status,
+        status: request.status || 'SUBMITTED',
         justificationDocumentPath: request.documents?.find(d => d.key === 'justification')?.filename,
         proofDocumentPath: request.documents?.find(d => d.key === 'proof')?.filename,
     };
     
-    const response = await api.post('/transfer-requests', payload);
+    const response = await api.post('/api/transfer-requests', payload);
     return mapDtoToFrontend(response.data);
 };
 
-export const updateTransferStatus = async (idStr: string, status: string, remarks?: string): Promise<TransferRequest> => {
+export const updateTransferStatus = async (idStr: string, status: string, remarks?: string, boardMeetingDate?: string): Promise<TransferRequest> => {
     const numericId = parseInt(idStr.replace('TRF-', ''), 10);
-    const response = await api.put(`/transfer-requests/${numericId}/status`, null, {
-        params: { status, remarks }
+    const response = await api.put(`/api/transfer-requests/${numericId}/status`, null, {
+        params: { status, remarks, boardMeetingDate }
     });
     return mapDtoToFrontend(response.data);
 };
@@ -110,6 +112,6 @@ export const updateTransferRequest = async (idStr: string, request: Partial<Tran
         justificationDocumentPath: request.documents?.find(d => d.key === 'justification')?.filename,
         proofDocumentPath: request.documents?.find(d => d.key === 'proof')?.filename,
     };
-    const response = await api.put(`/transfer-requests/${numericId}`, payload);
+    const response = await api.put(`/api/transfer-requests/${numericId}`, payload);
     return mapDtoToFrontend(response.data);
 };

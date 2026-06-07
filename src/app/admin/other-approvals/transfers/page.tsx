@@ -1,115 +1,38 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { format } from "date-fns"; // Standard in most nextjs project, let's stick to simple string for now to avoid dependency issues if date-fns is not installed.
+import { getAllTransferRequests, updateTransferStatus, TransferRequest, TransferStatus } from "@/lib/api/transferRequests";
 
-// ── Types ───────────────────────────────────────────────────────────
-type TransferStatus = "VERIFIED_BY_HR" | "PENDING_BOARD_APPROVAL" | "APPROVED" | "REJECTED" | "SUBMITTED_TO_DIRECTOR";
-
-interface TransferRequest {
-    id: string;
-    employeeName: string;
-    currentBranch: string;
-    targetBranch: string;
-    hrVerificationDate: string;
-    status: TransferStatus;
-    boardMeetingDate?: string;
-}
-
-// ── Mock Data ───────────────────────────────────────────────────────
-const INITIAL_REQUESTS: TransferRequest[] = [
-    {
-        id: "TRF-2024-001",
-        employeeName: "Kasun Perera",
-        currentBranch: "Colombo Branch",
-        targetBranch: "Kandy Branch",
-        hrVerificationDate: "2024-10-15",
-        status: "VERIFIED_BY_HR",
-    },
-    {
-        id: "TRF-2024-002",
-        employeeName: "Nuwan Pradeep",
-        currentBranch: "Gampaha Branch",
-        targetBranch: "Negombo Branch",
-        hrVerificationDate: "2024-10-15",
-        status: "VERIFIED_BY_HR",
-    },
-    {
-        id: "TRF-2024-003",
-        employeeName: "Malshan Jayarathne",
-        currentBranch: "Kurunegala Branch",
-        targetBranch: "Colombo Branch",
-        hrVerificationDate: "2024-10-16",
-        status: "VERIFIED_BY_HR",
-    },
-    {
-        id: "TRF-2024-004",
-        employeeName: "Saman Kumara",
-        currentBranch: "Galle Branch",
-        targetBranch: "Colombo Branch",
-        hrVerificationDate: "2024-10-16",
-        status: "VERIFIED_BY_HR",
-    },
-    {
-        id: "TRF-2024-005",
-        employeeName: "Nimali Silva",
-        currentBranch: "Kandy Branch",
-        targetBranch: "Matara Branch",
-        hrVerificationDate: "2024-10-18",
-        status: "VERIFIED_BY_HR",
-    },
-    {
-        id: "TRF-2024-006",
-        employeeName: "Ruwanthi Perera",
-        currentBranch: "Colombo Branch",
-        targetBranch: "Galle Branch",
-        hrVerificationDate: "2024-10-10",
-        status: "PENDING_BOARD_APPROVAL",
-        boardMeetingDate: "2024-11-01",
-    },
-    {
-        id: "TRF-2024-007",
-        employeeName: "Asela Gunaratne",
-        currentBranch: "Jaffna Branch",
-        targetBranch: "Trincomalee Branch",
-        hrVerificationDate: "2024-10-09",
-        status: "PENDING_BOARD_APPROVAL",
-        boardMeetingDate: "2024-11-01",
-    },
-    {
-        id: "TRF-2024-008",
-        employeeName: "Chathurangi De Silva",
-        currentBranch: "Kegalle Branch",
-        targetBranch: "Kandy Branch",
-        hrVerificationDate: "2024-10-11",
-        status: "PENDING_BOARD_APPROVAL",
-        boardMeetingDate: "2024-11-15",
-    },
-    {
-        id: "TRF-2024-009",
-        employeeName: "Deshan Peiris",
-        currentBranch: "Anuradhapura Branch",
-        targetBranch: "Polonnaruwa Branch",
-        hrVerificationDate: "2024-10-19",
-        status: "VERIFIED_BY_HR",
-    },
-    {
-        id: "TRF-2024-010",
-        employeeName: "Oshada Fernando",
-        currentBranch: "Matara Branch",
-        targetBranch: "Hambantota Branch",
-        hrVerificationDate: "2024-10-20",
-        status: "VERIFIED_BY_HR",
-    }
-];
+const isLegit = (req: TransferRequest) =>
+    (req.employeeName || "").trim().length > 0 &&
+    (req.epfNumber || "").trim().length > 0 &&
+    req.epfNumber !== '0';
 
 export default function AdminTransfersPage() {
-    const [requests, setRequests] = useState<TransferRequest[]>(INITIAL_REQUESTS);
+    const [requests, setRequests] = useState<TransferRequest[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<"preparation" | "management">("preparation");
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [boardDate, setBoardDate] = useState<string>("");
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+    const loadRequests = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getAllTransferRequests();
+            setRequests(data.filter(isLegit));
+        } catch (error) {
+            console.error("Failed to load requests", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadRequests();
+    }, [loadRequests]);
 
     // For management view
     const [filterDate, setFilterDate] = useState<string>("All");
@@ -121,16 +44,21 @@ export default function AdminTransfersPage() {
         );
     };
 
+    const showSuccess = (msg: string) => {
+        setSuccessMessage(msg);
+        setTimeout(() => setSuccessMessage(null), 3000);
+    };
+
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            const verifiedIds = requests.filter(r => r.status === "VERIFIED_BY_HR").map(r => r.id);
-            setSelectedIds(verifiedIds);
+            const pendingAdminIds = preparationList.map(r => r.id);
+            setSelectedIds(pendingAdminIds);
         } else {
             setSelectedIds([]);
         }
     };
 
-    const handlePrepareList = () => {
+    const handlePrepareList = async () => {
         if (!boardDate) {
             alert("Please select a Board Gathering Date first.");
             return;
@@ -140,41 +68,51 @@ export default function AdminTransfersPage() {
             return;
         }
 
-        setRequests((prev) =>
-            prev.map((req) =>
-                selectedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_BOARD_APPROVAL", boardMeetingDate: boardDate }
-                    : req
-            )
-        );
-
-        setSelectedIds([]);
-        // Ensure the newly created date is available in filter
-        setFilterDate(boardDate);
-        setBoardDate("");
-        setActiveTab("management");
+        try {
+            setLoading(true);
+            await Promise.all(selectedIds.map(id => updateTransferStatus(id, "PENDING_BOARD_APPROVAL", undefined, boardDate)));
+            await loadRequests();
+            const count = selectedIds.length;
+            setSelectedIds([]);
+            setFilterDate(boardDate);
+            setBoardDate("");
+            setActiveTab("management");
+            showSuccess(`${count} transfer requests moved to board approval list`);
+        } catch (error) {
+            console.error("Failed to prepare list", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handlePrintList = () => {
         window.print();
     };
 
-    const handleConfirmSubmitToDirector = () => {
-        setRequests((prev) =>
-            prev.map((req) => {
-                if (req.status !== "PENDING_BOARD_APPROVAL") return req;
-                if (filterDate !== "All" && req.boardMeetingDate !== filterDate) return req;
-                return { ...req, status: "SUBMITTED_TO_DIRECTOR" as TransferStatus };
-            })
-        );
-        setShowConfirmModal(false);
+    const handleConfirmSubmitToDirector = async () => {
+        const toSubmit = managementList;
+
+        try {
+            setLoading(true);
+            await Promise.all(toSubmit.map(r => updateTransferStatus(r.id, "SUBMITTED_TO_DIRECTOR")));
+            await loadRequests();
+            setShowConfirmModal(false);
+            showSuccess(`${toSubmit.length} transfer requests finalized for board approval`);
+        } catch (error) {
+            console.error("Failed to finalize decisions", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     // ── Derived Data ──────────────────────────────────────────────
-    const preparationList = requests.filter(r => r.status === "VERIFIED_BY_HR");
+    const preparationList = requests.filter(r => r.status === "PENDING_ADMIN");
 
     // Extract unique dates for filter dropdown
-    const availableDates = Array.from(new Set(requests.filter(r => r.status === "PENDING_BOARD_APPROVAL" && r.boardMeetingDate).map(r => r.boardMeetingDate as string)));
+    const availableDates = Array.from(new Set(requests
+        .filter(r => r.status === "PENDING_BOARD_APPROVAL" && r.boardMeetingDate)
+        .map(r => r.boardMeetingDate || "")))
+        .filter(d => d !== "");
 
     const managementList = requests.filter(r => {
         if (r.status !== "PENDING_BOARD_APPROVAL") return false;
@@ -184,8 +122,29 @@ export default function AdminTransfersPage() {
 
     const isAllSelected = preparationList.length > 0 && selectedIds.length === preparationList.length;
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-[#8B3A00]/30 border-t-[#8B3A00] rounded-full animate-spin" />
+                    <p className="text-sm text-slate-500 font-medium">Loading transfer requests...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+            {/* Success Toast */}
+            {successMessage && (
+                <div className="fixed bottom-6 right-6 z-50 animate-slide-in-right">
+                    <div className="bg-green-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-bold">
+                        <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                        {successMessage}
+                    </div>
+                </div>
+            )}
+
             <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between print:hidden">
@@ -199,7 +158,7 @@ export default function AdminTransfersPage() {
                             </h2>
                         </div>
                         <p className="text-slate-500 dark:text-slate-400 ml-9">
-                            Review HR verified transfers, prepare batches, and manage board gathering approvals.
+                            Review HR-approved transfers, prepare batches, and manage board gathering approvals.
                         </p>
                     </div>
                 </div>
@@ -213,11 +172,15 @@ export default function AdminTransfersPage() {
                                 ? "border-[#8B3A00] text-[#8B3A00]"
                                 : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                                 }`}
-                            disabled={activeTab === "preparation"}
                         >
                             <span className="flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[18px]">list_alt</span>
                                 1. Preparation of Pending List
+                                {preparationList.length > 0 && (
+                                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs ml-1">
+                                        {preparationList.length}
+                                    </span>
+                                )}
                             </span>
                         </button>
                         <button
@@ -226,14 +189,13 @@ export default function AdminTransfersPage() {
                                 ? "border-[#8B3A00] text-[#8B3A00]"
                                 : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                                 }`}
-                            disabled={activeTab === "management"}
                         >
                             <span className="flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[18px]">gavel</span>
                                 2. Management of Pending Board Approvals
-                                {requests.filter(r => r.status === "PENDING_BOARD_APPROVAL").length > 0 && (
+                                {managementList.length > 0 && (
                                     <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs ml-1">
-                                        {requests.filter(r => r.status === "PENDING_BOARD_APPROVAL").length}
+                                        {managementList.length}
                                     </span>
                                 )}
                             </span>
@@ -280,7 +242,7 @@ export default function AdminTransfersPage() {
                             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
                                 <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                     <span className="material-symbols-outlined text-green-600">check_circle</span>
-                                    Verified Requests Available Make Batch
+                                    HR-Approved Transfer Requests Available for Batch
                                 </h3>
                                 <span className="text-xs font-semibold text-slate-500 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full">
                                     {preparationList.length} Items Found
@@ -302,7 +264,7 @@ export default function AdminTransfersPage() {
                                             <th className="py-4 px-6">Employee Name</th>
                                             <th className="py-4 px-6">Current Location</th>
                                             <th className="py-4 px-6">Target Location</th>
-                                            <th className="py-4 px-6">HR Verification Date</th>
+                                            <th className="py-4 px-6">Submission Date</th>
                                         </tr>
                                     </thead>
                                     <tbody className="text-sm">
@@ -320,7 +282,7 @@ export default function AdminTransfersPage() {
                                                 <td className="py-4 px-6">{req.employeeName}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400">{req.currentBranch}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400">{req.targetBranch}</td>
-                                                <td className="py-4 px-6">{req.hrVerificationDate}</td>
+                                                <td className="py-4 px-6">{req.submittedAt || req.requestDate}</td>
                                             </tr>
                                         ))}
                                         {preparationList.length === 0 && (
@@ -419,13 +381,15 @@ export default function AdminTransfersPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="text-sm print:text-xs">
-                                        {managementList.map((req, i) => (
+                                        {managementList.map((req) => (
                                             <tr key={req.id} className="border-b border-slate-50 dark:border-slate-700/50 print:border-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                                 <td className="py-4 px-6 font-semibold text-slate-900 dark:text-white print:py-3 print:text-black">{req.id}</td>
                                                 <td className="py-4 px-6 print:py-3 print:text-black">{req.employeeName}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400 print:py-3 print:text-black">{req.currentBranch}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400 print:py-3 print:text-black">{req.targetBranch}</td>
-                                                <td className="py-4 px-6 font-semibold text-blue-700 dark:text-blue-400 print:py-3 print:text-black">{req.boardMeetingDate}</td>
+                                                <td className="py-4 px-6 font-semibold text-blue-700 dark:text-blue-400 print:py-3 print:text-black">
+                                                    {req.hrRemark?.replace("Board Meeting: ", "") || "N/A"}
+                                                </td>
                                                 <td className="py-4 px-6 print:py-3 print:table-cell hidden text-center align-middle">
                                                     <div className="w-full h-8 border border-slate-300 bg-slate-50"></div>
                                                 </td>
