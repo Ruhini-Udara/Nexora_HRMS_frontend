@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 interface RequestModel {
     id: number;
     title: string;
+    trainingCode?: string;
     requester: string;
     type: string;
     typeColor: string;
@@ -38,6 +39,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
     const [selectedTraining, setSelectedTraining] = useState<{ 
         id: number, 
         title: string, 
+        trainingCode?: string,
         type: string, 
         date: string, 
         status: string, 
@@ -65,6 +67,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
         setSelectedTraining({
             id: req.id,
             title: req.title,
+            trainingCode: req.trainingCode,
             type: req.type,
             date: req.date,
             status: req.status,

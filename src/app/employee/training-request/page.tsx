@@ -11,6 +11,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 type TrainingEvent = {
     id: number;
     title: string;
+    trainingCode?: string;
     proposedStartDate?: string;
     date?: string;
     time?: string;

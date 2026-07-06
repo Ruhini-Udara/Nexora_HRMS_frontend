@@ -24,12 +24,18 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
     applyBefore,
     isApplied
 }) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isRegistrationClosed = applyBefore && applyBefore !== "TBD" ? applyBefore < todayStr : false;
 
-    // Card UI changes based on whether the user already applied:
-    // - Applied → green styling + "Applied" badge
-    // - Not applied → show "Apply Now" button
+    // Card UI changes based on whether the user already applied or registration is closed:
     return (
-        <div className={`bg-white rounded-xl border transition-all flex flex-col group ${isApplied ? 'border-emerald-100 dark:border-emerald-900/30' : 'border-stone-200 hover:border-[var(--color-training-primary)] hover:shadow-lg'}`}>
+        <div className={`bg-white rounded-xl border transition-all flex flex-col group ${
+            isApplied 
+                ? 'border-emerald-100 dark:border-emerald-900/30' 
+                : isRegistrationClosed
+                    ? 'border-stone-200 opacity-70 bg-stone-50/30'
+                    : 'border-stone-200 hover:border-[var(--color-training-primary)] hover:shadow-lg'
+        }`}>
             <div className={`rounded-t-xl p-2.5 flex justify-end items-center ${isApplied ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'bg-[var(--color-training-primary)]/5'}`}>
                 <span className="bg-white/90 backdrop-blur px-1.5 py-0.5 rounded text-[9px] font-black text-[var(--color-training-primary)] uppercase shadow-sm">
                     {category}
@@ -52,15 +58,24 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
                 {/* Bottom bar: show "Apply Before" (if applicable) or "Applied" badge */}
                 <div className="mt-auto flex items-center justify-between gap-2 border-t border-stone-100 pt-2.5">
                     {applyBefore && !isApplied && (
-                        <div className="flex items-center gap-1 text-[10px] text-orange-600 font-bold bg-orange-50 px-1.5 py-1 rounded-md border border-orange-100">
+                        <div className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-1 rounded-md border ${
+                            isRegistrationClosed
+                                ? 'text-rose-600 bg-rose-50 border-rose-100 dark:bg-rose-950/20 dark:border-rose-900/30'
+                                : 'text-orange-600 bg-orange-50 border-orange-100'
+                        }`}>
                             <span className="material-symbols-outlined text-[14px]">event_busy</span>
-                            Apply Before: {applyBefore}
+                            {isRegistrationClosed ? `Deadline Passed: ${applyBefore}` : `Apply Before: ${applyBefore}`}
                         </div>
                     )}
                     {isApplied ? (
                         <div className="inline-flex items-center justify-center gap-1 px-3 py-1.5 w-max bg-emerald-500/10 text-emerald-600 rounded-md font-bold text-[10px] ml-auto border border-emerald-200">
                             <span className="material-symbols-outlined text-[12px]">verified</span>
                             Applied
+                        </div>
+                    ) : isRegistrationClosed ? (
+                        <div className="inline-flex items-center justify-center gap-1 px-3 py-1.5 w-max bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 rounded-md font-bold text-[10px] ml-auto border border-rose-200 dark:border-rose-900/30">
+                            <span className="material-symbols-outlined text-[12px]">block</span>
+                            Closed
                         </div>
                     ) : (
                         <Link

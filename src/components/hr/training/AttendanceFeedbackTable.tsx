@@ -9,6 +9,7 @@ import { formatTime } from '@/lib/utils';
 type TrainingEvent = {
     id: number;
     title: string;
+    trainingCode?: string;
     proposedStartDate?: string;
     date?: string;
     time?: string;
@@ -16,6 +17,7 @@ type TrainingEvent = {
     instructor?: string;
     description?: string;
     status: string;
+    approvedBy?: string;
 };
 
 type TrainingFeedback = {
@@ -74,7 +76,7 @@ export default function AttendanceFeedbackTable() {
         api.get('/api/training/events')
             .then(res => {
                 // Only show events that have been Approved by Admin
-                const approvedEvents = res.data.filter((e: TrainingEvent) => e.status === "Approved");
+                const approvedEvents = res.data.filter((e: TrainingEvent) => e.status === "Approved" || e.approvedBy);
                 const sorted = approvedEvents.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
                 setEvents(sorted);
                 if (sorted.length > 0) {
@@ -246,6 +248,15 @@ export default function AttendanceFeedbackTable() {
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">{selectedEvent.description}</p>
 
                         <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[18px]">qr_code</span>
+                                </div>
+                                <div>
+                                    <span className="text-xs text-slate-400 block -mb-1">Training Code</span>
+                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{selectedEvent.trainingCode || "TBD"}</span>
+                                </div>
+                            </div>
                             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                                 <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
                                     <span className="material-symbols-outlined text-[18px]">person</span>
