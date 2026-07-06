@@ -8,6 +8,7 @@ import CandidatesTable from "./CandidatesTable";
 interface TrainingDetails {
     id: number;
     title: string;
+    trainingCode?: string;
     type: string;
     date: string;
     time: string;
@@ -74,6 +75,7 @@ export default function TrainingListModal({ isOpen, onClose, training, onApprove
                     {/* Training Summary Card */}
                     <SessionSummaryCard
                         title={training.title}
+                        trainingCode={training.trainingCode}
                         type={training.type}
                         date={`${training.date} • ${training.time || '10:00 AM'}`}
                         location={training.location || 'Main Conference Hall'}

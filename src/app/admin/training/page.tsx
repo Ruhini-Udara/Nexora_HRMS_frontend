@@ -8,6 +8,7 @@ import api from '@/lib/axiosInstance';
 interface TrainingEvent {
     id: number;
     title: string;
+    trainingCode?: string;
     category: string;
     proposedStartDate?: string;
     date?: string;
@@ -27,12 +28,15 @@ interface TrainingEvent {
     expectedParticipants?: number;
     participants?: number;
     rejectionReason?: string;
+    approvedBy?: string;
+    approvedAt?: string;
 }
 
 // Clean, UI-friendly data model used by components
 interface MappedTrainingEvent {
     id: number;
     title: string;
+    trainingCode?: string;
     requester: string;
     type: string;
     typeColor: string;
@@ -70,15 +74,16 @@ export default function TrainingRequestsPage() {
         const fetchEvents = async () => {
             try {
                 const res = await api.get('/api/training/events');
-                // Filter only events that are relevant to Admin review (skip 'Published' status)
+                // Filter only events that are relevant to Admin review (skip 'Published' status unless already approved)
                 const relevantEvents = (res.data as TrainingEvent[]).filter((event: TrainingEvent) => 
-                    ['Pending Admin Approval', 'Approved', 'Rejected'].includes(event.status)
+                    ['Pending Admin Approval', 'Approved', 'Rejected'].includes(event.status) || event.approvedBy
                 );
                 
                 // Map filtered API events to the table model
                 const mappedEvents: MappedTrainingEvent[] = relevantEvents.map((event: TrainingEvent) => ({
                     id: event.id,
                     title: event.title || event.trainingName || "Untitled Training",
+                    trainingCode: event.trainingCode,
                     requester: "HR Department", 
                     type: event.category || event.trainingType || "General",
                     typeColor: "bg-blue-100 text-blue-800",
@@ -88,7 +93,7 @@ export default function TrainingRequestsPage() {
                     location: event.location || event.trainingLocation || "Main Conference Hall",
                     trainer: event.instructor || event.trainer || event.trainerName || "To Be Assigned",
                     expectedParticipants: event.expectedParticipants || event.participants || 0,
-                    status: event.status === 'Pending Admin Approval' ? 'Pending' : event.status,
+                    status: event.approvedBy ? 'Approved' : (event.status === 'Pending Admin Approval' ? 'Pending' : event.status),
                     rejectionReason: event.reason || event.rejectionReason
                 }));
                 setRequests(mappedEvents);

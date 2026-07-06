@@ -71,7 +71,7 @@ export default function TrainingEventCard({
                         )}
                     </div>
                 </div>
-                
+
                 {/* HR card actions: View / Edit / Delete */}
                 {hideActions !== true && (
                     <div className="flex gap-1.5 mt-auto">
