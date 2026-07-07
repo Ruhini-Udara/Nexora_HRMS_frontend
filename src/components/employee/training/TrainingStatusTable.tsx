@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Toast } from "@/components/ui/Toast";
 
 type TrainingRequest = {
     id: number;
@@ -22,6 +23,15 @@ type TrainingRequest = {
 
 // Removed mock data
 
+type FeedbackItem = {
+    employeeId: number;
+    courseContentRating?: number;
+    instructorRating?: number;
+    overallExperienceRating?: number;
+    suggestions?: string;
+    feedback?: string;
+};
+
 interface TrainingStatusTableProps {
     onFeedbackClick: (request: TrainingRequest) => void;
 }
@@ -36,11 +46,23 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
     const [selectedRejection, setSelectedRejection] = useState<string | null>(null);
     const [isDecliningInvitation, setIsDecliningInvitation] = useState(false);
+    const [submittedFeedbacks, setSubmittedFeedbacks] = useState<Record<number, boolean>>({});
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
+    // Calculate pagination slices
+    const totalPages = Math.ceil(requests.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = requests.slice(indexOfFirstItem, indexOfLastItem);
 
     const formatTime = (timeStr: string) => {
         if (!timeStr || timeStr === "TBD") return "10:00 AM";
         if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
-        
+
         try {
             const [hours, minutes] = timeStr.split(':');
             const hour = parseInt(hours);
@@ -61,9 +83,30 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
             });
 
             api.get(`/api/training/employees/${user.id}/requests`)
-                .then(res => {
+                .then(async (res) => {
+                    if (!isMounted) return;
+                    const requestsData = res.data.sort((a: TrainingRequest, b: TrainingRequest) => b.id - a.id);
+                    setRequests(requestsData);
+
+                    // Fetch feedback status for approved requests
+                    const approved = requestsData.filter((r: TrainingRequest) => r.status === 'Approved' && r.attendanceConfirmed);
+                    const feedbackStatuses: Record<number, boolean> = {};
+
+                    await Promise.all(approved.map(async (r: TrainingRequest) => {
+                        try {
+                            const feedbackRes = await api.get(`/api/training/events/${r.eventId}/feedback`);
+                            const feedbacks = feedbackRes.data;
+                            const existing = feedbacks.find((f: FeedbackItem) => f.employeeId === user.id);
+                            if (existing && (existing.courseContentRating > 0 || existing.instructorRating > 0 || existing.overallExperienceRating > 0)) {
+                                feedbackStatuses[r.eventId] = true;
+                            }
+                        } catch (err) {
+                            console.error("Failed to fetch feedback for event", r.eventId, err);
+                        }
+                    }));
+
                     if (isMounted) {
-                        setRequests(res.data.sort((a: TrainingRequest, b: TrainingRequest) => b.id - a.id));
+                        setSubmittedFeedbacks(feedbackStatuses);
                     }
                 })
                 .catch(err => {
@@ -91,9 +134,10 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                 attendanceStatus: 'Confirmed'
             });
             setRequests(prev => prev.map(r => r.id === requestId ? { ...r, attendanceConfirmed: true } : r));
+            setToast({ message: "Attendance confirmed successfully!", type: 'success' });
         } catch (err) {
             console.error("Failed to confirm attendance", err);
-            alert("Failed to confirm attendance. Please try again.");
+            setToast({ message: "Failed to confirm attendance. Please try again.", type: 'error' });
         } finally {
             setIsConfirmingAttendance(false);
             setSelectedRequest(null);
@@ -107,9 +151,10 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                 rejectionReason: 'Declined by employee.'
             });
             setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Rejected', rejectionReason: 'Declined by employee.' } : r));
+            setToast({ message: "Invitation declined.", type: 'info' });
         } catch (err) {
             console.error("Failed to decline invitation", err);
-            alert("Failed to decline invitation. Please try again.");
+            setToast({ message: "Failed to decline invitation. Please try again.", type: 'error' });
         } finally {
             setIsDecliningInvitation(false);
             setSelectedRequest(null);
@@ -139,13 +184,11 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                     </div>
                                 </td>
                             </tr>
-                        ) : requests.length > 0 ? (
-                            requests.map((request, idx) => (
+                        ) : currentItems.length > 0 ? (
+                            currentItems.map((request, idx) => (
                                 <tr
                                     key={request.id}
-                                    className={`border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors ${
-                                        request.status === "Rejected" ? "opacity-70" : ""
-                                    } ${idx === requests.length - 1 ? "border-none" : ""}`}
+                                    className={`border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors ${idx === currentItems.length - 1 ? "border-none" : ""}`}
                                 >
                                     <td className="py-4 px-4">
                                         <p className="font-semibold text-slate-800 dark:text-white">{request.trainingTitle}</p>
@@ -154,8 +197,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                         </p>
                                     </td>
                                     <td className="py-4 px-4">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                                            request.status === "Approved"
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${request.status === "Approved"
                                                 ? request.eventStatus === "Approved"
                                                     ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
                                                     : request.eventStatus === "Rejected"
@@ -166,9 +208,8 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                 : request.status === "Pending"
                                                     ? "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
                                                     : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-                                        }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${
-                                                request.status === "Approved"
+                                            }`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${request.status === "Approved"
                                                     ? request.eventStatus === "Approved"
                                                         ? "bg-emerald-500"
                                                         : request.eventStatus === "Rejected"
@@ -179,15 +220,15 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                     : request.status === "Pending"
                                                         ? "bg-amber-500"
                                                         : "bg-red-500"
-                                            }`}></span>
-                                             {request.status === "Approved" 
-                                                ? request.eventStatus === "Approved" 
-                                                    ? "Approved" 
+                                                }`}></span>
+                                            {request.status === "Approved"
+                                                ? request.eventStatus === "Approved"
+                                                    ? "Approved"
                                                     : request.eventStatus === "Rejected"
-                                                        ? "Rejected (Final)"
+                                                        ? "Rejected"
                                                         : request.eventStatus === "Returned"
                                                             ? "Returned to HR"
-                                                            : "HR Approved" 
+                                                            : "HR Approved"
                                                 : request.status}
                                         </span>
                                     </td>
@@ -207,7 +248,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center justify-center gap-2">
-                                                        <button 
+                                                        <button
                                                             onClick={() => {
                                                                 setSelectedRequest(request);
                                                                 setIsConfirmingAttendance(true);
@@ -216,7 +257,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                         >
                                                             Confirm Attendance
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={() => {
                                                                 setSelectedRequest(request);
                                                                 setIsDecliningInvitation(true);
@@ -229,9 +270,9 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                 )
                                             ) : (request.eventStatus === "Rejected" || request.eventStatus === "Returned") ? (
                                                 <div className="flex items-center justify-center">
-                                                    <button 
+                                                    <button
                                                         onClick={() => {
-                                                            const reason = request.eventStatus === "Rejected" 
+                                                            const reason = request.eventStatus === "Rejected"
                                                                 ? (request.eventRejectionReason || "This training program has been cancelled/rejected by the administrator.")
                                                                 : (request.eventRejectionReason || "The training list was returned to HR for adjustments. Please wait for an update.");
                                                             setSelectedRejection(reason);
@@ -244,26 +285,13 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 border border-blue-100 rounded-lg dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800/30 flex items-center gap-1.5">
-                                                        <span className="material-symbols-outlined text-[14px]">admin_panel_settings</span>
-                                                        Pending Admin Approval
-                                                    </span>
-                                                </div>
+                                                <span className="text-slate-400 font-bold text-sm select-none">-</span>
                                             )
                                         ) : request.status === "Pending" ? (
-                                            <div className="flex items-center justify-center">
-                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-50 text-slate-500 border border-slate-200/50 dark:bg-slate-800/40 dark:border-slate-700/30 shadow-sm shadow-slate-100/50 dark:shadow-none">
-                                                    <span className="relative flex h-2 w-2">
-                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-300 opacity-75"></span>
-                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-400"></span>
-                                                    </span>
-                                                    In Review
-                                                </span>
-                                            </div>
+                                            <span className="text-slate-400 font-bold text-sm select-none">-</span>
                                         ) : (
                                             <div className="flex items-center justify-center">
-                                                <button 
+                                                <button
                                                     onClick={() => {
                                                         setSelectedRejection(request.rejectionReason || "No reason provided.");
                                                         setIsRejectionModalOpen(true);
@@ -277,17 +305,25 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                         )}
                                     </td>
                                     <td className="py-4 px-4 text-center">
-                                        <button
-                                            className={`text-[11px] font-bold flex items-center gap-1 justify-center mx-auto px-3 py-1.5 rounded-lg transition-colors ${request.status === 'Approved' && request.attendanceConfirmed
-                                                    ? "text-primary hover:bg-primary/5 cursor-pointer"
+                                        {request.status === 'Approved' && request.attendanceConfirmed ? (
+                                            <button
+                                                className={`text-[11px] font-bold flex items-center gap-1 justify-center mx-auto px-3 py-1.5 rounded-lg transition-colors ${request.status === 'Approved' && request.attendanceConfirmed
+                                                    ? submittedFeedbacks[request.eventId]
+                                                        ? "bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer"
+                                                        : "text-primary hover:bg-primary/5 cursor-pointer"
                                                     : "text-slate-300 cursor-not-allowed"
-                                                }`}
-                                            disabled={!(request.status === 'Approved' && request.attendanceConfirmed)}
-                                            onClick={(request.status === 'Approved' && request.attendanceConfirmed) ? () => onFeedbackClick(request) : undefined}
-                                        >
-                                            <span className="material-symbols-outlined text-sm">rate_review</span>{" "}
-                                            {(request.status === 'Approved' && request.attendanceConfirmed) ? "Give Feedback" : "Review Locked"}
-                                        </button>
+                                                    }`}
+                                                disabled={!(request.status === 'Approved' && request.attendanceConfirmed)}
+                                                onClick={(request.status === 'Approved' && request.attendanceConfirmed) ? () => onFeedbackClick(request) : undefined}
+                                            >
+                                                <span className="material-symbols-outlined text-sm">
+                                                    {submittedFeedbacks[request.eventId] ? "visibility" : "rate_review"}
+                                                </span>{" "}
+                                                {submittedFeedbacks[request.eventId] ? "View Feedback" : "Give Feedback"}
+                                            </button>
+                                        ) : (
+                                            <span className="text-slate-400 font-bold text-sm select-none">-</span>
+                                        )}
                                     </td>
                                 </tr>
                             ))
@@ -302,28 +338,50 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                             </tr>
                         )}
                     </tbody>
-            </table>
+                </table>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <p className="text-xs text-slate-400 font-medium">
-                    Showing <span className="text-slate-600 dark:text-slate-300 font-bold">{requests.length}</span> applications
-                </p>
-                <div className="flex gap-1.5">
-                    <button className="size-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-primary transition-all cursor-pointer">
-                        <span className="material-symbols-outlined text-sm">chevron_left</span>
-                    </button>
-                    <button className="size-8 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-xs shadow-sm shadow-primary/20 cursor-pointer">
-                        1
-                    </button>
-                    <button className="size-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-primary font-bold text-xs transition-all cursor-pointer">
-                        2
-                    </button>
-                    <button className="size-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-primary transition-all cursor-pointer">
-                        <span className="material-symbols-outlined text-sm">chevron_right</span>
-                    </button>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <p className="text-xs text-slate-400 font-medium">
+                        Showing <span className="text-slate-600 dark:text-slate-300 font-bold">
+                            {Math.min(indexOfFirstItem + 1, requests.length)}-{Math.min(indexOfLastItem, requests.length)}
+                        </span> of <span className="text-slate-600 dark:text-slate-300 font-bold">{requests.length}</span> applications
+                    </p>
+                    <div className="flex gap-1.5">
+                        <button 
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            className="size-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-primary transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <span className="material-symbols-outlined text-sm">chevron_left</span>
+                        </button>
+                        
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`size-8 flex items-center justify-center rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                                    currentPage === page 
+                                        ? 'bg-primary text-white shadow-sm shadow-primary/20' 
+                                        : 'border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-primary'
+                                }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+
+                        <button 
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            className="size-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-primary transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <span className="material-symbols-outlined text-sm">chevron_right</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Attendance Confirmation Modal */}
             {isConfirmingAttendance && selectedRequest && (
@@ -353,7 +411,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                             >
                                 Cancel
                             </button>
-                             <button
+                            <button
                                 onClick={() => handleConfirmAttendance(selectedRequest.id)}
                                 className="px-5 py-2.5 rounded-xl bg-[var(--color-training-primary)] text-white font-semibold hover:bg-[#853500] transition-colors shadow-sm cursor-pointer"
                             >
@@ -424,7 +482,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                             >
                                 Back
                             </button>
-                             <button
+                            <button
                                 onClick={() => handleDeclineInvitation(selectedRequest.id)}
                                 className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors shadow-sm cursor-pointer"
                             >
@@ -433,6 +491,13 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                         </div>
                     </div>
                 </div>
+            )}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
             )}
         </div>
     );
