@@ -6,11 +6,13 @@ import TrainingStatusTable from "@/components/employee/training/TrainingStatusTa
 import TrainingFeedbackModal from "@/components/employee/training/TrainingFeedbackModal";
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Toast } from "@/components/ui/Toast";
 
 // Training event coming from backend (catalog of courses)
 type TrainingEvent = {
     id: number;
     title: string;
+    trainingCode?: string;
     proposedStartDate?: string;
     date?: string;
     time?: string;
@@ -30,6 +32,7 @@ type TrainingRequestItem = {
     trainingDate: string;
     trainingTime: string;
     rejectionReason?: string;
+    eventStatus?: string;
 };
 
 export default function TrainingRequestPage() {
@@ -37,6 +40,8 @@ export default function TrainingRequestPage() {
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [selectedFeedbackCourse, setSelectedFeedbackCourse] = useState("");
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+    const [tableRefreshKey, setTableRefreshKey] = useState(0);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
     // Filters for event browsing
     const [selectedCategory, setSelectedCategory] = useState("All");
@@ -104,41 +109,30 @@ export default function TrainingRequestPage() {
 
     return (
         <div className="space-y-10 max-w-7xl mx-auto w-full">
-            {/* Hero Title */}
-            <div className="flex items-end justify-between border-b border-[var(--color-training-primary)]/10 pb-6 mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                        Professional Development
-                    </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                        Elevate your skills with our curated corporate training programs.
-                    </p>
-                </div>
-                {/* Quick stats from API data */}
-                <div className="flex gap-2">
-                    <span className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center justify-center">
-                        {events.length} Available Courses
-                    </span>
-                    <span className="px-3 py-1.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full flex items-center justify-center">
-                        {userRequests.length} Applied Events
-                    </span>
-                    {userRequests.filter(req => req.status === 'Rejected').length > 0 && (
-                        <span className="px-3 py-1.5 bg-red-100 text-red-700 text-xs font-bold rounded-full flex items-center justify-center">
-                            {userRequests.filter(req => req.status === 'Rejected').length} Rejected
-                        </span>
-                    )}
-                </div>
-            </div>
-
             {/* Section 1: Available Training Events */}
             <section>
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c]">
-                        <span className="material-symbols-outlined text-[var(--color-training-primary)]">
-                            local_library
-                        </span>
-                        Available Training Events
-                    </h2>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-stone-100 pb-4">
+                    <div className="flex items-center gap-4 flex-wrap">
+                        <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c]">
+                            <span className="material-symbols-outlined text-[var(--color-training-primary)]">
+                                local_library
+                            </span>
+                            Available Training Events
+                        </h2>
+                        <div className="flex gap-1.5 flex-wrap">
+                            <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded-full border border-green-100">
+                                {events.length} Available
+                            </span>
+                            <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full border border-blue-100">
+                                {userRequests.length} Applied
+                            </span>
+                            {userRequests.filter(req => req.status === 'Rejected' || (req.status === 'Approved' && req.eventStatus === 'Rejected')).length > 0 && (
+                                <span className="px-2.5 py-1 bg-red-50 text-red-700 text-[10px] font-bold rounded-full border border-red-100">
+                                    {userRequests.filter(req => req.status === 'Rejected' || (req.status === 'Approved' && req.eventStatus === 'Rejected')).length} Rejected
+                                </span>
+                            )}
+                        </div>
+                    </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-stone-500">Filter by Type:</span>
@@ -250,6 +244,7 @@ export default function TrainingRequestPage() {
 
                 {/* Training status table showing user's applications */} 
                 <TrainingStatusTable
+                    key={tableRefreshKey}
                     onFeedbackClick={(request) => {
                         setSelectedFeedbackCourse(request.trainingTitle);
                         setSelectedEventId(request.eventId);
@@ -264,7 +259,18 @@ export default function TrainingRequestPage() {
                 onClose={() => setIsFeedbackModalOpen(false)}
                 courseName={selectedFeedbackCourse}
                 eventId={selectedEventId}
+                onSubmitSuccess={() => {
+                    setTableRefreshKey(prev => prev + 1);
+                    setToast({ message: "Feedback submitted successfully!", type: "success" });
+                }}
             />
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 }

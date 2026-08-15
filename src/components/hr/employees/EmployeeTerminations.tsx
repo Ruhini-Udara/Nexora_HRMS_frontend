@@ -26,54 +26,8 @@ export interface TerminationRequest {
     hrRemark?: string;
 }
 
-// ── Mock Data ───────────────────────────────────────────────────────
-const MOCK_REQUESTS: TerminationRequest[] = [
-    {
-        id: 'TRM-2024-001',
-        employeeName: 'Amal Perera',
-        epfNumber: '45829',
-        branch: 'Colombo Branch',
-        type: 'Involuntary (Dismissal)',
-        reason: 'Excessive absenteeism',
-        initiationDate: '2024-11-01',
-        effectiveDate: '2024-11-15',
-        specialRemark: '',
-        status: 'SUBMITTED',
-        documents: {
-            request_for_termination: 'termination_amal.pdf',
-            loan_clearance_letter: 'clearance_amal.pdf'
-        }
-    },
-    {
-        id: 'TRM-2024-002',
-        employeeName: 'Sunil Silva',
-        epfNumber: '11223',
-        branch: 'Kandy Branch',
-        type: 'Voluntary (Resignation)',
-        reason: 'Career Change',
-        initiationDate: '2024-10-25',
-        effectiveDate: '2024-11-25',
-        specialRemark: 'Cleared all dues.',
-        status: 'VERIFIED_BY_HR',
-        documents: {
-            request_for_termination: 'resignation_sunil.pdf',
-            loan_clearance_letter: 'clearance_sunil.pdf'
-        }
-    },
-    {
-        id: 'TRM-2024-003',
-        employeeName: 'Kamal Bandara',
-        epfNumber: '22334',
-        branch: 'Kandy Branch',
-        type: 'Retirement',
-        reason: 'Reaching retirement age.',
-        initiationDate: '2024-11-10',
-        effectiveDate: '2025-01-10',
-        specialRemark: 'Drafting request.',
-        status: 'NEW',
-        documents: {}
-    }
-];
+// ── Mock Data (Removed per user request) ───────────────────────────
+const MOCK_REQUESTS: TerminationRequest[] = [];
 
 // ── Status badge config ─────────────────────────────────────────────
 const statusConfig: Record<TerminationStatus, { label: string; classes: string }> = {
@@ -354,7 +308,10 @@ export default function EmployeeTerminations() {
                             </thead>
                             <tbody className="text-sm">
                                 {paginatedRequests.map((req) => {
-                                    const st = statusConfig[req.status];
+                                    const st = statusConfig[req.status] || { 
+                                        label: req.status, 
+                                        classes: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400" 
+                                    };
                                     return (
                                         <tr
                                             key={req.id}

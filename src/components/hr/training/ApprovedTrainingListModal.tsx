@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '@/lib/axiosInstance';
 import { Toast } from '@/components/ui/Toast';
 
@@ -13,6 +13,14 @@ interface RequestDetails {
     status: string;
     avatar?: string;
     initials?: string;
+}
+
+interface EmployeeSuggestion {
+    id: number;
+    fullName: string;
+    email: string;
+    department: string;
+    epfNumber?: string;
 }
 
 // Props for the Approved Training List Modal (shown to HR)
@@ -35,6 +43,90 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
 
     // Filter only approved requests
     const approvedRequests = requests.filter(req => req.status === 'Approved');
+
+    // States for adding employee (autocomplete search dropdown)
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [allEmployees, setAllEmployees] = useState<EmployeeSuggestion[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
+
+    // Click outside to close search dropdown
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setIsSearchOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    // Fetch all employees when search dropdown is toggled open
+    useEffect(() => {
+        if (isSearchOpen && allEmployees.length === 0) {
+            setIsSearching(true);
+            api.get('/api/employees')
+                .then(res => {
+                    setAllEmployees(res.data);
+                })
+                .catch(err => {
+                    console.error("Failed to fetch employees:", err);
+                    setToast({ message: "Failed to load employees list.", type: 'error' });
+                })
+                .finally(() => {
+                    setIsSearching(false);
+                });
+        }
+    }, [isSearchOpen, allEmployees.length]);
+
+    // Handle adding selected employee to the roster
+    const handleAddEmployee = async (employeeId: number) => {
+        if (!eventId) return;
+        setIsAdding(true);
+        try {
+            await api.post('/api/training/requests', {
+                eventId,
+                employeeId,
+                status: 'Approved',
+                justification: 'Manually added by HR'
+            });
+            setToast({ message: "Employee added successfully!", type: 'success' });
+            setIsSearchOpen(false);
+            setSearchQuery("");
+            if (onStatusUpdate) {
+                onStatusUpdate();
+            }
+        } catch (err) {
+            console.error("Failed to add employee:", err);
+            setToast({ message: "Failed to add employee.", type: 'error' });
+        } finally {
+            setIsAdding(false);
+        }
+    };
+
+    // Filter employees based on search query, excluding those already on this training roster
+    const filteredEmployees = allEmployees.filter(emp => {
+        const isAlreadyRequested = requests.some(req => 
+            (req.workEmail && req.workEmail.toLowerCase() === emp.email.toLowerCase()) || 
+            (req.personalEmail && req.personalEmail.toLowerCase() === emp.email.toLowerCase()) ||
+            req.employeeName.toLowerCase() === emp.fullName.toLowerCase()
+        );
+        if (isAlreadyRequested) return false;
+
+        if (!searchQuery.trim()) return true;
+
+        const query = searchQuery.toLowerCase();
+        return (
+            (emp.fullName && emp.fullName.toLowerCase().includes(query)) ||
+            (emp.epfNumber && emp.epfNumber.toLowerCase().includes(query)) ||
+            (emp.email && emp.email.toLowerCase().includes(query)) ||
+            (emp.department && emp.department.toLowerCase().includes(query))
+        );
+    });
 
     // CSV download functionality
     const handleDownloadCSV = () => {
@@ -122,14 +214,66 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 relative" ref={searchRef}>
                         <button 
-                            onClick={() => setToast({ message: "Add Employee feature to be implemented", type: 'info' })}
+                            onClick={() => setIsSearchOpen(!isSearchOpen)}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-semibold transition-colors no-print"
                         >
                             <span className="material-symbols-outlined text-[18px]">person_add</span>
                             Add Employee
                         </button>
+
+                        {isSearchOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-[70] p-4 space-y-3 no-print">
+                                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Search Employee</div>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Type name, EPF, or email..."
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-800 dark:text-slate-200"
+                                        autoFocus
+                                    />
+                                    {isSearching ? (
+                                        <span className="animate-spin absolute right-3 top-1/2 -translate-y-1/2 border-2 border-primary border-t-transparent rounded-full w-4 h-4"></span>
+                                    ) : searchQuery && (
+                                        <button 
+                                            onClick={() => setSearchQuery("")}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">close</span>
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                                    {filteredEmployees.length > 0 ? (
+                                        filteredEmployees.map((emp: EmployeeSuggestion) => (
+                                            <button
+                                                key={emp.id}
+                                                onClick={() => handleAddEmployee(emp.id)}
+                                                disabled={isAdding}
+                                                className="w-full text-left p-2 hover:bg-slate-50 dark:hover:bg-slate-900/60 rounded-lg flex items-center gap-3 transition-colors border border-transparent hover:border-slate-100 dark:hover:border-slate-800/40 disabled:opacity-50"
+                                            >
+                                                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0">
+                                                    {emp.fullName ? emp.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'EE'}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">{emp.fullName}</p>
+                                                    <p className="text-[10px] text-slate-500 truncate leading-none mt-1">{emp.department} • {emp.epfNumber || 'No EPF'}</p>
+                                                </div>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-6 text-xs text-slate-400 font-medium">
+                                            {searchQuery ? "No matching employees found" : "Type to search employees..."}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors no-print">
                             <span className="material-symbols-outlined">close</span>
                         </button>
@@ -219,7 +363,12 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                         ) : (
                             <button
                                 onClick={() => setIsConfirming(true)}
-                                className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-sm"
+                                disabled={eventStatus === 'Rejected'}
+                                className={`px-6 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-sm ${
+                                    eventStatus === 'Rejected'
+                                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500'
+                                        : 'bg-primary hover:bg-primary/90 text-white'
+                                }`}
                             >
                                 <span className="material-symbols-outlined text-[18px]">send</span>
                                 Send for Admin Approval

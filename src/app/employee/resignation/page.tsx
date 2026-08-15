@@ -1,28 +1,48 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ResignationRequestPage from "@/components/ResignationRequestPage";
 import type { ResignationRequest } from "@/components/ResignationRequestPage";
+import { getResignationRequestsByEmployee } from "@/lib/api/resignationRequests";
+import { useAuthStore } from "@/store/useAuthStore";
 
 // ── Status badge config ─────────────────────────────────────────────
-type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'NEW';
 
-const statusStyles: Record<RequestStatus, { label: string; classes: string }> = {
-    DRAFT: { label: 'Draft', classes: 'bg-slate-100 text-slate-600' },
-    SUBMITTED: { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' },
-    APPROVED: { label: 'Approved', classes: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
-    REJECTED: { label: 'Rejected', classes: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
+const statusStyles: Record<string, { label: string; classes: string }> = {
+    'NEW': { label: 'Draft', classes: 'bg-slate-100 text-slate-600' },
+    'SUBMITTED': { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' },
+    'VERIFIED_BY_HR': { label: 'Verified by HR', classes: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
+    'PENDING_ADMIN': { label: 'Pending Admin', classes: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
+    'REJECTED': { label: 'Rejected', classes: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
+    'Board Approved': { label: 'Approved', classes: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
+    'Board Rejected': { label: 'Rejected', classes: 'bg-red-700/10 text-red-700 dark:text-red-400' },
 };
 
 export default function Page() {
-    // ── Mock request state (API-ready) ──────────────────────────────
+    const { user } = useAuthStore();
     const [requests, setRequests] = useState<ResignationRequest[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedRequest, setSelectedRequest] = useState<ResignationRequest | null>(null);
+    const [isViewOnly, setIsViewOnly] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Only show SUBMITTED/APPROVED/REJECTED in the status table (not DRAFT)
+    useEffect(() => {
+        if (!user?.id) return;
+        const fetchRequests = async () => {
+            try {
+                const data = await getResignationRequestsByEmployee(user.id);
+                setRequests(data);
+            } catch (error) {
+                console.error("Failed to fetch resignations:", error);
+            }
+        };
+        fetchRequests();
+    }, [user?.id]);
+
+    // Show all requests in the status table (including NEW/Draft)
     const visibleRequests = requests.filter(
-        (r) => r.status !== 'DRAFT' &&
-            (searchQuery === '' || r.id.toLowerCase().includes(searchQuery.toLowerCase()))
+        (r) => (searchQuery === '' || r.id.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     const formatDate = (iso: string) => {
@@ -43,10 +63,50 @@ export default function Page() {
                 </div>
             </div>
 
+            {/* Permanent Create Form at Top */}
             <ResignationRequestPage
                 requests={requests}
                 onRequestChange={setRequests}
+                selectedRequest={null}
+                isViewOnly={false}
+                onCancelEdit={() => {}}
             />
+
+            {/* View/Edit Modal */}
+            {isModalOpen && selectedRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">
+                                {isViewOnly ? 'View Resignation Request' : 'Edit Resignation Draft'}
+                            </h3>
+                            <button 
+                                onClick={() => {
+                                    setIsModalOpen(false);
+                                    setSelectedRequest(null);
+                                }}
+                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors cursor-pointer"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto p-4 sm:p-8">
+                            <ResignationRequestPage
+                                requests={requests}
+                                onRequestChange={setRequests}
+                                selectedRequest={selectedRequest}
+                                isViewOnly={isViewOnly}
+                                isModal={true}
+                                onCancelEdit={() => {
+                                    setIsModalOpen(false);
+                                    setSelectedRequest(null);
+                                    setIsViewOnly(false);
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                 <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -80,17 +140,38 @@ export default function Page() {
                                     return (
                                         <tr key={req.id}>
                                             <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300">{req.id}</td>
-                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{formatDate(req.submittedAt || req.createdAt)}</td>
-                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{formatDate(req.effectiveDate)}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{formatDate(req.createdAt || '')}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{formatDate(req.lastWorkingDate)}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`text-[10px] font-bold px-2.5 py-1 rounded uppercase ${st.classes}`}>
                                                     {st.label}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <button className="text-slate-400 hover:text-primary transition-colors">
+                                            <td className="px-6 py-4 flex items-center gap-3">
+                                                <button 
+                                                    className="text-slate-400 hover:text-[#8B3A00] transition-colors cursor-pointer"
+                                                    title="View Request"
+                                                    onClick={() => {
+                                                        setSelectedRequest(req);
+                                                        setIsViewOnly(true);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                >
                                                     <span className="material-symbols-outlined text-[20px]">visibility</span>
                                                 </button>
+                                                {req.status === 'NEW' && (
+                                                    <button 
+                                                        className="text-slate-400 hover:text-[#8B3A00] transition-colors cursor-pointer"
+                                                        title="Edit Draft"
+                                                        onClick={() => {
+                                                            setSelectedRequest(req);
+                                                            setIsViewOnly(false);
+                                                            setIsModalOpen(true);
+                                                        }}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[20px]">edit_note</span>
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );

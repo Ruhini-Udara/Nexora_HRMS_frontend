@@ -54,18 +54,18 @@ export default function OverseasLeaveRequestPage() {
     const [fileError, setFileError] = useState("");
 
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-    
-    // Preview State
+
+
     const [previewFile, setPreviewFile] = useState<File | null>(null);
 
     useEffect(() => {
-        // Run after mount to avoid setting state synchronously during render
+
         const timer = setTimeout(() => {
             setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         }, 0);
         const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         window.addEventListener('resize', handleResize);
-        
+
         // Rationale: We check localStorage for a draft on mount. This ensures the user 
         // doesn't lose their progress if the browser crashes or is refreshed.
         const draft = localStorage.getItem("overseasLeaveDraft");
@@ -100,7 +100,7 @@ export default function OverseasLeaveRequestPage() {
                 setValue("employeeName", employeeData.fullName || user?.name || "");
                 setValue("email", employeeData.email || user?.email || "");
                 setValue("designation", employeeData.designation?.designationName || user?.designation || "");
-                setValue("branch", employeeData.department || "");
+                setValue("branch", employeeData.branch || user?.branch || "");
             }
         }
     }, [employeeData, setValue, status, user]);
@@ -115,7 +115,7 @@ export default function OverseasLeaveRequestPage() {
                 return;
             }
             if (!file.type.match(/(pdf|jpeg|jpg|png)$/i)) {
-                setFileError(`File must be a PDF, JPG, or PNG.`);
+                setFileError(`File must be a PDF, JPG, JPEG or PNG.`);
                 return;
             }
             setFiles((prev) => ({ ...prev, [fieldName]: file }));
@@ -156,8 +156,9 @@ export default function OverseasLeaveRequestPage() {
             }
 
             const payload = {
-                employee: { id: user.id }, // Dynamic logged-in user ID
-                leaveType: { id: OVERSEAS_LEAVE_TYPE_ID },
+                employeeId: user.id,
+                employeeName: data.employeeName,
+                leaveTypeId: OVERSEAS_LEAVE_TYPE_ID,
                 fromDate: data.startDate,
                 endDate: data.endDate,
                 totalDays: Number(noOfDays),
@@ -174,13 +175,13 @@ export default function OverseasLeaveRequestPage() {
             const savedLeave = response.data;
             const leaveId: number = savedLeave.id;
 
-            // Save each uploaded document as a row in the documents table
+            // Save each uploaded document as a row in the documents table 
             const docEntries: { path: string | null; type: string; description: string }[] = [
-                { path: flightTicketsUrl, type: "FLIGHT_TICKETS",       description: "Flight Tickets / Itinerary" },
-                { path: passportCopyUrl, type: "PASSPORT_COPY",         description: "Passport Copy" },
-                { path: visaCopyUrl,     type: "VISA_COPY",             description: "Visa Copy" },
+                { path: flightTicketsUrl, type: "FLIGHT_TICKETS", description: "Flight Tickets / Itinerary" },
+                { path: passportCopyUrl, type: "PASSPORT_COPY", description: "Passport Copy" },
+                { path: visaCopyUrl, type: "VISA_COPY", description: "Visa Copy" },
                 { path: confirmationLetterUrl, type: "CONFIRMATION_LETTER", description: "Confirmation Letter" },
-                { path: leaveLetterUrl,  type: "LEAVE_LETTER",          description: "Leave Letter" },
+                { path: leaveLetterUrl, type: "LEAVE_LETTER", description: "Leave Letter" },
             ];
 
             await Promise.all(
@@ -203,7 +204,6 @@ export default function OverseasLeaveRequestPage() {
             setStatus(STATUS_SUBMITTED);
             localStorage.removeItem("overseasLeaveDraft");
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            // Invalidate the 'leaves' query to refresh the dashboard
             queryClient.invalidateQueries({ queryKey: ['leaves', user?.id] });
         },
         onError: (error: Error) => {
@@ -254,7 +254,7 @@ export default function OverseasLeaveRequestPage() {
                 )}
 
                 {status === STATUS_SUBMITTED && (
-                    <SuccessBanner 
+                    <SuccessBanner
                         title="Overseas Leave Submitted!"
                         message="Your request has been successfully received. You can track the approval status on your dashboard."
                         onReset={() => {
@@ -306,7 +306,7 @@ export default function OverseasLeaveRequestPage() {
                                                 {isDisabled ? (
                                                     <span className="text-xs font-semibold text-slate-400">Locked</span>
                                                 ) : (
-                                                    <FileUploadDropzone 
+                                                    <FileUploadDropzone
                                                         onFileAccepted={(f) => handleFileChange(f, "flightTickets")}
                                                         currentFile={files.flightTickets}
                                                         label="Itinerary (PDF)"
@@ -337,7 +337,7 @@ export default function OverseasLeaveRequestPage() {
                                                 {isDisabled ? (
                                                     <span className="text-xs font-semibold text-slate-400">Locked</span>
                                                 ) : (
-                                                    <FileUploadDropzone 
+                                                    <FileUploadDropzone
                                                         onFileAccepted={(f) => handleFileChange(f, "passportCopy")}
                                                         currentFile={files.passportCopy}
                                                         label="Passport Copy"
@@ -368,7 +368,7 @@ export default function OverseasLeaveRequestPage() {
                                                 {isDisabled ? (
                                                     <span className="text-xs font-semibold text-slate-400">Locked</span>
                                                 ) : (
-                                                    <FileUploadDropzone 
+                                                    <FileUploadDropzone
                                                         onFileAccepted={(f) => handleFileChange(f, "visaCopy")}
                                                         currentFile={files.visaCopy}
                                                         label="Visa Copy"
@@ -399,7 +399,7 @@ export default function OverseasLeaveRequestPage() {
                                                 {isDisabled ? (
                                                     <span className="text-xs font-semibold text-slate-400">Locked</span>
                                                 ) : (
-                                                    <FileUploadDropzone 
+                                                    <FileUploadDropzone
                                                         onFileAccepted={(f) => handleFileChange(f, "confirmationLetter")}
                                                         currentFile={files.confirmationLetter}
                                                         label="Confirmation Letter"
@@ -428,7 +428,7 @@ export default function OverseasLeaveRequestPage() {
                                                 {isDisabled ? (
                                                     <span className="text-xs font-semibold text-slate-400">Locked</span>
                                                 ) : (
-                                                    <FileUploadDropzone 
+                                                    <FileUploadDropzone
                                                         onFileAccepted={(f) => handleFileChange(f, "leaveLetter")}
                                                         currentFile={files.leaveLetter}
                                                         label="Leave Letter"
@@ -534,4 +534,4 @@ export default function OverseasLeaveRequestPage() {
             <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
     );
-}
+}

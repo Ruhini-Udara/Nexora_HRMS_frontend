@@ -4,6 +4,7 @@ import React from "react";
 
 interface SessionSummaryCardProps {
     title: string;
+    trainingCode?: string;
     type: string;
     date: string;
     location: string;
@@ -13,6 +14,7 @@ interface SessionSummaryCardProps {
 
 export default function SessionSummaryCard({
     title,
+    trainingCode,
     type,
     date,
     location,
@@ -23,9 +25,16 @@ export default function SessionSummaryCard({
         <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between">
             <div className="flex justify-between items-start">
                 <div>
-                    <span className="px-2 py-0.5 rounded bg-primary text-white text-[9px] font-bold uppercase tracking-widest mb-2 inline-block">
-                        {type}
-                    </span>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                        <span className="px-2 py-0.5 rounded bg-primary text-white text-[9px] font-bold uppercase tracking-widest inline-block">
+                            {type}
+                        </span>
+                        {trainingCode && (
+                            <span className="px-2 py-0.5 rounded bg-stone-100 text-stone-700 text-[9px] font-bold uppercase tracking-widest inline-block">
+                                {trainingCode}
+                            </span>
+                        )}
+                    </div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 uppercase tracking-tight leading-tight">
                         {title}
                     </h3>

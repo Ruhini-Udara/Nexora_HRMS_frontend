@@ -9,6 +9,7 @@ export default function CreateTrainingPlanForm() {
     const [isConfirmingPublish, setIsConfirmingPublish] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [title, setTitle] = useState('');
+    const [trainingCode, setTrainingCode] = useState('');
     const [category, setCategory] = useState('');
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
@@ -19,6 +20,8 @@ export default function CreateTrainingPlanForm() {
     const [budget, setBudget] = useState('');
     const [instructor, setInstructor] = useState('');
     const [isTitleConflict, setIsTitleConflict] = useState(false);
+    const [isCodeConflict, setIsCodeConflict] = useState(false);
+    const [status, setStatus] = useState('Published');
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -55,6 +58,39 @@ export default function CreateTrainingPlanForm() {
         };
     }, [title, editId]);
 
+    // Real-time training code duplicate check
+    useEffect(() => {
+        let isMounted = true;
+        if (trainingCode.trim()) {
+            const delayDebounceFn = setTimeout(() => {
+                const url = editId 
+                    ? `/api/training/events/exists-code?code=${encodeURIComponent(trainingCode)}&excludeId=${editId}`
+                    : `/api/training/events/exists-code?code=${encodeURIComponent(trainingCode)}`;
+                
+                api.get(url)
+                    .then(res => {
+                        if (isMounted) setIsCodeConflict(res.data);
+                    })
+                    .catch(err => {
+                        console.error("Training code existence check failed:", err);
+                        if (isMounted) setIsCodeConflict(false);
+                    });
+            }, 500); // Debounce for 500ms
+
+            return () => {
+                isMounted = false;
+                clearTimeout(delayDebounceFn);
+            };
+        } else {
+            Promise.resolve().then(() => {
+                if (isMounted) setIsCodeConflict(false);
+            });
+        }
+        return () => {
+            isMounted = false;
+        };
+    }, [trainingCode, editId]);
+
     // form validation logic
     const participantsNum = parseInt(participants);
     const budgetNum = parseFloat(budget);
@@ -64,13 +100,15 @@ export default function CreateTrainingPlanForm() {
 
     const isFormValid = 
         title.trim() !== '' && 
+        trainingCode.trim() !== '' && 
         category !== '' && 
         isParticipantsValid && 
         isBudgetValid &&
         date !== '' && 
         applyBefore !== '' &&
         isDateLogicValid &&
-        !isTitleConflict;
+        !isTitleConflict &&
+        !isCodeConflict;
 
     // Fetch existing data if editing
     useEffect(() => {
@@ -81,6 +119,7 @@ export default function CreateTrainingPlanForm() {
                     const eventToEdit = response.data;
                     if (eventToEdit && isMounted) {
                         setTitle(eventToEdit.title || '');
+                        setTrainingCode(eventToEdit.trainingCode || '');
                         setCategory(eventToEdit.category || '');
                         setDate(eventToEdit.proposedStartDate || '');
                         setTime(eventToEdit.time || '');
@@ -90,6 +129,7 @@ export default function CreateTrainingPlanForm() {
                         setLocation(eventToEdit.location || '');
                         setBudget(eventToEdit.budget?.toString() || '');
                         setInstructor(eventToEdit.instructor || '');
+                        setStatus(eventToEdit.status || 'Published');
                     }
                 })
                 .catch(error => {
@@ -136,6 +176,22 @@ export default function CreateTrainingPlanForm() {
                                 <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1">
                                     <span className="material-symbols-outlined text-[14px]">warning</span>
                                     This training program already exists.
+                                </p>
+                            )}
+                        </div>
+                        <div className="col-span-2">
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Training Code <span className="text-red-500">*</span></label>
+                            <input
+                                className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${isCodeConflict ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+                                placeholder="e.g. TRN-2026-001"
+                                type="text"
+                                value={trainingCode}
+                                onChange={(e) => setTrainingCode(e.target.value)}
+                            />
+                            {isCodeConflict && (
+                                <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px]">warning</span>
+                                    This training code is already in use by another program.
                                 </p>
                             )}
                         </div>
@@ -323,6 +379,7 @@ export default function CreateTrainingPlanForm() {
                                     // Build payload
                                     const payload = {
                                         title: title,
+                                        trainingCode: trainingCode,
                                         category: category,
                                         expectedParticipants: participantsNum,
                                         description: description || "No description provided.",
@@ -332,7 +389,7 @@ export default function CreateTrainingPlanForm() {
                                         location: location || "TBA",
                                         budget: budgetNum || 0.0,
                                         instructor: instructor || "TBA",
-                                        status: "Published"
+                                        status: status
                                     };
 
                                     // update training event

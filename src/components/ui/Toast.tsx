@@ -9,9 +9,10 @@ interface ToastProps {
     type: ToastType;
     onClose: () => void;
     duration?: number;
+    position?: 'left' | 'right';
 }
 
-export function Toast({ message, type, onClose, duration = 3000 }: ToastProps) {
+export function Toast({ message, type, onClose, duration = 3000, position = 'right' }: ToastProps) {
     const [isVisible, setIsVisible] = useState(true);
 
     useEffect(() => {
@@ -23,7 +24,8 @@ export function Toast({ message, type, onClose, duration = 3000 }: ToastProps) {
         return () => clearTimeout(timer);
     }, [duration, onClose]);
 
-    const baseStyles = "fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-right-10 duration-300 transform transition-all";
+    const posStyles = position === 'left' ? 'left-8 slide-in-from-left-10' : 'right-8 slide-in-from-right-10';
+    const baseStyles = `fixed bottom-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in ${posStyles} duration-300 transform transition-all`;
     
     const typeStyles = {
         success: "bg-emerald-500 text-white",

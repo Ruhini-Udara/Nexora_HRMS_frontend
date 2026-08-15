@@ -62,7 +62,7 @@ const HrTopbar = () => {
                             {user?.name || "HR User"}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            HR Account
+                            {user?.role === 'ROLE_ADMIN' ? 'Admin Account' : 'HR Account'}
                         </p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs ring-2 ring-primary ring-offset-2 dark:ring-offset-gray-900">

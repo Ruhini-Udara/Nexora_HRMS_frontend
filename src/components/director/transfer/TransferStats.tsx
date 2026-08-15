@@ -1,6 +1,6 @@
 import { CheckCircle, Clock, XCircle, FileText, AlertCircle } from 'lucide-react';
 
-export default function TransferStats() {
+export default function TransferStats({ stats }: { stats: { total: number, pending: number, approved: number, rejected: number } }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
@@ -10,7 +10,7 @@ export default function TransferStats() {
                         <FileText className="w-5 h-5" />
                     </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">24</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
                 <div className="flex items-center gap-1 mt-1 text-gray-500">
                     <span className="text-xs font-bold">All time</span>
                 </div>
@@ -23,7 +23,7 @@ export default function TransferStats() {
                         <Clock className="w-5 h-5" />
                     </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">8</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
                 <div className="flex items-center gap-1 mt-1 text-secondary">
                     <AlertCircle className="w-3.5 h-3.5" />
                     <span className="text-xs font-bold">Awaiting review</span>
@@ -37,7 +37,7 @@ export default function TransferStats() {
                         <CheckCircle className="w-5 h-5" />
                     </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">12</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.approved}</p>
                 <div className="flex items-center gap-1 mt-1 text-emerald-600">
                     <CheckCircle className="w-3.5 h-3.5" />
                     <span className="text-xs font-bold">This month</span>
@@ -51,7 +51,7 @@ export default function TransferStats() {
                         <XCircle className="w-5 h-5" />
                     </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">4</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.rejected}</p>
                 <div className="flex items-center gap-1 mt-1 text-red-600">
                     <span className="text-xs font-bold">Low matching</span>
                 </div>

@@ -1,13 +1,15 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { getAllResignationRequests, createResignationRequest, updateResignationStatus, ResignationRequest as ApiResignationRequest } from '@/lib/api/resignationRequests';
+import { useAuthStore } from '@/store/useAuthStore';
 
-// ── Types ───────────────────────────────────────────────────────────
-type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+// We use ApiResignationRequest from @/lib/api/resignationRequests
+type RequestStatus = ApiResignationRequest['status'];
 
 interface DocumentSlot {
-    key: 'resignation_letter' | 'clearance_letter' | 'handover_checklist';
+    key: 'resignationLetter' | 'clearanceLetter' | 'handoverChecklist';
     label: string;
     icon: string;
     mandatory: boolean;
@@ -15,29 +17,14 @@ interface DocumentSlot {
     existingName?: string; // For draft editing — previously uploaded filename
 }
 
-export interface ResignationRequest {
-    id: string;
-    status: RequestStatus;
-    reason: string;
-    initiationDate: string;
-    effectiveDate: string;
-    obligationDetails: string;
-    specialRemark: string;
-    documents: {
-        resignation_letter?: string;
-        clearance_letter?: string;
-        handover_checklist?: string;
-    };
-    submittedAt?: string;
-    createdAt: string;
-}
+export type ResignationRequest = ApiResignationRequest;
 
 // ── Zod Validation Schema ───────────────────────────────────────────
 const resignationSchema = z.object({
     resignationReason: z.string().min(1, 'Reason for resignation is required'),
-    initiationDate: z.string().min(1, 'Resignation initiation date is required'),
-    effectiveDate: z.string().min(1, 'Resignation effective date is required'),
-    obligationDetails: z.string().min(1, 'Direct and indirect obligation details are required'),
+    resignationDate: z.string().min(1, 'Resignation date is required'),
+    lastWorkingDate: z.string().min(1, 'Last working date is required'),
+    obligationDetails: z.string().min(1, 'Obligation details are required'),
     specialRemark: z.string().optional(),
 });
 
@@ -198,13 +185,16 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
 
 // ── Active Request Banner ───────────────────────────────────────────
 const ActiveRequestBanner: React.FC<{ request: ResignationRequest }> = ({ request }) => {
-    const statusConfig: Record<RequestStatus, { label: string; color: string; bg: string }> = {
-        DRAFT: { label: 'Draft', color: 'text-slate-600', bg: 'bg-slate-100' },
-        SUBMITTED: { label: 'Pending Approval', color: 'text-yellow-600', bg: 'bg-yellow-50' },
-        APPROVED: { label: 'Approved', color: 'text-green-600', bg: 'bg-green-50' },
-        REJECTED: { label: 'Rejected', color: 'text-red-600', bg: 'bg-red-50' },
+    const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+        'NEW': { label: 'Draft', color: 'text-slate-600', bg: 'bg-slate-100' },
+        'SUBMITTED': { label: 'Submitted', color: 'text-yellow-600', bg: 'bg-yellow-50' },
+        'VERIFIED_BY_HR': { label: 'Verified by HR', color: 'text-blue-600', bg: 'bg-blue-50' },
+        'PENDING_ADMIN': { label: 'Pending Admin', color: 'text-purple-600', bg: 'bg-purple-50' },
+        'REJECTED': { label: 'Rejected', color: 'text-red-600', bg: 'bg-red-50' },
+        'Board Approved': { label: 'Board Approved', color: 'text-green-600', bg: 'bg-green-50' },
+        'Board Rejected': { label: 'Board Rejected', color: 'text-red-700', bg: 'bg-red-100' },
     };
-    const cfg = statusConfig[request.status];
+    const cfg = statusConfig[request.status] || { label: request.status, color: 'text-slate-600', bg: 'bg-slate-50' };
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -218,10 +208,10 @@ const ActiveRequestBanner: React.FC<{ request: ResignationRequest }> = ({ reques
                         <span className="material-symbols-outlined text-amber-600 text-2xl">pending_actions</span>
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-bold text-slate-800 text-sm">You already have an active resignation request</h3>
+                        <h3 className="font-bold text-slate-800 text-sm">Active Resignation Request in Progress</h3>
                         <p className="text-xs text-slate-500 mt-1">
                             Request <span className="font-bold">{request.id}</span> is currently <span className={`font-bold ${cfg.color}`}>{cfg.label}</span>.
-                            You cannot create a new request until the existing one is resolved.
+                            You can track its progress here while continuing to use the form below for any new submissions.
                         </p>
                     </div>
                     <span className={`text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider ${cfg.color} ${cfg.bg}`}>
@@ -231,12 +221,12 @@ const ActiveRequestBanner: React.FC<{ request: ResignationRequest }> = ({ reques
 
                 <div className="mt-6 grid grid-cols-2 gap-6">
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Initiation Date</p>
-                        <p className="text-sm text-slate-700">{request.initiationDate}</p>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Resignation Date</p>
+                        <p className="text-sm text-slate-700">{request.resignationDate}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Effective Date</p>
-                        <p className="text-sm text-slate-700">{request.effectiveDate}</p>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Last Working Date</p>
+                        <p className="text-sm text-slate-700">{request.lastWorkingDate}</p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Reason</p>
@@ -260,17 +250,17 @@ const ActiveRequestBanner: React.FC<{ request: ResignationRequest }> = ({ reques
                 <div className="mt-6 space-y-2">
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Documents Submitted</p>
                     <div className="flex flex-wrap gap-2">
-                        {request.documents.resignation_letter && (
+                        {request.documents.resignationLetter && (
                             <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
                                 <span className="material-symbols-outlined text-xs">check_circle</span> Resignation Letter
                             </span>
                         )}
-                        {request.documents.clearance_letter && (
+                        {request.documents.clearanceLetter && (
                             <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
                                 <span className="material-symbols-outlined text-xs">check_circle</span> Obligations Clearance
                             </span>
                         )}
-                        {request.documents.handover_checklist && (
+                        {request.documents.handoverChecklist && (
                             <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
                                 <span className="material-symbols-outlined text-xs">check_circle</span> Handover Checklist
                             </span>
@@ -286,23 +276,47 @@ const ActiveRequestBanner: React.FC<{ request: ResignationRequest }> = ({ reques
 interface ResignationRequestPageProps {
     requests: ResignationRequest[];
     onRequestChange: (requests: ResignationRequest[]) => void;
+    selectedRequest: ResignationRequest | null;
+    onCancelEdit: () => void;
+    isViewOnly?: boolean;
+    isModal?: boolean;
 }
 
-const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ requests, onRequestChange }) => {
+const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ 
+    requests, 
+    onRequestChange,
+    selectedRequest,
+    onCancelEdit,
+    isViewOnly = false,
+    isModal = false
+}) => {
+    const { user } = useAuthStore();
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     // ── Document slots state ────────────────────────────────────────
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
-        { key: 'resignation_letter', label: 'Resignation Letter', icon: 'description', mandatory: true, file: null },
-        { key: 'clearance_letter', label: 'Obligations Clearance Letter', icon: 'fact_check', mandatory: true, file: null },
-        { key: 'handover_checklist', label: 'Employee Handover Checklist', icon: 'checklist', mandatory: false, file: null },
+        { key: 'resignationLetter', label: 'Resignation Letter', icon: 'description', mandatory: true, file: null },
+        { key: 'clearanceLetter', label: 'Obligations Clearance Letter', icon: 'fact_check', mandatory: true, file: null },
+        { key: 'handoverChecklist', label: 'Employee Handover Checklist', icon: 'checklist', mandatory: false, file: null },
     ]);
 
-    // ── Determine active request & form mode ────────────────────────
-    const activeRequest = requests.find((r) => r.status !== 'REJECTED');
-    const draftRequest = requests.find((r) => r.status === 'DRAFT');
-    const isEditing = draftRequest !== undefined;
-    const submittedRequest = activeRequest && activeRequest.status !== 'DRAFT' ? activeRequest : null;
+    // ── Determine form mode ────────────────────────────────────────
+    const isEditing = !!selectedRequest;
+    
+    // Requests that are in progress (submitted but not finalized)
+    const activeRequests = requests.filter((r) => 
+        r.status !== 'NEW' && 
+        r.status !== 'REJECTED' && 
+        r.status !== 'Board Rejected' &&
+        r.status !== 'Board Approved'
+    );
+    
+    // Finalized requests to show in a different way or history
+    const finalizedRequests = requests.filter((r) => 
+        r.status === 'REJECTED' || 
+        r.status === 'Board Rejected' ||
+        r.status === 'Board Approved'
+    );
 
     // ── Today's date helper ─────────────────────────────────────────
     const todayISO = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -312,29 +326,47 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
         register,
         handleSubmit,
         getValues,
+        reset,
         formState: { errors },
     } = useForm<ResignationFormData>({
         resolver: zodResolver(resignationSchema),
         defaultValues: {
-            resignationReason: draftRequest?.reason || '',
-            initiationDate: draftRequest?.initiationDate || todayISO,
-            effectiveDate: draftRequest?.effectiveDate || '',
-            obligationDetails: draftRequest?.obligationDetails || '',
-            specialRemark: draftRequest?.specialRemark || '',
+            resignationReason: '',
+            resignationDate: todayISO,
+            lastWorkingDate: '',
+            obligationDetails: '',
+            specialRemark: '',
         },
     });
 
-    // Initialize doc slots from draft if editing
+    // Reset form when selectedRequest changes
     React.useEffect(() => {
-        if (draftRequest) {
-            setDocSlots((prev) =>
-                prev.map((slot) => ({
-                    ...slot,
-                    existingName: draftRequest.documents[slot.key] || undefined,
-                }))
-            );
+        if (selectedRequest) {
+            reset({
+                resignationReason: selectedRequest.reason || '',
+                resignationDate: selectedRequest.resignationDate || todayISO,
+                lastWorkingDate: selectedRequest.lastWorkingDate || '',
+                obligationDetails: selectedRequest.obligationDetails || '',
+                specialRemark: selectedRequest.specialRemark || '',
+            });
+            
+            // Also update doc slots
+            setDocSlots(prev => prev.map(slot => ({
+                ...slot,
+                file: null,
+                existingName: selectedRequest.documents[slot.key as keyof typeof selectedRequest.documents] || undefined
+            })));
+        } else {
+            reset({
+                resignationReason: '',
+                resignationDate: todayISO,
+                lastWorkingDate: '',
+                obligationDetails: '',
+                specialRemark: '',
+            });
+            setDocSlots(prev => prev.map(slot => ({ ...slot, file: null, existingName: undefined })));
         }
-    }, [draftRequest]);
+    }, [selectedRequest, reset, todayISO]);
 
     // ── Doc handlers ────────────────────────────────────────────────
     const handleDocUpload = useCallback((key: DocumentSlot['key'], file: File) => {
@@ -358,38 +390,35 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
         .filter((s) => s.mandatory)
         .some((s) => s.file === null && s.existingName === undefined);
 
-    // ── Build payload helper ────────────────────────────────────────
-    const buildPayload = (data: ResignationFormData, status: RequestStatus): ResignationRequest => ({
-        id: draftRequest?.id || `RES-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
-        status,
-        reason: data.resignationReason,
-        initiationDate: data.initiationDate,
-        effectiveDate: data.effectiveDate,
-        obligationDetails: data.obligationDetails,
-        specialRemark: data.specialRemark || '',
-        documents: {
-            resignation_letter: docSlots.find((s) => s.key === 'resignation_letter')?.file?.name
-                || docSlots.find((s) => s.key === 'resignation_letter')?.existingName,
-            clearance_letter: docSlots.find((s) => s.key === 'clearance_letter')?.file?.name
-                || docSlots.find((s) => s.key === 'clearance_letter')?.existingName,
-            handover_checklist: docSlots.find((s) => s.key === 'handover_checklist')?.file?.name
-                || docSlots.find((s) => s.key === 'handover_checklist')?.existingName,
-        },
-        createdAt: draftRequest?.createdAt || new Date().toISOString(),
-        submittedAt: status === 'SUBMITTED' ? new Date().toISOString() : undefined,
-    });
-
     // ── Actions ─────────────────────────────────────────────────────
-    const handleSaveAsDraft = () => {
+    const handleSaveAsDraft = async () => {
         const values = getValues();
-        const payload = buildPayload(values, 'DRAFT');
-        // TODO: Replace with actual API call
-        console.log('Draft saved:', payload);
+        const payload: Partial<ResignationRequest> = {
+            employeeName: user?.name || '',
+            epfNumber: user?.epfNumber || '',
+            designation: user?.designation || '',
+            branch: user?.department || '',
+            resignationDate: values.resignationDate,
+            lastWorkingDate: values.lastWorkingDate,
+            reason: values.resignationReason,
+            obligationDetails: values.obligationDetails,
+            specialRemark: values.specialRemark,
+            status: 'NEW',
+            documents: {
+                resignationLetter: docSlots.find((s) => s.key === 'resignationLetter')?.file?.name || docSlots.find((s) => s.key === 'resignationLetter')?.existingName,
+                clearanceLetter: docSlots.find((s) => s.key === 'clearanceLetter')?.file?.name || docSlots.find((s) => s.key === 'clearanceLetter')?.existingName,
+                handoverChecklist: docSlots.find((s) => s.key === 'handoverChecklist')?.file?.name || docSlots.find((s) => s.key === 'handoverChecklist')?.existingName,
+            }
+        };
 
-        // Update local state
-        const updated = requests.filter((r) => r.id !== payload.id);
-        updated.push(payload);
-        onRequestChange(updated);
+        try {
+            await createResignationRequest(payload, user?.id || 1);
+            // Refresh requests list in parent
+            onCancelEdit(); // Clear editing mode
+            window.location.reload(); 
+        } catch (error) {
+            console.error('Failed to save draft:', error);
+        }
     };
 
     const onSubmitValid = () => {
@@ -397,260 +426,293 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({ request
         setShowConfirmModal(true);
     };
 
-    const handleConfirmSubmit = () => {
+    const handleConfirmSubmit = async () => {
         const values = getValues();
-        const payload = buildPayload(values, 'SUBMITTED');
-        // TODO: Replace with actual API call
-        console.log('Submitted:', payload);
+        const payload: Partial<ResignationRequest> = {
+            employeeName: user?.name || '',
+            epfNumber: user?.epfNumber || '',
+            designation: user?.designation || '',
+            branch: user?.department || '',
+            resignationDate: values.resignationDate,
+            lastWorkingDate: values.lastWorkingDate,
+            reason: values.resignationReason,
+            obligationDetails: values.obligationDetails,
+            specialRemark: values.specialRemark,
+            status: 'SUBMITTED',
+            documents: {
+                resignationLetter: docSlots.find((s) => s.key === 'resignationLetter')?.file?.name || docSlots.find((s) => s.key === 'resignationLetter')?.existingName,
+                clearanceLetter: docSlots.find((s) => s.key === 'clearanceLetter')?.file?.name || docSlots.find((s) => s.key === 'clearanceLetter')?.existingName,
+                handoverChecklist: docSlots.find((s) => s.key === 'handoverChecklist')?.file?.name || docSlots.find((s) => s.key === 'handoverChecklist')?.existingName,
+            }
+        };
 
-        const updated = requests.filter((r) => r.id !== payload.id);
-        updated.push(payload);
-        onRequestChange(updated);
-        setShowConfirmModal(false);
+        try {
+            await createResignationRequest(payload, user?.id || 1);
+            setShowConfirmModal(false);
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to submit:', error);
+        }
     };
 
-    // ── Render: Active submitted request banner ─────────────────────
-    if (submittedRequest) {
-        return (
-            <div className="space-y-8">
-                <div className="flex flex-col lg:flex-row gap-8">
-                    <div className="flex-1">
-                        <ActiveRequestBanner request={submittedRequest} />
-                    </div>
-
-                    {/* Sidebar */}
-                    <div className="w-full lg:w-80 space-y-6">
-                        <SidebarPanel />
-                    </div>
-                </div>
-
-                <ConfirmSubmitModal
-                    isOpen={showConfirmModal}
-                    onClose={() => setShowConfirmModal(false)}
-                    onConfirm={handleConfirmSubmit}
-                />
-            </div>
-        );
-    }
-
-    // ── Render: Form (new or edit draft) ────────────────────────────
+    // ── Render ─────────────────────────────────────────────────────
     return (
         <div className="space-y-8">
             <div className="flex flex-col lg:flex-row gap-8">
-                <div className="flex-1">
+                <div className="flex-1 space-y-8">
+                    
+                    {/* Status Sector: Active Requests — Hide if in modal to save space */}
+                    {!isModal && activeRequests.map(req => (
+                        <ActiveRequestBanner key={req.id} request={req} />
+                    ))}
+
+                    {/* Finalized Status — Hide if in modal */}
+                    {!isModal && finalizedRequests.length > 0 && activeRequests.length === 0 && !isEditing && (
+                         <div className="opacity-80">
+                            {finalizedRequests.slice(0, 1).map(req => (
+                                <ActiveRequestBanner key={req.id} request={req} />
+                            ))}
+                         </div>
+                    )}
+
+                    {/* Form Section: Always available for new requests, or for editing/viewing specific ones */}
                     <form onSubmit={handleSubmit(onSubmitValid)}>
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[#8B3A00] text-[20px]">assignment_late</span>
-                                    <h2 className="font-bold text-slate-800 text-sm">
-                                        {isEditing ? 'Edit Draft — Resign Request' : 'Create Resign Request'}
-                                    </h2>
-                                </div>
-                                {isEditing && (
-                                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded uppercase tracking-wider">
-                                        Draft
-                                    </span>
-                                )}
-                            </div>
-                            <div className="p-8 space-y-8">
-
-                                {/* Form Fields — Row 1: Initiation Date + Effective Date */}
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Resignation Initiation Date <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="date"
-                                            {...register('initiationDate')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.initiationDate ? 'border-red-400' : 'border-slate-200'}`}
-                                        />
-                                        {errors.initiationDate && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.initiationDate.message}</p>
-                                        )}
+                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-[#8B3A00] text-[20px]">assignment_late</span>
+                                        <h2 className="font-bold text-slate-800 text-sm">
+                                            {isViewOnly ? `View Request — ${selectedRequest?.id}` : isEditing ? `Edit Draft — ${selectedRequest?.id}` : 'Create Resign Request'}
+                                        </h2>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Resignation Effective Date <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="date"
-                                            {...register('effectiveDate')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.effectiveDate ? 'border-red-400' : 'border-slate-200'}`}
-                                        />
-                                        {errors.effectiveDate && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.effectiveDate.message}</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Form Fields — Row 2: Reason for Resignation */}
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Reason for Resignation <span className="text-red-500">*</span>
-                                        </label>
-                                        <select
-                                            {...register('resignationReason')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 bg-white ${errors.resignationReason ? 'border-red-400' : 'border-slate-200'}`}
-                                        >
-                                            <option value="">Select Reason</option>
-                                            {resignationReasons.map((reason) => (
-                                                <option key={reason} value={reason}>{reason}</option>
-                                            ))}
-                                        </select>
-                                        {errors.resignationReason && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.resignationReason.message}</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Direct and Indirect Obligation Details */}
-                                <div className="space-y-2">
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                        Direct and Indirect Obligation Details <span className="text-red-500">*</span>
-                                    </label>
-                                    <textarea
-                                        {...register('obligationDetails')}
-                                        rows={4}
-                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 resize-none ${errors.obligationDetails ? 'border-red-400' : 'border-slate-200'}`}
-                                        placeholder="Describe your direct and indirect obligations, pending tasks, responsibilities, and handover plans..."
-                                    />
-                                    {errors.obligationDetails && (
-                                        <p className="text-xs text-red-500 mt-1">{errors.obligationDetails.message}</p>
-                                    )}
-                                </div>
-
-                                {/* Leave Balance Display */}
-                                <div className="space-y-3">
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Leave Balance Details</label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        {leaveBalances.map((leave) => (
-                                            <div
-                                                key={leave.type}
-                                                className="rounded-xl border border-slate-200 p-4"
-                                                style={{ backgroundColor: leave.bg }}
+                                    <div className="flex items-center gap-3">
+                                        {(isEditing || isViewOnly) && (
+                                            <button 
+                                                type="button"
+                                                onClick={onCancelEdit}
+                                                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-slate-100 px-3 py-1 rounded uppercase tracking-wider transition-colors cursor-pointer"
                                             >
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <div
-                                                        className="w-8 h-8 rounded-lg flex items-center justify-center"
-                                                        style={{ backgroundColor: `${leave.color}15` }}
-                                                    >
-                                                        <span
-                                                            className="material-symbols-outlined text-base"
-                                                            style={{ color: leave.color }}
-                                                        >
-                                                            event_available
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs font-bold text-slate-700">{leave.type}</p>
-                                                </div>
-                                                <div className="flex items-end justify-between">
-                                                    <div>
-                                                        <p className="text-2xl font-bold" style={{ color: leave.color }}>{leave.remaining}</p>
-                                                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Remaining</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-xs text-slate-500">
-                                                            <span className="font-bold text-slate-600">{leave.used}</span> / {leave.total} used
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-3 h-1.5 bg-white/60 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full rounded-full transition-all"
-                                                        style={{
-                                                            width: `${(leave.used / leave.total) * 100}%`,
-                                                            backgroundColor: leave.color,
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Special Remark */}
-                                <div className="space-y-2">
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                        Special Remark <span className="text-slate-400 normal-case font-normal">(Optional)</span>
-                                    </label>
-                                    <textarea
-                                        {...register('specialRemark')}
-                                        rows={4}
-                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 resize-none"
-                                        placeholder="Any special remarks or additional notes for HR..."
-                                    />
-                                </div>
-
-                                {/* Categorized Document Uploads */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                                            Required Documents
-                                        </label>
-                                        {mandatoryDocsMissing && (
-                                            <span className="text-[10px] text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-xs">warning</span>
-                                                Upload mandatory documents to submit
+                                                {isViewOnly ? 'Close View' : 'Cancel Edit'}
+                                            </button>
+                                        )}
+                                        {isEditing && !isViewOnly && (
+                                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded uppercase tracking-wider">
+                                                Editing Draft
+                                            </span>
+                                        )}
+                                        {isViewOnly && (
+                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded uppercase tracking-wider">
+                                                View Mode
                                             </span>
                                         )}
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        {docSlots.map((slot) => (
-                                            <DocUploadCard
-                                                key={slot.key}
-                                                slot={slot}
-                                                onUpload={handleDocUpload}
-                                                onRemove={handleDocRemove}
+                                </div>
+                                <div className="p-8 space-y-8">
+
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                                Resignation Initiation Date <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="date"
+                                                {...register('resignationDate')}
+                                                disabled={isViewOnly}
+                                                className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.resignationDate ? 'border-red-400' : 'border-slate-200'} ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
                                             />
-                                        ))}
+                                            {errors.resignationDate && (
+                                                <p className="text-xs text-red-500 mt-1">{errors.resignationDate.message}</p>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                                Resignation Effective Date <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="date"
+                                                {...register('lastWorkingDate')}
+                                                disabled={isViewOnly}
+                                                className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.lastWorkingDate ? 'border-red-400' : 'border-slate-200'} ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
+                                            />
+                                            {errors.lastWorkingDate && (
+                                                <p className="text-xs text-red-500 mt-1">{errors.lastWorkingDate.message}</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Form Fields — Row 2: Reason for Resignation */}
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                                Reason for Resignation <span className="text-red-500">*</span>
+                                            </label>
+                                            <select
+                                                {...register('resignationReason')}
+                                                disabled={isViewOnly}
+                                                className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 bg-white ${errors.resignationReason ? 'border-red-400' : 'border-slate-200'} ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
+                                            >
+                                                <option value="">Select Reason</option>
+                                                {resignationReasons.map((reason) => (
+                                                    <option key={reason} value={reason}>{reason}</option>
+                                                ))}
+                                            </select>
+                                            {errors.resignationReason && (
+                                                <p className="text-xs text-red-500 mt-1">{errors.resignationReason.message}</p>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                                Special Remark <span className="text-slate-400 normal-case font-normal">(Optional)</span>
+                                            </label>
+                                            <input
+                                                {...register('specialRemark')}
+                                                disabled={isViewOnly}
+                                                placeholder="Any other specific comments"
+                                                className={`w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Form Fields — Row 3: Obligation Details */}
+                                    <div className="space-y-2">
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                            Direct and Indirect Obligations <span className="text-red-500">*</span>
+                                        </label>
+                                        <textarea
+                                            {...register('obligationDetails')}
+                                            disabled={isViewOnly}
+                                            rows={4}
+                                            placeholder="Detail any pending projects, assets to return, or other obligations..."
+                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 resize-none ${errors.obligationDetails ? 'border-red-400' : 'border-slate-200'} ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
+                                        />
+                                        {errors.obligationDetails && (
+                                            <p className="text-xs text-red-500 mt-1">{errors.obligationDetails.message}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Leave Balance Display */}
+                                    <div className="space-y-3">
+                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Leave Balance Details</label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            {leaveBalances.map((leave) => (
+                                                <div
+                                                    key={leave.type}
+                                                    className="rounded-xl border border-slate-200 p-4"
+                                                    style={{ backgroundColor: leave.bg }}
+                                                >
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <div
+                                                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                                                            style={{ backgroundColor: `${leave.color}15` }}
+                                                        >
+                                                            <span
+                                                                className="material-symbols-outlined text-base"
+                                                                style={{ color: leave.color }}
+                                                            >
+                                                                event_available
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs font-bold text-slate-700">{leave.type}</p>
+                                                    </div>
+                                                    <div className="flex items-end justify-between">
+                                                        <div>
+                                                            <p className="text-2xl font-bold" style={{ color: leave.color }}>{leave.remaining}</p>
+                                                            <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Remaining</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-xs text-slate-500">
+                                                                <span className="font-bold text-slate-600">{leave.used}</span> / {leave.total} used
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-3 h-1.5 bg-white/60 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-full transition-all"
+                                                            style={{
+                                                                width: `${(leave.used / leave.total) * 100}%`,
+                                                                backgroundColor: leave.color,
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Document Uploads */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                                Required Documents
+                                            </label>
+                                            {mandatoryDocsMissing && (
+                                                <span className="text-[10px] text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-xs">warning</span>
+                                                    Upload mandatory documents to submit
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            {docSlots.map((slot) => (
+                                                <DocUploadCard
+                                                    key={slot.key}
+                                                    slot={slot}
+                                                    onUpload={handleDocUpload}
+                                                    onRemove={handleDocRemove}
+                                                    disabled={isViewOnly}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Footer Actions */}
-                            <div className="px-8 py-6 border-t border-slate-100 flex items-center justify-between">
-                                <button
-                                    type="button"
-                                    className="px-8 py-3 bg-white border border-slate-200 rounded-lg font-bold text-slate-600 text-sm hover:bg-slate-100 transition-all"
-                                    onClick={handleSaveAsDraft}
-                                >
-                                    {isEditing ? 'Update Draft' : 'Save as Draft'}
-                                </button>
-                                <div className="flex items-center gap-3">
-                                    <button type="button" className="px-8 py-3 border border-slate-200 rounded-lg font-bold text-slate-400 text-sm">
-                                        Back
-                                    </button>
-                                    <div className="relative group">
-                                        <button
-                                            type="submit"
-                                            disabled={mandatoryDocsMissing}
-                                            className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${mandatoryDocsMissing
-                                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                                : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
-                                                }`}
-                                        >
-                                            <span className="material-symbols-outlined text-[20px]">send</span>
-                                            Submit Request
-                                        </button>
-                                        {mandatoryDocsMissing && (
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-[10px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                Upload Resignation Letter & Obligations Clearance Letter to submit
+                                    {/* Footer Actions */}
+                                    <div className="px-8 py-6 border-t border-slate-100 flex items-center justify-between">
+                                        {!isViewOnly ? (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    className="px-8 py-3 bg-white border border-slate-200 rounded-lg font-bold text-slate-600 text-sm hover:bg-slate-100 transition-all cursor-pointer"
+                                                    onClick={handleSaveAsDraft}
+                                                >
+                                                    {isEditing ? 'Update Draft' : 'Save as Draft'}
+                                                </button>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        type="submit"
+                                                        disabled={mandatoryDocsMissing}
+                                                        className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all cursor-pointer ${mandatoryDocsMissing
+                                                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                                            : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
+                                                            }`}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[20px]">send</span>
+                                                        Submit Request
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="w-full flex justify-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={onCancelEdit}
+                                                    className="px-8 py-3 bg-[#8B3A00] text-white rounded-lg font-bold text-sm hover:opacity-90 transition-all cursor-pointer"
+                                                >
+                                                    Back to Status Table
+                                                </button>
                                             </div>
                                         )}
                                     </div>
-                                </div>
                             </div>
-                        </div>
-                    </form>
+                        </form>
                 </div>
 
-                {/* Sidebar */}
-                <div className="w-full lg:w-80 space-y-6">
-                    <SidebarPanel />
-                </div>
+                {/* Sidebar — Hide if in modal */}
+                {!isModal && (
+                    <div className="w-full lg:w-80 shrink-0 space-y-6">
+                        <SidebarPanel />
+                    </div>
+                )}
             </div>
 
             <ConfirmSubmitModal

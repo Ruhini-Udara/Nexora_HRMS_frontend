@@ -27,7 +27,10 @@ const DirectorHeader = () => {
                 <Link href="/director/profile" className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors">
                     <div className="text-right">
                         <p className="text-sm font-semibold text-gray-800">{user?.name || "Director"}</p>
-                        <p className="text-xs text-gray-500 font-medium">Director Account</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                            {user?.role === 'ROLE_ADMIN' ? 'Admin Account' : 
+                             user?.role === 'ROLE_DIRECTOR' ? 'Director Account' : 'User Account'}
+                        </p>
                     </div>
                     <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs border border-gray-200 overflow-hidden">
                         {user?.name?.substring(0, 2).toUpperCase() || "DR"}

@@ -9,7 +9,14 @@ import api from "@/lib/axiosInstance";
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MaternityLeave {
     id: number;
+    employeeId: number;
+    employeeName: string;
+    employeeCode: string;
+    epfNumber: string;
+    leaveTypeId: number;
+    leaveTypeName: string;
     childNumber: string;
+    department: string;
     branch: string;
     contactNumber: string;
     email: string;
@@ -19,18 +26,6 @@ interface MaternityLeave {
     fromDate: string;
     endDate: string;
     totalDays: number;
-    employee: {
-        id: number;
-        employeeCode: string;
-        firstName: string;
-        lastName: string;
-        fullName?: string;
-        surname?: string;
-        designation?: {
-            id: number;
-            designationName: string;
-        };
-    };
 }
 
 interface LeaveDocument {
@@ -109,7 +104,7 @@ export default function MaternityApprovalsPage() {
                 refType: "MATERNITY_LEAVE",
                 decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
                 remark: hrRemarkInput,
-                approvedBy: { id: user?.id }, // Use actual HR id from store
+                approvedBy: { id: user?.id },
             });
             
             if (decision === "REJECT") {
@@ -138,9 +133,9 @@ export default function MaternityApprovalsPage() {
 
     const filteredRequests = requests.filter(req => {
         // Smart Routing: Hide my own requests from verification list
-        if (req.employee?.id === user?.id) return false;
+        if (req.employeeId === user?.id) return false;
 
-        const fullName = `${req.employee?.fullName || req.employee?.firstName + " " + req.employee?.lastName}`.toLowerCase();
+        const fullName = (req.employeeName || "").toLowerCase();
         return fullName.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
@@ -163,7 +158,6 @@ export default function MaternityApprovalsPage() {
                     </div>
                 </div>
 
-                {/* Filter & Search Bar */}
                 <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
                     <div className="relative w-full sm:w-96">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -192,7 +186,6 @@ export default function MaternityApprovalsPage() {
                     </div>
                 </div>
 
-                {/* Data Table */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
@@ -216,10 +209,10 @@ export default function MaternityApprovalsPage() {
                                         <td className="py-4 px-6">
                                                 <div>
                                                     <div className="font-semibold text-slate-800 dark:text-white whitespace-nowrap">
-                                                        {req.employee?.fullName || `${req.employee?.firstName} ${req.employee?.lastName}`}
+                                                        {req.employeeName}
                                                     </div>
                                                     <div className="text-xs text-slate-500 dark:text-slate-400">
-                                                        {req.employee?.employeeCode} • {req.branch}
+                                                        {req.employeeCode} • {req.department}
                                                     </div>
                                                 </div>
                                         </td>
@@ -281,10 +274,10 @@ export default function MaternityApprovalsPage() {
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wider">Employee Info</h4>
                                     <div className="mb-4">
                                         <div className="font-bold text-slate-900 dark:text-white text-lg">
-                                            {selectedRequest.employee?.fullName || `${selectedRequest.employee?.firstName} ${selectedRequest.employee?.lastName}`}
+                                            {selectedRequest.employeeName}
                                         </div>
                                         <div className="text-sm text-slate-500">
-                                            {selectedRequest.employee?.employeeCode} • {selectedRequest.branch}
+                                            {selectedRequest.employeeCode} • {selectedRequest.department}
                                         </div>
                                     </div>
                                     <div className="space-y-3 text-sm">
@@ -359,7 +352,7 @@ export default function MaternityApprovalsPage() {
                                     >
                                         {submitting 
                                             ? "Verifying..." 
-                                            : <><span className="material-symbols-outlined text-[18px]">verified</span> {(selectedRequest.employee?.designation?.designationName?.toLowerCase().includes("admin") || selectedRequest.employee?.fullName?.toLowerCase().includes("admin") || selectedRequest.employee?.employeeCode?.includes("000")) ? "Verify & Forward to Director" : "Verify & Forward to Admin"}</>
+                                            : <><span className="material-symbols-outlined text-[18px]">verified</span> {(selectedRequest.employeeName?.toLowerCase().includes("admin") || selectedRequest.employeeCode?.includes("000")) ? "Verify & Forward to Director" : "Verify & Forward to Admin"}</>
                                         }
                                     </button>
                                 </>

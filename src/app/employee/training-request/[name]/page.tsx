@@ -11,10 +11,12 @@ import { Toast } from "@/components/ui/Toast";
 interface TrainingEvent {
     id: number;
     title: string;
+    trainingCode?: string;
     description: string;
     proposedStartDate?: string;
     date?: string;
     time?: string;
+    applyBefore?: string;
 }
 
 interface TrainingRequestPageProps {
@@ -91,13 +93,16 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
         time: "TBD",
     };
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isRegistrationClosed = displayEvent.applyBefore && displayEvent.applyBefore !== "TBD" ? displayEvent.applyBefore < todayStr : false;
+
     // Submit training request:
     // 1. Upload attachment (if any)
     // 2. Build payload
     // 3. Send request to backend
     // 4. Show toast + redirect
     const handleSubmit = async () => {
-        if (!eventDetails || !user) return;
+        if (!eventDetails || !user || isRegistrationClosed) return;
         
         setIsSubmitting(true);
         try {
@@ -147,6 +152,12 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
             <div className="mb-8 block">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{formattedTitle}</h1>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Please provide the necessary information to process your training attendance request.</p>
+                {isRegistrationClosed && (
+                    <div className="mt-4 p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 text-rose-700 dark:text-rose-400 rounded-xl flex items-center gap-3 text-sm font-semibold">
+                        <span className="material-symbols-outlined text-[20px]">warning</span>
+                        Registration for this training program has closed because the application deadline ({displayEvent.applyBefore}) has passed.
+                    </div>
+                )}
             </div>
 
             {/* Course Details Card */}
@@ -170,6 +181,18 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                         </div>
                         
                         <div className="col-span-1 bg-white/60 dark:bg-slate-900/40 p-4 rounded-lg border border-white/40 dark:border-slate-700/30 backdrop-blur-sm flex flex-col justify-center space-y-3">
+                            {displayEvent.trainingCode && (
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                                        <span className="material-symbols-outlined text-[16px]">qr_code</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Training Code</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{displayEvent.trainingCode}</p>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
                                     <span className="material-symbols-outlined text-[16px]">calendar_month</span>
@@ -374,8 +397,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                 </button>
                 <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all disabled:opacity-50">
+                    disabled={isSubmitting || isRegistrationClosed}
+                    className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     {isSubmitting ? 'Submitting...' : 'Submit Application'}
                 </button>
             </div>

@@ -12,6 +12,8 @@ export default function DirectorDashboard() {
                 <p className="text-gray-500 mt-1">Manage your team&apos;s requests and monitor department performance.</p>
             </div>
 
+
+
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                 <SummaryCard
@@ -82,12 +84,6 @@ export default function DirectorDashboard() {
                         description="Process compassionate leave and insurance benefit claims for bereaved employees."
                         icon={<UserX className="w-5 h-5" />}
                         href="/director/death"
-                    />
-                    <ModuleCard
-                        title="Welfare Requests"
-                        description="Handle employee benefit claims, health insurance inquiries, and wellness program enrollments."
-                        icon={<Heart className="w-5 h-5" />}
-                        href="/director/welfare"
                     />
                     <ModuleCard
                         title="Leave Requests"

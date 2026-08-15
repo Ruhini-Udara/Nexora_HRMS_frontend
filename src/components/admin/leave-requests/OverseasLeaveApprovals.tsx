@@ -9,10 +9,25 @@ import api from "@/lib/axiosInstance";
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface LeaveDocument { id: number; documentType: string; filePathUrl: string; description: string; }
 interface OverseasLeave {
-    id: number; reason: string; fromDate: string; endDate: string; totalDays: number;
-    status: string; branch: string; contactNumber: string; email: string; specialRemark: string;
-    passportNumber: string; passportExpDate: string;
-    employee: { id: number; employeeCode: string; firstName?: string; lastName?: string; fullName?: string; surname?: string; };
+    id: number;
+    employeeId: number;
+    employeeName: string;
+    employeeCode: string;
+    epfNumber: string;
+    leaveTypeId: number;
+    leaveTypeName: string;
+    reason: string;
+    fromDate: string;
+    endDate: string;
+    totalDays: number;
+    status: string;
+    branch: string;
+    department: string;
+    contactNumber: string;
+    email: string;
+    specialRemark: string;
+    passportNumber: string;
+    passportExpDate: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -77,7 +92,7 @@ export default function OverseasLeaveApprovals() {
     const [adminRemark, setAdminRemark] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [isPrinting, setIsPrinting] = useState(false);
-    const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+    const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
     const showToast = useCallback((message: string, type: 'success' | 'error' = 'error') => {
         setToast({ message, type });
@@ -94,9 +109,9 @@ export default function OverseasLeaveApprovals() {
             // Always fetch board agenda items (ADMIN_APPROVED status)
             const boardRes = await api.get(`/api/v1/leaves/overseas/status/ADMIN_APPROVED`);
             setBoardItems(boardRes.data);
-        } catch (err) { 
+        } catch (err) {
             const error = err as { response?: { data?: { message?: string } } };
-            setError(error.response?.data?.message || "Could not connect to the backend. Make sure the server is running."); 
+            setError(error.response?.data?.message || "Could not connect to the backend. Make sure the server is running.");
         } finally { setLoading(false); }
     }, [statusFilter]);
 
@@ -124,9 +139,9 @@ export default function OverseasLeaveApprovals() {
             setSelectedRequest(null); setAdminRemark("");
             await fetchLeaves();
             showToast("Request processed successfully.", "success");
-        } catch (err) { 
+        } catch (err) {
             const error = err as { response?: { data?: { message?: string } } };
-            showToast(error.response?.data?.message || "Something went wrong. Please try again.", "error"); 
+            showToast(error.response?.data?.message || "Something went wrong. Please try again.", "error");
         } finally { setSubmitting(false); }
     };
 
@@ -158,10 +173,10 @@ export default function OverseasLeaveApprovals() {
                 html2canvas: { scale: 2, useCORS: true, letterRendering: true },
                 jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
             };
-            
+
             await html2pdf().set(opt).from(element).save();
             showToast("PDF Downloaded successfully.", "success");
-        } catch(e) {
+        } catch (e) {
             const error = e as { message?: string };
             console.error("PDF generation failed:", e);
             showToast(`PDF generation failed: ${error.message || "Please check console"}`, "error");
@@ -183,7 +198,7 @@ export default function OverseasLeaveApprovals() {
             setIsPrinting(false);
             await fetchLeaves();
             showToast("List successfully sent to Director.", "success");
-        } catch(e) {
+        } catch (e) {
             const error = e as { message?: string };
             showToast(`Failed to send to Director: ${error.message || 'Unknown error'}`, "error");
         } finally {
@@ -199,16 +214,16 @@ export default function OverseasLeaveApprovals() {
     // ── Filter (pending tab) ───────────────────────────────────────────────
     const filtered = requests.filter(req => {
         // Smart Routing: Hide my own requests from verification list
-        if (req.employee?.id === user?.id) return false;
+        if (req.employeeId === user?.id) return false;
 
-        const name = req.employee?.fullName || `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.trim();
-        return name.toLowerCase().includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
+        const name = (req.employeeName || "").toLowerCase();
+        return name.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
     // ── Filter (board tab) ────────────────────────────────────────────────
     const filteredBoard = boardItems.filter(req => {
-        const name = req.employee?.fullName || `${req.employee?.firstName ?? ""} ${req.employee?.lastName ?? ""}`.trim();
-        return name.toLowerCase().includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
+        const name = (req.employeeName || "").toLowerCase();
+        return name.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
 
     const activeRows = activeTab === "pending" ? filtered : filteredBoard;
@@ -259,8 +274,8 @@ export default function OverseasLeaveApprovals() {
                                         <tr key={req.id}>
                                             <td style={{ border: '1px solid #000000', padding: '10px', fontWeight: 'bold' }}>#{req.id}</td>
                                             <td style={{ border: '1px solid #000000', padding: '10px' }}>
-                                                <div style={{ fontWeight: 'bold' }}>{req.employee?.fullName || `${req.employee?.firstName || ""} ${req.employee?.lastName || ""}`.trim()}</div>
-                                                <div style={{ color: '#6b7280', fontSize: '10px' }}>{req.employee?.employeeCode} • {req.branch}</div>
+                                                <div style={{ fontWeight: 'bold' }}>{req.employeeName}</div>
+                                                <div style={{ color: '#6b7280', fontSize: '10px' }}>{req.employeeCode} • {req.department}</div>
                                             </td>
                                             <td style={{ border: '1px solid #000000', padding: '10px' }}>{req.reason}</td>
                                             <td style={{ border: '1px solid #000000', padding: '10px', textAlign: 'center' }}>{req.fromDate} to {req.endDate}</td>
@@ -285,12 +300,10 @@ export default function OverseasLeaveApprovals() {
                 </div>
                 {/* Toast Notification */}
                 {toast && (
-                    <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
-                        toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
-                    }`}>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                            toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                    <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
                         }`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                            }`}>
                             <span className="material-symbols-outlined text-[18px] text-white">
                                 {toast.type === 'success' ? 'check' : 'close'}
                             </span>
@@ -410,8 +423,8 @@ export default function OverseasLeaveApprovals() {
                                         <td className="py-4 px-4"><input type="checkbox" className="w-4 h-4 rounded" checked={selectedIds.includes(req.id)} onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, req.id] : prev.filter(id => id !== req.id))} /></td>
                                         <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">#{req.id}</td>
                                         <td className="py-4 px-6">
-                                            <div className="font-semibold text-slate-800 dark:text-white">{req.employee?.fullName || `${req.employee?.firstName || ""} ${req.employee?.lastName || ""}`.trim()}</div>
-                                            <div className="text-xs text-slate-500">{req.employee?.employeeCode} • {req.branch}</div>
+                                            <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
+                                            <div className="text-xs text-slate-500">{req.employeeCode} • {req.department}</div>
                                         </td>
                                         <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
                                             {req.fromDate} → {req.endDate}<br />
@@ -458,9 +471,9 @@ export default function OverseasLeaveApprovals() {
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Employee Info</h4>
                                     <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.fullName || `${selectedRequest.employee?.firstName || ""} ${selectedRequest.employee?.lastName || ""}`.trim()}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">EPF:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employee?.employeeCode}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Branch:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.branch}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employeeName}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">EPF:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employeeCode}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Department:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.department}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Contact:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.contactNumber}</span></div>
                                         <div className="flex justify-between"><span className="text-slate-500">Email:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
                                     </div>
@@ -525,12 +538,10 @@ export default function OverseasLeaveApprovals() {
 
             {/* Toast Notification */}
             {toast && (
-                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${
-                    toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
-                }`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                        toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
                     }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
+                        }`}>
                         <span className="material-symbols-outlined text-[18px] text-white">
                             {toast.type === 'success' ? 'check' : 'close'}
                         </span>

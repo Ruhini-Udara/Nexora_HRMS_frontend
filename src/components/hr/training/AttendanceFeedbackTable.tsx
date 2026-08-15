@@ -4,11 +4,14 @@ import React, { useState, useEffect } from 'react';
 import api from '@/lib/axiosInstance';
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import FeedbackDetailsModal from "@/components/hr/training/FeedbackDetailsModal";
+import FeedbackReportModal from "@/components/hr/training/FeedbackReportModal";
+import AttendanceListModal from "@/components/hr/training/AttendanceListModal";
 import { formatTime } from '@/lib/utils';
 
 type TrainingEvent = {
     id: number;
     title: string;
+    trainingCode?: string;
     proposedStartDate?: string;
     date?: string;
     time?: string;
@@ -16,6 +19,7 @@ type TrainingEvent = {
     instructor?: string;
     description?: string;
     status: string;
+    approvedBy?: string;
 };
 
 type TrainingFeedback = {
@@ -61,6 +65,9 @@ export default function AttendanceFeedbackTable() {
     const [eventParticipants, setEventParticipants] = useState<EventParticipant[]>([]);
     const [selectedFeedback, setSelectedFeedback] = useState<EventParticipant | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+    const [isDetailsCardOpen, setIsDetailsCardOpen] = useState(false);
 
     // Pagination for Events
     const [currentPageEvents, setCurrentPageEvents] = useState(1);
@@ -74,7 +81,7 @@ export default function AttendanceFeedbackTable() {
         api.get('/api/training/events')
             .then(res => {
                 // Only show events that have been Approved by Admin
-                const approvedEvents = res.data.filter((e: TrainingEvent) => e.status === "Approved");
+                const approvedEvents = res.data.filter((e: TrainingEvent) => e.status === "Approved" || e.approvedBy);
                 const sorted = approvedEvents.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id);
                 setEvents(sorted);
                 if (sorted.length > 0) {
@@ -94,40 +101,40 @@ export default function AttendanceFeedbackTable() {
                 api.get(`/api/training/events/${selectedEventId}/feedback`),
                 api.get(`/api/training/events/${selectedEventId}/requests`)
             ])
-            .then(([feedbackRes, requestsRes]) => {
-                const feedbackData: TrainingFeedback[] = feedbackRes.data;
-                const requestsData: TrainingRequest[] = requestsRes.data;
+                .then(([feedbackRes, requestsRes]) => {
+                    const feedbackData: TrainingFeedback[] = feedbackRes.data;
+                    const requestsData: TrainingRequest[] = requestsRes.data;
 
-                // Filter for approved requests
-                const approvedRequests = requestsData.filter((req: TrainingRequest) => req.status === "Approved");
+                    // Filter for approved requests
+                    const approvedRequests = requestsData.filter((req: TrainingRequest) => req.status === "Approved");
 
-                // Merge them: Start with all approved requests
-                const participants: EventParticipant[] = approvedRequests.map((req: TrainingRequest) => {
-                    // Find matching feedback if it exists
-                    const feedback = feedbackData.find((f: TrainingFeedback) => f.employeeId === req.employeeId);
-                    
-                    return {
-                        id: feedback?.id || `req-${req.id}`,
-                        employeeId: req.employeeId,
-                        employeeName: req.employeeName,
-                        workEmail: req.workEmail,
-                        attendanceStatus: feedback?.attendanceStatus || "Pending",
-                        feedback: feedback?.feedback || null,
-                        courseContentRating: feedback?.courseContentRating || 0,
-                        instructorRating: feedback?.instructorRating || 0,
-                        overallExperienceRating: feedback?.overallExperienceRating || 0,
-                        suggestions: feedback?.suggestions || "",
-                        hasSubmitted: !!feedback
-                    };
+                    // Merge them: Start with all approved requests
+                    const participants: EventParticipant[] = approvedRequests.map((req: TrainingRequest) => {
+                        // Find matching feedback if it exists
+                        const feedback = feedbackData.find((f: TrainingFeedback) => f.employeeId === req.employeeId);
+
+                        return {
+                            id: feedback?.id || `req-${req.id}`,
+                            employeeId: req.employeeId,
+                            employeeName: req.employeeName,
+                            workEmail: req.workEmail,
+                            attendanceStatus: feedback?.attendanceStatus || "Pending",
+                            feedback: feedback?.feedback || null,
+                            courseContentRating: feedback?.courseContentRating || 0,
+                            instructorRating: feedback?.instructorRating || 0,
+                            overallExperienceRating: feedback?.overallExperienceRating || 0,
+                            suggestions: feedback?.suggestions || "",
+                            hasSubmitted: !!feedback && (feedback.courseContentRating > 0 || feedback.instructorRating > 0 || feedback.overallExperienceRating > 0)
+                        };
+                    });
+
+                    setEventParticipants(participants);
+                    setCurrentPageFeedback(1);
+                })
+                .catch(() => {
+                    console.error("Failed to fetch event data");
+                    setToast({ message: "Failed to load participant data for this event.", type: 'error' });
                 });
-
-                setEventParticipants(participants);
-                setCurrentPageFeedback(1);
-            })
-            .catch(() => {
-                console.error("Failed to fetch event data");
-                setToast({ message: "Failed to load participant data for this event.", type: 'error' });
-            });
         }
 
         return () => {
@@ -196,38 +203,40 @@ export default function AttendanceFeedbackTable() {
                             category={event.category}
                             hideActions={true}
                             isSelected={selectedEventId === event.id}
-                            onClick={() => setSelectedEventId(event.id)}
+                            onClick={() => {
+                                setSelectedEventId(event.id);
+                                setIsDetailsCardOpen(false);
+                            }}
                         />
                     ))}
                 </div>
 
                 {filteredEvents.length > eventsPerPage && (
                     <div className="mt-8 flex items-center justify-center gap-4">
-                        <button 
+                        <button
                             disabled={currentPageEvents === 1}
                             onClick={() => setCurrentPageEvents(prev => Math.max(prev - 1, 1))}
                             className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                         >
                             <span className="material-symbols-outlined text-[20px]">chevron_left</span>
                         </button>
-                        
+
                         <div className="flex items-center gap-1.5">
                             {Array.from({ length: totalPagesEvents }, (_, i) => i + 1).map((page) => (
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPageEvents(page)}
-                                    className={`w-8 h-8 rounded-lg font-bold text-xs transition-all shadow-sm ${
-                                        currentPageEvents === page 
-                                        ? 'bg-primary text-white' 
+                                    className={`w-8 h-8 rounded-lg font-bold text-xs transition-all shadow-sm ${currentPageEvents === page
+                                        ? 'bg-primary text-white'
                                         : 'bg-white border border-slate-200 text-slate-600 hover:border-primary hover:text-primary'
-                                    }`}
+                                        }`}
                                 >
                                     {page}
                                 </button>
                             ))}
                         </div>
 
-                        <button 
+                        <button
                             disabled={currentPageEvents === totalPagesEvents}
                             onClick={() => setCurrentPageEvents(prev => Math.min(prev + 1, totalPagesEvents))}
                             className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
@@ -240,41 +249,66 @@ export default function AttendanceFeedbackTable() {
 
             {/* Selected Event Details */}
             {selectedEvent && (
-                <div className="mb-6 p-6 bg-white dark:bg-background-dark/30 rounded-xl border border-primary/10 shadow-sm flex flex-col md:flex-row gap-6">
-                    <div className="flex-1">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">{selectedEvent.title}</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-5">{selectedEvent.description}</p>
+                <div className="mb-6 bg-white dark:bg-background-dark/30 rounded-xl border border-primary/10 shadow-sm overflow-hidden no-print">
+                    <button
+                        onClick={() => setIsDetailsCardOpen(!isDetailsCardOpen)}
+                        className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none cursor-pointer border-b border-stone-100 dark:border-slate-800/80"
+                    >
+                        <h3 className="text-md font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                            <span className="material-symbols-outlined text-primary text-[20px]">info</span>
+                            Training Details: &quot;{selectedEvent.title}&quot;
+                        </h3>
+                        <span className="material-symbols-outlined text-slate-500 transition-transform duration-200" style={{ transform: isDetailsCardOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
+                            expand_more
+                        </span>
+                    </button>
 
-                        <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
-                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[18px]">person</span>
-                                </div>
-                                <div>
-                                    <span className="text-xs text-slate-400 block -mb-1">Trainer</span>
-                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{selectedEvent.instructor || "TBA"}</span>
-                                </div>
+                    {isDetailsCardOpen && (
+                        <div className="p-6 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="flex-1 md:max-w-[50%]">
+                                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{selectedEvent.description}</p>
                             </div>
-                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+
+                            <div className="grid grid-cols-2 gap-x-8 gap-y-4 md:border-l border-slate-100 dark:border-slate-800 md:pl-8 min-w-[40%]">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">qr_code</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Training Code</span>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{selectedEvent.trainingCode || "TBD"}</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="text-xs text-slate-400 block -mb-1">Date</span>
-                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{selectedEvent.proposedStartDate || selectedEvent.date || "TBD"}</span>
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">person</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Trainer</span>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{selectedEvent.instructor || "TBA"}</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                                <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[18px]">schedule</span>
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Date</span>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{selectedEvent.proposedStartDate || selectedEvent.date || "TBD"}</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="text-xs text-slate-400 block -mb-1">Time</span>
-                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{formatTime(selectedEvent.time)}</span>
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[18px]">schedule</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Time</span>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{formatTime(selectedEvent.time)}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
 
@@ -283,14 +317,23 @@ export default function AttendanceFeedbackTable() {
                 <h2 className="text-xl font-bold">
                     Attendance & Feedback for {selectedEvent ? `"${selectedEvent.title}"` : "Selected Training"}
                 </h2>
-                {selectedEvent && eventParticipants.some(p => p.hasSubmitted) && (
-                    <button
-                        onClick={() => setToast({ message: `Generating feedback report for ${selectedEvent.title}...`, type: 'info' })}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
-                    >
-                        <span className="material-symbols-outlined text-[18px]">summarize</span>
-                        Generate Report
-                    </button>
+                {selectedEvent && (
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsAttendanceModalOpen(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
+                            Attendance List
+                        </button>
+                        <button
+                            onClick={() => setIsReportModalOpen(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">summarize</span>
+                            Generate Report
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -320,8 +363,8 @@ export default function AttendanceFeedbackTable() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${record.attendanceStatus === 'Present' || record.attendanceStatus === 'Confirmed'
-                                                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                                         }`}>
                                                         {record.attendanceStatus}
                                                     </span>
@@ -343,7 +386,7 @@ export default function AttendanceFeedbackTable() {
                                     </tbody>
                                 </table>
                             </div>
-                            
+
                             {/* Feedback Table Pagination */}
                             {eventParticipants.length > feedbackPerPage && (
                                 <div className="px-6 py-4 bg-slate-50 dark:bg-background-dark/20 border-t border-primary/10 flex items-center justify-between">
@@ -351,31 +394,30 @@ export default function AttendanceFeedbackTable() {
                                         Showing {indexOfFirstFeedback + 1} - {Math.min(indexOfLastFeedback, eventParticipants.length)} of {eventParticipants.length} records
                                     </p>
                                     <div className="flex items-center gap-2">
-                                        <button 
+                                        <button
                                             disabled={currentPageFeedback === 1}
                                             onClick={() => setCurrentPageFeedback(prev => Math.max(prev - 1, 1))}
                                             className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <span className="material-symbols-outlined text-[20px]">chevron_left</span>
                                         </button>
-                                        
+
                                         <div className="flex items-center gap-1.5">
                                             {Array.from({ length: totalPagesFeedback }, (_, i) => i + 1).map((page) => (
                                                 <button
                                                     key={page}
                                                     onClick={() => setCurrentPageFeedback(page)}
-                                                    className={`size-8 rounded font-bold text-xs transition-all shadow-sm ${
-                                                        currentPageFeedback === page 
-                                                        ? 'bg-primary text-white' 
+                                                    className={`size-8 rounded font-bold text-xs transition-all shadow-sm ${currentPageFeedback === page
+                                                        ? 'bg-primary text-white'
                                                         : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {page}
                                                 </button>
                                             ))}
                                         </div>
 
-                                        <button 
+                                        <button
                                             disabled={currentPageFeedback === totalPagesFeedback}
                                             onClick={() => setCurrentPageFeedback(prev => Math.min(prev + 1, totalPagesFeedback))}
                                             className="p-1 rounded border border-primary/20 text-slate-400 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -403,12 +445,27 @@ export default function AttendanceFeedbackTable() {
                 onClose={() => setSelectedFeedback(null)}
                 feedback={selectedFeedback}
             />
+
+            <FeedbackReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                participants={eventParticipants}
+                event={selectedEvent || null}
+            />
+
+            <AttendanceListModal
+                isOpen={isAttendanceModalOpen}
+                onClose={() => setIsAttendanceModalOpen(false)}
+                participants={eventParticipants}
+                event={selectedEvent || null}
+            />
+
             {/* Toast Notifications */}
             {toast && (
-                <Toast 
-                    message={toast.message} 
-                    type={toast.type} 
-                    onClose={() => setToast(null)} 
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
                 />
             )}
         </div>

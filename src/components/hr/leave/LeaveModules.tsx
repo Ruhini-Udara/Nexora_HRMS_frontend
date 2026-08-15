@@ -18,7 +18,7 @@ export default function LeaveModules() {
                     Review and process standard daily and short-term leave requests from
                     employees.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -40,7 +40,7 @@ export default function LeaveModules() {
                     Manage verification and board approval workflows for international
                     travel leave.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -62,7 +62,7 @@ export default function LeaveModules() {
                     Coordinate multi-stage processing for maternity, paternity, and
                     adoption leave requests.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -84,7 +84,7 @@ export default function LeaveModules() {
                     Perform final leave balance calculations and finalize records for
                     payroll integration.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -106,7 +106,7 @@ export default function LeaveModules() {
                     Audit year-end balances and manage the carry-forward process into
                     the next period.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward

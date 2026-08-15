@@ -21,7 +21,7 @@ export function SuccessBanner({ title, message, onReset }: Props) {
                     {message}
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Link 
+                    <Link
                         href="/employee/leave-requests"
                         className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2"
                     >

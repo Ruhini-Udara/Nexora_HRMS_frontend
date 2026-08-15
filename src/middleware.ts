@@ -18,43 +18,41 @@ export function middleware(request: NextRequest) {
     const isDirectorRoute = pathname === '/director' || pathname.startsWith('/director/');
     const isSupervisorRoute = pathname === '/supervisor' || pathname.startsWith('/supervisor/');
 
+    const isProtectedRoute = isAdminRoute || isEmployeeRoute || isHRRoute || isDirectorRoute || isSupervisorRoute;
+
     // 3. Authentication Check: If trying to access protected route without token
-    if ((isAdminRoute || isEmployeeRoute || isHRRoute || isDirectorRoute || isSupervisorRoute) && !token) {
+    if (isProtectedRoute && !token) {
         console.log(`Redirecting to login: Protected route ${pathname} accessed without token`);
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // 4. Role-Based Authorization Check
+    // 4. Strict Role-Based Authorization Check
     if (token && role) {
-        if (isAdminRoute && role !== 'ROLE_ADMIN') {
-            console.log(`Access Denied: ${role} tried to access ${pathname}`);
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
+        let correctPath = '/employee';
+        let isCorrectRoute = isEmployeeRoute;
 
-        if (isEmployeeRoute) {
-            // All authenticated users have an employee identity
-            if (!role.startsWith('ROLE_')) {
-                return NextResponse.redirect(new URL('/login', request.url));
-            }
-        }
-
-        if (isHRRoute && role !== 'ROLE_HR' && role !== 'ROLE_ADMIN') {
-            return NextResponse.redirect(new URL('/login', request.url));
+        if (role === 'ROLE_ADMIN') {
+            correctPath = '/admin';
+            isCorrectRoute = isAdminRoute;
+        } else if (role === 'ROLE_HR') {
+            correctPath = '/hr';
+            isCorrectRoute = isHRRoute;
+        } else if (role === 'ROLE_DIRECTOR') {
+            correctPath = '/director';
+            isCorrectRoute = isDirectorRoute;
+        } else if (role === 'ROLE_SUPERVISOR') {
+            correctPath = '/supervisor';
+            isCorrectRoute = isSupervisorRoute;
         }
 
         if (isSupervisorRoute && role !== 'ROLE_SUPERVISOR' && role !== 'ROLE_ADMIN') {
             return NextResponse.redirect(new URL('/login', request.url));
         }
 
-        // Redirect logged-in users away from the login page
-        if (isAuthPage) {
-            let redirectPath = '/employee';
-            if (role === 'ROLE_ADMIN') redirectPath = '/admin';
-            else if (role === 'ROLE_HR') redirectPath = '/hr';
-            else if (role === 'ROLE_DIRECTOR') redirectPath = '/director';
-            else if (role === 'ROLE_SUPERVISOR') redirectPath = '/supervisor';
-
-            return NextResponse.redirect(new URL(redirectPath, request.url));
+        // If user is accessing a protected route or auth page that doesn't match their role, redirect them
+        if ((isProtectedRoute || isAuthPage) && !isCorrectRoute) {
+            console.log(`Access Denied/Redirecting: ${role} on ${pathname} -> redirecting to ${correctPath}`);
+            return NextResponse.redirect(new URL(correctPath, request.url));
         }
     }
 

@@ -1,120 +1,86 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { getAllWelfareRequests, updateWelfareStatus, WelfareRequest } from "@/lib/api/welfareRequests";
+import { Toast } from "@/components/ui/Toast";
 
 
 // ── Types ───────────────────────────────────────────────────────────
-type WelfareStatus = "SUBMITTED" | "APPROVED" | "REJECTED";
+type WelfareStatus = "SUBMITTED" | "APPROVED" | "REJECTED" | "NEW";
 
-interface WelfareDocument {
-    key: string;
-    label: string;
-    filename: string;
-}
+// Type WelfareDocument removed
 
-interface WelfareApprovalRequest {
-    id: string;
-    epfNumber: string;
-    employeeName: string;
-    designation: string;
-    branch: string;
-    welfareType: string;
-    amount: number;
-    adjustedAmount: number; // For adjusting during certification
-    specialRemark: string;
-    requestDate: string;
-    status: WelfareStatus;
-    documents: WelfareDocument[];
-    hrRemarks: string; // Used for rejection reasons or internal notes
-}
+// Type WelfareApprovalRequest removed
 
-// ── Mock Data ───────────────────────────────────────────────────────
-const MOCK_REQUESTS: WelfareApprovalRequest[] = [
-    {
-        id: "WLF-2024-882",
-        epfNumber: "12345",
-        employeeName: "Kasun Perera",
-        designation: "Software Engineer",
-        branch: "Colombo Branch",
-        welfareType: "Family Funeral",
-        amount: 50000,
-        adjustedAmount: 50000,
-        specialRemark: "Immediate requirement for funeral expenses.",
-        requestDate: "2024-10-01",
-        status: "SUBMITTED",
-        documents: [
-            { key: "cert", label: "Supporting Document", filename: "death_certificate.pdf" },
-        ],
-        hrRemarks: "",
-    },
-    {
-        id: "WLF-2024-883",
-        epfNumber: "67890",
-        employeeName: "Nimali Silva",
-        designation: "Marketing Manager",
-        branch: "Kandy Branch",
-        welfareType: "Festival Advance",
-        amount: 25000,
-        adjustedAmount: 25000,
-        specialRemark: "Sinhala and Tamil New Year advance.",
-        requestDate: "2024-10-05",
-        status: "SUBMITTED",
-        documents: [],
-        hrRemarks: "",
-    },
-    {
-        id: "WLF-2024-884",
-        epfNumber: "34567",
-        employeeName: "Tharindu Jayawardena",
-        designation: "Senior Accountant",
-        branch: "Head Office",
-        welfareType: "Accident Claims",
-        amount: 150000,
-        adjustedAmount: 150000,
-        specialRemark: "Vehicle accident while on duty. Original bills attached.",
-        requestDate: "2024-09-28",
-        status: "SUBMITTED",
-        documents: [
-            { key: "police", label: "Police Report", filename: "police_report_345.pdf" },
-            { key: "medical", label: "Medical Bills", filename: "hospital_bills.pdf" },
-        ],
-        hrRemarks: "",
-    },
-];
+// Mock Data removed for API integration
 
 // ── Status Configs ───────────────────────────────────────────
 const statusConfig: Record<WelfareStatus, { label: string; classes: string }> = {
-    SUBMITTED: { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+    NEW: { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400" },
+    SUBMITTED: { label: "Pending Review", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
     APPROVED: { label: "Approved", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
     REJECTED: { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
 };
 
 export default function WelfarePage() {
-    const [requests, setRequests] = useState<WelfareApprovalRequest[]>(MOCK_REQUESTS);
-    const [selectedRequest, setSelectedRequest] = useState<WelfareApprovalRequest | null>(null);
+    const [requests, setRequests] = useState<WelfareRequest[]>([]);
+    const [selectedRequest, setSelectedRequest] = useState<WelfareRequest | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
     // Modal Form State
     const [adjustedAmountStr, setAdjustedAmountStr] = useState<string>("");
     const [hrRemarksStr, setHrRemarksStr] = useState<string>("");
     const [actionError, setActionError] = useState<string>("");
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [notifiedEmail, setNotifiedEmail] = useState<string | null>(null);
+
+    const loadRequests = useCallback(async () => {
+        try {
+            const data = await getAllWelfareRequests();
+            setRequests(data);
+        } catch (error) {
+            console.error("Failed to load welfare requests", error);
+        } finally {
+            // Loading state removed
+        }
+    }, []);
+
+    useEffect(() => {
+        loadRequests();
+    }, [loadRequests]);
+
+    // Helper to identify legitimate requests (registered employees)
+    const isLegit = (req: WelfareRequest) => {
+        return (req.employeeName || "").trim().length > 0 && 
+               (req.epfNumber || "").trim() !== "" && 
+               (req.epfNumber || "").trim() !== "N/A";
+    };
 
     // ── Data Filtering ──────────────────────────────────────────────
     const filteredRequests = requests.filter((req) => {
+        const isSubmitted = req.status === "SUBMITTED";
         const matchesSearch =
-            req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            req.id.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch;
+            (req.employeeName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (req.id || "").toLowerCase().includes(searchTerm.toLowerCase());
+            
+        return isSubmitted && matchesSearch && isLegit(req);
     });
 
-    const isActionable = (req: WelfareApprovalRequest) => {
+    const isActionable = (req: WelfareRequest) => {
         return req.status === "SUBMITTED";
     };
 
+    const stats = {
+        total: requests.filter(isLegit).length,
+        pending: requests.filter(r => r.status === "SUBMITTED" && isLegit(r)).length,
+        approved: requests.filter(r => r.status === "APPROVED" && isLegit(r)).length,
+        rejected: requests.filter(r => r.status === "REJECTED" && isLegit(r)).length,
+    };
+
     // ── Event Handlers ──────────────────────────────────────────────
-    const handleView = (req: WelfareApprovalRequest) => {
+    const handleView = (req: WelfareRequest) => {
         setSelectedRequest(req);
-        setAdjustedAmountStr(req.adjustedAmount.toString());
+        setAdjustedAmountStr(req.amount.toString());
         setHrRemarksStr(req.hrRemarks || "");
         setActionError("");
     };
@@ -123,7 +89,7 @@ export default function WelfarePage() {
         setSelectedRequest(null);
     };
 
-    const processAction = (action: "APPROVE" | "REJECT") => {
+    const processAction = async (action: "APPROVE" | "REJECT") => {
         if (!selectedRequest) return;
         
         // Validation
@@ -132,25 +98,27 @@ export default function WelfarePage() {
             return;
         }
 
-        const numericAmount = parseFloat(adjustedAmountStr) || selectedRequest.adjustedAmount;
-
         const newStatus = action === "APPROVE" ? "APPROVED" : "REJECTED";
 
-        setRequests((prev) =>
-            prev.map((r) =>
-                r.id === selectedRequest.id
-                    ? { ...r, status: newStatus, adjustedAmount: numericAmount, hrRemarks: hrRemarksStr.trim() }
-                    : r
-            )
-        );
-
-
-
-        handleCloseModal();
+        try {
+            const updatedReq = await updateWelfareStatus(selectedRequest.id, newStatus, hrRemarksStr.trim());
+            setRequests((prev) =>
+                prev.map((r) => (r.id === updatedReq.id ? updatedReq : r))
+            );
+            
+            // Set success state before closing
+            setNotifiedEmail(updatedReq.email);
+            setSuccessMessage(`Email successfully sent to ${updatedReq.email}`);
+            
+            handleCloseModal();
+        } catch (error) {
+            console.error("Failed to update status", error);
+            setActionError("Failed to update status. Please try again.");
+        }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col">
             <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
                 {/* Header Sequence */}
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -163,6 +131,49 @@ export default function WelfarePage() {
                         <p className="text-slate-500 dark:text-slate-400">
                             Review and approve pending employee welfare requests systematically.
                         </p>
+                    </div>
+                </div>
+
+                {/* Statistics Figures */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm">
+                        <div>
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Requests</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.total}</h3>
+                        </div>
+                        <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center rounded-lg">
+                            <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">summarize</span>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm">
+                        <div>
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Pending Review</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.pending}</h3>
+                        </div>
+                        <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center rounded-lg">
+                            <span className="material-symbols-outlined text-amber-600 dark:text-amber-400">pending_actions</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm">
+                        <div>
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Approved</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.approved}</h3>
+                        </div>
+                        <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center rounded-lg">
+                            <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400">check_circle</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm">
+                        <div>
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Rejected</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.rejected}</h3>
+                        </div>
+                        <div className="w-12 h-12 bg-red-50 dark:bg-red-900/30 flex items-center justify-center rounded-lg">
+                            <span className="material-symbols-outlined text-red-600 dark:text-red-400">cancel</span>
+                        </div>
                     </div>
                 </div>
 
@@ -199,7 +210,7 @@ export default function WelfarePage() {
                             </thead>
                             <tbody className="text-sm">
                                 {filteredRequests.map((req) => {
-                                    const st = statusConfig[req.status];
+                                    const st = statusConfig[req.status as WelfareStatus] || statusConfig.NEW;
                                     const canAct = isActionable(req);
 
                                     return (
@@ -220,7 +231,7 @@ export default function WelfarePage() {
                                                 {req.welfareType}
                                             </td>
                                             <td className="py-4 px-6 text-slate-800 dark:text-slate-200">
-                                                LKR {req.adjustedAmount.toLocaleString()}
+                                                LKR {req.amount.toLocaleString()}
                                             </td>
                                             <td className="py-4 px-6">
                                                 <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${st.classes}`}>
@@ -279,7 +290,7 @@ export default function WelfarePage() {
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <h2 className="text-lg font-bold text-slate-900 dark:text-white">{selectedRequest.welfareType}</h2>
-                                            <p className="text-sm text-slate-500 mt-1">Requested by {selectedRequest.employeeName} ({selectedRequest.epfNumber}) on {selectedRequest.requestDate}</p>
+                                            <p className="text-sm text-slate-500 mt-1">Requested by {selectedRequest.employeeName} ({selectedRequest.epfNumber}) on {selectedRequest.dateOfRequest}</p>
                                         </div>
                                         <span className={`text-[10px] font-bold px-3 py-1.5 rounded uppercase tracking-wider ${statusConfig[selectedRequest.status].classes}`}>
                                             {statusConfig[selectedRequest.status].label}
@@ -311,13 +322,13 @@ export default function WelfarePage() {
 
                                     <div className="space-y-2">
                                         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                            Special Remark
+                                            Employee Special Remark
                                         </label>
                                         <textarea
                                             className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-700 dark:text-slate-300 resize-none"
                                             readOnly
                                             rows={2}
-                                            value={selectedRequest.specialRemark || "No special remarks provided."}
+                                            value={selectedRequest.employeeRemarks || "No special remarks provided."}
                                         />
                                     </div>
 
@@ -338,9 +349,18 @@ export default function WelfarePage() {
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{doc.label}</p>
-                                                            <div className="mt-1 flex items-center gap-2">
-                                                                <span className="material-symbols-outlined text-red-500 text-[14px]">picture_as_pdf</span>
-                                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate hover:text-primary transition-colors cursor-pointer">{doc.filename}</p>
+                                                            <div className="mt-1 flex items-center justify-between gap-2">
+                                                                <div className="flex items-center gap-2 overflow-hidden">
+                                                                    <span className="material-symbols-outlined text-red-500 text-[14px]">picture_as_pdf</span>
+                                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{doc.filename}</p>
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => console.log('Downloading', doc.filename)}
+                                                                    className="text-slate-400 hover:text-primary transition-colors cursor-pointer"
+                                                                    title="Download Document"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-[18px]">download</span>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -442,6 +462,15 @@ export default function WelfarePage() {
                         </div>
                     </div>
                 </div>
+            )}
+            {/* ── Toast Notifications ────────────────────────────── */}
+            {successMessage && (
+                <Toast
+                    message={successMessage}
+                    type="success"
+                    position="right"
+                    onClose={() => { setSuccessMessage(null); setNotifiedEmail(null); }}
+                />
             )}
         </div>
     );
