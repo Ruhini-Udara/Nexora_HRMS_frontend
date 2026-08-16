@@ -11,7 +11,6 @@ interface Shift {
   startTime: string;
   endTime: string;
   duration: string;
-  status: "Active" | "Inactive";
   icon: "sun" | "clock" | "truck";
   color: string;
 }
@@ -43,7 +42,6 @@ export default function ShiftManagement() {
       startTime: "08:30",
       endTime: "16:30",
       duration: "8h Work Duration",
-      status: "Active",
       icon: "sun",
       color: "blue",
     },
@@ -54,7 +52,6 @@ export default function ShiftManagement() {
       startTime: "08:15",
       endTime: "16:45",
       duration: "8.5h Work Duration",
-      status: "Active",
       icon: "clock",
       color: "orange",
     },
@@ -65,7 +62,6 @@ export default function ShiftManagement() {
       startTime: "08:00",
       endTime: "17:00",
       duration: "9h Work Duration",
-      status: "Active",
       icon: "truck",
       color: "purple",
     },
@@ -248,9 +244,6 @@ export default function ShiftManagement() {
                 <div className={`p-3 rounded-lg ${getShiftColor(displayShift.color)}`}>
                   {getShiftIcon(displayShift.icon)}
                 </div>
-                <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                  {displayShift.status}
-                </span>
               </div>
               <h3 className="text-lg font-bold text-[#111827] mb-1">{displayShift.name}</h3>
               <p className="text-sm text-slate-600 mb-4">{displayShift.description}</p>
