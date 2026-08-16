@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Plus, Eye, Pencil, Clock, Sun, Truck, X, Briefcase, Building2, Timer, BadgeCheck } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Plus, Eye, Pencil, Clock, Sun, Truck, X, Timer } from "lucide-react";
 import AddNewShiftMapping from "../addnewshiftmapping/AddNewShiftMapping";
 import api from "@/lib/axiosInstance";
 
@@ -25,29 +25,47 @@ interface ShiftMapping {
   avatar: string;
 }
 
-export default function ShiftManagement() {
-  const calculateDuration = (startTime: string, endTime: string): string => {
-    if (!startTime || !endTime) return "-";
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    
-    let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
-    
-    // Handle overnight shifts
-    if (totalMinutes < 0) {
-      totalMinutes += 24 * 60;
-    }
-    
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    
-    if (minutes === 0) {
-      return `${hours}h Work Duration`;
-    } else {
-      return `${hours}h ${minutes}m Work Duration`;
-    }
-  };
+interface ShiftApiResponse {
+  id: number;
+  name: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+}
 
+interface DesignationApiResponse {
+  designationId: number;
+  designationName: string;
+  shift?: {
+    name: string;
+    startTime: string;
+    endTime: string;
+  } | null;
+}
+
+const calculateDuration = (startTime: string, endTime: string): string => {
+  if (!startTime || !endTime) return "-";
+  const [startHour, startMin] = startTime.split(':').map(Number);
+  const [endHour, endMin] = endTime.split(':').map(Number);
+  
+  let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+  
+  // Handle overnight shifts
+  if (totalMinutes < 0) {
+    totalMinutes += 24 * 60;
+  }
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  if (minutes === 0) {
+    return `${hours}h Work Duration`;
+  } else {
+    return `${hours}h ${minutes}m Work Duration`;
+  }
+};
+
+export default function ShiftManagement() {
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedShift, setSelectedShift] = useState("");
   const [showAddMapping, setShowAddMapping] = useState(false);
@@ -59,18 +77,15 @@ export default function ShiftManagement() {
 
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [shiftMappings, setShiftMappings] = useState<ShiftMapping[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
-      setLoading(true);
       const [shiftsRes, designationsRes] = await Promise.all([
         api.get("/api/shifts"),
         api.get("/api/designations")
       ]);
 
-      const fetchedShifts = shiftsRes.data.map((s: any) => {
+      const fetchedShifts = shiftsRes.data.map((s: ShiftApiResponse) => {
         let icon: "sun" | "clock" | "truck" = "clock";
         let color = "orange";
         if (s.name.toLowerCase().includes("normal")) {
@@ -92,8 +107,8 @@ export default function ShiftManagement() {
         };
       });
 
-      const fetchedMappings = designationsRes.data.map((d: any) => {
-        let avatar = d.designationName ? d.designationName.substring(0, 2).toUpperCase() : "DS";
+      const fetchedMappings = designationsRes.data.map((d: DesignationApiResponse) => {
+        const avatar = d.designationName ? d.designationName.substring(0, 2).toUpperCase() : "DS";
         let department = "Operations";
         if (d.designationName.toLowerCase().includes("hr") || d.designationName.toLowerCase().includes("admin")) {
           department = "Human Resources";
@@ -114,18 +129,15 @@ export default function ShiftManagement() {
 
       setShifts(fetchedShifts);
       setShiftMappings(fetchedMappings);
-      setError("");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error loading shift management data:", err);
-      setError("Failed to load shift data.");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
-  }, []);
+  }, [loadData]);
 
   const getShiftIcon = (icon: string) => {
     switch (icon) {

@@ -17,6 +17,18 @@ interface Designation {
   name: string;
 }
 
+interface ApiDesignation {
+  designationId: number | string;
+  designationName: string;
+}
+
+interface ApiShift {
+  id: number | string;
+  name: string;
+  startTime: string;
+  endTime: string;
+}
+
 export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: () => void; onSuccess?: () => void }) {
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedShiftType, setSelectedShiftType] = useState("");
@@ -28,8 +40,6 @@ export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: (
 
   const [designations, setDesignations] = useState<Designation[]>([]);
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   // Close calendar when clicking outside
   useEffect(() => {
@@ -45,18 +55,17 @@ export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: (
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         const [designationsRes, shiftsRes] = await Promise.all([
           api.get("/api/designations"),
           api.get("/api/shifts")
         ]);
 
-        const fetchedDesignations = designationsRes.data.map((d: any) => ({
+        const fetchedDesignations = designationsRes.data.map((d: ApiDesignation) => ({
           id: d.designationId.toString(),
           name: d.designationName
         }));
 
-        const fetchedShifts = shiftsRes.data.map((s: any) => {
+        const fetchedShifts = shiftsRes.data.map((s: ApiShift) => {
           const formatTime = (timeStr: string) => {
             const [hour, min] = timeStr.split(":");
             const hr = parseInt(hour);
@@ -88,9 +97,6 @@ export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: (
         setShiftTypes(fetchedShifts);
       } catch (err) {
         console.error("Error loading dropdown data:", err);
-        setError("Failed to load options.");
-      } finally {
-        setLoading(false);
       }
     };
     fetchData();
