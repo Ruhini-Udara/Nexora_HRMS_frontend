@@ -20,7 +20,6 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedShiftType, setSelectedShiftType] = useState("");
   const [effectiveDate, setEffectiveDate] = useState("");
-  const [status, setStatus] = useState(true); // true = Active, false = Inactive
   const [notes, setNotes] = useState("");
   const [showCalendar, setShowCalendar] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -153,7 +152,6 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
       selectedDesignation,
       selectedShiftType,
       effectiveDate,
-      status,
       notes,
     });
     if (onClose) onClose();
@@ -291,114 +289,88 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
             </div>
           )}
 
-          {/* Effective Date and Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Effective Date */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Effective Date <span className="text-orange-500">*</span>
-              </label>
-              <div className="relative" ref={calendarRef}>
-                <Calendar
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"
-                />
-                <input
-                  type="text"
-                  value={effectiveDate}
-                  onChange={(e) => setEffectiveDate(e.target.value)}
-                  onFocus={() => setShowCalendar(true)}
-                  placeholder="mm/dd/yyyy"
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all"
-                />
-                
-                {/* Calendar Dropdown */}
-                {showCalendar && (
-                  <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-4 w-80">
-                    {/* Calendar Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <button
-                        type="button"
-                        onClick={previousMonth}
-                        className="p-1 hover:bg-slate-100 rounded transition-colors"
-                      >
-                        <ChevronLeft size={20} className="text-slate-600" />
-                      </button>
-                      <span className="font-semibold text-slate-800">
-                        {getMonthName(currentMonth)}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={nextMonth}
-                        className="p-1 hover:bg-slate-100 rounded transition-colors"
-                      >
-                        <ChevronRight size={20} className="text-slate-600" />
-                      </button>
-                    </div>
-
-                    {/* Calendar Grid */}
-                    <div className="grid grid-cols-7 gap-1">
-                      {/* Weekday Headers */}
-                      {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-                        <div
-                          key={day}
-                          className="text-center text-xs font-medium text-slate-500 py-2"
-                        >
-                          {day}
-                        </div>
-                      ))}
-                      
-                      {/* Calendar Days */}
-                      {getDaysInMonth(currentMonth).map((dayObj, idx) => {
-                        const isPast = isPastDate(dayObj.date);
-                        const isDisabled = isPast || !dayObj.isCurrentMonth;
-                        
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => !isDisabled && handleDateSelect(dayObj.date)}
-                            disabled={isDisabled}
-                            className={`
-                              p-2 text-sm rounded-lg transition-colors
-                              ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
-                              ${isPast && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
-                              ${isToday(dayObj.date) && !isPast ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                              ${isSelectedDate(dayObj.date) ? "bg-amber-400 text-white font-semibold" : ""}
-                              ${dayObj.isCurrentMonth && !isPast && !isToday(dayObj.date) && !isSelectedDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
-                            `}
-                          >
-                            {dayObj.day}
-                          </button>
-                        );
-                      })}
-                    </div>
+          {/* Effective Date */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Effective Date <span className="text-orange-500">*</span>
+            </label>
+            <div className="relative" ref={calendarRef}>
+              <Calendar
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"
+              />
+              <input
+                type="text"
+                value={effectiveDate}
+                onChange={(e) => setEffectiveDate(e.target.value)}
+                onFocus={() => setShowCalendar(true)}
+                placeholder="mm/dd/yyyy"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all"
+              />
+              
+              {/* Calendar Dropdown */}
+              {showCalendar && (
+                <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-4 w-80">
+                  {/* Calendar Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <button
+                      type="button"
+                      onClick={previousMonth}
+                      className="p-1 hover:bg-slate-100 rounded transition-colors"
+                    >
+                      <ChevronLeft size={20} className="text-slate-600" />
+                    </button>
+                    <span className="font-semibold text-slate-800">
+                      {getMonthName(currentMonth)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={nextMonth}
+                      className="p-1 hover:bg-slate-100 rounded transition-colors"
+                    >
+                      <ChevronRight size={20} className="text-slate-600" />
+                    </button>
                   </div>
-                )}
-              </div>
-            </div>
 
-            {/* Status */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
-              <div className="flex items-center gap-3 h-10.5">
-                <button
-                  type="button"
-                  onClick={() => setStatus(!status)}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                    status ? "bg-orange-500" : "bg-slate-300"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${
-                      status ? "translate-x-7" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-                <span className="text-sm font-medium text-slate-700">
-                  {status ? "Active" : "Inactive"}
-                </span>
-              </div>
+                  {/* Calendar Grid */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {/* Weekday Headers */}
+                    {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+                      <div
+                        key={day}
+                        className="text-center text-xs font-medium text-slate-500 py-2"
+                      >
+                        {day}
+                      </div>
+                    ))}
+                    
+                    {/* Calendar Days */}
+                    {getDaysInMonth(currentMonth).map((dayObj, idx) => {
+                      const isPast = isPastDate(dayObj.date);
+                      const isDisabled = isPast || !dayObj.isCurrentMonth;
+                      
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => !isDisabled && handleDateSelect(dayObj.date)}
+                          disabled={isDisabled}
+                          className={`
+                            p-2 text-sm rounded-lg transition-colors
+                            ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
+                            ${isPast && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
+                            ${isToday(dayObj.date) && !isPast ? "bg-blue-50 text-blue-600 font-semibold" : ""}
+                            ${isSelectedDate(dayObj.date) ? "bg-amber-400 text-white font-semibold" : ""}
+                            ${dayObj.isCurrentMonth && !isPast && !isToday(dayObj.date) && !isSelectedDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
+                          `}
+                        >
+                          {dayObj.day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

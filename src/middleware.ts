@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    
+
     // 1. Get cookies
     const token = request.cookies.get('nexora-token')?.value;
     const role = request.cookies.get('nexora-role')?.value;
