@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Save, X, Calendar, Clock, Briefcase, ChevronLeft, ChevronRight } from "lucide-react";
+import api from "@/lib/axiosInstance";
 
 interface ShiftType {
   id: string;
@@ -16,7 +17,19 @@ interface Designation {
   name: string;
 }
 
-export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }) {
+interface ApiDesignation {
+  designationId: number | string;
+  designationName: string;
+}
+
+interface ApiShift {
+  id: number | string;
+  name: string;
+  startTime: string;
+  endTime: string;
+}
+
+export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: () => void; onSuccess?: () => void }) {
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedShiftType, setSelectedShiftType] = useState("");
   const [effectiveDate, setEffectiveDate] = useState("");
@@ -24,6 +37,9 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
   const [showCalendar, setShowCalendar] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const calendarRef = useRef<HTMLDivElement>(null);
+
+  const [designations, setDesignations] = useState<Designation[]>([]);
+  const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([]);
 
   // Close calendar when clicking outside
   useEffect(() => {
@@ -36,22 +52,55 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const designations: Designation[] = [
-    { id: "1", name: "Senior Engineer" },
-    { id: "2", name: "Engineer" },
-    { id: "3", name: "HR Manager" },
-    { id: "4", name: "HR Executive" },
-    { id: "5", name: "Sales Executive" },
-    { id: "6", name: "Product Manager" },
-    { id: "7", name: "Driver" },
-    { id: "8", name: "Support Staff" },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [designationsRes, shiftsRes] = await Promise.all([
+          api.get("/api/designations"),
+          api.get("/api/shifts")
+        ]);
 
-  const shiftTypes: ShiftType[] = [
-    { id: "1", name: "Normal Shift", startTime: "08:30 AM", endTime: "04:30 PM", duration: "8 Hours" },
-    { id: "2", name: "Temporary Shift", startTime: "08:15 AM", endTime: "04:45 PM", duration: "8.5 Hours" },
-    { id: "3", name: "Drivers Shift", startTime: "08:00 AM", endTime: "05:00 PM", duration: "9 Hours" },
-  ];
+        const fetchedDesignations = designationsRes.data.map((d: ApiDesignation) => ({
+          id: d.designationId.toString(),
+          name: d.designationName
+        }));
+
+        const fetchedShifts = shiftsRes.data.map((s: ApiShift) => {
+          const formatTime = (timeStr: string) => {
+            const [hour, min] = timeStr.split(":");
+            const hr = parseInt(hour);
+            const ampm = hr >= 12 ? "PM" : "AM";
+            const hr12 = hr % 12 || 12;
+            return `${hr12.toString().padStart(2, '0')}:${min} ${ampm}`;
+          };
+          
+          const getDuration = (startTime: string, endTime: string) => {
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+            let diffMin = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+            if (diffMin < 0) diffMin += 24 * 60;
+            const hours = Math.floor(diffMin / 60);
+            const minutes = diffMin % 60;
+            return minutes === 0 ? `${hours} Hours` : `${hours}h ${minutes}m`;
+          };
+
+          return {
+            id: s.id.toString(),
+            name: s.name,
+            startTime: formatTime(s.startTime),
+            endTime: formatTime(s.endTime),
+            duration: getDuration(s.startTime, s.endTime)
+          };
+        });
+
+        setDesignations(fetchedDesignations);
+        setShiftTypes(fetchedShifts);
+      } catch (err) {
+        console.error("Error loading dropdown data:", err);
+      }
+    };
+    fetchData();
+  }, []);
 
   const getSelectedShiftDetails = () => {
     const shift = shiftTypes.find((s) => s.id === selectedShiftType);
@@ -146,15 +195,22 @@ export default function AddNewShiftMapping({ onClose }: { onClose?: () => void }
     return checkDate < today;
   };
 
-  const handleSave = () => {
-    // Handle save logic here
-    console.log({
-      selectedDesignation,
-      selectedShiftType,
-      effectiveDate,
-      notes,
-    });
-    if (onClose) onClose();
+  const handleSave = async () => {
+    if (!selectedDesignation || !selectedShiftType) {
+      alert("Please select both a designation and a shift type.");
+      return;
+    }
+    try {
+      await api.put(`/api/designations/${selectedDesignation}/shift/${selectedShiftType}`);
+      if (onSuccess) {
+        onSuccess();
+      } else if (onClose) {
+        onClose();
+      }
+    } catch (err) {
+      console.error("Error saving shift mapping:", err);
+      alert("Failed to save shift mapping. Please try again.");
+    }
   };
 
   const shiftDetails = getSelectedShiftDetails();

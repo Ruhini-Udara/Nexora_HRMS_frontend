@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, Eye, Pencil, Clock, Sun, Truck, X, Briefcase, Building2, Timer, BadgeCheck } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Plus, Eye, Pencil, Clock, Sun, Truck, X, Timer } from "lucide-react";
 import AddNewShiftMapping from "../addnewshiftmapping/AddNewShiftMapping";
+import api from "@/lib/axiosInstance";
 
 interface Shift {
   id: number;
@@ -24,6 +25,46 @@ interface ShiftMapping {
   avatar: string;
 }
 
+interface ShiftApiResponse {
+  id: number;
+  name: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface DesignationApiResponse {
+  designationId: number;
+  designationName: string;
+  shift?: {
+    name: string;
+    startTime: string;
+    endTime: string;
+  } | null;
+}
+
+const calculateDuration = (startTime: string, endTime: string): string => {
+  if (!startTime || !endTime) return "-";
+  const [startHour, startMin] = startTime.split(':').map(Number);
+  const [endHour, endMin] = endTime.split(':').map(Number);
+  
+  let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+  
+  // Handle overnight shifts
+  if (totalMinutes < 0) {
+    totalMinutes += 24 * 60;
+  }
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  if (minutes === 0) {
+    return `${hours}h Work Duration`;
+  } else {
+    return `${hours}h ${minutes}m Work Duration`;
+  }
+};
+
 export default function ShiftManagement() {
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedShift, setSelectedShift] = useState("");
@@ -34,65 +75,69 @@ export default function ShiftManagement() {
   const [editingShiftId, setEditingShiftId] = useState<number | null>(null);
   const [editingShiftData, setEditingShiftData] = useState<Shift | null>(null);
 
-  const [shifts, setShifts] = useState<Shift[]>([
-    {
-      id: 1,
-      name: "Normal Shift",
-      description: "Standard operational hours",
-      startTime: "08:30",
-      endTime: "16:30",
-      duration: "8h Work Duration",
-      icon: "sun",
-      color: "blue",
-    },
-    {
-      id: 2,
-      name: "Temporary Shift",
-      description: "Contract staff & interns",
-      startTime: "08:15",
-      endTime: "16:45",
-      duration: "8.5h Work Duration",
-      icon: "clock",
-      color: "orange",
-    },
-    {
-      id: 3,
-      name: "Drivers Shift",
-      description: "Transport & Logistics ",
-      startTime: "08:00",
-      endTime: "17:00",
-      duration: "9h Work Duration",
-      icon: "truck",
-      color: "purple",
-    },
-  ]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [shiftMappings, setShiftMappings] = useState<ShiftMapping[]>([]);
 
-  const [shiftMappings, setShiftMappings] = useState<ShiftMapping[]>([
-    {
-      id: 1,
-      role: "HR Executive",
-      department: "Human Resources",
-      assignedShift: "Normal Shift",
-      timeRange: "08:30 - 16:30",
-      avatar: "MA",
-    },
-    {
-      id: 2,
-      role: "Sales Executive",
-      department: "Sales & Marketing",
-      assignedShift: "Normal Shift",
-      timeRange: "08:30 - 16:30",
-      avatar: "EX",
-    },
-    {
-      id: 3,
-      role: "Support Staff",
-      department: "Operations",
-      assignedShift: "Temporary Shift",
-      timeRange: "08:15 - 16:45",
-      avatar: "SA",
-    },
-  ]);
+  const loadData = useCallback(async () => {
+    try {
+      const [shiftsRes, designationsRes] = await Promise.all([
+        api.get("/api/shifts"),
+        api.get("/api/designations")
+      ]);
+
+      const fetchedShifts = shiftsRes.data.map((s: ShiftApiResponse) => {
+        let icon: "sun" | "clock" | "truck" = "clock";
+        let color = "orange";
+        if (s.name.toLowerCase().includes("normal")) {
+          icon = "sun";
+          color = "blue";
+        } else if (s.name.toLowerCase().includes("driver")) {
+          icon = "truck";
+          color = "purple";
+        }
+        return {
+          id: s.id,
+          name: s.name,
+          description: s.description || "",
+          startTime: s.startTime.substring(0, 5),
+          endTime: s.endTime.substring(0, 5),
+          duration: calculateDuration(s.startTime, s.endTime),
+          icon,
+          color
+        };
+      });
+
+      const fetchedMappings = designationsRes.data.map((d: DesignationApiResponse) => {
+        const avatar = d.designationName ? d.designationName.substring(0, 2).toUpperCase() : "DS";
+        let department = "Operations";
+        if (d.designationName.toLowerCase().includes("hr") || d.designationName.toLowerCase().includes("admin")) {
+          department = "Human Resources";
+        } else if (d.designationName.toLowerCase().includes("sales")) {
+          department = "Sales & Marketing";
+        } else if (d.designationName.toLowerCase().includes("software") || d.designationName.toLowerCase().includes("engineer")) {
+          department = "Engineering";
+        }
+        return {
+          id: d.designationId,
+          role: d.designationName,
+          department: department,
+          assignedShift: d.shift ? d.shift.name : "Unassigned",
+          timeRange: d.shift ? `${d.shift.startTime.substring(0, 5)} - ${d.shift.endTime.substring(0, 5)}` : "-",
+          avatar
+        };
+      });
+
+      setShifts(fetchedShifts);
+      setShiftMappings(fetchedMappings);
+    } catch (err) {
+      console.error("Error loading shift management data:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData();
+  }, [loadData]);
 
   const getShiftIcon = (icon: string) => {
     switch (icon) {
@@ -131,13 +176,22 @@ export default function ShiftManagement() {
     setEditForm({ ...mapping });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editForm) {
-      setShiftMappings(shiftMappings.map((mapping) => 
-        mapping.id === editForm.id ? editForm : mapping
-      ));
-      setEditingMapping(null);
-      setEditForm(null);
+      try {
+        const selectedShiftObj = shifts.find(s => s.name === editForm.assignedShift);
+        if (selectedShiftObj) {
+          await api.put(`/api/designations/${editForm.id}/shift/${selectedShiftObj.id}`);
+        } else {
+          await api.put(`/api/designations/${editForm.id}/shift`);
+        }
+        await loadData();
+        setEditingMapping(null);
+        setEditForm(null);
+      } catch (err) {
+        console.error("Error updating shift mapping:", err);
+        alert("Failed to update shift mapping.");
+      }
     }
   };
 
@@ -151,38 +205,22 @@ export default function ShiftManagement() {
     setEditingShiftData({ ...shift });
   };
 
-  const calculateDuration = (startTime: string, endTime: string): string => {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    
-    let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
-    
-    // Handle overnight shifts
-    if (totalMinutes < 0) {
-      totalMinutes += 24 * 60;
-    }
-    
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    
-    if (minutes === 0) {
-      return `${hours}h Work Duration`;
-    } else {
-      return `${hours}h ${minutes}m Work Duration`;
-    }
-  };
-
-  const handleSaveShift = () => {
+  const handleSaveShift = async () => {
     if (editingShiftData) {
-      const updatedShift = {
-        ...editingShiftData,
-        duration: calculateDuration(editingShiftData.startTime, editingShiftData.endTime)
-      };
-      setShifts(shifts.map((shift) => 
-        shift.id === updatedShift.id ? updatedShift : shift
-      ));
-      setEditingShiftId(null);
-      setEditingShiftData(null);
+      try {
+        await api.put(`/api/shifts/${editingShiftData.id}`, {
+          name: editingShiftData.name,
+          startTime: editingShiftData.startTime,
+          endTime: editingShiftData.endTime,
+          description: editingShiftData.description
+        });
+        await loadData();
+        setEditingShiftId(null);
+        setEditingShiftData(null);
+      } catch (err) {
+        console.error("Error updating shift timing:", err);
+        alert("Failed to update shift timing.");
+      }
     }
   };
 
@@ -599,7 +637,15 @@ export default function ShiftManagement() {
       )}
 
       {/* Add New Shift Mapping Modal */}
-      {showAddMapping && <AddNewShiftMapping onClose={() => setShowAddMapping(false)} />}
+      {showAddMapping && (
+        <AddNewShiftMapping 
+          onClose={() => setShowAddMapping(false)} 
+          onSuccess={() => {
+            loadData();
+            setShowAddMapping(false);
+          }}
+        />
+      )}
     </div>
   );
 }
