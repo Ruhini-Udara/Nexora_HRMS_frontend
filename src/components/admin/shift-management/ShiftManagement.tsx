@@ -22,15 +22,12 @@ interface ShiftMapping {
   department: string;
   assignedShift: string;
   timeRange: string;
-  gracePeriod: string;
-  status: "Active" | "Inactive";
   avatar: string;
 }
 
 export default function ShiftManagement() {
   const [selectedDesignation, setSelectedDesignation] = useState("");
   const [selectedShift, setSelectedShift] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
   const [showAddMapping, setShowAddMapping] = useState(false);
   const [viewingMapping, setViewingMapping] = useState<ShiftMapping | null>(null);
   const [editingMapping, setEditingMapping] = useState<ShiftMapping | null>(null);
@@ -81,8 +78,6 @@ export default function ShiftManagement() {
       department: "Human Resources",
       assignedShift: "Normal Shift",
       timeRange: "08:30 - 16:30",
-      gracePeriod: "15 mins",
-      status: "Active",
       avatar: "MA",
     },
     {
@@ -91,8 +86,6 @@ export default function ShiftManagement() {
       department: "Sales & Marketing",
       assignedShift: "Normal Shift",
       timeRange: "08:30 - 16:30",
-      gracePeriod: "10 mins",
-      status: "Active",
       avatar: "EX",
     },
     {
@@ -101,8 +94,6 @@ export default function ShiftManagement() {
       department: "Operations",
       assignedShift: "Temporary Shift",
       timeRange: "08:15 - 16:45",
-      gracePeriod: "0 mins",
-      status: "Active",
       avatar: "SA",
     },
   ]);
@@ -208,15 +199,13 @@ export default function ShiftManagement() {
   const filteredShiftMappings = shiftMappings.filter((mapping) => {
     const matchesDesignation = !selectedDesignation || mapping.role === selectedDesignation;
     const matchesShift = !selectedShift || mapping.assignedShift === selectedShift;
-    const matchesStatus = !selectedStatus || mapping.status === selectedStatus;
     
-    return matchesDesignation && matchesShift && matchesStatus;
+    return matchesDesignation && matchesShift;
   });
 
   const handleResetFilters = () => {
     setSelectedDesignation("");
     setSelectedShift("");
-    setSelectedStatus("");
   };
 
   return (
@@ -337,7 +326,7 @@ export default function ShiftManagement() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-2 uppercase">
               Designation
@@ -373,20 +362,6 @@ export default function ShiftManagement() {
               <option value="Drivers Shift">Drivers Shift</option>
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-2 uppercase">
-              Status
-            </label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
-            >
-              <option value="">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
           <div className="flex items-end">
             <button 
               onClick={handleResetFilters}
@@ -419,12 +394,6 @@ export default function ShiftManagement() {
                   Time Range
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Grace Period
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -455,12 +424,6 @@ export default function ShiftManagement() {
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-700 font-medium">
                     {mapping.timeRange}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{mapping.gracePeriod}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                      {mapping.status}
-                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -534,32 +497,6 @@ export default function ShiftManagement() {
                     </label>
                   </div>
                   <p className="text-base text-gray-900 font-semibold">{viewingMapping.timeRange}</p>
-                </div>
-                
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="text-green-600" size={18} />
-                    <label className="block text-sm font-medium text-green-900">
-                      Grace Period
-                    </label>
-                  </div>
-                  <p className="text-base text-gray-900 font-semibold">{viewingMapping.gracePeriod}</p>
-                </div>
-                
-                <div className="bg-amber-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BadgeCheck className="text-amber-600" size={18} />
-                    <label className="block text-sm font-medium text-amber-900">
-                      Status
-                    </label>
-                  </div>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                    viewingMapping.status === 'Active' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {viewingMapping.status}
-                  </span>
                 </div>
               </div>
             </div>
@@ -646,31 +583,7 @@ export default function ShiftManagement() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Grace Period
-                </label>
-                <input
-                  type="text"
-                  value={editForm.gracePeriod}
-                  onChange={(e) => setEditForm({ ...editForm, gracePeriod: e.target.value })}
-                  placeholder="15 mins"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status
-                </label>
-                <select
-                  value={editForm.status}
-                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value as "Active" | "Inactive" })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
+
             </div>
             
             {/* Footer with Buttons */}

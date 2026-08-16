@@ -45,10 +45,6 @@ export function middleware(request: NextRequest) {
             isCorrectRoute = isSupervisorRoute;
         }
 
-        if (isSupervisorRoute && role !== 'ROLE_SUPERVISOR' && role !== 'ROLE_ADMIN') {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
-
         // If user is accessing a protected route or auth page that doesn't match their role, redirect them
         if ((isProtectedRoute || isAuthPage) && !isCorrectRoute) {
             console.log(`Access Denied/Redirecting: ${role} on ${pathname} -> redirecting to ${correctPath}`);
