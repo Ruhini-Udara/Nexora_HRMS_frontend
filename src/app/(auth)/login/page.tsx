@@ -57,10 +57,6 @@ export default function LoginPage() {
             if (userData.role === 'ROLE_ADMIN') redirectPath = '/admin';
             else if (userData.role === 'ROLE_HR') redirectPath = '/hr';
             else if (userData.role === 'ROLE_DIRECTOR') redirectPath = '/director';
-<<<<<<< HEAD
-            else if (userData.role === 'ROLE_SUPERVISOR') redirectPath = '/supervisor';
-=======
->>>>>>> 0b57afdccfab8c3b59f0ce101d6ce0d65a9848fc
 
             router.push(redirectPath);
         } catch (err) {
