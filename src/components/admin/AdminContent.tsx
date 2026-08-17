@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import StatCard from "@/components/ui/StatCard";
 import ModuleCard from "@/components/ui/ModuleCard";
+import api from "@/lib/axiosInstance";
 import {
   Users,
   CalendarDays,
@@ -22,6 +23,35 @@ import { useAdminNavigation } from "./AdminNavigationContext";
 
 export default function AdminContent() {
   const { activeView, setActiveView } = useAdminNavigation();
+  const [employeeCount, setEmployeeCount] = useState<number | string>("...");
+  const [shiftCount, setShiftCount] = useState<number | string>("...");
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCounts = async () => {
+      try {
+        const [empRes, shiftRes] = await Promise.all([
+          api.get("/api/employees"),
+          api.get("/api/shifts"),
+        ]);
+        if (isMounted) {
+          setEmployeeCount(Array.isArray(empRes.data) ? empRes.data.length : 0);
+          setShiftCount(Array.isArray(shiftRes.data) ? shiftRes.data.length : 0);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        if (isMounted) {
+          setEmployeeCount("N/A");
+          setShiftCount("N/A");
+        }
+      }
+    };
+
+    fetchCounts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (activeView === "employeeMaster") {
     return <EmployeeMaster />;
@@ -59,24 +89,19 @@ export default function AdminContent() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <StatCard
           title="Total Employees"
-          value="1,248"
-          subtext={
-            <span className="text-green-600">↗ +12% from last month</span>
-          }
+          value={employeeCount}
           icon={<Users className="w-7 h-7 text-amber-800" />}
           iconBgColor="bg-orange-50"
         />
         <StatCard
           title="Documents Uploaded This Month"
           value="24"
-          subtext={<span className="text-amber-600">5 in This week</span>}
           icon={<CalendarDays className="w-7 h-7 text-yellow-600" />}
           iconBgColor="bg-yellow-50"
         />
         <StatCard
           title="Today's Shifts"
-          value="3"
-          subtext={<span className="text-blue-600"> 98% staffing capacity</span>}
+          value={shiftCount}
           icon={<Clock className="w-7 h-7 text-blue-600" />}
           iconBgColor="bg-blue-50"
         />
