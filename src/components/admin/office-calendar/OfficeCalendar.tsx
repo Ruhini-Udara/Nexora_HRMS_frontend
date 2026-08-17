@@ -14,21 +14,26 @@ interface CalendarEvent {
 }
 
 export default function OfficeCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1)); // October 2026
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"day" | "week" | "month">("month");
   const [showAddHoliday, setShowAddHoliday] = useState(false);
   const [showAddEvent, setShowAddEvent] = useState(false);
 
+  // Dynamically position mock events in the current month for display
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
+
   const events: CalendarEvent[] = [
-    { id: 1, title: "Quarterly All-Ha...", date: "2026-10-05", type: "internal-event" },
-    { id: 2, title: "National Day Ho...", date: "2026-10-12", type: "public-holiday" },
-    { id: 3, title: "Payroll Processing", date: "2026-10-13", time: "09:00 AM", type: "admin-deadline" },
-    { id: 4, title: "HR Tech Works...", date: "2026-10-15", time: "02:30 PM", type: "admin-deadline" },
-    { id: 5, title: "Wellness Day", date: "2026-10-18", type: "public-holiday" },
-    { id: 6, title: "Tax Compliance ...", date: "2026-10-20", time: "11:59 PM", type: "admin-deadline" },
-    { id: 7, title: "New Hire Onbo...", date: "2026-10-26", type: "internal-event" },
-    { id: 8, title: "Performance Re...", date: "2026-10-28", type: "internal-event" },
-    { id: 9, title: "Halloween Party", date: "2026-10-30", type: "internal-event" },
+    { id: 1, title: "Quarterly All-Ha...", date: `${currentYear}-${currentMonth}-05`, type: "internal-event" },
+    { id: 2, title: "National Day Ho...", date: `${currentYear}-${currentMonth}-12`, type: "public-holiday" },
+    { id: 3, title: "Payroll Processing", date: `${currentYear}-${currentMonth}-13`, time: "09:00 AM", type: "admin-deadline" },
+    { id: 4, title: "HR Tech Works...", date: `${currentYear}-${currentMonth}-15`, time: "02:30 PM", type: "admin-deadline" },
+    { id: 5, title: "Wellness Day", date: `${currentYear}-${currentMonth}-18`, type: "public-holiday" },
+    { id: 6, title: "Tax Compliance ...", date: `${currentYear}-${currentMonth}-20`, time: "11:59 PM", type: "admin-deadline" },
+    { id: 7, title: "New Hire Onbo...", date: `${currentYear}-${currentMonth}-26`, type: "internal-event" },
+    { id: 8, title: "Performance Re...", date: `${currentYear}-${currentMonth}-28`, type: "internal-event" },
+    { id: 9, title: "Halloween Party", date: `${currentYear}-${currentMonth}-30`, type: "internal-event" },
   ];
 
   const getMonthName = (date: Date) => {
@@ -78,7 +83,10 @@ export default function OfficeCalendar() {
   };
 
   const getEventsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
     return events.filter((event) => event.date === dateStr);
   };
 
