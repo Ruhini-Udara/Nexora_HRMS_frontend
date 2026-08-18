@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
 import {
     Home,
     ClipboardList, 
     Calendar,
     Users,
     BarChart2,
+    LogOut,
 } from "lucide-react";
 
 const navLinks = [
@@ -22,11 +24,18 @@ const navLinks = [
 
 const SupervisorSidebar = () => {
     const pathname = usePathname();
+    const router = useRouter();
+    const logout = useAuthStore((state) => state.logout);
     const [isDark, setIsDark] = useState(false);
 
     const toggleTheme = () => {
         setIsDark(!isDark);
         document.documentElement.classList.toggle("dark");
+    };
+
+    const handleLogout = () => {
+        logout();
+        router.push("/login");
     };
 
     return (
@@ -59,8 +68,8 @@ const SupervisorSidebar = () => {
                 })}
             </nav>
 
-            {/* Toggle Theme */}
-            <div className="p-4 border-t border-gray-200">
+            {/* Toggle Theme & Logout */}
+            <div className="p-4 border-t border-gray-200 space-y-2">
                 <button
                     onClick={toggleTheme}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-custom hover:bg-gray-50"
@@ -74,6 +83,13 @@ const SupervisorSidebar = () => {
                         />
                     </svg>
                     Toggle Theme
+                </button>
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-custom hover:bg-red-100 transition-colors"
+                >
+                    <LogOut size={18} />
+                    Logout
                 </button>
             </div>
         </aside>

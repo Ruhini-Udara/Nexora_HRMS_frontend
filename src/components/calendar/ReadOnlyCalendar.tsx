@@ -167,11 +167,7 @@ export default function ReadOnlyCalendar({
     ? "from-[#8B3A00] to-slate-900" 
     : "from-primary to-slate-900";
 
-  const dateCardStyles = isOrange
-    ? "bg-orange-850/30 border-orange-700/30 text-orange-200 icon-orange-350"
-    : "bg-primary-light/10 border-primary/20 text-primary icon-primary";
-
-  const dayCellSelectionStyles = (isSelected: boolean, isToday: boolean) => {
+  const dayCellSelectionStyles = (isSelected: boolean) => {
     if (isSelected) {
       return isOrange 
         ? "bg-orange-50/20 dark:bg-orange-950/10 border-orange-200 dark:border-orange-850/35"
@@ -202,7 +198,7 @@ export default function ReadOnlyCalendar({
         <div className={`border px-5 py-3 rounded-2xl flex items-center gap-3 ${isOrange ? 'bg-orange-850/30 border-orange-700/30' : 'bg-white/10 border-white/20'}`}>
           <CalendarIcon className={`w-5 h-5 ${isOrange ? 'text-orange-300' : 'text-white'}`} />
           <div className="text-left">
-            <p className={`text-xs font-semibold uppercase tracking-wider ${isOrange ? 'text-orange-200' : 'text-slate-350'}`}>Today's Date</p>
+            <p className={`text-xs font-semibold uppercase tracking-wider ${isOrange ? 'text-orange-200' : 'text-slate-350'}`}>Today&apos;s Date</p>
             <p className="text-sm font-bold">{new Date().toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' })}</p>
           </div>
         </div>
@@ -271,7 +267,7 @@ export default function ReadOnlyCalendar({
                       ? `bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800/60 ${hoverStyles}`
                       : "bg-slate-50/50 dark:bg-slate-900/30 border-slate-50 dark:border-slate-800/20 text-slate-300 dark:text-slate-700"
                   } ${isToday ? `ring-2 ${ringStyles} ring-offset-2 dark:ring-offset-slate-900` : ""} ${
-                    dayCellSelectionStyles(isSelected, isToday)
+                    dayCellSelectionStyles(isSelected)
                   }`}
                 >
                   <div className="flex justify-between items-center">
