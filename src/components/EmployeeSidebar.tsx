@@ -40,6 +40,7 @@ const EmployeeSidebar = () => {
         { label: "Welfare Requests", href: "/employee/welfare-request", icon: Heart },
         { label: "Training Requests", href: "/employee/training-request", icon: GraduationCap },
         { label: "Leave Requests", href: "/employee/leave-requests", icon: Calendar },
+        { label: "Calendar", href: "/employee/calendar", icon: Calendar },
     ];
 
     // Helper to check if link is active

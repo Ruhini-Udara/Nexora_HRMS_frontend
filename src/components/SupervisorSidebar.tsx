@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
     Home,
-    ClipboardList,
+    ClipboardList, 
     Calendar,
     Users,
     BarChart2,
@@ -17,6 +17,7 @@ const navLinks = [
     { label: "Leave Management", href: "/supervisor/leave-management", icon: Calendar },
     { label: "Team Attendance", href: "/supervisor/team-attendance", icon: Users },
     { label: "Reports", href: "/supervisor/reports", icon: BarChart2 },
+    { label: "Calendar", href: "/supervisor/calendar", icon: Calendar },
 ];
 
 const SupervisorSidebar = () => {
