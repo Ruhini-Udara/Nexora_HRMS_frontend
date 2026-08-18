@@ -253,7 +253,7 @@ export default function ReadOnlyCalendar({
                 new Date().getFullYear() === date.getFullYear();
 
               const isSelected =
-                selectedDate &&
+                selectedDate !== null &&
                 selectedDate.getDate() === day &&
                 selectedDate.getMonth() === date.getMonth() &&
                 selectedDate.getFullYear() === date.getFullYear();
