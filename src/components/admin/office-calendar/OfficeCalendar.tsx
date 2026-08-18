@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import AddCompanyHoliday from "../addcompanyholiday/AddCompanyHoliday";
 import AddCompanyEvent from "../addcompanyevent/AddCompanyEvent";
+import api from "@/lib/axiosInstance";
 
 interface CalendarEvent {
-  id: number;
+  id: string;
   title: string;
   date: string;
   time?: string;
-  type: "public-holiday" | "internal-event" | "admin-deadline";
 }
 
 export default function OfficeCalendar() {
@@ -18,23 +18,24 @@ export default function OfficeCalendar() {
   const [view, setView] = useState<"day" | "week" | "month">("month");
   const [showAddHoliday, setShowAddHoliday] = useState(false);
   const [showAddEvent, setShowAddEvent] = useState(false);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Dynamically position mock events in the current month for display
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
+  const fetchEvents = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get("/api/calendar/events");
+      setEvents(response.data || []);
+    } catch (err) {
+      console.error("Failed to fetch calendar events:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const events: CalendarEvent[] = [
-    { id: 1, title: "Quarterly All-Ha...", date: `${currentYear}-${currentMonth}-05`, type: "internal-event" },
-    { id: 2, title: "National Day Ho...", date: `${currentYear}-${currentMonth}-12`, type: "public-holiday" },
-    { id: 3, title: "Payroll Processing", date: `${currentYear}-${currentMonth}-13`, time: "09:00 AM", type: "admin-deadline" },
-    { id: 4, title: "HR Tech Works...", date: `${currentYear}-${currentMonth}-15`, time: "02:30 PM", type: "admin-deadline" },
-    { id: 5, title: "Wellness Day", date: `${currentYear}-${currentMonth}-18`, type: "public-holiday" },
-    { id: 6, title: "Tax Compliance ...", date: `${currentYear}-${currentMonth}-20`, time: "11:59 PM", type: "admin-deadline" },
-    { id: 7, title: "New Hire Onbo...", date: `${currentYear}-${currentMonth}-26`, type: "internal-event" },
-    { id: 8, title: "Performance Re...", date: `${currentYear}-${currentMonth}-28`, type: "internal-event" },
-    { id: 9, title: "Halloween Party", date: `${currentYear}-${currentMonth}-30`, type: "internal-event" },
-  ];
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   const getMonthName = (date: Date) => {
     return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -102,19 +103,6 @@ export default function OfficeCalendar() {
     setCurrentDate(new Date());
   };
 
-  const getEventColor = (type: string) => {
-    switch (type) {
-      case "public-holiday":
-        return "bg-blue-100 text-blue-700 border-blue-300";
-      case "internal-event":
-        return "bg-emerald-100 text-emerald-700 border-emerald-300";
-      case "admin-deadline":
-        return "bg-amber-700 text-white";
-      default:
-        return "bg-slate-100 text-slate-700";
-    }
-  };
-
   const days = getDaysInMonth(currentDate);
   const weekDays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -124,20 +112,6 @@ export default function OfficeCalendar() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-[#111827]">Office Calendar</h1>
-          <div className="flex items-center gap-4 mt-3">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-sm text-slate-600">Public Holiday</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-              <span className="text-sm text-slate-600">Internal Events</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-amber-700"></div>
-              <span className="text-sm text-slate-600">Admin Deadlines</span>
-            </div>
-          </div>
         </div>
         <div className="flex items-center gap-3">
           <button 
@@ -226,9 +200,7 @@ export default function OfficeCalendar() {
                     {dayEvents.map((event) => (
                       <div
                         key={event.id}
-                        className={`text-xs px-2 py-1 rounded border ${getEventColor(
-                          event.type
-                        )} truncate cursor-pointer hover:opacity-80 transition-opacity`}
+                        className="text-xs px-2 py-1 rounded border bg-amber-50 text-amber-900 border-amber-200 truncate cursor-pointer hover:bg-amber-100 transition-colors"
                         title={event.title}
                       >
                         <div className="font-medium">{event.title}</div>
@@ -246,10 +218,24 @@ export default function OfficeCalendar() {
       </div>
 
       {/* Add Holiday Modal */}
-      {showAddHoliday && <AddCompanyHoliday onClose={() => setShowAddHoliday(false)} />}
+      {showAddHoliday && (
+        <AddCompanyHoliday
+          onClose={() => {
+            setShowAddHoliday(false);
+            fetchEvents();
+          }}
+        />
+      )}
       
       {/* Add Event Modal */}
-      {showAddEvent && <AddCompanyEvent onClose={() => setShowAddEvent(false)} />}
+      {showAddEvent && (
+        <AddCompanyEvent
+          onClose={() => {
+            setShowAddEvent(false);
+            fetchEvents();
+          }}
+        />
+      )}
     </div>
   );
 }

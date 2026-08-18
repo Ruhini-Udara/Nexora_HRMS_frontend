@@ -1,26 +1,19 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Save, X, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-
-interface Department {
-  id: string;
-  name: string;
-}
+import { Save, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import api from "@/lib/axiosInstance";
+import axios from "axios";
 
 export default function AddCompanyHoliday({ onClose }: { onClose?: () => void }) {
   const [holidayName, setHolidayName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [holidayType, setHolidayType] = useState("Public Holiday");
-  const [repeatYearly, setRepeatYearly] = useState(false);
-  const [selectedDepartments, setSelectedDepartments] = useState<Department[]>([
-    { id: "1", name: "Engineering" },
-    { id: "2", name: "Marketing" },
-    { id: "3", name: "HR" },
-  ]);
   const [description, setDescription] = useState("");
   const [showStartCalendar, setShowStartCalendar] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
   const [startCurrentMonth, setStartCurrentMonth] = useState(new Date());
   const [endCurrentMonth, setEndCurrentMonth] = useState(new Date());
@@ -146,11 +139,9 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
     return checkDate < today;
   };
 
-  const handleRemoveDepartment = (id: string) => {
-    setSelectedDepartments(selectedDepartments.filter((dept) => dept.id !== id));
-  };
 
-  const handleSave = () => {
+
+  const handleSave = async () => {
     // Validate required fields
     const newErrors = {
       holidayName: holidayName.trim() === "",
@@ -159,6 +150,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
     };
 
     setErrors(newErrors);
+    setSaveError(null);
 
     // Check if there are any errors
     if (newErrors.holidayName || newErrors.startDate || newErrors.endDate) {
@@ -170,16 +162,34 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
       return;
     }
 
-    // Handle save logic here
-    console.log({
-      holidayName,
-      startDate,
-      endDate,
-      holidayType,
-      repeatYearly,
-      selectedDepartments,
-      description,
-    });
+    setIsSaving(true);
+    try {
+      await api.post("/api/calendar/holiday", {
+        holidayName,
+        startDate,
+        endDate,
+        holidayType,
+        repeatYearly: false,
+        description,
+      });
+      onClose?.();
+    } catch (err: unknown) {
+      console.error(err);
+      if (axios.isAxiosError(err)) {
+        setSaveError(
+          err.response?.data?.message ||
+          err.response?.data ||
+          err.message ||
+          "Failed to save holiday to Google Calendar."
+        );
+      } else if (err instanceof Error) {
+        setSaveError(err.message);
+      } else {
+        setSaveError("Failed to save holiday to Google Calendar.");
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -412,63 +422,23 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
             </div>
           </div>
 
-          {/* Holiday Type and Repeat Yearly */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Holiday Type
-              </label>
-              <select
-                value={holidayType}
-                onChange={(e) => setHolidayType(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
-              >
-                <option value="Public Holiday">Public Holiday</option>
-                <option value="Company Holiday">Company Holiday</option>
-                <option value="Optional Holiday">Optional Holiday</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-3 mt-8">
-              <button
-                type="button"
-                onClick={() => setRepeatYearly(!repeatYearly)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${repeatYearly ? "bg-blue-500" : "bg-slate-300"
-                  }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${repeatYearly ? "translate-x-6" : "translate-x-1"
-                    }`}
-                />
-              </button>
-              <span className="text-sm font-medium text-slate-700">Repeat Yearly</span>
-            </div>
-          </div>
-
-          {/* Applicable Departments */}
+          {/* Holiday Type */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Applicable Departments
+              Holiday Type
             </label>
-            <div className="flex flex-wrap gap-2 p-3 border border-slate-300 rounded-lg min-h-[48px]">
-              {selectedDepartments.map((dept) => (
-                <span
-                  key={dept.id}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-md text-sm font-medium"
-                >
-                  {dept.name}
-                  <button
-                    onClick={() => handleRemoveDepartment(dept.id)}
-                    className="hover:text-amber-900"
-                  >
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
-              <button className="text-sm text-slate-500 hover:text-slate-700 px-2">
-                Add more...
-              </button>
-            </div>
+            <select
+              value={holidayType}
+              onChange={(e) => setHolidayType(e.target.value)}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
+            >
+              <option value="Public Holiday">Public Holiday</option>
+              <option value="Company Holiday">Company Holiday</option>
+              <option value="Optional Holiday">Optional Holiday</option>
+            </select>
           </div>
+
+
 
           {/* Description */}
           <div>
@@ -486,25 +456,34 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-2 px-6 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors"
-            >
-              <Save size={18} />
-              Save Holiday
-            </button>
-            <button
-              onClick={onClose}
-              className="px-6 py-2.5 text-slate-600 hover:text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              Cancel and Return
-            </button>
+        <div className="p-6 border-t border-slate-200 flex flex-col gap-4">
+          {saveError && (
+            <div className="text-red-500 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
+              {saveError}
+            </div>
+          )}
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-6 py-2.5 bg-amber-400 hover:bg-amber-500 disabled:bg-amber-200 text-slate-900 font-medium rounded-lg transition-colors"
+              >
+                <Save size={18} />
+                {isSaving ? "Saving..." : "Save Holiday"}
+              </button>
+              <button
+                onClick={onClose}
+                disabled={isSaving}
+                className="px-6 py-2.5 text-slate-600 hover:text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
+              >
+                Cancel and Return
+              </button>
+            </div>
+            <p className="text-sm text-slate-500">
+              <span className="text-amber-600">●</span> Required fields are marked automatically
+            </p>
           </div>
-          <p className="text-sm text-slate-500">
-            <span className="text-amber-600">●</span> Required fields are marked automatically
-          </p>
         </div>
       </div>
     </div>
