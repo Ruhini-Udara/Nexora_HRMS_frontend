@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Save, X, Calendar, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Save, Calendar, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import api from "@/lib/axiosInstance";
+import axios from "axios";
 
 export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
   const [eventName, setEventName] = useState("");
@@ -150,9 +151,20 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
         description,
       });
       onClose?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setSaveError(err.response?.data || err.message || "Failed to save event to Google Calendar.");
+      if (axios.isAxiosError(err)) {
+        setSaveError(
+          err.response?.data?.message ||
+          err.response?.data ||
+          err.message ||
+          "Failed to save event to Google Calendar."
+        );
+      } else if (err instanceof Error) {
+        setSaveError(err.message);
+      } else {
+        setSaveError("Failed to save event to Google Calendar.");
+      }
     } finally {
       setIsSaving(false);
     }
