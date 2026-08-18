@@ -22,6 +22,7 @@ const DirectorSidebar = () => {
         { label: "Death Applications", href: "/director/death", icon: UserX },
         { label: "Resignation Requests", href: "/director/resign", icon: ShieldQuestion },
         { label: "Leave Requests", href: "/director/leave", icon: Calendar },
+        { label: "Calendar", href: "/director/calendar", icon: Calendar },
     ];
 
     return (
