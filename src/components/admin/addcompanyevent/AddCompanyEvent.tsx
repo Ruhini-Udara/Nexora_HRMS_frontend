@@ -2,26 +2,19 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Save, X, Calendar, ChevronLeft, ChevronRight, Clock } from "lucide-react";
-
-interface Department {
-  id: string;
-  name: string;
-}
+import api from "@/lib/axiosInstance";
 
 export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
   const [eventType, setEventType] = useState("Internal Event");
-  const [selectedDepartments, setSelectedDepartments] = useState<Department[]>([
-    { id: "1", name: "Engineering" },
-    { id: "2", name: "Marketing" },
-    { id: "3", name: "HR" },
-  ]);
   const [description, setDescription] = useState("");
   const [showCalendar, setShowCalendar] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const calendarRef = useRef<HTMLDivElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   
   // Validation errors
   const [errors, setErrors] = useState({
@@ -124,11 +117,9 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
     return checkDate < today;
   };
 
-  const handleRemoveDepartment = (id: string) => {
-    setSelectedDepartments(selectedDepartments.filter((dept) => dept.id !== id));
-  };
 
-  const handleSave = () => {
+
+  const handleSave = async () => {
     // Validate required fields
     const newErrors = {
       eventName: eventName.trim() === "",
@@ -137,6 +128,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
     };
 
     setErrors(newErrors);
+    setSaveError(null);
 
     // Check if there are any errors
     if (newErrors.eventName || newErrors.eventDate || newErrors.eventTime) {
@@ -148,15 +140,22 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
       return;
     }
 
-    // Handle save logic here
-    console.log({
-      eventName,
-      eventDate,
-      eventTime,
-      eventType,
-      selectedDepartments,
-      description,
-    });
+    setIsSaving(true);
+    try {
+      await api.post("/api/calendar/event", {
+        eventName,
+        eventDate,
+        eventTime,
+        eventType,
+        description,
+      });
+      onClose?.();
+    } catch (err: any) {
+      console.error(err);
+      setSaveError(err.response?.data || err.message || "Failed to save event to Google Calendar.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -342,31 +341,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
             </select>
           </div>
 
-          {/* Applicable Departments */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Applicable Departments
-            </label>
-            <div className="flex flex-wrap gap-2 p-3 border border-slate-300 rounded-lg min-h-[48px]">
-              {selectedDepartments.map((dept) => (
-                <span
-                  key={dept.id}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-md text-sm font-medium"
-                >
-                  {dept.name}
-                  <button
-                    onClick={() => handleRemoveDepartment(dept.id)}
-                    className="hover:text-amber-900"
-                  >
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
-              <button className="text-sm text-slate-500 hover:text-slate-700 px-2">
-                Add more...
-              </button>
-            </div>
-          </div>
+
 
           {/* Description */}
           <div>
@@ -384,25 +359,34 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-2 px-6 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors"
-            >
-              <Save size={18} />
-              Save Event
-            </button>
-            <button
-              onClick={onClose}
-              className="px-6 py-2.5 text-slate-600 hover:text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              Cancel and Return
-            </button>
+        <div className="p-6 border-t border-slate-200 flex flex-col gap-4">
+          {saveError && (
+            <div className="text-red-500 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
+              {saveError}
+            </div>
+          )}
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-6 py-2.5 bg-amber-400 hover:bg-amber-500 disabled:bg-amber-200 text-slate-900 font-medium rounded-lg transition-colors"
+              >
+                <Save size={18} />
+                {isSaving ? "Saving..." : "Save Event"}
+              </button>
+              <button
+                onClick={onClose}
+                disabled={isSaving}
+                className="px-6 py-2.5 text-slate-600 hover:text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
+              >
+                Cancel and Return
+              </button>
+            </div>
+            <p className="text-sm text-slate-500">
+              <span className="text-amber-600">●</span> Required fields are marked automatically
+            </p>
           </div>
-          <p className="text-sm text-slate-500">
-            <span className="text-amber-600">●</span> Required fields are marked automatically
-          </p>
         </div>
       </div>
     </div>
