@@ -36,8 +36,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
             const data = response.data;
             const unreadCount = data.filter((n: Notification) => !n.isRead).length;
             set({ notifications: data, unreadCount, isLoading: false });
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to fetch notifications';
+            set({ error: errorMessage, isLoading: false });
         }
     },
 
@@ -50,8 +51,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
             );
             const unreadCount = updatedNotifications.filter((n) => !n.isRead).length;
             set({ notifications: updatedNotifications, unreadCount });
-        } catch (error: any) {
-            console.error("Failed to mark notification as read", error);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to mark notification as read';
+            console.error(errorMessage, error);
         }
     }
 }));

@@ -37,6 +37,14 @@ interface LeaveDocument {
     description: string;
 }
 
+interface LeaveImpactData {
+    riskLevel: 'Low Risk' | 'Medium Risk' | 'High Risk';
+    departmentEmployees: number;
+    alreadyOnLeave: number;
+    availableAfterApproval: number;
+    availabilityPercentage: number;
+}
+
 export default function MaternityApprovalsPage() {
     const { user } = useAuthStore();
     const [requests, setRequests] = useState<MaternityLeave[]>([]);
@@ -50,7 +58,7 @@ export default function MaternityApprovalsPage() {
     const [statusFilter, setStatusFilter] = useState("PENDING_HR_APPROVAL");
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-    const [impactData, setImpactData] = useState<any>(null);
+    const [impactData, setImpactData] = useState<LeaveImpactData | null>(null);
     const [impactLoading, setImpactLoading] = useState(false);
 
     const getWorkflowSteps = (req: MaternityLeave) => {

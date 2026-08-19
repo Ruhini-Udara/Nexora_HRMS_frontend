@@ -38,6 +38,14 @@ interface OverseasLeave {
     specialRemark: string;
 }
 
+interface LeaveImpactData {
+    riskLevel: 'Low Risk' | 'Medium Risk' | 'High Risk';
+    departmentEmployees: number;
+    alreadyOnLeave: number;
+    availableAfterApproval: number;
+    availabilityPercentage: number;
+}
+
 // ─── Document viewer helper ───────────────────────────────────────────────────
 function DocumentCard({ label, path }: { label: string; path: string }) {
     const [loading, setLoading] = useState(false);
@@ -113,7 +121,7 @@ export default function LeaveApprovalsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("PENDING_HR_APPROVAL");
     const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
-    const [impactData, setImpactData] = useState<any>(null);
+    const [impactData, setImpactData] = useState<LeaveImpactData | null>(null);
     const [impactLoading, setImpactLoading] = useState(false);
 
     const getWorkflowSteps = (req: OverseasLeave) => {
