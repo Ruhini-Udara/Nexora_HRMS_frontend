@@ -97,7 +97,7 @@ export default function TransferTable() {
 
     const getDropdownOptions = () => {
         if (activeTab === 'current') return [todayStr];
-        const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean))).sort();
+        const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean))).sort() as string[];
         if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
         return allDates.filter(d => d < todayStr);
     };
