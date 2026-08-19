@@ -12,17 +12,17 @@ const MOCK: ResignationRequest[] = [];
 
 // ── Status Badge Config ──────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; classes: string }> = {
-    "PENDING_ADMIN": {
-        label: "Pending Director",
-        classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    "Pending Director": {
+        label: "Pending Review",
+        classes: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
     },
     "Board Approved": {
-        label: "Board Approved",
-        classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        label: "Approved",
+        classes: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
     },
     "Board Rejected": {
-        label: "Board Rejected",
-        classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        label: "Rejected",
+        classes: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     },
 };
 
@@ -70,7 +70,20 @@ export default function ResignationTable() {
     useEffect(() => {
         fetchRequests();
     }, []);
-    const [tabFilter, setTabFilter] = useState<"Today/Previous" | "Upcoming">("Today/Previous");
+
+    const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
+    const todayStr = new Date().toISOString().split("T")[0];
+    const [selectedDate, setSelectedDate] = useState(todayStr);
+
+    const isActionable = (dateString?: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
+    };
 
     // Reject popup
     const [rejectId, setRejectId] = useState<string | null>(null);
@@ -100,11 +113,43 @@ export default function ResignationTable() {
     const approved = requests.filter((r) => r.status === "Board Approved").length;
     const rejected = requests.filter((r) => r.status === "Board Rejected").length;
 
+    const normalizeDate = (d?: string) => {
+        if (!d) return "";
+        try {
+            const dateObj = new Date(d);
+            if (isNaN(dateObj.getTime())) return d;
+            return dateObj.toISOString().split('T')[0];
+        } catch(e) {
+            return d;
+        }
+    };
+
+    const getDropdownOptions = () => {
+        if (activeTab === 'current') return [todayStr];
+        const allDates = Array.from(new Set(requests.map(r => normalizeDate(r.boardMeetingDate)).filter(Boolean))).sort();
+        if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
+        return allDates.filter(d => d < todayStr);
+    };
+
+    const handleTabChange = (tab: 'current' | 'upcoming' | 'past') => {
+        setActiveTab(tab);
+        setSelectedDate(tab === 'current' ? todayStr : 'All');
+    };
+
     // ── Filtered list ─────────────────────────────────────────────────
     const filteredRequests = requests.filter((req) => {
-        const today = new Date().toISOString().split("T")[0];
-        const upcoming = (req.boardMeetingDate || "") > today;
-        return tabFilter === "Upcoming" ? upcoming : !upcoming;
+        const pivotDate = todayStr;
+        const reqDate = normalizeDate(req.boardMeetingDate);
+        if (activeTab === 'current') return reqDate === selectedDate;
+        if (activeTab === 'upcoming') {
+            if (selectedDate === 'All') return reqDate > pivotDate;
+            return reqDate === selectedDate;
+        }
+        if (activeTab === 'past') {
+            if (selectedDate === 'All') return reqDate < pivotDate;
+            return reqDate === selectedDate;
+        }
+        return true;
     });
 
     // ── Handlers ─────────────────────────────────────────────────────
@@ -141,26 +186,44 @@ export default function ResignationTable() {
             {/* Live Stats */}
             <ResignationStats total={total} pending={pending} approved={approved} rejected={rejected} />
 
+            {/* Tabs & Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-2">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => handleTabChange('current')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Meeting View
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('upcoming')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Upcoming Meetings
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('past')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Past Meetings
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm mr-2 mb-2 sm:mb-0">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Meeting Date:</label>
+                    <select 
+                        className="bg-transparent text-sm font-medium text-gray-900 focus:outline-none cursor-pointer"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                    >
+                        {activeTab !== 'current' && <option value="All">All Dates</option>}
+                        {getDropdownOptions().map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                </div>
+            </div>
+
             {/* Main Table */}
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm overflow-hidden">
-                {/* Table Header */}
-                <div className="p-6 border-b border-gray-100 dark:border-zinc-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <h3 className="font-bold text-gray-900 dark:text-white">Board Resignation Reviews</h3>
-                    <div className="flex bg-gray-100 dark:bg-zinc-800 p-1 rounded-lg">
-                        {(["Today/Previous", "Upcoming"] as const).map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setTabFilter(tab)}
-                                className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${tabFilter === tab
-                                    ? "bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm"
-                                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                    }`}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
-                </div>
 
                 {/* Table */}
                 <div className="overflow-x-auto">
@@ -179,12 +242,11 @@ export default function ResignationTable() {
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-700/50">
                             {filteredRequests.map((req) => {
                                 const st = statusConfig[req.status] || { label: req.status, classes: "bg-slate-100 text-slate-600" };
-                                const todayStr = new Date().toISOString().split("T")[0];
                                 const isToday = req.boardMeetingDate === todayStr;
                                 const isExpanded = expandedId === req.id;
-                                const isPending = req.status === "PENDING_ADMIN";
+                                const isPending = req.status === "Pending Director" || req.status === "PENDING_ADMIN";
                                 const initials = req.employeeName ? req.employeeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : "??";
-                                const actionsDisabled = tabFilter === "Upcoming";
+                                const actionsDisabled = !isActionable(req.boardMeetingDate || "");
 
                                 return (
                                     <React.Fragment key={req.id}>
@@ -231,21 +293,19 @@ export default function ResignationTable() {
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
-                                                    {isPending && (
+                                                    {isPending && isActionable(req.boardMeetingDate || "") && (
                                                         <>
                                                             <button
                                                                 title="Approve"
                                                                 onClick={() => handleApprove(req.id)}
-                                                                disabled={actionsDisabled}
-                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${actionsDisabled ? "bg-gray-100 text-gray-300 cursor-not-allowed dark:bg-zinc-800" : "bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer"}`}
+                                                                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer"
                                                             >
                                                                 <Check className="w-4 h-4" />
                                                             </button>
                                                             <button
                                                                 title="Reject"
                                                                 onClick={() => openRejectPopup(req.id)}
-                                                                disabled={actionsDisabled}
-                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${actionsDisabled ? "bg-gray-100 text-gray-300 cursor-not-allowed dark:bg-zinc-800" : "bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"}`}
+                                                                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
                                                             >
                                                                 <X className="w-4 h-4" />
                                                             </button>

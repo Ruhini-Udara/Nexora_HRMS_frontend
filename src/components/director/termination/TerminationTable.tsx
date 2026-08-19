@@ -18,6 +18,18 @@ export type DirTermRequest = {
     rejectReason?: string;
 };
 
+const getTodayStr = () => new Date().toISOString().split('T')[0];
+const getFutureStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 10);
+    return d.toISOString().split('T')[0];
+};
+const getPastStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 10);
+    return d.toISOString().split('T')[0];
+};
+
 const mockData: DirTermRequest[] = [
     {
         id: 'TRM-2024-001',
@@ -28,7 +40,7 @@ const mockData: DirTermRequest[] = [
         reason: 'Poor performance over 3 quarters.',
         initiationDate: '2024-10-15',
         effectiveDate: '2024-11-01',
-        boardMeetingDate: '2024-11-10',
+        boardMeetingDate: getPastStr(),
         status: 'APPROVED'
     },
     {
@@ -40,7 +52,7 @@ const mockData: DirTermRequest[] = [
         reason: 'Career change',
         initiationDate: '2024-11-05',
         effectiveDate: '2024-12-01',
-        boardMeetingDate: '2024-11-20',
+        boardMeetingDate: getTodayStr(),
         specialRemark: 'Employee requested an expedited settlement for the loan clearance due to urgent departure.',
         status: 'BOARD_ASSIGNED'
     },
@@ -53,7 +65,7 @@ const mockData: DirTermRequest[] = [
         reason: 'Relocating abroad',
         initiationDate: '2024-11-06',
         effectiveDate: '2024-12-15',
-        boardMeetingDate: '2024-11-20',
+        boardMeetingDate: getTodayStr(),
         status: 'BOARD_ASSIGNED'
     },
     {
@@ -65,7 +77,7 @@ const mockData: DirTermRequest[] = [
         reason: 'Policy violation',
         initiationDate: '2024-11-10',
         effectiveDate: '2024-11-12',
-        boardMeetingDate: '2024-12-15',
+        boardMeetingDate: getFutureStr(),
         status: 'BOARD_ASSIGNED'
     }
 ];
@@ -74,6 +86,9 @@ export default function TerminationTable() {
     const [requests, setRequests] = useState<DirTermRequest[]>(mockData);
     const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
     
+    // Get today's date formatted as YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
+
     // View Modal State
     const [viewingRequest, setViewingRequest] = useState<DirTermRequest | null>(null);
     
@@ -86,26 +101,50 @@ export default function TerminationTable() {
     const [financeNotified, setFinanceNotified] = useState(false);
     const [employeesNotified, setEmployeesNotified] = useState(false);
 
-    const [selectedDate, setSelectedDate] = useState('2024-11-20');
+    const [selectedDate, setSelectedDate] = useState(todayStr);
+
+    const isActionable = (dateString?: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
+    };
 
     // Toast State
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
 
+    const getDropdownOptions = () => {
+        if (activeTab === 'current') return [todayStr];
+        const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean))).sort();
+        if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
+        return allDates.filter(d => d < todayStr);
+    };
+
+    const handleTabChange = (tab: 'current' | 'upcoming' | 'past') => {
+        setActiveTab(tab);
+        setSelectedDate(tab === 'current' ? todayStr : 'All');
+    };
+
     // Filter Logic based on tabs
     const filteredRequests = useMemo(() => {
         return requests.filter(req => {
+            const pivotDate = todayStr;
             if (activeTab === 'current') return req.boardMeetingDate === selectedDate;
             if (activeTab === 'upcoming') {
-                // For mock purposes, using '2024-11-20' as the "current today" pivot
-                return req.boardMeetingDate > '2024-11-20';
+                if (selectedDate === 'All') return req.boardMeetingDate > pivotDate;
+                return req.boardMeetingDate === selectedDate;
             }
             if (activeTab === 'past') {
-                return req.boardMeetingDate < '2024-11-20';
+                if (selectedDate === 'All') return req.boardMeetingDate < pivotDate;
+                return req.boardMeetingDate === selectedDate;
             }
             return true;
         });
-    }, [requests, activeTab, selectedDate]);
+    }, [requests, activeTab, selectedDate, todayStr]);
 
     const isCurrentListFullyDecided = filteredRequests.length > 0 && filteredRequests.every(r => r.status !== 'BOARD_ASSIGNED');
 
@@ -137,36 +176,36 @@ export default function TerminationTable() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-2">
                 <div className="flex gap-4">
                     <button 
-                        onClick={() => setActiveTab('current')}
+                        onClick={() => handleTabChange('current')}
                         className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
                         Meeting View
                     </button>
                     <button 
-                        onClick={() => setActiveTab('upcoming')}
+                        onClick={() => handleTabChange('upcoming')}
                         className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
                         Upcoming Meetings
                     </button>
                     <button 
-                        onClick={() => setActiveTab('past')}
+                        onClick={() => handleTabChange('past')}
                         className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
                         Past Meetings
                     </button>
                 </div>
 
-                {activeTab === 'current' && (
-                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm mr-2 mb-2 sm:mb-0">
-                        <label className="text-xs font-bold text-gray-500 uppercase">Meeting Date:</label>
-                        <input 
-                            type="date" 
-                            className="bg-transparent text-sm font-medium text-gray-900 focus:outline-none cursor-pointer"
-                            value={selectedDate}
-                            onChange={e => setSelectedDate(e.target.value)}
-                        />
-                    </div>
-                )}
+                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm mr-2 mb-2 sm:mb-0">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Meeting Date:</label>
+                    <select 
+                        className="bg-transparent text-sm font-medium text-gray-900 focus:outline-none cursor-pointer"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                    >
+                        {activeTab !== 'current' && <option value="All">All Dates</option>}
+                        {getDropdownOptions().map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                </div>
             </div>
 
             {/* Table */}
@@ -202,7 +241,7 @@ export default function TerminationTable() {
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
-                                            {req.status === 'BOARD_ASSIGNED' && activeTab === 'current' && (
+                                            {req.status === 'BOARD_ASSIGNED' && isActionable(req.boardMeetingDate) && (
                                                 <>
                                                     <button 
                                                         onClick={() => handleApprove(req.id)}
