@@ -75,7 +75,7 @@ export default function ResignationTable() {
     const todayStr = new Date().toISOString().split("T")[0];
     const [selectedDate, setSelectedDate] = useState(todayStr);
 
-    const isActionable = (dateString: string) => {
+    const isActionable = (dateString?: string) => {
         if (!dateString) return false;
         try {
             const dateStr = new Date(dateString).toISOString().split('T')[0];

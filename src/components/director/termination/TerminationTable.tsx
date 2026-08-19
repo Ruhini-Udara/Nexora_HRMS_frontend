@@ -103,7 +103,7 @@ export default function TerminationTable() {
 
     const [selectedDate, setSelectedDate] = useState(todayStr);
 
-    const isActionable = (dateString: string) => {
+    const isActionable = (dateString?: string) => {
         if (!dateString) return false;
         try {
             const dateStr = new Date(dateString).toISOString().split('T')[0];
