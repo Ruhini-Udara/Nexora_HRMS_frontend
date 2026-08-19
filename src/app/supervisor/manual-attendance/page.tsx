@@ -78,6 +78,7 @@ export default function ManualAttendancePage() {
                 }
             });
             
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const mapped: EmployeeAttendance[] = res.data.map((item: any) => ({
                 id: item.id,
                 employeeId: item.employeeId,
@@ -118,7 +119,9 @@ export default function ManualAttendancePage() {
     function parseTimeForBackend(timeStr: string) {
         if (!timeStr) return null;
         const [time, ampm] = timeStr.split(" ");
-        let [h, m] = time.split(":").map(Number);
+        const parts = time.split(":").map(Number);
+        let h = parts[0];
+        const m = parts[1];
         if (ampm === "PM" && h !== 12) h += 12;
         if (ampm === "AM" && h === 12) h = 0;
         return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
