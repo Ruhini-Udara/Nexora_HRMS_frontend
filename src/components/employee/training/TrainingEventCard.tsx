@@ -2,8 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { formatTime } from "@/lib/utils";
 
+// Props describing a single training event card
 interface TrainingEventProps {
     category: string;
     imageSrc: string;
@@ -11,48 +12,81 @@ interface TrainingEventProps {
     date: string;
     time: string;
     imageAlt: string;
+    applyBefore?: string;
+    isApplied?: boolean;  // Determines whether user has already applied for this event
 }
 
 const TrainingEventCard: React.FC<TrainingEventProps> = ({
     category,
-    imageSrc,
     title,
     date,
     time,
-    imageAlt,
+    applyBefore,
+    isApplied
 }) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isRegistrationClosed = applyBefore && applyBefore !== "TBD" ? applyBefore < todayStr : false;
+
+    // Card UI changes based on whether the user already applied or registration is closed:
     return (
-        <div className="bg-white rounded-xl border border-stone-200 hover:border-[var(--color-training-primary)] transition-all hover:shadow-lg group overflow-hidden">
-            <div className="h-32 bg-[var(--color-training-primary-light)] relative">
-                <Image
-                    src={imageSrc}
-                    alt={imageAlt}
-                    fill
-                    className="object-cover opacity-80 group-hover:scale-105 transition-transform"
-                />
-                <span className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-black text-[var(--color-training-primary)] uppercase shadow-sm">
+        <div className={`bg-white rounded-xl border transition-all flex flex-col group ${
+            isApplied 
+                ? 'border-emerald-100 dark:border-emerald-900/30' 
+                : isRegistrationClosed
+                    ? 'border-stone-200 opacity-70 bg-stone-50/30'
+                    : 'border-stone-200 hover:border-[var(--color-training-primary)] hover:shadow-lg'
+        }`}>
+            <div className={`rounded-t-xl p-2.5 flex justify-end items-center ${isApplied ? 'bg-emerald-50 dark:bg-emerald-900/10' : 'bg-[var(--color-training-primary)]/5'}`}>
+                <span className="bg-white/90 backdrop-blur px-1.5 py-0.5 rounded text-[9px] font-black text-[var(--color-training-primary)] uppercase shadow-sm">
                     {category}
                 </span>
             </div>
-            <div className="p-5">
-                <h3 className="font-bold text-lg mb-2 text-stone-800">{title}</h3>
-                <div className="space-y-2 mb-6">
-                    <div className="flex items-center gap-2 text-xs text-stone-500">
-                        <span className="material-symbols-outlined text-sm">calendar_month</span>
+            <div className="p-3 flex-1 flex flex-col">
+                <h3 className="font-bold text-sm mb-1 text-stone-800 line-clamp-1" title={title}>{title}</h3>
+                <div className="space-y-1 mb-3">
+                    {/* Date & time display using material icons */}
+                    <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
+                        <span className="material-symbols-outlined text-xs">calendar_month</span>
                         {date}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-stone-500">
-                        <span className="material-symbols-outlined text-sm">schedule</span>
-                        {time}
+                    <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
+                        <span className="material-symbols-outlined text-xs">schedule</span>
+                        {formatTime(time)}
                     </div>
                 </div>
-                <Link
-                    href={`/employee/training-request/${title.toLowerCase().replace(/ /g, '-')}`}
-                    className="w-full py-2.5 bg-[var(--color-training-primary)] text-white rounded-lg font-bold text-sm hover:bg-[#853500] transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                >
-                    <span className="material-symbols-outlined text-sm">send</span>
-                    Apply Now
-                </Link>
+
+                {/* Bottom bar: show "Apply Before" (if applicable) or "Applied" badge */}
+                <div className="mt-auto flex items-center justify-between gap-2 border-t border-stone-100 pt-2.5">
+                    {applyBefore && !isApplied && (
+                        <div className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-1 rounded-md border ${
+                            isRegistrationClosed
+                                ? 'text-rose-600 bg-rose-50 border-rose-100 dark:bg-rose-950/20 dark:border-rose-900/30'
+                                : 'text-orange-600 bg-orange-50 border-orange-100'
+                        }`}>
+                            <span className="material-symbols-outlined text-[14px]">event_busy</span>
+                            {isRegistrationClosed ? `Deadline Passed: ${applyBefore}` : `Apply Before: ${applyBefore}`}
+                        </div>
+                    )}
+                    {isApplied ? (
+                        <div className="inline-flex items-center justify-center gap-1 px-3 py-1.5 w-max bg-emerald-500/10 text-emerald-600 rounded-md font-bold text-[10px] ml-auto border border-emerald-200">
+                            <span className="material-symbols-outlined text-[12px]">verified</span>
+                            Applied
+                        </div>
+                    ) : isRegistrationClosed ? (
+                        <div className="inline-flex items-center justify-center gap-1 px-3 py-1.5 w-max bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 rounded-md font-bold text-[10px] ml-auto border border-rose-200 dark:border-rose-900/30">
+                            <span className="material-symbols-outlined text-[12px]">block</span>
+                            Closed
+                        </div>
+                    ) : (
+                        <Link
+                            href={`/employee/training-request/${title.toLowerCase().replace(/ /g, '-')}`}
+                            className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 w-max bg-[var(--color-training-primary)] text-white rounded-md font-bold text-[10px] hover:bg-[#853500] transition-colors cursor-pointer ml-auto"
+                        >
+                            <span className="material-symbols-outlined text-[12px]">send</span>
+                            Apply Now
+                        </Link>
+                    )}
+                </div>
             </div>
         </div>
     );

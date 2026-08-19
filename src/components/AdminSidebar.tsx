@@ -1,48 +1,97 @@
 "use client";
 
-import React from "react";
-import { BarChart2, Calendar, Clock, Contact, FileText, Users } from "lucide-react";
+import { BarChart2, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays, ClipboardCheck, LogOut, Moon } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const menuItems = [
-  { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const },
-  { label: "Employee Master", icon: <Users size={18} />, view: "employeeMaster" as const },
-  { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const },
-  { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const },
-  { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const },
-  { label: "Reports", icon: <BarChart2 size={18} />, view: "reports" as const },
+  { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const, href: "/admin" },
+  { label: "Employee Master", icon: <Users size={18} />, view: "employeeMaster" as const, href: "/admin" },
+  { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const, href: "/admin" },
+  { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const, href: "/admin" },
+  { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const, href: "/admin" },
+  { label: "Other Approvals", icon: <ClipboardCheck size={18} />, view: "otherApprovals" as const, href: "/admin/other-approvals" },
+  { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const, href: "/admin/training" },
+  { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const, href: "/admin/leave-requests" },
 ];
 
 export default function AdminSidebar() {
   const { activeView, setActiveView } = useAdminNavigation();
+  const logout = useAuthStore((state) => state.logout);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
+  const handleMenuClick = (view: typeof menuItems[number]["view"]) => {
+    setActiveView(view);
+    if (pathname !== "/admin") {
+      router.push("/admin");
+    }
+  };
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-64 bg-white flex flex-col justify-between z-30">
+    <aside className="fixed top-0 left-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col justify-between z-30">
       <div>
-        <div className="flex items-center gap-2 px-6 py-6 border-b border-slate-200">
+        <div className="flex items-center gap-2 px-6 py-6">
           <div className="bg-orange-900 text-white rounded-md w-10 h-10 flex items-center justify-center font-bold text-lg">HM</div>
           <span className="font-bold text-xl text-orange-900">HR MATE</span>
         </div>
         <nav className="mt-4">
-          {menuItems.map((item) => (
-            <div
-              key={item.label}
-              onClick={() => setActiveView(item.view)}
-              className={`flex items-center gap-3 px-6 py-3 cursor-pointer text-gray-700 hover:bg-orange-50 transition ${
-                activeView === item.view
-                  ? "bg-orange-50 border-l-4 border-orange-700 font-semibold"
-                  : ""
-              }`}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </div>
-          ))}
+          {menuItems.map((item) => {
+            const isActive =
+              item.view === "leaveManagement"
+                ? pathname.startsWith("/admin/leave-requests")
+                : item.view === "otherApprovals"
+                  ? pathname.startsWith("/admin/other-approvals")
+                  : item.view === "training"
+                    ? pathname.startsWith("/admin/training")
+                    : activeView === item.view && pathname === "/admin";
+
+            return item.view === "leaveManagement" || item.view === "otherApprovals" || item.view === "training" ? (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isActive
+                  ? "bg-primary-light text-primary border-r-4 border-primary"
+                  : "text-sidebar-text hover:bg-gray-50"
+                  }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            ) : (
+              <div
+                key={item.label}
+                onClick={() => handleMenuClick(item.view)}
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors cursor-pointer ${isActive
+                  ? "bg-primary-light text-primary border-r-4 border-primary"
+                  : "text-sidebar-text hover:bg-gray-50"
+                  }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </div>
+            );
+          })}
         </nav>
       </div>
-      <div className="px-6 py-4 border-t">
-        <button className="w-full flex items-center gap-2 justify-center py-2 rounded-md border text-gray-700 hover:bg-gray-100 transition">
+      <div className="px-6 py-4 border-t border-gray-200 space-y-2">
+        <button className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-custom hover:bg-gray-50">
+          <Moon size={18} />
           Toggle Theme
+        </button>
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-custom hover:bg-red-100 transition-colors"
+        >
+          <LogOut size={18} />
+          Logout
         </button>
       </div>
     </aside>

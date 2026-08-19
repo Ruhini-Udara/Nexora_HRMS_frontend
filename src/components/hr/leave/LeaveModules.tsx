@@ -4,21 +4,21 @@ import Link from "next/link";
 export default function LeaveModules() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Leave Approvals Card */}
-            <Link href="/hr/leave/approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
+            {/* Normal Leave Approvals Card */}
+            <Link href="/hr/leave/normal-approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
                 <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors">
                     <span className="material-symbols-outlined text-primary text-4xl">
                         event_available
                     </span>
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                    Leave Approvals
+                    Normal Leave Approvals
                 </h4>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed flex-grow">
                     Review and process standard daily and short-term leave requests from
                     employees.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -27,7 +27,7 @@ export default function LeaveModules() {
             </Link>
 
             {/* Overseas Leave Verification & Board Flow Card */}
-            <Link href="/hr/leave/overseas" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
+            <Link href="/hr/leave/leave-approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
                 <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors">
                     <span className="material-symbols-outlined text-primary text-4xl">
                         travel_explore
@@ -40,7 +40,7 @@ export default function LeaveModules() {
                     Manage verification and board approval workflows for international
                     travel leave.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -49,7 +49,7 @@ export default function LeaveModules() {
             </Link>
 
             {/* Maternity Leave Workflow Card */}
-            <Link href="/hr/leave/maternity" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
+            <Link href="/hr/leave/maternity-approvals" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
                 <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors">
                     <span className="material-symbols-outlined text-primary text-4xl">
                         child_care
@@ -62,7 +62,7 @@ export default function LeaveModules() {
                     Coordinate multi-stage processing for maternity, paternity, and
                     adoption leave requests.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -84,7 +84,7 @@ export default function LeaveModules() {
                     Perform final leave balance calculations and finalize records for
                     payroll integration.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -106,7 +106,7 @@ export default function LeaveModules() {
                     Audit year-end balances and manage the carry-forward process into
                     the next period.
                 </p>
-                <span className="text-secondary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-bold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward

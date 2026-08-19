@@ -16,12 +16,12 @@ export default function TrainingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {/* Training Plans Card */}
-                <Link href="/hr/training/plans" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
+                <Link href="/hr/training/create-plan" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
                     <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors text-primary">
                         <span className="material-symbols-outlined text-4xl">map</span>
                     </div>
                     <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                        Training Plans
+                        Create Training Plans
                     </h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed">
                         Design and manage comprehensive training curriculums and learning
@@ -35,27 +35,7 @@ export default function TrainingPage() {
                     </span>
                 </Link>
 
-                {/* Scheduling Card */}
-                <Link href="/hr/training/scheduling" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
-                    <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors text-primary">
-                        <span className="material-symbols-outlined text-4xl">
-                            calendar_month
-                        </span>
-                    </div>
-                    <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                        Scheduling
-                    </h4>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed">
-                        Plan and schedule upcoming training sessions, workshops, and
-                        seminars.
-                    </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
-                        Open Module{" "}
-                        <span className="material-icons-round text-sm ml-1">
-                            arrow_forward
-                        </span>
-                    </span>
-                </Link>
+
 
                 {/* Employee Selection Card */}
                 <Link href="/hr/training/selection" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
@@ -80,14 +60,14 @@ export default function TrainingPage() {
                 </Link>
 
                 {/* Attendance Card */}
-                <Link href="/hr/training/attendance" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer text-left">
+                <Link href="/hr/training/attendance-feedback" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer text-left">
                     <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors text-primary">
                         <span className="material-symbols-outlined text-4xl">
                             checklist
                         </span>
                     </div>
                     <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                        Attendance
+                        Attendance & Feedback Reports
                     </h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed">
                         Track and verify employee participation and completion of scheduled
@@ -101,27 +81,7 @@ export default function TrainingPage() {
                     </span>
                 </Link>
 
-                {/* Feedback & Reports Card */}
-                <Link href="/hr/training/reports" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer">
-                    <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors text-primary">
-                        <span className="material-symbols-outlined text-4xl">
-                            assessment
-                        </span>
-                    </div>
-                    <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                        Feedback & Reports
-                    </h4>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed">
-                        Analyze program effectiveness through participant feedback and
-                        detailed performance reports.
-                    </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
-                        Open Module{" "}
-                        <span className="material-icons-round text-sm ml-1">
-                            arrow_forward
-                        </span>
-                    </span>
-                </Link>
+
             </div>
         </div>
     );

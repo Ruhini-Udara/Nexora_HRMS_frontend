@@ -1,7 +1,8 @@
 "use client";
 import React from "react";
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuthStore } from "@/store/useAuthStore";
 import {
     LayoutDashboard,
     Users,
@@ -10,16 +11,24 @@ import {
     ClipboardCheck,
     Calendar,
     Heart,
-    BarChart3
+    BarChart3,
+    LogOut
 } from 'lucide-react';
 
 const HrSidebar = () => {
     const pathname = usePathname();
+    const router = useRouter();
+    const logout = useAuthStore((state) => state.logout);
     const [isDark, setIsDark] = React.useState(false);
 
     const toggleTheme = () => {
         setIsDark(!isDark);
         document.documentElement.classList.toggle('dark');
+    };
+
+    const handleLogout = () => {
+        logout();
+        router.push("/login");
     };
 
     const navLinks = [
@@ -29,8 +38,10 @@ const HrSidebar = () => {
         { label: "Training & Development", href: "/hr/training", icon: GraduationCap },
         { label: "Attendance", href: "/hr/attendance", icon: ClipboardCheck },
         { label: "Leave Management", href: "/hr/leave", icon: Calendar },
+       
         { label: "Welfare", href: "/hr/welfare", icon: Heart },
         { label: "Reports & Analytics", href: "/hr/reports", icon: BarChart3 },
+         { label: "Calendar", href: "/hr/calendar", icon: Calendar },
     ];
 
     return (
@@ -44,7 +55,7 @@ const HrSidebar = () => {
 
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
                 {navLinks.map(({ label, href, icon: Icon }) => {
-                    const isActive = pathname === href;
+                    const isActive = href === "/hr" ? pathname === "/hr" : pathname.startsWith(href);
                     return (
                         <Link
                             key={href}
@@ -61,7 +72,7 @@ const HrSidebar = () => {
                 })}
             </nav>
 
-            <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
                 <button
                     onClick={toggleTheme}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
@@ -70,6 +81,13 @@ const HrSidebar = () => {
                         {isDark ? 'light_mode' : 'dark_mode'}
                     </span>
                     Toggle Theme
+                </button>
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                    <LogOut className="w-4 h-4" />
+                    Logout
                 </button>
             </div>
         </aside>

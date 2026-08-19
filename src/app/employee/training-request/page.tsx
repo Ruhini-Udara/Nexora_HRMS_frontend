@@ -1,81 +1,234 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TrainingEventCard from "@/components/employee/training/TrainingEventCard";
 import TrainingStatusTable from "@/components/employee/training/TrainingStatusTable";
 import TrainingFeedbackModal from "@/components/employee/training/TrainingFeedbackModal";
+import api from "@/lib/axiosInstance";
+import { useAuthStore } from "@/store/useAuthStore";
+import { Toast } from "@/components/ui/Toast";
+
+// Training event coming from backend (catalog of courses)
+type TrainingEvent = {
+    id: number;
+    title: string;
+    trainingCode?: string;
+    proposedStartDate?: string;
+    date?: string;
+    time?: string;
+    category: string;
+    imageSrc?: string;
+    imageAlt?: string;
+    applyBefore?: string;
+};
+
+// Training request submitted by employee
+type TrainingRequestItem = {
+    id: number;
+    eventId: number;
+    status: 'Approved' | 'Pending' | 'Rejected' | 'HR Approved' | 'Confirmed';
+    trainingTitle: string;
+    trainingCategory: string;
+    trainingDate: string;
+    trainingTime: string;
+    rejectionReason?: string;
+    eventStatus?: string;
+};
 
 export default function TrainingRequestPage() {
+    // UI state: feedback modal + selected course/event
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+    const [selectedFeedbackCourse, setSelectedFeedbackCourse] = useState("");
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+    const [tableRefreshKey, setTableRefreshKey] = useState(0);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-    const trainingEvents = [
-        {
-            category: "Sales",
-            imageSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuD8kev8B1LHYhdvJyun1RzU5HW-NDFoJcDXqV7wdhsVReP40kpwOtbuxDty4O6mfetRRD_QTIJIJSjSp4mw1fNCpwFqjfcIreTGSOTOKsEsO3MBcrz-WlwuTzupbrmc-o_v6Lgu__qD6QWbyDyeRJ26EJtz2nzEoUITC4819iWyi4NrePIRCsW_8OUJE_mnttj7P1ijejfnRuikHbdDkWXZWlQ4qOTfWlwrNsWBCheAV2_OupK08EcTN9TGNdugoXWibnpud_0qhBI",
-            imageAlt: "Team collaborating in a modern office workshop setting",
-            title: "Advanced Sales Tactics",
-            date: "October 24, 2023",
-            time: "09:00 AM - 12:00 PM",
-        },
-        {
-            category: "Leadership",
-            imageSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuCeomj4FV-xTtl2q-eZoLucnP8oW2QvbeBuvy5Jy4SlB02M4bG-Lbm02kxsJMCKLnPwdIFc1imWvEFWqzereZgUBki7sf7CcgjvgFmglNSiSSuT2BuDhCBsU4QwSi8ropV70Fz77jye_NG8hb7xtEtutziJY23stOGe9XUQOTSuRlKsk995DZ6T7PvLqBG2T8IeN_hFvHPoQGIFCCqIdKOI2yqDouhUviARKhhCgVmw4f-bqAygPiLqG6iDvmwSIUbifK7oRoCHWzM",
-            imageAlt: "Corporate meeting room with leadership presentation",
-            title: "Leadership 101: Core Basics",
-            date: "November 02, 2023",
-            time: "02:00 PM - 05:00 PM",
-        },
-        {
-            category: "Product",
-            imageSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuCCAiE3w4C5N0fAAb27Exc4cON_BPrwP423cWY51Z5bAwzqP4nOzSTulKsfKLMmmNnL9d9WrqSIScUMPHNCBR3p9o0HUFnsXt9qSJy52kRa0m2dIlnLwnzkLhxUXZxmx7tY1C3kmdjAiBEjevmQsROHz-bkkrsvt_a92zGS9emts4J3NeWW31g9Nf6HdXTjKZl5zBLwuwrKVYbHQdFRCm8nqWPpp9B9fEY6YhuDFZP9LLl6CPD_0tjGaul5Q-BWhhMKHmEE4U2dS48",
-            imageAlt: "Laptop displaying data analytics charts and graphs",
-            title: "2024 Product Roadmap",
-            date: "November 15, 2023",
-            time: "11:00 AM - 12:30 PM",
-        },
-    ];
+    // Filters for event browsing
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const [statusFilter, setStatusFilter] = useState("New"); // All, New, Applied
+
+    // Pagination state for event grid
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
+
+    // Data: training events + user-specific applications
+    const [events, setEvents] = useState<TrainingEvent[]>([]);
+    const [userRequests, setUserRequests] = useState<TrainingRequestItem[]>([]);
+    const { user } = useAuthStore();
+
+    // Fetch:
+    // 1. All training events (public catalog)
+    // 2. Logged-in user's applied requests
+    useEffect(() => {
+        let isMounted = true;
+
+        api.get('/api/training/events')
+            .then(res => {
+                if (isMounted) setEvents(res.data.sort((a: TrainingEvent, b: TrainingEvent) => b.id - a.id));
+            })
+            .catch(err => console.error("Failed to fetch events", err));
+         
+        // Only fetch user requests if user exists    
+        if (user?.id) {
+            api.get(`/api/training/employees/${user.id}/requests`)
+                .then(res => {
+                    if (isMounted) setUserRequests(res.data);
+                })
+                .catch(err => console.error("Failed to fetch user requests", err));
+        }
+
+        // Cleanup to prevent state updates after unmount
+        return () => {
+            isMounted = false;
+        };
+    }, [user?.id]);
+
+    // Build category filter list dynamically from event data
+    const categories = ["All", ...Array.from(new Set(events.map(event => event.category)))];
+
+    // Main filtering logic:
+    // category filter
+    // status filter (new vs applied)
+    const filteredEvents = events.filter(event => {
+        const matchesCategory = selectedCategory === "All" || event.category === selectedCategory;
+        const isApplied = userRequests.some(req => req.eventId === event.id);
+        
+        const matchesStatus = 
+            statusFilter === "All" ? true :
+            statusFilter === "New" ? !isApplied :
+            statusFilter === "Applied" ? isApplied : true;
+            
+        return matchesCategory && matchesStatus;
+    });
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filteredEvents.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
         <div className="space-y-10 max-w-7xl mx-auto w-full">
-            {/* Hero Title */}
-            <div className="flex items-end justify-between border-b border-[var(--color-training-primary)]/10 pb-6">
-                <div>
-                    <h1 className="text-3xl font-black text-[#1d130c] tracking-tight">
-                        Professional Development
-                    </h1>
-                    <p className="text-stone-500 mt-1">
-                        Elevate your skills with our curated corporate training programs.
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <span className="px-3 py-1 bg-[var(--color-training-primary)]/10 text-[var(--color-training-primary)] text-xs font-bold rounded-full">
-                        12 Available Courses
-                    </span>
-                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">
-                        3 Active Requests
-                    </span>
-                </div>
-            </div>
-
             {/* Section 1: Available Training Events */}
             <section>
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c]">
-                        <span className="material-symbols-outlined text-[var(--color-training-primary)]">
-                            local_library
-                        </span>
-                        Available Training Events
-                    </h2>
-                    <button className="text-sm font-bold text-[var(--color-training-primary)] hover:underline flex items-center gap-1 cursor-pointer">
-                        View All Events{" "}
-                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                    </button>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-stone-100 pb-4">
+                    <div className="flex items-center gap-4 flex-wrap">
+                        <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c]">
+                            <span className="material-symbols-outlined text-[var(--color-training-primary)]">
+                                local_library
+                            </span>
+                            Available Training Events
+                        </h2>
+                        <div className="flex gap-1.5 flex-wrap">
+                            <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded-full border border-green-100">
+                                {events.length} Available
+                            </span>
+                            <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full border border-blue-100">
+                                {userRequests.length} Applied
+                            </span>
+                            {userRequests.filter(req => req.status === 'Rejected' || (req.status === 'Approved' && req.eventStatus === 'Rejected')).length > 0 && (
+                                <span className="px-2.5 py-1 bg-red-50 text-red-700 text-[10px] font-bold rounded-full border border-red-100">
+                                    {userRequests.filter(req => req.status === 'Rejected' || (req.status === 'Approved' && req.eventStatus === 'Rejected')).length} Rejected
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-stone-500">Filter by Type:</span>
+                            
+                            {/* Category filter */}
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) => {
+                                    setSelectedCategory(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="bg-white border border-stone-200 text-stone-800 text-sm font-medium rounded-lg focus:ring-[var(--color-training-primary)] focus:border-[var(--color-training-primary)] block p-2 outline-none cursor-pointer"
+                            >
+                                {categories.map((category) => (
+                                    <option key={category} value={category}>
+                                        {category === "All" ? "All Types" : category}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-stone-500">Status:</span>
+
+                            {/* Status filter: New / Applied / All */}
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => {
+                                    setStatusFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="bg-white border border-stone-200 text-stone-800 text-sm font-medium rounded-lg focus:ring-[var(--color-training-primary)] focus:border-[var(--color-training-primary)] block p-2 outline-none cursor-pointer"
+                            >
+                                <option value="All">All Courses</option>
+                                <option value="New">Not Applied (New)</option>
+                                <option value="Applied">Already Applied</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
+
+                {/* Event cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {trainingEvents.map((event, index) => (
-                        <TrainingEventCard key={index} {...event} />
-                    ))}
+                    {currentItems.map((event) => {
+                        const isApplied = userRequests.some(req => req.eventId === event.id);
+                        return (
+                            <TrainingEventCard 
+                                key={event.id} 
+                                category={event.category}
+                                imageSrc={event.imageSrc || "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"}
+                                imageAlt={event.imageAlt || event.title}
+                                title={event.title}
+                                date={event.proposedStartDate || event.date || "TBD"}
+                                time={event.time || "TBD"}
+                                applyBefore={event.applyBefore}
+                                isApplied={isApplied}
+                            />
+                        );
+                    })}
                 </div>
+
+                {/* Pagination controls */}
+                {filteredEvents.length > itemsPerPage && (
+                    <div className="mt-10 flex items-center justify-center gap-4">
+                        <button 
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        >
+                            <span className="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        
+                        <div className="flex items-center gap-2">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-10 h-10 rounded-xl font-bold text-sm transition-all shadow-sm ${
+                                        currentPage === page 
+                                        ? 'bg-[var(--color-training-primary)] text-white' 
+                                        : 'bg-white border border-stone-200 text-stone-600 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)]'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                        >
+                            <span className="material-symbols-outlined">chevron_right</span>
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* Section 2: My Training Status */}
@@ -85,23 +238,39 @@ export default function TrainingRequestPage() {
                         <span className="material-symbols-outlined text-[var(--color-training-primary)]">
                             assignment_turned_in
                         </span>
-                        My Training Status
+                        My Training Events Status
                     </h2>
                 </div>
-                <TrainingStatusTable onFeedbackClick={() => setIsFeedbackModalOpen(true)} />
+
+                {/* Training status table showing user's applications */} 
+                <TrainingStatusTable
+                    key={tableRefreshKey}
+                    onFeedbackClick={(request) => {
+                        setSelectedFeedbackCourse(request.trainingTitle);
+                        setSelectedEventId(request.eventId);
+                        setIsFeedbackModalOpen(true);
+                    }}
+                />
             </section>
-
-            {/* Footer Info - Optional if you want it inside the page or global footer */}
-            <footer className="mt-auto py-8 border-t border-[var(--color-training-primary)]/10 text-center">
-                <p className="text-xs text-stone-400 font-medium">
-                    © 2023 HR MATE - Unified Employee Experience Portal. All Rights Reserved.
-                </p>
-            </footer>
-
+ 
+            {/* Feedback Modal (for completed trainings)*/}
             <TrainingFeedbackModal
                 isOpen={isFeedbackModalOpen}
                 onClose={() => setIsFeedbackModalOpen(false)}
+                courseName={selectedFeedbackCourse}
+                eventId={selectedEventId}
+                onSubmitSuccess={() => {
+                    setTableRefreshKey(prev => prev + 1);
+                    setToast({ message: "Feedback submitted successfully!", type: "success" });
+                }}
             />
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 }

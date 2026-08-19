@@ -2,14 +2,17 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-type ActiveView = 
-  | "dashboard" 
-  | "employeeMaster" 
+export type ActiveView =
+  | "dashboard"
+  | "employeeMaster"
   | "registerEmployee"
-  | "officeCalendar" 
-  | "shifts" 
-  | "documents" 
-  | "reports";
+  | "officeCalendar"
+  | "shifts"
+  | "documents"
+  | "reports"
+  | "otherApprovals"
+  | "training"
+  | "leaveManagement";
 
 interface AdminNavigationContextType {
   activeView: ActiveView;

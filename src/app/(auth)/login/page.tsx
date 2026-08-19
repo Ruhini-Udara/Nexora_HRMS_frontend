@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { LogIn, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import api from '@/lib/axiosInstance';
 import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -24,7 +24,7 @@ export default function LoginPage() {
     const login = useAuthStore((state) => state.login);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
+    const [showPassword, setShowPassword] = useState(false);
     const {
         register,
         handleSubmit,
@@ -39,8 +39,8 @@ export default function LoginPage() {
 
         try {
             // Normalize email: trim whitespace and convert to lowercase to match DB storage
-        const normalizedData = { ...data, email: data.email.trim().toLowerCase() };
-        const response = await api.post('/api/auth/login', normalizedData);
+            const normalizedData = { ...data, email: data.email.trim().toLowerCase() };
+            const response = await api.post('/api/auth/login', normalizedData);
             const { token, ...userData } = response.data;
 
             // Rationale: We save to Zustand for immediate, reactive UI updates throughout 
@@ -49,7 +49,7 @@ export default function LoginPage() {
 
             // Rationale: We save to Cookies because Middleware (server-side) cannot access 
             // Zustand or localStorage. This enables secure route protection.
-            document.cookie = `nexora-token=${token}; path=/; max-age=86400; SameSite=Strict`;
+            document.cookie = `nexora-token=${token}; path=/; max-age=86400; SameSite=Strict`; //Stores JWT in cookie for middleware, max-age=86400 means 24 hours.
             document.cookie = `nexora-role=${userData.role}; path=/; max-age=86400; SameSite=Strict`;
 
             // Rationale: Role-based redirection ensures users land on the dashboard 
@@ -115,7 +115,7 @@ export default function LoginPage() {
                                     className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none text-slate-900 dark:text-white"
                                 />
                             </div>
-                            {errors.email && (
+                            {errors.email && ( /*Shows email validation error only if email is invalid.*/
                                 <p className="text-xs text-red-500 ml-1 mt-1 font-medium">{errors.email.message}</p>
                             )}
                         </div>
@@ -136,10 +136,21 @@ export default function LoginPage() {
                                 </div>
                                 <input
                                     {...register('password')}
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
-                                    className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none text-slate-900 dark:text-white"
+                                    className="block w-full pl-11 pr-12 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none text-slate-900 dark:text-white"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors focus:outline-none"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <Eye className="w-5 h-5" />
+                                    )}
+                                </button>
                             </div>
                             {errors.password && (
                                 <p className="text-xs text-red-500 ml-1 mt-1 font-medium">{errors.password.message}</p>

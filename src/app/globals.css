@@ -23,7 +23,7 @@
   --color-border-light: #E5E7EB;
   --color-border-dark: #374151;
 
-  /* Manager Dashboard Custom Colors */
+  /* director Dashboard Custom Colors */
   --color-primary: #9e3f00;
   --color-primary-light: #fef2f2;
   --color-dashboard-bg: #f9fafb;
@@ -68,3 +68,22 @@ body {
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
+
+/* Reset Browser Autofill Styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #f8fafc inset !important; /* bg-slate-50 */
+  box-shadow: 0 0 0 30px #f8fafc inset !important;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus, 
+.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #1e293b inset !important; /* bg-slate-800 */
+  box-shadow: 0 0 0 30px #1e293b inset !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+}
+

@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import StatCard from "@/components/ui/StatCard";
 import ModuleCard from "@/components/ui/ModuleCard";
+import api from "@/lib/axiosInstance";
 import {
   Users,
   CalendarDays,
@@ -11,14 +12,46 @@ import {
   Calendar,
   FileText,
   BarChart2,
+  GraduationCap
 } from "lucide-react";
 import EmployeeMaster from "@/components/admin/employee-master/EmployeeMaster";
 import RegisterEmployee from "@/components/admin/register-employee/RegisterEmployee";
 import OfficeCalendar from "@/components/admin/office-calendar/OfficeCalendar";
+import ShiftManagement from "@/components/admin/shift-management/ShiftManagement";
+import DocumentManagement from "@/components/admin/document-management/DocumentManagement";
 import { useAdminNavigation } from "./AdminNavigationContext";
 
 export default function AdminContent() {
-  const { activeView } = useAdminNavigation();
+  const { activeView, setActiveView } = useAdminNavigation();
+  const [employeeCount, setEmployeeCount] = useState<number | string>("...");
+  const [shiftCount, setShiftCount] = useState<number | string>("...");
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCounts = async () => {
+      try {
+        const [empRes, shiftRes] = await Promise.all([
+          api.get("/api/employees"),
+          api.get("/api/shifts"),
+        ]);
+        if (isMounted) {
+          setEmployeeCount(Array.isArray(empRes.data) ? empRes.data.length : 0);
+          setShiftCount(Array.isArray(shiftRes.data) ? shiftRes.data.length : 0);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        if (isMounted) {
+          setEmployeeCount("N/A");
+          setShiftCount("N/A");
+        }
+      }
+    };
+
+    fetchCounts();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   if (activeView === "employeeMaster") {
     return <EmployeeMaster />;
@@ -28,14 +61,22 @@ export default function AdminContent() {
     return <RegisterEmployee />;
   }
 
-  if (activeView === "officeCalendar") {  
+  if (activeView === "officeCalendar") {
     return <OfficeCalendar />;
   }
 
+  if (activeView === "shifts") {
+    return <ShiftManagement />;
+  }
+
+  if (activeView === "documents") {
+    return <DocumentManagement />;
+  }
+
   return (
-    <div className="max-w-7xl mx-auto w-full pt-20">
+    <div className="max-w-7xl mx-auto w-full">
       {/* Page Header */}
-      <div className="mb-8 pt-2">
+      <div className="mb-8">
         <h1 className="text-4xl font-extrabold text-gray-900 mb-1">
           Admin Dashboard
         </h1>
@@ -48,24 +89,19 @@ export default function AdminContent() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <StatCard
           title="Total Employees"
-          value="1,248"
-          subtext={
-            <span className="text-green-600">↗ +12% from last month</span>
-          }
+          value={employeeCount}
           icon={<Users className="w-7 h-7 text-amber-800" />}
           iconBgColor="bg-orange-50"
         />
         <StatCard
           title="Documents Uploaded This Month"
           value="24"
-          subtext={<span className="text-amber-600">5 in This week</span>}
           icon={<CalendarDays className="w-7 h-7 text-yellow-600" />}
           iconBgColor="bg-yellow-50"
         />
         <StatCard
           title="Today's Shifts"
-          value="456"
-          subtext={<span className="text-blue-600">ℹ 98% staffing capacity</span>}
+          value={shiftCount}
           icon={<Clock className="w-7 h-7 text-blue-600" />}
           iconBgColor="bg-blue-50"
         />
@@ -80,36 +116,43 @@ export default function AdminContent() {
           title="Employee Master"
           description="Centralized database for all personnel information, documents, and career history."
           icon={<Contact className="w-7 h-7" />}
-          href="/admin/employees"
+          onClick={() => setActiveView("employeeMaster")}
           className="lg:col-span-2"
         />
         <ModuleCard
           title="Office Calendar"
           description="Global view of holidays, events, and company-wide deadlines for efficient planning."
           icon={<Calendar className="w-7 h-7" />}
-          href="/admin/calendar"
+          onClick={() => setActiveView("officeCalendar")}
           className="lg:col-span-2"
         />
         <ModuleCard
           title="Shift Management"
           description="Optimize workforce allocation across multiple shifts with automated scheduling tools."
           icon={<Clock className="w-7 h-7" />}
-          href="/admin/shifts"
+          onClick={() => setActiveView("shifts")}
           className="lg:col-span-2"
         />
         <ModuleCard
           title="Document Management"
           description="Securely store and track employee contracts, policies, and certifications in one place."
           icon={<FileText className="w-6 h-6" />}
-          href="/admin/documents"
-          className="lg:col-span-3"
+          onClick={() => setActiveView("documents")}
+          className="lg:col-span-2"
         />
         <ModuleCard
-          title="Reports & Analytics"
-          description="Generate detailed insights on payroll, turnover, and performance metrics instantly."
-          icon={<BarChart2 className="w-6 h-6" />}
-          href="/admin/reports"
-          className="lg:col-span-3"
+          title="Register Employee"
+          description="Seamlessly onboard new staff, assign roles, and configure their dual-identity system accounts."
+          icon={<Users className="w-6 h-6" />}
+          onClick={() => setActiveView("registerEmployee")}
+          className="lg:col-span-2"
+        />
+        <ModuleCard
+          title="Training & Development"
+          description="Manage and review all pending training applications and monitor employee skill development."
+          icon={<GraduationCap className="w-6 h-6" />}
+          href="/admin/training"
+          className="lg:col-span-2"
         />
       </div>
     </div>
