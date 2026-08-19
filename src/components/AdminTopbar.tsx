@@ -2,6 +2,7 @@
 import React from "react";
 import { Bell, Search } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export default function AdminTopbar() {
   const { user } = useAuthStore();
@@ -19,7 +20,7 @@ export default function AdminTopbar() {
         </div>
       </div>
       <div className="flex items-center gap-6">
-        <Bell className="text-gray-400" size={20} />
+        <NotificationBell />
         <div className="h-8 border-l border-gray-200"></div>
         <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full">
           <div className="text-right">
