@@ -182,7 +182,7 @@ export default function OverseasLeaveApprovals() {
 
     const handleDownloadOnly = async () => {
         try {
-            // @ts-expect-error html2pdf.js does not bundle ts types
+            // @ts-ignore html2pdf.js does not bundle ts types
             const html2pdfModule = await import('html2pdf.js');
             const html2pdf = html2pdfModule.default || html2pdfModule;
 
