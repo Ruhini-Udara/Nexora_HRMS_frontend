@@ -28,16 +28,8 @@ interface LeaveRequest {
     id: number;
     employeeId: number;
     employeeName?: string;
-    employee?: {
-        id: number;
-        fullName: string;
-        employeeCode?: string;
-    };
+    employeeCode?: string;
     leaveTypeName?: string;
-    leaveType?: {
-        id: number;
-        leaveTypeName: string;
-    };
     fromDate: string;
     endDate: string;
     totalDays: number;
@@ -107,12 +99,10 @@ export default function SupervisorDashboard() {
             <SupervisorHeader />
             <div className="p-8 max-w-7xl mx-auto">
                 {/* Page Title */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900">Supervisor Dashboard</h1>
-                    <p className="text-gray-500 mt-1">
-                        Manage your team&apos;s attendance and leave requests efficiently.
-                    </p>
-                </div>
+                <header className="mb-8">
+                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Supervisor Dashboard</h1>
+                    <p className="text-gray-500 mt-1">Overview of your team's attendance and leave requests</p>
+                </header>
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
@@ -157,25 +147,19 @@ export default function SupervisorDashboard() {
                     />
                 </div>
 
-                {/* Management Modules */}
-                <section className="mb-10">
-                    <h2 className="text-lg font-bold text-gray-800 mb-6">Management Modules</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Modules Grid */}
+                <section className="mb-12">
+                    <h2 className="text-xl font-bold text-gray-900 mb-6">Operations & Management</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <ModuleCard
-                            title="Manual Attendance"
-                            description="Log or adjust daily attendance and clock-in/out times for your team."
-                            icon={<ClipboardList className="w-5 h-5" />}
+                            title="Manual Attendance Entry"
+                            description="Directly log, adjust, or sync supervisor-level attendance data directly into the system database."
+                            icon={<AlignJustify className="w-5 h-5" />}
                             href="/supervisor/manual-attendance"
                         />
                         <ModuleCard
-                            title="Leave Management"
-                            description="Review, approve, or reject leave requests from your direct reports."
-                            icon={<Calendar className="w-5 h-5" />}
-                            href="/supervisor/leave-management"
-                        />
-                        <ModuleCard
-                            title="Team Attendance"
-                            description="Monitor team-wide attendance patterns and generate daily reports."
+                            title="Team Attendance Log"
+                            description="View complete logs of team schedules, clock-ins/outs, and real-time attendance tracking summaries."
                             icon={<Users className="w-5 h-5" />}
                             href="/supervisor/team-attendance"
                         />
@@ -216,18 +200,18 @@ export default function SupervisorDashboard() {
                                             <td className="py-4 px-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                                        {getInitials(req.employee?.fullName || `EMP-${req.employee?.id || req.id}`)}
+                                                        {getInitials(req.employeeName || `EMP-${req.employeeId || req.id}`)}
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold text-gray-800">
-                                                            {req.employee?.fullName || `Employee #${req.employee?.id || "???"}`}
+                                                            {req.employeeName || `Employee #${req.employeeId || "???"}`}
                                                         </p>
-                                                        <p className="text-xs text-gray-400">ID: {req.employee?.employeeCode || req.employee?.id || "—"}</p>
+                                                        <p className="text-xs text-gray-400">ID: {req.employeeCode || req.employeeId || "—"}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             {/* Leave Type */}
-                                            <td className="py-4 px-4 text-gray-600 capitalize">{req.leaveType?.leaveTypeName || req.leaveTypeName || "Leave"}</td>
+                                            <td className="py-4 px-4 text-gray-600 capitalize">{req.leaveTypeName || "Leave"}</td>
                                             {/* From */}
                                             <td className="py-4 px-4 text-gray-600">{formatDate(req.fromDate)}</td>
                                             {/* Days */}
