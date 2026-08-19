@@ -28,7 +28,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
     fetchNotifications: async () => {
         const user = useAuthStore.getState().user;
-        if (!user) return;
+        if (!user || !user.employeeId) return;
 
         set({ isLoading: true, error: null });
         try {
