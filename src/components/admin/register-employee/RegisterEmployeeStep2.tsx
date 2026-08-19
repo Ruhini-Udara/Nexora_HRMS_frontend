@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Briefcase, Hash, Info, Building2, UserCog, ChevronLeft } from "lucide-react";
+import { Briefcase, Hash, Info, Building2, UserCog, ChevronLeft, AlertCircle } from "lucide-react";
 import type { EmployeeFormData } from "./RegisterEmployee";
 import api from "@/lib/axiosInstance";
 
@@ -34,6 +34,7 @@ export default function RegisterEmployeeStep2({
   onPrevious,
 }: RegisterEmployeeStep2Props) {
   const [designations, setDesignations] = useState<DesignationOption[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api.get("/api/designations")
@@ -46,13 +47,47 @@ export default function RegisterEmployeeStep2({
   ) => {
     const { name, value } = e.target;
     updateFormData({ [name]: value });
+    if (error) setError(null);
   };
 
   const handleSelectChange = (name: string, value: string) => {
     updateFormData({ [name]: value });
+    if (error) setError(null);
   };
 
   const handleNextStep = () => {
+    if (!formData.designationId) {
+      setError("Designation is required.");
+      return;
+    }
+    if (!formData.employeeType) {
+      setError("Employee Type is required.");
+      return;
+    }
+    if (!formData.department) {
+      setError("Department is required.");
+      return;
+    }
+
+    const formatRegex = /^[a-zA-Z0-9/-]+$/;
+
+    // Validate EPF number format if filled
+    if (formData.epfNumber && formData.epfNumber.trim()) {
+      if (!formatRegex.test(formData.epfNumber.trim())) {
+        setError("Invalid EPF format. Must contain only alphanumeric characters, dashes, or slashes.");
+        return;
+      }
+    }
+
+    // Validate ETF number format if filled
+    if (formData.etfNumber && formData.etfNumber.trim()) {
+      if (!formatRegex.test(formData.etfNumber.trim())) {
+        setError("Invalid ETF format. Must contain only alphanumeric characters, dashes, or slashes.");
+        return;
+      }
+    }
+
+    setError(null);
     if (onNext) {
       onNext();
     }
@@ -131,7 +166,10 @@ export default function RegisterEmployeeStep2({
                   <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10 pointer-events-none" />
                   <Select
                     value={formData.designationId?.toString() ?? ""}
-                    onValueChange={(value) => updateFormData({ designationId: Number(value) })}
+                    onValueChange={(value) => {
+                      updateFormData({ designationId: Number(value) });
+                      if (error) setError(null);
+                    }}
                   >
                     <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500">
                       <SelectValue placeholder="Select Designation" />
@@ -249,6 +287,14 @@ export default function RegisterEmployeeStep2({
 
           </div>
         </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-3 animate-fadeIn">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span className="font-semibold">{error}</span>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-between gap-4 mt-8">
