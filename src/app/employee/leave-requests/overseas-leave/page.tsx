@@ -101,6 +101,7 @@ export default function OverseasLeaveRequestPage() {
                 setValue("email", employeeData.email || user?.email || "");
                 setValue("designation", employeeData.designation?.designationName || user?.designation || "");
                 setValue("branch", employeeData.branch || user?.branch || "");
+                setValue("epfNumber", employeeData.epfNumber || user?.epfNumber || "");
             }
         }
     }, [employeeData, setValue, status, user]);

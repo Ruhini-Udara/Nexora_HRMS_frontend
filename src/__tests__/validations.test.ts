@@ -30,7 +30,7 @@ describe("Leave Request Validations", () => {
             const result = maternitySchema.safeParse({ ...validMaternityData, epfNumber: "abc" });
             expect(result.success).toBe(false);
             if (!result.success) {
-                expect(result.error.issues[0].message).toBe("EPF must be 4-6 digits");
+                expect(result.error.issues[0].message).toBe("EPF number must be at least 4 characters");
             }
         });
 

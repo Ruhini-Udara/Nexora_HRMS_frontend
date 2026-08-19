@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 export const maternitySchema = z.object({
-    epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
+    epfNumber: z.string().min(4, "EPF number must be at least 4 characters"),
     branch: z.string().min(1, "Branch is required"),
     dateOfRequest: z.string().min(1),
     employeeName: z.string().min(1, "Employee Name is required"),
@@ -29,7 +29,7 @@ export const maternitySchema = z.object({
 });
 
 export const overseasSchema = z.object({
-    epfNumber: z.string().regex(/^\d{4,6}$/, "EPF must be 4-6 digits"),
+    epfNumber: z.string().min(4, "EPF number must be at least 4 characters"),
     branch: z.string().min(1, "Branch is required"),
     dateOfRequest: z.string().min(1),
     employeeName: z.string().min(1, "Employee Name is required"),
