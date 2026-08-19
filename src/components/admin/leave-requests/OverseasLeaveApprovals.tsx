@@ -9,6 +9,16 @@ import { WorkflowTrackerStepper } from "@/components/WorkflowTrackerStepper";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface LeaveDocument { id: number; documentType: string; filePathUrl: string; description: string; }
+interface Html2PdfInstance {
+    set: (options: Record<string, unknown>) => Html2PdfInstance;
+    from: (element: HTMLElement) => Html2PdfInstance;
+    save: () => Promise<void>;
+}
+type Html2PdfFactory = (() => Html2PdfInstance) & Html2PdfInstance;
+interface Html2PdfModule {
+    default?: Html2PdfFactory;
+    [key: string]: unknown;
+}
 interface OverseasLeave {
     id: number;
     employeeId: number;
@@ -182,8 +192,8 @@ export default function OverseasLeaveApprovals() {
 
     const handleDownloadOnly = async () => {
         try {
-            const html2pdfModule = await (import('html2pdf.js' as string) as Promise<{ default?: any; [key: string]: any }>);
-            const html2pdf = (html2pdfModule.default || html2pdfModule) as any;
+            const html2pdfModule = await (import('html2pdf.js' as string) as Promise<Html2PdfModule>);
+            const html2pdf = (html2pdfModule.default || html2pdfModule) as unknown as Html2PdfFactory;
 
             const element = document.getElementById("print-agenda-view");
             if (!element) {
