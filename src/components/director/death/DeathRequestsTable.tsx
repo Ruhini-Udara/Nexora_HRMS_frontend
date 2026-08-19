@@ -1,5 +1,7 @@
+"use client";
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Send, Eye, Check } from 'lucide-react';
+import { X, Eye, Check } from 'lucide-react';
 import { 
     getAllDeathRequests, 
     updateDeathStatus, 
@@ -10,29 +12,22 @@ import {
 const DeathRequestsTable = () => {
     const [requests, setRequests] = useState<DeathRequest[]>([]);
     const [loading, setLoading] = useState(true);
-    const [boardFilter, setBoardFilter] = useState("All");
+    const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
+    
+    // Get today's date formatted as YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState(todayStr);
 
     const loadRequests = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getAllDeathRequests();
             
-            // Filter: Only show "legit" requests (real employees, not mock/hardcoded data)
-            const isLegit = (req: DeathRequest) => {
-                return (req.employeeName || "").trim().length > 0 && 
-                       (req.epfNumber || "").trim().length > 0 && 
-                       req.epfNumber !== '0' &&
-                       !req.employeeName.toLowerCase().includes("test") &&
-                       !req.employeeName.toLowerCase().includes("kasun");
-            };
-
             // Show only those submitted to director or already approved/rejected by director
             const filtered = data.filter(r => 
-                isLegit(r) && (
-                    r.status === "SUBMITTED_TO_DIRECTOR" || 
-                    r.status === "APPROVED" || 
-                    r.status === "REJECTED"
-                )
+                r.status === "SUBMITTED_TO_DIRECTOR" || 
+                r.status === "APPROVED" || 
+                r.status === "REJECTED"
             );
             setRequests(filtered);
         } catch (error) {
@@ -90,106 +85,167 @@ const DeathRequestsTable = () => {
         }
     };
 
-    const handleShareStatus = (req: DeathRequest) => {
-        setToastMessage(`Status update notification sent to ${req.requesterName}`);
-        setTimeout(() => setToastMessage(null), 3000);
+    const normalizeDate = (d?: string) => {
+        if (!d) return "";
+        try {
+            const dateObj = new Date(d);
+            if (isNaN(dateObj.getTime())) return d;
+            return dateObj.toISOString().split('T')[0];
+        } catch(e) {
+            return d;
+        }
     };
 
-    const filteredRequests = requests.filter(req =>
-        boardFilter === "All" || req.boardMeetingDate === boardFilter
-    );
+    const getDropdownOptions = () => {
+        if (activeTab === 'current') return [todayStr];
+        const allDates = Array.from(new Set(requests.map(r => normalizeDate(r.boardMeetingDate)).filter(Boolean))).sort();
+        if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
+        return allDates.filter(d => d < todayStr);
+    };
 
-    const availableBoardDates = Array.from(new Set(requests.map(r => r.boardMeetingDate))).filter(d => d);
+    const handleTabChange = (tab: 'current' | 'upcoming' | 'past') => {
+        setActiveTab(tab);
+        setSelectedDate(tab === 'current' ? todayStr : 'All');
+    };
+
+    const filteredRequests = React.useMemo(() => {
+        return requests.filter(req => {
+            const pivotDate = todayStr;
+            const reqDate = normalizeDate(req.boardMeetingDate);
+            if (activeTab === 'current') return reqDate === selectedDate;
+            if (activeTab === 'upcoming') {
+                if (selectedDate === 'All') return reqDate > pivotDate;
+                return reqDate === selectedDate;
+            }
+            if (activeTab === 'past') {
+                if (selectedDate === 'All') return reqDate < pivotDate;
+                return reqDate === selectedDate;
+            }
+            return true;
+        });
+    }, [requests, activeTab, selectedDate, todayStr]);
 
     const openViewModal = (req: DeathRequest) => {
         setSelectedRequest(req);
         setViewModalOpen(true);
     };
 
+    const isActionable = (dateString?: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
+    };
+
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-gray-900 dark:text-white">Submitted Applications</h3>
-                <div className="flex items-center gap-3">
-                    <select
-                        value={boardFilter}
-                        onChange={(e) => setBoardFilter(e.target.value)}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors shadow-sm outline-none focus:border-primary cursor-pointer"
+        <div className="space-y-6">
+            {/* Tabs & Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-2">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => handleTabChange('current')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
                     >
-                        <option value="All" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Board Dates</option>
-                        {availableBoardDates.map(date => (
-                            <option key={date} value={date} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">{date}</option>
+                        Meeting View
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('upcoming')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Upcoming Meetings
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('past')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Past Meetings
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm mr-2 mb-2 sm:mb-0">
+                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">Meeting Date:</label>
+                    <select 
+                        className="bg-transparent text-sm font-medium text-gray-900 dark:text-slate-200 focus:outline-none cursor-pointer"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                    >
+                        {activeTab !== 'current' && <option value="All" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Dates</option>}
+                        {getDropdownOptions().map(d => (
+                            <option key={d} value={d} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                {d}
+                            </option>
                         ))}
                     </select>
                 </div>
             </div>
-            <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
-                        <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee Name</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Date of Death</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Nature</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Requester</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                        {filteredRequests.map((request, i) => (
-                            <tr key={i} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer">
-                                <td className="px-6 py-4" onClick={() => openViewModal(request)}>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                                            {(request.employeeName || "E").charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900 dark:text-white">{request.employeeName}</p>
-                                            <p className="text-xs text-gray-500 dark:text-slate-400">{request.id}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-slate-400" onClick={() => openViewModal(request)}>{request.dateOfDeath}</td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-slate-400" onClick={() => openViewModal(request)}>{request.natureOfDeath}</td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-slate-400" onClick={() => openViewModal(request)}>{request.requesterName}</td>
-                                <td className="px-6 py-4" onClick={() => openViewModal(request)}>
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.status === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' :
-                                        request.status === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' :
-                                            'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-400'
-                                        }`}>
-                                        {request.status.replace(/_/g, ' ')}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    <div className="flex justify-center gap-2">
-                                        <button onClick={() => openViewModal(request)} className="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" title="View Details">
-                                            <Eye className="w-4 h-4" />
-                                        </button>
-                                        {request.status === 'SUBMITTED_TO_DIRECTOR' && (
-                                            <>
-                                                <button onClick={() => handleApprove(request.id)} className="w-8 h-8 rounded-md bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer" title="Approve">
-                                                    <Check className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={() => openRejectModal(request.id)} className="w-8 h-8 rounded-md bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors cursor-pointer" title="Reject">
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {filteredRequests.length === 0 && (
-                            <tr>
-                                <td colSpan={6} className="py-12 text-center text-gray-500 dark:text-slate-400">
-                                    No requests found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
 
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
+                            <tr>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Request ID</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Employee Name</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Date of Death</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Nature</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Requester</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-sm">
+                            {filteredRequests.map((request, i) => (
+                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                        DTH-{request.id}
+                                    </td>
+                                    <td className="px-6 py-4 text-gray-700 dark:text-slate-300">
+                                        {request.employeeName}
+                                    </td>
+                                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{request.dateOfDeath}</td>
+                                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{request.natureOfDeath}</td>
+                                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{request.requesterName}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.status === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' :
+                                            request.status === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' :
+                                                'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-400'
+                                            }`}>
+                                            {request.status === 'APPROVED' ? 'Approved' : request.status === 'REJECTED' ? 'Rejected' : 'Pending Review'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex justify-end gap-2">
+                                            <button onClick={() => openViewModal(request)} className="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" title="View Details">
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                            {request.status === 'SUBMITTED_TO_DIRECTOR' && isActionable(request.boardMeetingDate) && (
+                                                <>
+                                                    <button onClick={() => request.id && handleApprove(String(request.id))} className="w-8 h-8 rounded-md bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer" title="Approve">
+                                                        <Check className="w-4 h-4" />
+                                                    </button>
+                                                    <button onClick={() => request.id && openRejectModal(String(request.id))} className="w-8 h-8 rounded-md bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors cursor-pointer" title="Reject">
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredRequests.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} className="py-12 text-center text-gray-500 dark:text-slate-400">
+                                        No requests found for this selection.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             {/* View Details Modal — Read-only popup */}
             {viewModalOpen && selectedRequest && (
@@ -214,7 +270,7 @@ const DeathRequestsTable = () => {
                                 <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Contact Phone</p><p className="font-semibold text-gray-900 dark:text-white">{selectedRequest.contactNumber}</p></div>
                                 <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Board Meeting</p><p className="font-semibold text-primary">{selectedRequest.boardMeetingDate}</p></div>
                                 <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Status</p>
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${selectedRequest.status === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' : selectedRequest.status === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' : 'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-400'}`}>{selectedRequest.status.replace(/_/g, ' ')}</span>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${selectedRequest.status === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' : selectedRequest.status === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' : 'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-400'}`}>{selectedRequest.status === 'APPROVED' ? 'Approved' : selectedRequest.status === 'REJECTED' ? 'Rejected' : 'Pending Review'}</span>
                                 </div>
                             </div>
                             {Object.keys(selectedRequest.documents).length > 0 && (
@@ -225,7 +281,7 @@ const DeathRequestsTable = () => {
                                             <div key={key} className="flex items-center gap-3 p-3 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
                                                 <span className="material-symbols-outlined text-red-500 text-lg">picture_as_pdf</span>
                                                 <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex-1">{value}</span>
-                                                <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs font-bold">Preview</button>
+                                                <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs font-bold cursor-pointer">Preview</button>
                                             </div>
                                         ))}
                                     </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
+import { WorkflowTrackerStepper } from "@/components/WorkflowTrackerStepper";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MaternityLeave {
@@ -26,6 +27,7 @@ interface MaternityLeave {
     fromDate: string;
     endDate: string;
     totalDays: number;
+    createdAt?: string;
 }
 
 interface LeaveDocument {
@@ -68,6 +70,28 @@ export default function MaternityLeaveApprovals() {
     const triggerNotification = (message: string, type: 'success' | 'error' = 'success') => {
         setShowNotification({ message, type });
         setTimeout(() => setShowNotification(null), 4000);
+    };
+
+    const getWorkflowSteps = (req: MaternityLeave) => {
+        // Mocking created date if not present for demo purposes
+        const createdDate = req.createdAt ? new Date(req.createdAt) : new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); 
+        const isDelayed = (Date.now() - createdDate.getTime()) > 2 * 24 * 60 * 60 * 1000;
+        
+        return [
+            { label: 'Request Submitted', status: 'completed' as const },
+            { label: 'HR Verification', status: 'completed' as const },
+            { 
+                label: 'Admin Final Review', 
+                status: req.status === 'PENDING_ADMIN_APPROVAL' ? 'current' as const : 
+                        req.status === 'REJECTED' ? 'pending' as const : 'completed' as const,
+                isDelayed: req.status === 'PENDING_ADMIN_APPROVAL' && isDelayed,
+                timeSpent: req.status === 'PENDING_ADMIN_APPROVAL' && isDelayed ? '> 2 Days' : undefined
+            },
+            { 
+                label: 'Salary Calculation Queue', 
+                status: req.status === 'APPROVED' ? 'current' as const : 'pending' as const 
+            }
+        ];
     };
 
     const handleView = async (req: MaternityLeave) => {
@@ -266,6 +290,8 @@ export default function MaternityLeaveApprovals() {
                                     </div>
                                 </div>
                             </div>
+
+                            <WorkflowTrackerStepper steps={getWorkflowSteps(selectedRequest)} />
 
                             <div className="space-y-6">
                                 <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Verified Documents</h4>

@@ -1,0 +1,255 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import api from "@/lib/axiosInstance";
+
+interface PassportExpiry {
+    employeeName: string;
+    passportNumber: string;
+    expiryDate: string;
+}
+
+interface MaternityReturn {
+    employeeName: string;
+    expectedReturnDate: string;
+}
+
+interface AnalyticsData {
+    presentToday: number;
+    lateToday: number;
+    pendingOverseas: number;
+    pendingMaternity: number;
+    delayedApprovals: number;
+    passportExpiryAlerts: PassportExpiry[];
+    upcomingMaternityReturns: MaternityReturn[];
+    departmentEmployeeCount: Record<string, number>;
+    departmentLeaveImpact: Record<string, number>;
+}
+
+export default function HrAnalyticsPage() {
+    const [data, setData] = useState<AnalyticsData | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            try {
+                const res = await api.get("/api/v1/dashboard/analytics");
+                setData(res.data);
+            } catch (error) {
+                console.error("Failed to fetch dashboard analytics", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAnalytics();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="p-8 flex items-center justify-center min-h-[50vh]">
+                <div className="flex flex-col items-center gap-4 text-gray-500">
+                    <span className="material-icons-round text-primary text-4xl animate-pulse">hourglass_empty</span>
+                    <span className="font-semibold tracking-widest uppercase text-sm">Loading Analytics...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (!data) return null;
+
+    // Calculate max values for bar charts
+    const maxEmployees = Math.max(...Object.values(data.departmentEmployeeCount), 1);
+    const maxLeaves = Math.max(...Object.values(data.departmentLeaveImpact), 1);
+
+    const departments = Array.from(new Set([
+        ...Object.keys(data.departmentEmployeeCount),
+        ...Object.keys(data.departmentLeaveImpact)
+    ])).sort();
+
+    return (
+        <div className="p-8 max-w-7xl mx-auto w-full">
+            <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Analytics</h2>
+                <p className="text-gray-600 dark:text-gray-400">Real-time HR analytics and pending task impact.</p>
+            </div>
+
+            {/* Top Metrics Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {/* Attendance (Dummy for now) */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Present Today</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.presentToday}</h3>
+                    </div>
+                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
+                        <span className="material-icons-round text-primary">people</span>
+                    </div>
+                </div>
+
+                {/* Late */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Late Today</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.lateToday}</h3>
+                    </div>
+                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
+                        <span className="material-icons-round text-primary">schedule</span>
+                    </div>
+                </div>
+
+                {/* Pending Leaves */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Leaves</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.pendingOverseas + data.pendingMaternity}</h3>
+                    </div>
+                    <div className="flex gap-1">
+                        <div className="w-8 h-12 bg-primary/10 flex items-center justify-center rounded-l-lg">
+                            <span className="material-icons-round text-primary text-sm">flight</span>
+                        </div>
+                        <div className="w-8 h-12 bg-primary/10 flex items-center justify-center rounded-r-lg">
+                            <span className="material-icons-round text-primary text-sm">pregnant_woman</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Delayed Approvals */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Delayed &gt; 2 Days</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.delayedApprovals}</h3>
+                    </div>
+                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
+                        <span className="material-icons-round text-primary">warning</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Middle Row: Department Impact */}
+            <div className="bg-surface-light dark:bg-surface-dark rounded-xl card-shadow border border-border-light dark:border-border-dark p-6 mb-8">
+                <div className="flex items-center gap-3 mb-6 border-b border-border-light dark:border-border-dark pb-4">
+                    <span className="material-icons-round text-primary text-2xl">work</span>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Department Leave Impact</h3>
+                </div>
+                
+                {departments.length === 0 ? (
+                    <p className="text-gray-500 italic py-8 text-center">No department data available.</p>
+                ) : (
+                    <div className="space-y-6">
+                        {departments.map(dept => {
+                            const empCount = data.departmentEmployeeCount[dept] || 0;
+                            const leaveCount = data.departmentLeaveImpact[dept] || 0;
+                            const empWidth = Math.max((empCount / maxEmployees) * 100, 2);
+                            const leaveWidth = Math.max((leaveCount / maxLeaves) * 100, 2);
+
+                            return (
+                                <div key={dept} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                    <div className="md:col-span-3">
+                                        <p className="font-bold text-gray-800 dark:text-gray-200 text-sm truncate">
+                                            {(!dept || dept.trim() === "" || dept === "null") ? "Unassigned" : dept}
+                                        </p>
+                                    </div>
+                                    <div className="md:col-span-9 space-y-2">
+                                        {/* Employee Count Bar */}
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden flex-1 relative">
+                                                <div 
+                                                    className="bg-gray-400 dark:bg-gray-500 h-full rounded-full transition-all duration-1000"
+                                                    style={{ width: `${empWidth}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-xs font-bold text-gray-500 w-24 text-right">{empCount} Employees</span>
+                                        </div>
+                                        {/* Leaves Count Bar */}
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden flex-1 relative">
+                                                <div 
+                                                    className="bg-primary h-full rounded-full transition-all duration-1000"
+                                                    style={{ width: `${leaveCount === 0 ? 0 : leaveWidth}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-xs font-bold text-primary w-24 text-right">{leaveCount} On Leave</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Bottom Row: Alerts Lists */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Passports */}
+                <div className="bg-surface-light dark:bg-surface-dark rounded-xl card-shadow border border-border-light dark:border-border-dark p-6 flex flex-col h-96">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <span className="material-icons-round text-primary">flight</span>
+                            Passport Expiries (&lt; 6 mo)
+                        </h3>
+                        <span className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-bold border border-amber-200 dark:border-amber-800">{data.passportExpiryAlerts.length}</span>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto pr-2">
+                        {data.passportExpiryAlerts.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-gray-500 text-sm py-12">
+                                No upcoming passport expirations.
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {data.passportExpiryAlerts.map((alert, i) => (
+                                    <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
+                                        <div>
+                                            <p className="font-bold text-gray-900 dark:text-white text-sm">{alert.employeeName}</p>
+                                            <p className="text-xs text-gray-500 mt-1">Passport: {alert.passportNumber}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Expires</p>
+                                            <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{alert.expiryDate}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Maternity Returns */}
+                <div className="bg-surface-light dark:bg-surface-dark rounded-xl card-shadow border border-border-light dark:border-border-dark p-6 flex flex-col h-96">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <span className="material-icons-round text-primary">pregnant_woman</span>
+                            Upcoming Maternity Returns
+                        </h3>
+                        <span className="bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 px-3 py-1 rounded-full text-xs font-bold border border-pink-200 dark:border-pink-800">{data.upcomingMaternityReturns.length}</span>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto pr-2">
+                        {data.upcomingMaternityReturns.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-gray-500 text-sm py-12">
+                                No upcoming returns this month.
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {data.upcomingMaternityReturns.map((alert, i) => (
+                                    <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-border-light dark:border-border-dark hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
+                                        <div>
+                                            <p className="font-bold text-gray-900 dark:text-white text-sm">{alert.employeeName}</p>
+                                            <p className="text-xs text-gray-500 mt-1">Returning from leave</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-semibold text-pink-600 dark:text-pink-400 uppercase tracking-wider">Expected</p>
+                                            <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{alert.expectedReturnDate}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+}

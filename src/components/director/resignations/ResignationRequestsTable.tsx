@@ -97,12 +97,16 @@ const ResignationRequestsTable = () => {
         setViewModalOpen(true);
     };
 
-    const isActionable = (dateString: string) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const meetingDate = new Date(dateString);
-        meetingDate.setHours(0, 0, 0, 0);
-        return meetingDate <= today;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const isActionable = (dateString?: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
     };
 
     return (

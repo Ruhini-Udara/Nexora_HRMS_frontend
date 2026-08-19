@@ -5,9 +5,7 @@ import Link from "next/link";
 import { getAllTransferRequests, updateTransferStatus, TransferRequest, TransferStatus } from "@/lib/api/transferRequests";
 
 const isLegit = (req: TransferRequest) =>
-    (req.employeeName || "").trim().length > 0 &&
-    (req.epfNumber || "").trim().length > 0 &&
-    req.epfNumber !== '0';
+    !!req.id && (req.employeeName || "").trim().length > 0;
 
 export default function AdminTransfersPage() {
     const [requests, setRequests] = useState<TransferRequest[]>([]);
@@ -145,7 +143,7 @@ export default function AdminTransfersPage() {
                 </div>
             )}
 
-            <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
+            <div className="flex-1 p-8 pb-16 max-w-7xl mx-auto w-full">
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between print:hidden">
                     <div>

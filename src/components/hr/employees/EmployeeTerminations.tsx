@@ -5,7 +5,7 @@ import Link from "next/link";
 import { TerminationRequestForm } from "./TerminationRequestForm";
 
 // ── Types ───────────────────────────────────────────────────────────
-export type TerminationStatus = 'NEW' | 'SUBMITTED' | 'VERIFIED_BY_HR' | 'PENDING_ADMIN' | 'REJECTED';
+export type TerminationStatus = 'NEW' | 'SUBMITTED' | 'VERIFIED_BY_HR' | 'PENDING_ADMIN' | 'REJECTED' | 'PENDING_BOARD_APPROVAL' | 'SUBMITTED_TO_DIRECTOR' | 'APPROVED';
 
 export interface TerminationRequest {
     id: string;
@@ -35,12 +35,71 @@ const statusConfig: Record<TerminationStatus, { label: string; classes: string }
     'SUBMITTED': { label: 'Submitted', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
     'VERIFIED_BY_HR': { label: 'Verified', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
     'PENDING_ADMIN': { label: 'Pending Admin', classes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    'REJECTED': { label: 'Rejected', classes: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }
+    'REJECTED': { label: 'Rejected', classes: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    'PENDING_BOARD_APPROVAL': { label: 'Pending Board', classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
+    'SUBMITTED_TO_DIRECTOR': { label: 'Submitted to Director', classes: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+    'APPROVED': { label: 'Approved', classes: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' }
 };
 
 // ── Main Component ──────────────────────────────────────────────────
+const loadLocalTerminations = (): TerminationRequest[] => {
+    if (typeof window === "undefined") return [];
+    const stored = localStorage.getItem("termination_requests");
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+    const defaultData: TerminationRequest[] = [
+        {
+            id: "TRM-2024-001",
+            employeeName: "Jagath Kumara",
+            epfNumber: "EPF-1001",
+            branch: "Colombo HQ",
+            status: "PENDING_ADMIN",
+            type: "Involuntary",
+            reason: "Performance issues",
+            initiationDate: "2024-10-15",
+            effectiveDate: "2024-11-15",
+            specialRemark: "",
+            documents: {},
+        },
+        {
+            id: "TRM-2024-002",
+            employeeName: "Sunil Perera",
+            epfNumber: "EPF-1002",
+            branch: "Kandy Branch",
+            status: "PENDING_ADMIN",
+            type: "Voluntary",
+            reason: "Personal reasons",
+            initiationDate: "2024-10-18",
+            effectiveDate: "2024-11-18",
+            specialRemark: "",
+            documents: {},
+        },
+        {
+            id: "TRM-2024-003",
+            employeeName: "Amara Siriwardena",
+            epfNumber: "EPF-1003",
+            branch: "Galle Branch",
+            status: "VERIFIED_BY_HR",
+            type: "Involuntary",
+            reason: "Policy violation",
+            initiationDate: "2024-10-16",
+            effectiveDate: "2024-11-16",
+            specialRemark: "",
+            documents: {},
+        }
+    ];
+    localStorage.setItem("termination_requests", JSON.stringify(defaultData));
+    return defaultData;
+};
+
 export default function EmployeeTerminations() {
-    const [requests, setRequests] = useState<TerminationRequest[]>(MOCK_REQUESTS);
+    const [requests, setRequests] = useState<TerminationRequest[]>(() => loadLocalTerminations());
+
     const [activeTab, setActiveTab] = useState<'pending' | 'board'>('pending');
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
@@ -75,10 +134,14 @@ export default function EmployeeTerminations() {
         };
         setRequests(prev => {
             const exists = prev.find(r => r.id === adaptedReq.id);
+            let updated;
             if (exists) {
-                return prev.map(r => r.id === adaptedReq.id ? adaptedReq : r);
+                updated = prev.map(r => r.id === adaptedReq.id ? adaptedReq : r);
+            } else {
+                updated = [...prev, adaptedReq];
             }
-            return [...prev, adaptedReq];
+            localStorage.setItem("termination_requests", JSON.stringify(updated));
+            return updated;
         });
         setIsModalOpen(false);
     };
@@ -86,9 +149,13 @@ export default function EmployeeTerminations() {
 
     const handleVerify = () => {
         if (!selectedRequest) return;
-        setRequests(prev => prev.map(r => 
-            r.id === selectedRequest.id ? { ...r, status: 'VERIFIED_BY_HR' } : r
-        ));
+        setRequests(prev => {
+            const updated = prev.map(r => 
+                r.id === selectedRequest.id ? { ...r, status: 'VERIFIED_BY_HR' as TerminationStatus } : r
+            );
+            localStorage.setItem("termination_requests", JSON.stringify(updated));
+            return updated;
+        });
         setIsModalOpen(false);
     };
 
@@ -105,13 +172,15 @@ export default function EmployeeTerminations() {
             return;
         }
         if (!selectedRequest) return;
-        setRequests((prev) =>
-            prev.map((req) =>
+        setRequests((prev) => {
+            const updated = prev.map((req) =>
                 req.id === selectedRequest.id
-                    ? { ...req, status: "REJECTED", hrRemark: rejectReason }
+                    ? { ...req, status: "REJECTED" as TerminationStatus, hrRemark: rejectReason }
                     : req
-            )
-        );
+            );
+            localStorage.setItem("termination_requests", JSON.stringify(updated));
+            return updated;
+        });
         handleCloseRejectDialog();
         setIsModalOpen(false);
     };
@@ -121,13 +190,15 @@ export default function EmployeeTerminations() {
             .filter((r) => r.status === "VERIFIED_BY_HR")
             .map((r) => r.id);
 
-        setRequests((prev) =>
-            prev.map((req) =>
+        setRequests((prev) => {
+            const updated = prev.map((req) =>
                 verifiedIds.includes(req.id)
                     ? { ...req, status: "PENDING_ADMIN" as TerminationStatus }
                     : req
-            )
-        );
+            );
+            localStorage.setItem("termination_requests", JSON.stringify(updated));
+            return updated;
+        });
         setShowConfirmDialog(false);
         setActiveTab('pending');
     };
@@ -135,7 +206,7 @@ export default function EmployeeTerminations() {
     // ── Filtered list ─────────────────────────────────────────────────
     const filteredRequests = requests.filter((req) => {
         const matchesTab = activeTab === 'pending' 
-            ? (req.status === 'SUBMITTED' || req.status === 'PENDING_ADMIN' || req.status === 'REJECTED' || req.status === 'NEW')
+            ? (req.status === 'SUBMITTED' || req.status === 'PENDING_ADMIN' || req.status === 'REJECTED' || req.status === 'NEW' || req.status === 'PENDING_BOARD_APPROVAL' || req.status === 'SUBMITTED_TO_DIRECTOR' || req.status === 'APPROVED')
             : (req.status === 'VERIFIED_BY_HR');
         
         const matchesSearch =
@@ -160,8 +231,8 @@ export default function EmployeeTerminations() {
     const verifiedCount = requests.filter(r => r.status === 'VERIFIED_BY_HR').length;
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-            <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col">
+            <div className="flex-1 p-8 pb-16 max-w-7xl mx-auto w-full">
 
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between">

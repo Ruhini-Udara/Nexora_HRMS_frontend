@@ -1,5 +1,7 @@
+"use client";
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Filter, Check, X, Send, Eye } from 'lucide-react';
+import { Check, X, Eye, Send } from 'lucide-react';
 import { 
     getAllTransferRequests, 
     updateTransferStatus, 
@@ -9,7 +11,11 @@ import {
 export default function TransferTable() {
     const [requests, setRequests] = useState<TransferRequest[]>([]);
     const [loading, setLoading] = useState(true);
-    const [boardFilter, setBoardFilter] = useState("All");
+    const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
+    
+    // Get today's date formatted as YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState(todayStr);
 
     const loadRequests = useCallback(async () => {
         try {
@@ -56,8 +62,6 @@ export default function TransferTable() {
     // Toast State for simulating SMS/Email
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    const todayString = new Date().toISOString().split('T')[0];
-
     const handleApprove = async (id: string) => {
         try {
             await updateTransferStatus(id, "APPROVED");
@@ -68,8 +72,6 @@ export default function TransferTable() {
             console.error("Failed to approve", error);
         }
     };
-
-    const availableBoardDates = Array.from(new Set(requests.map(r => r.boardMeetingDate))).filter(d => d).sort();
 
     const openRejectModal = (id: string) => {
         setRequestToReject(id);
@@ -91,112 +93,176 @@ export default function TransferTable() {
         }
     };
 
+    const getDropdownOptions = () => {
+        if (activeTab === 'current') return [todayStr];
+        const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean))).sort() as string[];
+        if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
+        return allDates.filter(d => d < todayStr);
+    };
 
-    const filteredRequests = requests.filter(req =>
-        boardFilter === "All" || req.boardMeetingDate === boardFilter
-    );
+    const handleTabChange = (tab: 'current' | 'upcoming' | 'past') => {
+        setActiveTab(tab);
+        setSelectedDate(tab === 'current' ? todayStr : 'All');
+    };
+
+    const filteredRequests = React.useMemo(() => {
+        return requests.filter(req => {
+            if (!req.boardMeetingDate) return false;
+            const pivotDate = todayStr;
+            if (activeTab === 'current') return req.boardMeetingDate === selectedDate;
+            if (activeTab === 'upcoming') {
+                if (selectedDate === 'All') return req.boardMeetingDate > pivotDate;
+                return req.boardMeetingDate === selectedDate;
+            }
+            if (activeTab === 'past') {
+                if (selectedDate === 'All') return req.boardMeetingDate < pivotDate;
+                return req.boardMeetingDate === selectedDate;
+            }
+            return true;
+        });
+    }, [requests, activeTab, selectedDate, todayStr]);
+
+    const isActionable = (dateString?: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
+    };
 
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
-                <h3 className="font-bold text-gray-900 dark:text-white">Board Transfer Reviews</h3>
-                <div className="flex items-center gap-3">
-                    <select
-                        value={boardFilter}
-                        onChange={(e) => setBoardFilter(e.target.value)}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors shadow-sm outline-none focus:border-primary cursor-pointer"
+        <div className="space-y-6">
+            {/* Tabs & Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-2">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => handleTabChange('current')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
                     >
-                        <option value="All" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Board Dates</option>
-                        {availableBoardDates.map(date => (
-                            <option key={date} value={date} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">{date}</option>
+                        Meeting View
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('upcoming')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Upcoming Meetings
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('past')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Past Meetings
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm mr-2 mb-2 sm:mb-0">
+                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">Meeting Date:</label>
+                    <select 
+                        className="bg-transparent text-sm font-medium text-gray-900 dark:text-slate-200 focus:outline-none cursor-pointer"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                    >
+                        {activeTab !== 'current' && <option value="All" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Dates</option>}
+                        {getDropdownOptions().map(d => (
+                            <option key={d} value={d} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                {d}
+                            </option>
                         ))}
                     </select>
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
-                        <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Movement</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">HR Date</th>
-                            <th className="px-6 py-4 font-semibold text-primary">Board Date</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                        {filteredRequests.map((req) => (
-                            <tr key={req.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                                            {req.employeeName.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-900 dark:text-white">{req.employeeName}</p>
-                                            <p className="text-xs text-gray-500 dark:text-slate-400">{req.id}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <p className="font-medium text-gray-700 dark:text-slate-300 text-xs">From: {req.currentBranch}</p>
-                                    <p className="font-medium text-blue-600 dark:text-blue-400 text-xs">To: {req.targetBranch}</p>
-                                </td>
-                                <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{req.requestDate}</td>
-                                <td className="px-6 py-4 text-primary font-bold">
-                                    {req.boardMeetingDate}
-                                    {req.boardMeetingDate === todayString && <span className="ml-2 text-[10px] bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded animate-pulse">TODAY</span>}
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                        ${String(req.status) === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' :
-                                            String(req.status) === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' :
-                                                'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-400'}`}>
-                                        {String(req.status).replace(/_/g, ' ')}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    <div className="flex justify-center gap-2">
-                                        <button
-                                            onClick={() => setViewingRequest(req)}
-                                            className="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
-                                            title="View Details"
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                        </button>
-                                        {String(req.status) === 'SUBMITTED_TO_DIRECTOR' && (
-                                            <>
-                                                <button
-                                                    onClick={() => handleApprove(req.id)}
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 cursor-pointer"
-                                                    title="Approve"
-                                                >
-                                                    <Check className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => openRejectModal(req.id)}
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 cursor-pointer"
-                                                    title="Reject"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {filteredRequests.length === 0 && (
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
                             <tr>
-                                <td colSpan={6} className="py-12 text-center text-gray-500 dark:text-slate-400">
-                                    No requests available in this category.
-                                </td>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Movement</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">HR Date</th>
+                                <th className="px-6 py-4 font-semibold text-primary">Board Date</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                            {filteredRequests.map((req) => (
+                                <tr key={req.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                                                {req.employeeName.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-gray-900 dark:text-white">{req.employeeName}</p>
+                                                <p className="text-xs text-gray-500 dark:text-slate-400">{req.id}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <p className="font-medium text-gray-700 dark:text-slate-300 text-xs">From: {req.currentBranch}</p>
+                                        <p className="font-medium text-blue-600 dark:text-blue-400 text-xs">To: {req.targetBranch}</p>
+                                    </td>
+                                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{req.requestDate}</td>
+                                    <td className="px-6 py-4 text-primary font-bold">
+                                        {req.boardMeetingDate}
+                                        {req.boardMeetingDate === todayStr && (
+                                            <span className="ml-2 text-[10px] bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded animate-pulse">
+                                                TODAY
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                            ${String(req.status) === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' :
+                                                String(req.status) === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' :
+                                                    'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-400'}`}>
+                                            {String(req.status).replace(/_/g, ' ')}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex justify-center gap-2">
+                                            <button
+                                                onClick={() => setViewingRequest(req)}
+                                                className="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                                                title="View Details"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                            {String(req.status) === 'SUBMITTED_TO_DIRECTOR' && isActionable(req.boardMeetingDate) && (
+                                                <>
+                                                    <button
+                                                        onClick={() => req.id && handleApprove(String(req.id))}
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 cursor-pointer"
+                                                        title="Approve"
+                                                    >
+                                                        <Check className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => req.id && openRejectModal(String(req.id))}
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 cursor-pointer"
+                                                        title="Reject"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredRequests.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="py-12 text-center text-gray-500 dark:text-slate-400">
+                                        No requests available for this selection.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* View Details Modal */}
@@ -239,7 +305,7 @@ export default function TransferTable() {
                             <textarea
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
-                                className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-sm text-gray-700 dark:text-slate-200 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 transition-colors"
+                                className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 rounded-lg p-3 text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 transition-colors"
                                 rows={4}
                                 placeholder="State the reason for rejection..."
                             />

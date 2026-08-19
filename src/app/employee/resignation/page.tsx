@@ -14,6 +14,8 @@ const statusStyles: Record<string, { label: string; classes: string }> = {
     'SUBMITTED': { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' },
     'VERIFIED_BY_HR': { label: 'Verified by HR', classes: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
     'PENDING_ADMIN': { label: 'Pending Admin', classes: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
+    'SUBMITTED_FOR_ADMIN_APPROVAL': { label: 'Pending Admin', classes: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
+    'Pending Director': { label: 'Pending Director', classes: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' },
     'REJECTED': { label: 'Rejected', classes: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
     'Board Approved': { label: 'Approved', classes: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
     'Board Rejected': { label: 'Rejected', classes: 'bg-red-700/10 text-red-700 dark:text-red-400' },
@@ -136,7 +138,7 @@ export default function Page() {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {visibleRequests.length > 0 ? (
                                 visibleRequests.map((req) => {
-                                    const st = statusStyles[req.status];
+                                    const st = statusStyles[req.status] || { label: req.status || 'Unknown', classes: 'bg-slate-100 text-slate-600' };
                                     return (
                                         <tr key={req.id}>
                                             <td className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300">{req.id}</td>
