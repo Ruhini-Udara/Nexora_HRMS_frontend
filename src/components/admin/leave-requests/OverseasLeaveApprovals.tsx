@@ -33,11 +33,11 @@ interface OverseasLeave {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
     const map: Record<string, string> = {
-        PENDING_ADMIN_APPROVAL: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-        ADMIN_APPROVED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-        PENDING_DIRECTOR_REVIEW: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-        APPROVED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-        REJECTED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        PENDING_ADMIN_APPROVAL: "bg-amber-100 text-amber-700  ",
+        ADMIN_APPROVED: "bg-blue-100 text-blue-700  ",
+        PENDING_DIRECTOR_REVIEW: "bg-purple-100 text-purple-700  ",
+        APPROVED: "bg-emerald-100 text-emerald-700  ",
+        REJECTED: "bg-red-100 text-red-700  ",
     };
     const label: Record<string, string> = {
         PENDING_ADMIN_APPROVAL: "Pending Admin Approval",
@@ -58,13 +58,13 @@ function DocumentCard({ label, path, onError }: { label: string; path: string; o
         else onError("Could not generate a secure link. Please try again.");
     };
     return (
-        <div onClick={handleView} className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 group hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
+        <div onClick={handleView} className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg bg-slate-50 group hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
             <div className="w-8 h-8 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 {loading ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                     : <span className="material-symbols-outlined text-[18px]">description</span>}
             </div>
             <div className="overflow-hidden flex-1">
-                <div className="text-xs font-bold text-slate-700 dark:text-slate-200">{label}</div>
+                <div className="text-xs font-bold text-slate-700">{label}</div>
                 <div className="text-[10px] text-primary group-hover:underline">Click to view (1-hr secure link)</div>
             </div>
             <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-primary">open_in_new</span>
@@ -322,21 +322,21 @@ export default function OverseasLeaveApprovals() {
         <div className="max-w-7xl mx-auto w-full px-2">
             {/* Header */}
             <div className="flex items-center gap-4 mb-6 pt-2">
-                <Link href="/admin/leave-requests" className="w-10 h-10 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-primary transition-colors">
+                <Link href="/admin/leave-requests" className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-500 hover:text-primary transition-colors">
                     <span className="material-symbols-outlined">arrow_back</span>
                 </Link>
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Overseas Leave Approvals</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-1">Overseas Leave Approvals</h1>
                     <p className="text-gray-500 text-base">Review and manage overseas leave requests pending admin approval.</p>
                 </div>
-                <button onClick={fetchLeaves} className="ml-auto flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary transition-colors shadow-sm">
+                <button onClick={fetchLeaves} className="ml-auto flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:border-primary hover:text-primary transition-colors shadow-sm">
                     <span className="material-symbols-outlined text-[18px]">refresh</span> Refresh
                 </button>
             </div>
 
             {/* Tabs */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 mb-6">
-                <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 mb-6 px-1">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-6">
+                <div className="flex items-center gap-6 border-b border-slate-200 mb-6 px-1">
                     {(["pending", "board"] as const).map(tab => (
                         <button key={tab} onClick={() => setActiveTab(tab)}
                             className={`pb-4 text-sm font-semibold transition-colors relative ${activeTab === tab ? "text-primary" : "text-slate-500 hover:text-slate-800"}`}>
@@ -350,11 +350,11 @@ export default function OverseasLeaveApprovals() {
                     <div className="relative flex-1">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
                         <input type="text" placeholder="Search by name or ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
                     </div>
                     {activeTab === "pending" && (
                         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                            className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                            className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
                             <option value="PENDING_ADMIN_APPROVAL">Pending My Approval</option>
                             <option value="REJECTED">Rejected</option>
                             <option value="APPROVED">Approved</option>
@@ -362,9 +362,9 @@ export default function OverseasLeaveApprovals() {
                     )}
                     {activeTab === "board" && (
                         <div className="flex items-center gap-3">
-                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Board Meeting Date:</span>
+                            <span className="text-sm font-semibold text-slate-700">Board Meeting Date:</span>
                             <input type="date" value={boardMeetingDate} onChange={e => setBoardMeetingDate(e.target.value)}
-                                className="px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/20" />
                         </div>
                     )}
                 </div>
@@ -378,12 +378,12 @@ export default function OverseasLeaveApprovals() {
                         <span className="text-primary font-semibold text-sm">request(s) selected</span>
                     </div>
                     {activeTab === "pending" ? (
-                        <button onClick={() => { setSelectedIds([]); }} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold">
+                        <button onClick={() => { setSelectedIds([]); }} className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold">
                             Clear Selection
                         </button>
                     ) : (
                         <div className="flex items-center gap-3">
-                            <span className="text-sm text-slate-600 dark:text-slate-400">Will print a board list and automatically forward to Director.</span>
+                            <span className="text-sm text-slate-600">Will print a board list and automatically forward to Director.</span>
                             <button onClick={handlePreviewAgenda} className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm">
                                 <span className="material-symbols-outlined text-[18px]">preview</span>
                                 Preview List &amp; Send to Director
@@ -394,7 +394,7 @@ export default function OverseasLeaveApprovals() {
             )}
 
             {/* Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {loading ? (
                     <div className="flex items-center justify-center py-16 gap-3 text-slate-500">
                         <span className="material-symbols-outlined animate-spin">progress_activity</span> Loading...
@@ -407,7 +407,7 @@ export default function OverseasLeaveApprovals() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                                <tr className="bg-slate-50 border-b border-slate-200 text-sm font-semibold text-slate-500">
                                     {activeTab === "pending" && <th className="py-4 px-4 w-12"><input type="checkbox" className="w-4 h-4 rounded" onChange={e => setSelectedIds(e.target.checked ? filtered.map(r => r.id) : [])} checked={selectedIds.length === filtered.length && filtered.length > 0} /></th>}
                                     {activeTab === "board" && <th className="py-4 px-4 w-12"><input type="checkbox" className="w-4 h-4 rounded" onChange={e => setSelectedIds(e.target.checked ? filteredBoard.map(r => r.id) : [])} checked={selectedIds.length === filteredBoard.length && filteredBoard.length > 0} /></th>}
                                     <th className="py-4 px-6">ID</th>
@@ -419,20 +419,20 @@ export default function OverseasLeaveApprovals() {
                             </thead>
                             <tbody className="text-sm">
                                 {(activeTab === "pending" ? filtered : filteredBoard).map(req => (
-                                    <tr key={req.id} className={`border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors ${selectedIds.includes(req.id) ? "bg-primary/5" : ""}`}>
+                                    <tr key={req.id} className={`border-b border-slate-100  hover:bg-slate-50/50 :bg-slate-700/20 transition-colors ${selectedIds.includes(req.id) ? "bg-primary/5" : ""}`}>
                                         <td className="py-4 px-4"><input type="checkbox" className="w-4 h-4 rounded" checked={selectedIds.includes(req.id)} onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, req.id] : prev.filter(id => id !== req.id))} /></td>
-                                        <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">#{req.id}</td>
+                                        <td className="py-4 px-6 font-medium text-slate-900">#{req.id}</td>
                                         <td className="py-4 px-6">
-                                            <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
+                                            <div className="font-semibold text-slate-800">{req.employeeName}</div>
                                             <div className="text-xs text-slate-500">{req.employeeCode} • {req.department}</div>
                                         </td>
-                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
+                                        <td className="py-4 px-6 text-slate-600">
                                             {req.fromDate} → {req.endDate}<br />
                                             <span className="text-xs text-slate-400">({req.totalDays} days)</span>
                                         </td>
                                         <td className="py-4 px-6"><StatusBadge status={req.status} /></td>
                                         <td className="py-4 px-6 text-right">
-                                            <button onClick={() => handleOpenReview(req)} className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors">
+                                            <button onClick={() => handleOpenReview(req)} className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-primary hover:text-white text-slate-700 rounded-lg text-sm font-semibold transition-colors">
                                                 <span className="material-symbols-outlined text-[18px]">visibility</span> Review
                                             </button>
                                         </td>
@@ -453,14 +453,14 @@ export default function OverseasLeaveApprovals() {
             {/* Review Modal */}
             {selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+                    <div className="bg-white w-full max-w-4xl rounded-2xl shadow-xl border border-slate-200 flex flex-col max-h-[90vh]">
                         {/* Modal Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Review Overseas Leave — #{selectedRequest.id}</h3>
+                                <h3 className="text-xl font-bold text-slate-900">Review Overseas Leave — #{selectedRequest.id}</h3>
                                 <p className="text-sm text-slate-500 mt-1">Verified by HR. Your decision forwards this to the Director or rejects it.</p>
                             </div>
-                            <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+                            <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 :bg-slate-800 text-slate-500">
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
@@ -469,31 +469,31 @@ export default function OverseasLeaveApprovals() {
                         <div className="p-6 overflow-y-auto flex-1 space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Employee Info</h4>
+                                    <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Employee Info</h4>
                                     <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employeeName}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">EPF:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.employeeCode}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Department:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.department}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Contact:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.contactNumber}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Email:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Name:</span><span className="font-medium text-slate-800">{selectedRequest.employeeName}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">EPF:</span><span className="font-medium text-slate-800">{selectedRequest.employeeCode}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Department:</span><span className="font-medium text-slate-800">{selectedRequest.department}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Contact:</span><span className="font-medium text-slate-800">{selectedRequest.contactNumber}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Email:</span><span className="font-medium text-slate-800">{selectedRequest.email}</span></div>
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Leave Details</h4>
+                                    <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Leave Details</h4>
                                     <div className="space-y-3 text-sm">
                                         <div className="flex justify-between"><span className="text-slate-500">Status:</span><StatusBadge status={selectedRequest.status} /></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Dates:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.fromDate} → {selectedRequest.endDate}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Days:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.totalDays}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Passport:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.passportNumber}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Passport Exp:</span><span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.passportExpDate}</span></div>
-                                        <div className="mt-2"><span className="text-slate-500 block mb-1">Reason:</span><p className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded text-slate-700 dark:text-slate-300">{selectedRequest.reason}</p></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Dates:</span><span className="font-medium text-slate-800">{selectedRequest.fromDate} → {selectedRequest.endDate}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Days:</span><span className="font-medium text-slate-800">{selectedRequest.totalDays}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Passport:</span><span className="font-medium text-slate-800">{selectedRequest.passportNumber}</span></div>
+                                        <div className="flex justify-between"><span className="text-slate-500">Passport Exp:</span><span className="font-medium text-slate-800">{selectedRequest.passportExpDate}</span></div>
+                                        <div className="mt-2"><span className="text-slate-500 block mb-1">Reason:</span><p className="bg-slate-50 p-2 rounded text-slate-700">{selectedRequest.reason}</p></div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Documents */}
                             <div>
-                                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+                                <h4 className="text-sm font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
                                     Uploaded Documents <span className="ml-2 text-xs font-normal text-slate-500">(Secure links · 1hr expiry)</span>
                                 </h4>
                                 {docsLoading ? (
@@ -509,17 +509,17 @@ export default function OverseasLeaveApprovals() {
 
                             {/* Admin Remarks */}
                             <div>
-                                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-3">Administrator Remarks</h4>
+                                <h4 className="text-sm font-bold text-slate-800 mb-3">Administrator Remarks</h4>
                                 <textarea value={adminRemark} onChange={e => setAdminRemark(e.target.value)}
                                     disabled={selectedRequest.status !== "PENDING_ADMIN_APPROVAL"}
                                     placeholder="Add final approval notes or conditions..."
-                                    className="w-full p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none h-24 text-slate-700 dark:text-slate-300 disabled:opacity-60" />
+                                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none h-24 text-slate-700 disabled:opacity-60" />
                             </div>
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="p-6 border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-end gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl">
-                            <button onClick={() => setSelectedRequest(null)} className="px-5 py-2.5 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm">Close</button>
+                        <div className="p-6 border-t border-slate-100 shrink-0 flex items-center justify-end gap-3 bg-slate-50 rounded-b-2xl">
+                            <button onClick={() => setSelectedRequest(null)} className="px-5 py-2.5 text-slate-600 font-medium hover:bg-slate-200 :bg-slate-700 rounded-lg transition-colors text-sm">Close</button>
                             {selectedRequest.status === "PENDING_ADMIN_APPROVAL" && (
                                 <>
                                     <button onClick={() => handleDecision("REJECT")} disabled={submitting} className="px-5 py-2.5 bg-red-50 text-red-600 font-bold hover:bg-red-100 rounded-lg text-sm flex items-center gap-2 disabled:opacity-50">
