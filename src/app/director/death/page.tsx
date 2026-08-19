@@ -64,12 +64,12 @@ export default function DeathApplicationsPage() {
                 <div className="bg-white p-5 rounded-xl border border-primary/5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-500 text-sm font-medium">Pending Review</span>
-                        <div className="size-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                        <div className="size-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
                             <Clock className="w-5 h-5" />
                         </div>
                     </div>
                     <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
-                    <div className="flex items-center gap-1 mt-1 text-orange-600">
+                    <div className="flex items-center gap-1 mt-1 text-red-600">
                         <AlertCircle className="w-3.5 h-3.5" />
                         <span className="text-xs font-bold">Action Required</span>
                     </div>
@@ -78,7 +78,7 @@ export default function DeathApplicationsPage() {
                 <div className="bg-white p-5 rounded-xl border border-primary/5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-gray-500 text-sm font-medium">Approved</span>
-                        <div className="size-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+                        <div className="size-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
                             <CheckCircle className="w-5 h-5" />
                         </div>
                     </div>

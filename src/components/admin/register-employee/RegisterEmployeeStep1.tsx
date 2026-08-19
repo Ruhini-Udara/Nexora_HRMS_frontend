@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EmployeeFormData } from "./RegisterEmployee";
 
@@ -31,6 +31,7 @@ export default function RegisterEmployeeStep1({
   const [showDateJoinedCalendar, setShowDateJoinedCalendar] = useState(false);
   const [currentMonthDOB, setCurrentMonthDOB] = useState(new Date());
   const [currentMonthDJ, setCurrentMonthDJ] = useState(new Date());
+  const [error, setError] = useState<string | null>(null);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
   const djCalendarRef = useRef<HTMLDivElement>(null);
@@ -54,10 +55,12 @@ export default function RegisterEmployeeStep1({
   ) => {
     const { name, value } = e.target;
     updateFormData({ [name]: value });
+    if (error) setError(null);
   };
 
   const handleSelectChange = (name: string, value: string) => {
     updateFormData({ [name]: value });
+    if (error) setError(null);
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -145,6 +148,44 @@ export default function RegisterEmployeeStep1({
   };
 
   const handleNextStep = () => {
+    if (!formData.nicNumber.trim()) {
+      setError("NIC Number is required.");
+      return;
+    }
+    if (!formData.fullName.trim()) {
+      setError("Full Name is required.");
+      return;
+    }
+    if (!formData.surname.trim()) {
+      setError("Surname is required.");
+      return;
+    }
+    if (!formData.sex) {
+      setError("Sex is required.");
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError("Email Address is required.");
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    // Sri Lankan NIC Format Validation
+    // Old Format: 9 digits followed by V/v/X/x
+    // New Format: 12 digits
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (!nicRegex.test(formData.nicNumber.trim())) {
+      setError("Please enter a valid Sri Lankan NIC number (e.g., 941234567V or 199412345678).");
+      return;
+    }
+
+    setError(null);
     if (onNext) {
       onNext();
     }
@@ -524,6 +565,14 @@ export default function RegisterEmployeeStep1({
             </div>
           </div>
         </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="mt-6 p-4 bg-red-50 border border-red-250 rounded-xl text-red-600 text-sm flex items-center gap-3 animate-fadeIn">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span className="font-semibold">{error}</span>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-4 mt-8">

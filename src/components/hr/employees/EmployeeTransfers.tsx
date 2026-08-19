@@ -185,11 +185,7 @@ export default function EmployeeTransfers() {
 
     // ── Filtered list ─────────────────────────────────────────────────
     const isLegit = (req: TransferRequest) => {
-        return (req.employeeName || "").trim().length > 0 && 
-               (req.epfNumber || "").trim().length > 0 && 
-               req.epfNumber !== '0' &&
-               !req.employeeName.toLowerCase().includes("test") &&
-               !req.employeeName.toLowerCase().includes("kasun");
+        return !!req.id && (req.employeeName || "").trim().length > 0;
     };
 
     const getFilteredRequests = () => {
@@ -216,7 +212,7 @@ export default function EmployeeTransfers() {
 
     return (
         <div className="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col">
-            <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
+            <div className="flex-1 p-8 pb-16 max-w-7xl mx-auto w-full">
 
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between">

@@ -102,7 +102,7 @@ export default function AdminResignationsPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-            <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
+            <div className="flex-1 p-8 pb-16 max-w-7xl mx-auto w-full">
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between print:hidden">
                     <div>

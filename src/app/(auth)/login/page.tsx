@@ -11,7 +11,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { DarkModeToggle } from "@/components/DarkModeToggle";
 
-
+// Validation Schema
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -25,8 +25,6 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
-
-
     const {
         register,
         handleSubmit,
@@ -40,7 +38,9 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const response = await api.post('/api/auth/login', data);
+            // Normalize email: trim whitespace and convert to lowercase to match DB storage
+            const normalizedData = { ...data, email: data.email.trim().toLowerCase() };
+            const response = await api.post('/api/auth/login', normalizedData);
             const { token, ...userData } = response.data;
 
             // Rationale: We save to Zustand for immediate, reactive UI updates throughout 
@@ -58,6 +58,7 @@ export default function LoginPage() {
             if (userData.role === 'ROLE_ADMIN') redirectPath = '/admin';
             else if (userData.role === 'ROLE_HR') redirectPath = '/hr';
             else if (userData.role === 'ROLE_DIRECTOR') redirectPath = '/director';
+            else if (userData.role === 'ROLE_SUPERVISOR') redirectPath = '/supervisor';
 
             router.push(redirectPath);
         } catch (err) {

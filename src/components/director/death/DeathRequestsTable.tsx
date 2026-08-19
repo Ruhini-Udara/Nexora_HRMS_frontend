@@ -10,29 +10,22 @@ import {
 const DeathRequestsTable = () => {
     const [requests, setRequests] = useState<DeathRequest[]>([]);
     const [loading, setLoading] = useState(true);
-    const [boardFilter, setBoardFilter] = useState("All");
+    const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
+    
+    // Get today's date formatted as YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState(todayStr);
 
     const loadRequests = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getAllDeathRequests();
             
-            // Filter: Only show "legit" requests (real employees, not mock/hardcoded data)
-            const isLegit = (req: DeathRequest) => {
-                return (req.employeeName || "").trim().length > 0 && 
-                       (req.epfNumber || "").trim().length > 0 && 
-                       req.epfNumber !== '0' &&
-                       !req.employeeName.toLowerCase().includes("test") &&
-                       !req.employeeName.toLowerCase().includes("kasun");
-            };
-
             // Show only those submitted to director or already approved/rejected by director
             const filtered = data.filter(r => 
-                isLegit(r) && (
-                    r.status === "SUBMITTED_TO_DIRECTOR" || 
-                    r.status === "APPROVED" || 
-                    r.status === "REJECTED"
-                )
+                r.status === "SUBMITTED_TO_DIRECTOR" || 
+                r.status === "APPROVED" || 
+                r.status === "REJECTED"
             );
             setRequests(filtered);
         } catch (error) {
@@ -95,82 +88,144 @@ const DeathRequestsTable = () => {
         setTimeout(() => setToastMessage(null), 3000);
     };
 
-    const filteredRequests = requests.filter(req =>
-        boardFilter === "All" || req.boardMeetingDate === boardFilter
-    );
+    const normalizeDate = (d?: string) => {
+        if (!d) return "";
+        try {
+            const dateObj = new Date(d);
+            if (isNaN(dateObj.getTime())) return d;
+            return dateObj.toISOString().split('T')[0];
+        } catch(e) {
+            return d;
+        }
+    };
 
-    const availableBoardDates = Array.from(new Set(requests.map(r => r.boardMeetingDate))).filter(d => d);
+    const getDropdownOptions = () => {
+        if (activeTab === 'current') return [todayStr];
+        const allDates = Array.from(new Set(requests.map(r => normalizeDate(r.boardMeetingDate)).filter(Boolean))).sort();
+        if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
+        return allDates.filter(d => d < todayStr);
+    };
+
+    const handleTabChange = (tab: 'current' | 'upcoming' | 'past') => {
+        setActiveTab(tab);
+        setSelectedDate(tab === 'current' ? todayStr : 'All');
+    };
+
+    const filteredRequests = React.useMemo(() => {
+        return requests.filter(req => {
+            const pivotDate = todayStr;
+            const reqDate = normalizeDate(req.boardMeetingDate);
+            if (activeTab === 'current') return reqDate === selectedDate;
+            if (activeTab === 'upcoming') {
+                if (selectedDate === 'All') return reqDate > pivotDate;
+                return reqDate === selectedDate;
+            }
+            if (activeTab === 'past') {
+                if (selectedDate === 'All') return reqDate < pivotDate;
+                return reqDate === selectedDate;
+            }
+            return true;
+        });
+    }, [requests, activeTab, selectedDate, todayStr]);
 
     const openViewModal = (req: DeathRequest) => {
         setSelectedRequest(req);
         setViewModalOpen(true);
     };
 
+    const isActionable = (dateString?: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
+    };
+
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-gray-900">Submitted Applications</h3>
-                <div className="flex items-center gap-3">
-                    <select
-                        value={boardFilter}
-                        onChange={(e) => setBoardFilter(e.target.value)}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm outline-none focus:border-primary"
+        <div className="space-y-6">
+            {/* Tabs & Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-2">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => handleTabChange('current')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                        <option value="All">All Board Dates</option>
-                        {availableBoardDates.map(date => (
-                            <option key={date} value={date}>{date}</option>
-                        ))}
+                        Meeting View
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('upcoming')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Upcoming Meetings
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('past')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Past Meetings
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm mr-2 mb-2 sm:mb-0">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Meeting Date:</label>
+                    <select 
+                        className="bg-transparent text-sm font-medium text-gray-900 focus:outline-none cursor-pointer"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                    >
+                        {activeTab !== 'current' && <option value="All">All Dates</option>}
+                        {getDropdownOptions().map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                 </div>
             </div>
-            <div className="overflow-x-auto">
+
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Employee Name</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Date of Death</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Nature</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Requester</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 text-center">Actions</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Request ID</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Employee Name</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Date of Death</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Nature</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Requester</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 text-sm">
                         {filteredRequests.map((request, i) => (
-                            <tr key={i} className="hover:bg-gray-50 transition-colors cursor-pointer">
-                                <td className="px-6 py-4" onClick={() => openViewModal(request)}>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                                            {(request.employeeName || "E").charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">{request.employeeName}</p>
-                                            <p className="text-xs text-gray-500">{request.id}</p>
-                                        </div>
-                                    </div>
+                            <tr key={i} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-6 py-4 font-medium text-gray-900">
+                                    DTH-{request.id}
                                 </td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500" onClick={() => openViewModal(request)}>{request.dateOfDeath}</td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500" onClick={() => openViewModal(request)}>{request.natureOfDeath}</td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500" onClick={() => openViewModal(request)}>{request.requesterName}</td>
-                                <td className="px-6 py-4" onClick={() => openViewModal(request)}>
+                                <td className="px-6 py-4 text-gray-700">
+                                    {request.employeeName}
+                                </td>
+                                <td className="px-6 py-4 text-gray-600">{request.dateOfDeath}</td>
+                                <td className="px-6 py-4 text-gray-600">{request.natureOfDeath}</td>
+                                <td className="px-6 py-4 text-gray-600">{request.requesterName}</td>
+                                <td className="px-6 py-4">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${request.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
                                         request.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
                                             'bg-orange-100 text-orange-800'
                                         }`}>
-                                        {request.status.replace(/_/g, ' ')}
+                                        {request.status === 'APPROVED' ? 'Approved' : request.status === 'REJECTED' ? 'Rejected' : 'Pending Review'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                    <div className="flex justify-center gap-2">
+                                <td className="px-6 py-4">
+                                    <div className="flex justify-end gap-2">
                                         <button onClick={() => openViewModal(request)} className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors" title="View Details">
                                             <Eye className="w-4 h-4" />
                                         </button>
-                                        {request.status === 'SUBMITTED_TO_DIRECTOR' && (
+                                        {request.status === 'SUBMITTED_TO_DIRECTOR' && isActionable(request.boardMeetingDate) && (
                                             <>
-                                                <button onClick={() => handleApprove(request.id)} className="w-8 h-8 rounded-md bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-colors" title="Approve">
+                                                <button onClick={() => request.id && handleApprove(request.id as string)} className="w-8 h-8 rounded-md bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-colors" title="Approve">
                                                     <Check className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => openRejectModal(request.id)} className="w-8 h-8 rounded-md bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors" title="Reject">
+                                                <button onClick={() => request.id && openRejectModal(request.id as string)} className="w-8 h-8 rounded-md bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors" title="Reject">
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             </>
@@ -182,13 +237,14 @@ const DeathRequestsTable = () => {
                         {filteredRequests.length === 0 && (
                             <tr>
                                 <td colSpan={6} className="py-12 text-center text-gray-500">
-                                    No requests found.
+                                    No requests found for this selection.
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             </div>
+        </div>
 
 
             {/* View Details Modal — Read-only popup */}
@@ -214,7 +270,7 @@ const DeathRequestsTable = () => {
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Contact Phone</p><p className="font-semibold text-gray-900">{selectedRequest.contactNumber}</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting</p><p className="font-semibold text-primary">{selectedRequest.boardMeetingDate}</p></div>
                                 <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Status</p>
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${selectedRequest.status === 'APPROVED' ? 'bg-green-100 text-green-800' : selectedRequest.status === 'REJECTED' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>{selectedRequest.status.replace(/_/g, ' ')}</span>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${selectedRequest.status === 'APPROVED' ? 'bg-green-100 text-green-800' : selectedRequest.status === 'REJECTED' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>{selectedRequest.status === 'APPROVED' ? 'Approved' : selectedRequest.status === 'REJECTED' ? 'Rejected' : 'Pending Review'}</span>
                                 </div>
                             </div>
                             {Object.keys(selectedRequest.documents).length > 0 && (
