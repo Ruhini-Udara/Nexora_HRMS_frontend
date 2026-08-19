@@ -228,14 +228,14 @@ export default function TransferTable() {
                                         {String(req.status) === 'SUBMITTED_TO_DIRECTOR' && isActionable(req.boardMeetingDate) && (
                                             <>
                                                 <button
-                                                    onClick={() => handleApprove(req.id)}
+                                                    onClick={() => req.id && handleApprove(req.id as string)}
                                                     className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 text-green-600 hover:bg-green-100"
                                                     title="Approve"
                                                 >
                                                     <Check className="w-4 h-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => openRejectModal(req.id)}
+                                                    onClick={() => req.id && openRejectModal(req.id as string)}
                                                     className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 text-red-600 hover:bg-red-100"
                                                     title="Reject"
                                                 >
