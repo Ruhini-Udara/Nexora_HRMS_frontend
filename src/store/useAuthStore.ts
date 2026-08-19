@@ -10,6 +10,7 @@ interface User {
     epfNumber?: string;
     department?: string;
     branch?: string;
+    employeeId?: number;
 }
 
 interface AuthState {

@@ -2,6 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const EmployeeTopbar = () => {
   const { user } = useAuthStore();
@@ -20,37 +21,7 @@ const EmployeeTopbar = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative group">
-          <button className="p-2 text-gray-500 hover:text-primary transition-colors relative focus:outline-none">
-            <span className="material-icons-round">notifications</span>
-            <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border-2 border-white dark:border-gray-800"></span>
-          </button>
-          <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl dropdown-shadow overflow-hidden opacity-0 invisible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 z-50">
-            <div className="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between bg-white dark:bg-surface-dark">
-              <h3 className="font-bold text-gray-900 dark:text-white">Notifications</h3>
-              <button className="text-xs font-semibold text-primary hover:underline">Mark all as read</button>
-            </div>
-            <div className="max-h-96 overflow-y-auto">
-              <div className="p-4 border-b border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors relative">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-amber-600 text-lg">school</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">New Training Event</p>
-                      <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-                    </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">A new training course has been added.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="p-3 bg-gray-50 dark:bg-gray-800/50 text-center border-t border-border-light dark:border-border-dark">
-              <button className="text-xs font-medium text-gray-500 hover:text-primary transition-colors">See all notifications</button>
-            </div>
-          </div>
-        </div>
+        <NotificationBell />
 
         <div className="h-8 w-px bg-border-light dark:bg-border-dark mx-2"></div>
 

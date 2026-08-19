@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/axiosInstance";
+import { WorkflowTrackerStepper } from "@/components/WorkflowTrackerStepper";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface LeaveDocument { id: number; documentType: string; filePathUrl: string; description: string; }
@@ -28,6 +29,7 @@ interface OverseasLeave {
     specialRemark: string;
     passportNumber: string;
     passportExpDate: string;
+    createdAt?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -98,6 +100,29 @@ export default function OverseasLeaveApprovals() {
         setToast({ message, type });
         setTimeout(() => setToast(null), 4000);
     }, []);
+
+    const getWorkflowSteps = (req: OverseasLeave) => {
+        // Mocking created date if not present for demo purposes
+        const createdDate = req.createdAt ? new Date(req.createdAt) : new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); 
+        const isDelayed = (Date.now() - createdDate.getTime()) > 2 * 24 * 60 * 60 * 1000;
+        
+        return [
+            { label: 'Request Submitted', status: 'completed' as const },
+            { label: 'HR Verification', status: 'completed' as const },
+            { 
+                label: 'Admin Confirmation', 
+                status: req.status === 'PENDING_ADMIN_APPROVAL' ? 'current' as const : 
+                        req.status === 'REJECTED' ? 'pending' as const : 'completed' as const,
+                isDelayed: req.status === 'PENDING_ADMIN_APPROVAL' && isDelayed,
+                timeSpent: req.status === 'PENDING_ADMIN_APPROVAL' && isDelayed ? '> 2 Days' : undefined
+            },
+            { 
+                label: 'Board Approval', 
+                status: req.status === 'ADMIN_APPROVED' || req.status === 'PENDING_DIRECTOR_REVIEW' ? 'current' as const : 
+                        req.status === 'APPROVED' ? 'completed' as const : 'pending' as const 
+            }
+        ];
+    };
 
     // ── Fetch ──────────────────────────────────────────────────────────────
     const fetchLeaves = useCallback(async () => {
@@ -490,6 +515,9 @@ export default function OverseasLeaveApprovals() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Workflow Tracker */}
+                            <WorkflowTrackerStepper steps={getWorkflowSteps(selectedRequest)} />
 
                             {/* Documents */}
                             <div>
