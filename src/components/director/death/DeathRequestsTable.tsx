@@ -222,10 +222,10 @@ const DeathRequestsTable = () => {
                                         </button>
                                         {request.status === 'SUBMITTED_TO_DIRECTOR' && isActionable(request.boardMeetingDate) && (
                                             <>
-                                                <button onClick={() => handleApprove(request.id)} className="w-8 h-8 rounded-md bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-colors" title="Approve">
+                                                <button onClick={() => request.id && handleApprove(request.id)} className="w-8 h-8 rounded-md bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-colors" title="Approve">
                                                     <Check className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => openRejectModal(request.id)} className="w-8 h-8 rounded-md bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors" title="Reject">
+                                                <button onClick={() => request.id && openRejectModal(request.id)} className="w-8 h-8 rounded-md bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors" title="Reject">
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             </>
