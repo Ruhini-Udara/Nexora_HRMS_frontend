@@ -182,9 +182,8 @@ export default function OverseasLeaveApprovals() {
 
     const handleDownloadOnly = async () => {
         try {
-            // @ts-ignore html2pdf.js does not bundle ts types
-            const html2pdfModule = await import('html2pdf.js');
-            const html2pdf = html2pdfModule.default || html2pdfModule;
+            const html2pdfModule = await (import('html2pdf.js' as string) as Promise<{ default?: any; [key: string]: any }>);
+            const html2pdf = (html2pdfModule.default || html2pdfModule) as any;
 
             const element = document.getElementById("print-agenda-view");
             if (!element) {
