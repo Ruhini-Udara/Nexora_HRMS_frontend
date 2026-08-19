@@ -9,27 +9,33 @@ import {
     FileSpreadsheet,
     AlertCircle
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function LeaveCalculationPage() {
     const [isCalculating, setIsCalculating] = useState(false);
     const [isFinalizing, setIsFinalizing] = useState(false);
 
     // Mock data for the UI
-    const mockDistricts = [
+    const [districts, setDistricts] = useState([
         { name: "Colombo District", pending: 45, finalized: false },
         { name: "Kandy District", pending: 12, finalized: true },
         { name: "Galle District", pending: 28, finalized: false }
-    ];
+    ]);
 
     const handleCalculate = () => {
         setIsCalculating(true);
         setTimeout(() => setIsCalculating(false), 2000);
     };
 
-    const handleFinalize = (district: string) => {
+    const handleFinalize = (districtName: string) => {
         setIsFinalizing(true);
-        setTimeout(() => setIsFinalizing(false), 1500);
-        alert(`Leaves finalized for ${district}`);
+        setTimeout(() => {
+            setDistricts(prev => 
+                prev.map(d => d.name === districtName ? { ...d, finalized: true, pending: 0 } : d)
+            );
+            setIsFinalizing(false);
+            // In a real scenario, we would trigger a toast notification here
+        }, 800);
     };
 
     return (
@@ -56,20 +62,20 @@ export default function LeaveCalculationPage() {
                             Run the system engine to calculate the 35, 21, or prorated leave days for all employees based on their joining date (Pre/Post 2011).
                         </p>
                     </div>
-                    <button 
+                    <Button 
                         onClick={handleCalculate}
                         disabled={isCalculating}
-                        className="mt-6 w-full bg-[#1e40af] hover:bg-[#1e3a8a] text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        className="mt-6 w-full"
                     >
                         {isCalculating ? (
                             <span className="animate-pulse">Calculating...</span>
                         ) : (
                             <>
-                                <Calculator className="w-4 h-4" />
+                                <Calculator className="w-4 h-4 mr-2" />
                                 Run Calculation Now
                             </>
                         )}
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Excel Upload Card */}
@@ -115,7 +121,7 @@ export default function LeaveCalculationPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {mockDistricts.map((district) => (
+                            {districts.map((district) => (
                                 <tr key={district.name} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-6 py-4 font-medium text-gray-900">
                                         {district.name}
@@ -135,16 +141,16 @@ export default function LeaveCalculationPage() {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 flex justify-end gap-3">
-                                        <button className="text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100 transition-colors" title="Print Branch Report">
+                                        <Button variant="ghost" className="p-2" title="Print Branch Report">
                                             <Printer className="w-4 h-4" />
-                                        </button>
+                                        </Button>
                                         {!district.finalized && (
-                                            <button 
+                                            <Button 
                                                 onClick={() => handleFinalize(district.name)}
-                                                className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors"
+                                                disabled={isFinalizing}
                                             >
                                                 Finalize
-                                            </button>
+                                            </Button>
                                         )}
                                     </td>
                                 </tr>
