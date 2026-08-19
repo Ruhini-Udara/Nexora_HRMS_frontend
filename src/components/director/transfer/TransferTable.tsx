@@ -62,8 +62,7 @@ export default function TransferTable() {
 
     const todayString = new Date().toISOString().split('T')[0];
 
-    const handleApprove = async (id?: string) => {
-        if (!id) return;
+    const handleApprove = async (id: string) => {
         try {
             await updateTransferStatus(id, "APPROVED");
             await loadRequests();
@@ -76,8 +75,7 @@ export default function TransferTable() {
 
     const availableBoardDates = Array.from(new Set(requests.map(r => r.boardMeetingDate))).filter(d => d).sort();
 
-    const openRejectModal = (id?: string) => {
-        if (!id) return;
+    const openRejectModal = (id: string) => {
         setRequestToReject(id);
         setRejectReason("");
         setRejectModalOpen(true);
@@ -126,7 +124,7 @@ export default function TransferTable() {
         });
     }, [requests, activeTab, selectedDate, todayStr]);
 
-    const isActionable = (dateString: string) => {
+    const isActionable = (dateString?: string) => {
         if (!dateString) return false;
         try {
             const dateStr = new Date(dateString).toISOString().split('T')[0];
@@ -230,14 +228,14 @@ export default function TransferTable() {
                                         {String(req.status) === 'SUBMITTED_TO_DIRECTOR' && isActionable(req.boardMeetingDate) && (
                                             <>
                                                 <button
-                                                    onClick={() => handleApprove(req.id)}
+                                                    onClick={() => req.id && handleApprove(req.id!)}
                                                     className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 text-green-600 hover:bg-green-100"
                                                     title="Approve"
                                                 >
                                                     <Check className="w-4 h-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => openRejectModal(req.id)}
+                                                    onClick={() => req.id && openRejectModal(req.id!)}
                                                     className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 text-red-600 hover:bg-red-100"
                                                     title="Reject"
                                                 >
