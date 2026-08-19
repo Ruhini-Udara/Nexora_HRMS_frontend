@@ -170,7 +170,7 @@ export default function ReadOnlyCalendar({
   const dayCellSelectionStyles = (isSelected: boolean) => {
     if (isSelected) {
       return isOrange 
-        ? "bg-orange-50/20 dark:bg-orange-950/10 border-orange-200 dark:border-orange-850/35"
+        ? "bg-orange-50/20 dark:bg-orange-950/10 border-orange-200 dark:border-orange-800/35"
         : "bg-primary-light/15 dark:bg-primary/10 border-primary/20";
     }
     return ""; 
@@ -195,7 +195,7 @@ export default function ReadOnlyCalendar({
           <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
           <p className="text-orange-100/80 text-sm mt-1">{subtitle}</p>
         </div>
-        <div className={`border px-5 py-3 rounded-2xl flex items-center gap-3 ${isOrange ? 'bg-orange-850/30 border-orange-700/30' : 'bg-white/10 border-white/20'}`}>
+        <div className={`border px-5 py-3 rounded-2xl flex items-center gap-3 ${isOrange ? 'bg-orange-800/30 border-orange-700/30' : 'bg-white/10 border-white/20'}`}>
           <CalendarIcon className={`w-5 h-5 ${isOrange ? 'text-orange-300' : 'text-white'}`} />
           <div className="text-left">
             <p className={`text-xs font-semibold uppercase tracking-wider ${isOrange ? 'text-orange-200' : 'text-slate-350'}`}>Today&apos;s Date</p>
@@ -386,7 +386,7 @@ export default function ReadOnlyCalendar({
                   return (
                     <div
                       key={event.id}
-                      className="p-3 bg-slate-50 dark:bg-slate-800/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 border border-slate-100/85 dark:border-slate-850 rounded-2xl flex gap-3 transition-colors cursor-pointer"
+                      className="p-3 bg-slate-50 dark:bg-slate-800/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 border border-slate-100/85 dark:border-slate-800 rounded-2xl flex gap-3 transition-colors cursor-pointer"
                       onClick={() => {
                         setCurrentDate(evDate);
                         setSelectedDate(evDate);
