@@ -101,7 +101,7 @@ export default function SupervisorDashboard() {
                 {/* Page Title */}
                 <header className="mb-8">
                     <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Supervisor Dashboard</h1>
-                    <p className="text-gray-500 mt-1">Overview of your team's attendance and leave requests</p>
+                    <p className="text-gray-500 mt-1">Overview of your team&apos;s attendance and leave requests</p>
                 </header>
 
                 {/* Summary Cards */}
