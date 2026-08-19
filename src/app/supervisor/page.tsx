@@ -28,7 +28,16 @@ interface LeaveRequest {
     id: number;
     employeeId: number;
     employeeName?: string;
-    leaveTypeName: string;
+    employee?: {
+        id: number;
+        fullName: string;
+        employeeCode?: string;
+    };
+    leaveTypeName?: string;
+    leaveType?: {
+        id: number;
+        leaveTypeName: string;
+    };
     fromDate: string;
     endDate: string;
     totalDays: number;
