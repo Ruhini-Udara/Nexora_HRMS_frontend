@@ -8,7 +8,7 @@ export default function DirectorLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex min-h-screen bg-dashboard-bg">
+        <div className="flex min-h-screen bg-dashboard-bg dark:bg-slate-950 text-slate-900 dark:text-slate-100">
             <DirectorSidebar />
             <main className="flex-1 ml-[260px] flex flex-col min-h-screen">
                 <DirectorHeader />

@@ -97,18 +97,18 @@ export default function TransferTable() {
     );
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-bold text-gray-900">Board Transfer Reviews</h3>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                <h3 className="font-bold text-gray-900 dark:text-white">Board Transfer Reviews</h3>
                 <div className="flex items-center gap-3">
                     <select
                         value={boardFilter}
                         onChange={(e) => setBoardFilter(e.target.value)}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm outline-none focus:border-primary"
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors shadow-sm outline-none focus:border-primary cursor-pointer"
                     >
-                        <option value="All">All Board Dates</option>
+                        <option value="All" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Board Dates</option>
                         {availableBoardDates.map(date => (
-                            <option key={date} value={date}>{date}</option>
+                            <option key={date} value={date} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">{date}</option>
                         ))}
                     </select>
                 </div>
@@ -116,44 +116,44 @@ export default function TransferTable() {
 
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
                         <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Employee</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Movement</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">HR Date</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Movement</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">HR Date</th>
                             <th className="px-6 py-4 font-semibold text-primary">Board Date</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 text-center">Actions</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                         {filteredRequests.map((req) => (
-                            <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
+                            <tr key={req.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                                             {req.employeeName.charAt(0)}
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-900">{req.employeeName}</p>
-                                            <p className="text-xs text-gray-500">{req.id}</p>
+                                            <p className="font-medium text-gray-900 dark:text-white">{req.employeeName}</p>
+                                            <p className="text-xs text-gray-500 dark:text-slate-400">{req.id}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <p className="font-medium text-gray-700 text-xs">From: {req.currentBranch}</p>
-                                    <p className="font-medium text-blue-600 text-xs">To: {req.targetBranch}</p>
+                                    <p className="font-medium text-gray-700 dark:text-slate-300 text-xs">From: {req.currentBranch}</p>
+                                    <p className="font-medium text-blue-600 dark:text-blue-400 text-xs">To: {req.targetBranch}</p>
                                 </td>
-                                <td className="px-6 py-4 text-gray-600">{req.requestDate}</td>
+                                <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{req.requestDate}</td>
                                 <td className="px-6 py-4 text-primary font-bold">
                                     {req.boardMeetingDate}
-                                    {req.boardMeetingDate === todayString && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded animate-pulse">TODAY</span>}
+                                    {req.boardMeetingDate === todayString && <span className="ml-2 text-[10px] bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded animate-pulse">TODAY</span>}
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                        ${String(req.status) === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                                            String(req.status) === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                                                'bg-blue-100 text-blue-800'}`}>
+                                        ${String(req.status) === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' :
+                                            String(req.status) === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' :
+                                                'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-400'}`}>
                                         {String(req.status).replace(/_/g, ' ')}
                                     </span>
                                 </td>
@@ -161,7 +161,7 @@ export default function TransferTable() {
                                     <div className="flex justify-center gap-2">
                                         <button
                                             onClick={() => setViewingRequest(req)}
-                                            className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors"
+                                            className="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
                                             title="View Details"
                                         >
                                             <Eye className="w-4 h-4" />
@@ -170,14 +170,14 @@ export default function TransferTable() {
                                             <>
                                                 <button
                                                     onClick={() => handleApprove(req.id)}
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 text-green-600 hover:bg-green-100"
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 cursor-pointer"
                                                     title="Approve"
                                                 >
                                                     <Check className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => openRejectModal(req.id)}
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 text-red-600 hover:bg-red-100"
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 cursor-pointer"
                                                     title="Reject"
                                                 >
                                                     <X className="w-4 h-4" />
@@ -190,7 +190,7 @@ export default function TransferTable() {
                         ))}
                         {filteredRequests.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="py-12 text-center text-gray-500">
+                                <td colSpan={6} className="py-12 text-center text-gray-500 dark:text-slate-400">
                                     No requests available in this category.
                                 </td>
                             </tr>
@@ -202,26 +202,26 @@ export default function TransferTable() {
             {/* View Details Modal */}
             {viewingRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transition-colors">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">Transfer Request Details</h3>
-                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id}</p>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Transfer Request Details</h3>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{viewingRequest.id}</p>
                             </div>
-                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
+                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"><X className="w-5 h-5" /></button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900">{viewingRequest.employeeName}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">EPF Number</p><p className="font-semibold text-gray-900">{viewingRequest.epfNumber}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">From</p><p className="font-semibold text-gray-900">{viewingRequest.currentBranch}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">To</p><p className="font-semibold text-blue-600">{viewingRequest.targetBranch}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Request Date</p><p className="font-semibold text-gray-900">{viewingRequest.requestDate}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting Date</p><p className="font-semibold text-primary">{viewingRequest.boardMeetingDate}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.employeeName}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">EPF Number</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.epfNumber}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">From</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.currentBranch}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">To</p><p className="font-semibold text-blue-600 dark:text-blue-400">{viewingRequest.targetBranch}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Request Date</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.requestDate}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Board Meeting Date</p><p className="font-semibold text-primary">{viewingRequest.boardMeetingDate}</p></div>
                             </div>
                         </div>
-                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 cursor-pointer">Close</button>
+                        <div className="p-6 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex justify-end gap-3 transition-colors">
+                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white cursor-pointer">Close</button>
                         </div>
                     </div>
                 </div>
@@ -230,28 +230,28 @@ export default function TransferTable() {
             {/* Reject Modal */}
             {rejectModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 print:hidden">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-900">Reject Transfer Application</h3>
-                            <p className="text-sm text-gray-500 mt-1">Please provide a mandatory reason for rejecting this transfer.</p>
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden transition-colors">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Reject Transfer Application</h3>
+                            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Please provide a mandatory reason for rejecting this transfer.</p>
                         </div>
                         <div className="p-6">
                             <textarea
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400"
+                                className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-sm text-gray-700 dark:text-slate-200 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 transition-colors"
                                 rows={4}
                                 placeholder="State the reason for rejection..."
                             />
                         </div>
-                        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                            <button onClick={() => setRejectModalOpen(false)} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors">
+                        <div className="p-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex justify-end gap-3 transition-colors">
+                            <button onClick={() => setRejectModalOpen(false)} className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
                                 Cancel
                             </button>
                             <button
                                 onClick={handleRejectSubmit}
                                 disabled={!rejectReason.trim()}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 Confirm Rejection
                             </button>

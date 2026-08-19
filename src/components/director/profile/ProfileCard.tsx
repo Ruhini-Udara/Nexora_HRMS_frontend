@@ -2,9 +2,9 @@ import { Camera, Mail, Phone } from 'lucide-react';
 
 export default function ProfileCard() {
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 flex flex-col items-center shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 p-8 flex flex-col items-center shadow-sm transition-colors">
             <div className="relative group">
-                <div className="w-32 h-32 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
+                <div className="w-32 h-32 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center overflow-hidden border-4 border-white dark:border-slate-800 shadow-md">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         alt="Admin Profile"
@@ -17,19 +17,19 @@ export default function ProfileCard() {
                 </button>
             </div>
 
-            <h2 className="mt-6 text-xl font-bold text-gray-900">Admin Profile</h2>
-            <p className="text-gray-500 text-sm font-medium">HR director</p>
+            <h2 className="mt-6 text-xl font-bold text-gray-900 dark:text-white">Admin Profile</h2>
+            <p className="text-gray-500 dark:text-slate-400 text-sm font-medium">HR director</p>
 
-            <button className="mt-6 w-full py-2.5 bg-secondary text-white font-semibold rounded-lg hover:bg-secondary/90 transition-colors shadow-sm">
+            <button className="mt-6 w-full py-2.5 bg-secondary text-white font-semibold rounded-lg hover:bg-secondary/90 transition-colors shadow-sm cursor-pointer">
                 Change Photo
             </button>
 
-            <div className="w-full mt-8 pt-6 border-t border-gray-100 space-y-4">
-                <div className="flex items-center gap-3 text-gray-600">
+            <div className="w-full mt-8 pt-6 border-t border-gray-100 dark:border-slate-800 space-y-4">
+                <div className="flex items-center gap-3 text-gray-600 dark:text-slate-300">
                     <Mail className="w-5 h-5 text-gray-400" />
                     <span className="text-sm">director@hrmate.com</span>
                 </div>
-                <div className="flex items-center gap-3 text-gray-600">
+                <div className="flex items-center gap-3 text-gray-600 dark:text-slate-300">
                     <Phone className="w-5 h-5 text-gray-400" />
                     <span className="text-sm">+1 (555) 123-4567</span>
                 </div>

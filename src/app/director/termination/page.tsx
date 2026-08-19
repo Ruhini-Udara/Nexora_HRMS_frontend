@@ -6,8 +6,8 @@ export default function TerminationRequestsPage() {
     return (
         <div className="p-8 max-w-7xl mx-auto">
             <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">Termination Requests</h2>
-                <p className="text-gray-500 mt-1">Manage employee termination processes and exit procedures.</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Termination Requests</h2>
+                <p className="text-gray-500 dark:text-slate-400 mt-1">Manage employee termination processes and exit procedures.</p>
             </div>
 
             <TerminationStats />

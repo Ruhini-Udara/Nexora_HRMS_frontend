@@ -34,7 +34,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div className="text-[#8B3A00]/40 text-sm text-center flex-shrink-0">
-                    © 2024 HR MATE Enterprise Solutions.
+                    Copyright 2026 - 2030 HR MATE All right reserved
                 </div>
             </div>
 

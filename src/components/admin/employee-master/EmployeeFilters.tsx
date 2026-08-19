@@ -51,12 +51,12 @@ export default function EmployeeFilters({
       .catch(err => console.error("Error fetching designations:", err));
   }, []);
 
-  const selectBase = "w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 focus:ring-amber-400 focus:border-amber-400";
+  const selectBase = "w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[#111827] dark:text-slate-200 rounded-lg py-2 px-3 focus:ring-amber-400 focus:border-amber-400";
   const placeholderClass = "text-slate-400";
-  const selectedClass = "text-[#111827]";
+  const selectedClass = "text-[#111827] dark:text-slate-200";
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
         <div>
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -112,7 +112,7 @@ export default function EmployeeFilters({
         <div>
           <button
             onClick={onReset}
-            className="w-full flex items-center justify-center gap-2 py-2 border border-amber-900 text-amber-900 rounded-lg font-medium hover:bg-amber-50 transition-colors">
+            className="w-full flex items-center justify-center gap-2 py-2 border border-amber-900 dark:border-amber-700 text-amber-900 dark:text-amber-500 rounded-lg font-medium hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors">
             <FilterX size={16} />
             Clear Filters
           </button>

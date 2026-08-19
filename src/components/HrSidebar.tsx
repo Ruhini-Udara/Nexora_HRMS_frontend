@@ -21,9 +21,23 @@ const HrSidebar = () => {
     const logout = useAuthStore((state) => state.logout);
     const [isDark, setIsDark] = React.useState(false);
 
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsDark(document.documentElement.classList.contains("dark"));
+        }, 0);
+        return () => clearTimeout(timer);
+    }, []);
+
     const toggleTheme = () => {
-        setIsDark(!isDark);
-        document.documentElement.classList.toggle('dark');
+        if (document.documentElement.classList.contains("dark")) {
+            document.documentElement.classList.remove("dark");
+            localStorage.setItem("theme", "light");
+            setIsDark(false);
+        } else {
+            document.documentElement.classList.add("dark");
+            localStorage.setItem("theme", "dark");
+            setIsDark(true);
+        }
     };
 
     const handleLogout = () => {

@@ -5,8 +5,8 @@ export default function ProfilePage() {
     return (
         <div className="p-8 max-w-6xl mx-auto">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Profile & Settings</h1>
-                <p className="text-gray-500 mt-1">Manage your personal information and account security settings.</p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile & Settings</h1>
+                <p className="text-gray-500 dark:text-slate-400 mt-1">Manage your personal information and account security settings.</p>
             </div>
 
             <div className="grid grid-cols-12 gap-8">

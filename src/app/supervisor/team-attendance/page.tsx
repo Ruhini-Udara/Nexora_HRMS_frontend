@@ -77,9 +77,9 @@ const ATTENDANCE_DATA: AttendanceRecord[] = [
 
 const StatusBadge = ({ status }: { status: AttendanceStatus }) => {
     const configs = {
-        Present: "bg-green-50 text-green-600 border-green-100",
-        Late: "bg-amber-50 text-amber-600 border-amber-100",
-        Absent: "bg-red-50 text-red-600 border-red-100",
+        Present: "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/30",
+        Late: "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30",
+        Absent: "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30",
     };
 
     return (
@@ -103,7 +103,7 @@ export default function TeamAttendancePage() {
                     <input
                         type="text"
                         placeholder="Search team members..."
-                        className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-800"
+                        className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-800 text-slate-800 dark:text-slate-100"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -125,7 +125,7 @@ export default function TeamAttendancePage() {
                             alt="Supervisor"
                             width={40}
                             height={40}
-                            className="rounded-full border-2 border-orange-100"
+                            className="rounded-full border-2 border-orange-100 dark:border-zinc-700"
                         />
                     </div>
                 </div>
@@ -144,9 +144,9 @@ export default function TeamAttendancePage() {
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-medium">
                     {[
-                        { label: "Total Present", value: "26", sub: "On schedule", icon: UserCheck, color: "text-[#9e3f00]", iconBg: "bg-[#fff4ed]", trend: "text-green-600" },
-                        { label: "Total Absent", value: "02", sub: "2 unplanned leaves", icon: UserMinus, color: "text-red-900", iconBg: "bg-red-50", trend: "text-red-500" },
-                        { label: "Late Arrivals", value: "02", sub: "After 09:15 AM", icon: Clock, color: "text-amber-900", iconBg: "bg-amber-50", trend: "text-amber-600" },
+                        { label: "Total Present", value: "26", sub: "On schedule", icon: UserCheck, color: "text-[#9e3f00] dark:text-orange-400", iconBg: "bg-[#fff4ed] dark:bg-orange-950/30", trend: "text-green-600 dark:text-green-400" },
+                        { label: "Total Absent", value: "02", sub: "2 unplanned leaves", icon: UserMinus, color: "text-red-900 dark:text-red-400", iconBg: "bg-red-50 dark:bg-red-950/30", trend: "text-red-500 dark:text-red-400" },
+                        { label: "Late Arrivals", value: "02", sub: "After 09:15 AM", icon: Clock, color: "text-amber-900 dark:text-amber-400", iconBg: "bg-amber-50 dark:bg-amber-950/30", trend: "text-amber-600 dark:text-amber-400" },
                     ].map((stat, i) => (
                         <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex items-center justify-between">
                             <div>
@@ -159,7 +159,7 @@ export default function TeamAttendancePage() {
                                     <span className="text-[10px] font-bold uppercase tracking-wider">{stat.sub}</span>
                                 </div>
                             </div>
-                            <div className={`${stat.iconBg} p-4 rounded-xl border border-white/50`}>
+                            <div className={`${stat.iconBg} p-4 rounded-xl border border-white/50 dark:border-zinc-700`}>
                                 <stat.icon className={`w-6 h-6 ${stat.color === 'text-[#9e3f00]' ? 'text-[#9e3f00]' : stat.color}`} />
                             </div>
                         </div>
@@ -180,14 +180,14 @@ export default function TeamAttendancePage() {
                         </div>
                         <div className="relative min-w-[200px]">
                             <select
-                                className="h-10 w-full appearance-none pl-4 pr-10 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-orange-500/20"
+                                className="h-10 w-full appearance-none pl-4 pr-10 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-orange-500/20 cursor-pointer"
                                 value={selectedDept}
                                 onChange={(e) => setSelectedDept(e.target.value)}
                             >
-                                <option>All Departments</option>
-                                <option>Operations</option>
-                                <option>Sales</option>
-                                <option>Logistics</option>
+                                <option className="bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200">All Departments</option>
+                                <option className="bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200">Operations</option>
+                                <option className="bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200">Sales</option>
+                                <option className="bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200">Logistics</option>
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                         </div>

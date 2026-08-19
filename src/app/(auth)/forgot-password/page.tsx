@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 <div className="text-[#8a3900]/40 text-sm text-center flex-shrink-0">
-                    © 2024 HR MATE Enterprise Solutions.
+                    Copyright 2026 - 2030 HR MATE All right reserved
                 </div>
             </div>
 

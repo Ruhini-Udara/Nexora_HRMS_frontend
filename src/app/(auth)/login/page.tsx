@@ -183,7 +183,7 @@ export default function LoginPage() {
 
                 {/* Footer */}
                 <p className="text-center mt-10 text-xs text-slate-400 dark:text-slate-600">
-                    &copy; 2024 Nexora Solutions. All rights reserved.
+                    Copyright 2026 - 2030 HR MATE All right reserved
                 </p>
             </div>
 

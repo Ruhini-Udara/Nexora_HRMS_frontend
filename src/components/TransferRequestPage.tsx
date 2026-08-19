@@ -280,11 +280,11 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     // Filter requests to find if there is a NEW draft (legacy check, but we now support multiple drafts)
     const isEditing = !!editingDraft;
     const submittedRequests = requests.filter(r => r.status !== 'NEW');
-    
+
 
 
     const { user } = useAuthStore();
-    
+
     // ── Dynamic data ────────────────────────────────────────────────
     const employeeProfile = {
         epfNumber: user?.epfNumber || "N/A",
@@ -324,7 +324,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
             setDocSlots(prev => prev.map(slot => ({
                 ...slot,
                 file: null,
-                existingName: editingDraft.documents?.find(d => 
+                existingName: editingDraft.documents?.find(d =>
                     (slot.key === 'justification_letter' && d.key === 'justification') ||
                     (slot.key === 'proof_documents' && d.key === 'proof')
                 )?.filename
@@ -371,13 +371,13 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     const buildPayload = (data: TransferFormData, status: TransferStatus): Partial<TransferRequest> => {
         const docs = [];
         const justificationFileName = docSlots.find((s) => s.key === 'justification_letter')?.file?.name
-                || docSlots.find((s) => s.key === 'justification_letter')?.existingName;
+            || docSlots.find((s) => s.key === 'justification_letter')?.existingName;
         if (justificationFileName) {
             docs.push({ key: 'justification', label: 'Transfer Justification Letter', filename: justificationFileName });
         }
-        
+
         const proofFileName = docSlots.find((s) => s.key === 'proof_documents')?.file?.name
-                || docSlots.find((s) => s.key === 'proof_documents')?.existingName;
+            || docSlots.find((s) => s.key === 'proof_documents')?.existingName;
         if (proofFileName) {
             docs.push({ key: 'proof', label: 'Proof Document', filename: proofFileName });
         }
@@ -427,12 +427,12 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                     onRequestChange(requests.map(r => r.id === updated.id ? updated : r));
                     showSuccess(`Draft ${updated.id} updated successfully`);
                 } else {
-                    const userDetails = user ? { 
-                        id: user.id, 
-                        name: user.name, 
-                        epfNumber: user.epfNumber, 
-                        designation: user.designation, 
-                        department: user.department 
+                    const userDetails = user ? {
+                        id: user.id,
+                        name: user.name,
+                        epfNumber: user.epfNumber,
+                        designation: user.designation,
+                        department: user.department
                     } : undefined;
                     const savedReq = await createTransferRequest(payload, userDetails);
                     onRequestChange([...requests, savedReq]);
@@ -461,12 +461,12 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                 onRequestChange(requests.map(r => r.id === updated.id ? updated : r));
                 showSuccess(`Request ${updated.id} submitted for approval`);
             } else {
-                const userDetails = user ? { 
-                    id: user.id, 
-                    name: user.name, 
-                    epfNumber: user.epfNumber, 
-                    designation: user.designation, 
-                    department: user.department 
+                const userDetails = user ? {
+                    id: user.id,
+                    name: user.name,
+                    epfNumber: user.epfNumber,
+                    designation: user.designation,
+                    department: user.department
                 } : undefined;
                 const savedReq = await createTransferRequest(payload, userDetails);
                 onRequestChange([...requests, savedReq]);
@@ -483,27 +483,27 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     return (
         <div className="max-w-7xl w-full mx-auto" key={formKey}>
             <h1 className="text-2xl font-bold text-[#8B3A00] mb-8">Transfer Request Management</h1>
-            
+
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1 space-y-8">
                     {/* List active submitted requests here if needed, but they are in the table below in page.tsx */}
                     {submittedRequests.map(req => (
                         <ActiveRequestBanner key={req.id} request={req} />
                     ))}
-                    
+
                     <form onSubmit={handleSubmit(onFormValid)}>
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
                             <div className="p-8 space-y-10">
 
                                 {/* Transfer Request Details Header */}
                                 <div>
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900">Transfer Request Details</h2>
-                                            <p className="text-sm text-slate-500 mt-1">Provide your transfer details and upload required documents.</p>
+                                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Transfer Request Details</h2>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Provide your transfer details and upload required documents.</p>
                                         </div>
                                         {isEditing && (
-                                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded uppercase tracking-wider">
+                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded uppercase tracking-wider">
                                                 Draft
                                             </span>
                                         )}
@@ -515,22 +515,22 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                 {/* Form Fields */}
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                             Current Department
                                         </label>
                                         <input
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-700"
+                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-700 dark:text-slate-200"
                                             readOnly
                                             value={currentDepartment}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                             Current Location <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             {...register('currentLocation')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.currentLocation ? 'border-red-400' : 'border-slate-200'}`}
+                                            className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.currentLocation ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
                                             placeholder="e.g. Colombo Branch"
                                         />
                                         {errors.currentLocation && (
@@ -538,12 +538,12 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                             Target Location <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             {...register('targetLocation')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.targetLocation ? 'border-red-400' : 'border-slate-200'}`}
+                                            className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.targetLocation ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
                                             placeholder="e.g. Kandy Branch"
                                         />
                                         {errors.targetLocation && (
@@ -551,13 +551,13 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                         )}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                             Effective Date <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="date"
                                             {...register('expectedDate')}
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.expectedDate ? 'border-red-400' : 'border-slate-200'}`}
+                                            className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.expectedDate ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
                                         />
                                         {errors.expectedDate && (
                                             <p className="text-xs text-red-500 mt-1">{errors.expectedDate.message}</p>
@@ -567,13 +567,13 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
 
                                 {/* Valid Reason */}
                                 <div className="space-y-2">
-                                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                         Reason <span className="text-red-500">*</span>
                                     </label>
                                     <textarea
                                         {...register('validReason')}
                                         rows={4}
-                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 resize-none ${errors.validReason ? 'border-red-400' : 'border-slate-200'}`}
+                                        className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 resize-none ${errors.validReason ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
                                         placeholder="Provide a detailed reason for your transfer request..."
                                     />
                                     {errors.validReason && (
@@ -584,11 +584,11 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                 {/* Document Uploads */}
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                             Required Documents
                                         </label>
                                         {mandatoryDocsMissing && (
-                                            <span className="text-[10px] text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
+                                            <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
                                                 <span className="material-symbols-outlined text-xs">warning</span>
                                                 Upload mandatory documents to submit
                                             </span>
@@ -608,10 +608,10 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                             </div>
 
                             {/* Footer Actions */}
-                            <div className="px-8 py-6 border-t border-slate-100 flex items-center justify-between">
+                            <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <button
                                     type="submit"
-                                    className="px-8 py-3 bg-white border border-slate-200 rounded-lg font-bold text-slate-600 text-sm hover:bg-slate-100 transition-all"
+                                    className="px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
                                     onClick={triggerSaveAsDraft}
                                 >
                                     {isEditing ? 'Update Draft' : 'Save as Draft'}
@@ -623,8 +623,8 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                             onClick={triggerSubmit}
                                             disabled={mandatoryDocsMissing}
                                             className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${mandatoryDocsMissing
-                                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                                    : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
+                                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                                                : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
                                                 }`}
                                         >
                                             <span className="material-symbols-outlined text-[20px]">send</span>
@@ -674,44 +674,44 @@ TransferRequestPage.displayName = "TransferRequestPage";
 // ── Sidebar Panel ───────────────────────────────────────────────────
 const SidebarPanel = () => (
     <>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors">
             <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-[#FFF7F2] rounded-lg flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[#8B3A00] text-xl">info</span>
+                <div className="w-8 h-8 bg-[#FFF7F2] dark:bg-orange-950/40 rounded-lg flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[#8B3A00] dark:text-orange-500 text-xl">info</span>
                 </div>
-                <h2 className="font-bold text-slate-800 text-sm">Transfer Policy</h2>
+                <h2 className="font-bold text-slate-800 dark:text-white text-sm">Transfer Policy</h2>
             </div>
             <ul className="space-y-4">
                 <li className="flex gap-3">
                     <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check_circle</span>
                     <div>
-                        <p className="text-xs font-bold text-slate-800">Minimum Tenure</p>
-                        <p className="text-[11px] text-slate-500 mt-1">Must have completed at least 12 months in the current role.</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Minimum Tenure</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Must have completed at least 12 months in the current role.</p>
                     </div>
                 </li>
                 <li className="flex gap-3">
                     <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check_circle</span>
                     <div>
-                        <p className="text-xs font-bold text-slate-800">Performance Rating</p>
-                        <p className="text-[11px] text-slate-500 mt-1">Require a rating of 3.5 or above in latest appraisal.</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Performance Rating</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Require a rating of 3.5 or above in latest appraisal.</p>
                     </div>
                 </li>
             </ul>
-            <div className="mt-6 pt-6 border-t border-slate-100">
-                <a href="#" className="text-[11px] font-bold text-[#8B3A00] flex items-center gap-1 hover:underline transition-all">
+            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <a href="#" className="text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 flex items-center gap-1 hover:underline transition-all">
                     Read Full Policy Documents
                     <span className="material-symbols-outlined text-xs">open_in_new</span>
                 </a>
             </div>
         </div>
 
-        <div className="bg-[#FEF3EB] rounded-xl p-6 text-slate-800 shadow-sm border border-[#FDE6D5] relative overflow-hidden">
-            <div className="absolute -right-4 -bottom-4 opacity-5">
-                <span className="material-symbols-outlined text-[100px] text-[#8B3A00]">help</span>
+        <div className="bg-[#FEF3EB] dark:bg-orange-950/20 rounded-xl p-6 text-slate-800 dark:text-slate-200 shadow-sm border border-[#FDE6D5] dark:border-orange-900/30 relative overflow-hidden transition-colors">
+            <div className="absolute -right-4 -bottom-4 opacity-5 dark:opacity-10">
+                <span className="material-symbols-outlined text-[100px] text-[#8B3A00] dark:text-orange-400">help</span>
             </div>
             <h3 className="font-bold text-sm mb-3">Need Help?</h3>
-            <p className="text-xs text-slate-600 leading-relaxed mb-4">Contact HR Operations if you have questions regarding regional availability or relocation benefits.</p>
-            <button className="w-full py-2 bg-[#FFC5C0] text-slate-800 font-bold rounded-lg text-xs hover:opacity-90 transition-colors">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">Contact HR Operations if you have questions regarding regional availability or relocation benefits.</p>
+            <button className="w-full py-2 bg-[#FFC5C0] dark:bg-orange-900/50 text-slate-800 dark:text-orange-200 font-bold rounded-lg text-xs hover:opacity-90 transition-colors">
                 Contact HR
             </button>
         </div>
