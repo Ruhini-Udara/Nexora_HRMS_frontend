@@ -9,7 +9,11 @@ import {
 export default function TransferTable() {
     const [requests, setRequests] = useState<TransferRequest[]>([]);
     const [loading, setLoading] = useState(true);
-    const [boardFilter, setBoardFilter] = useState("All");
+    const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
+    
+    // Get today's date formatted as YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState(todayStr);
 
     const loadRequests = useCallback(async () => {
         try {
@@ -91,30 +95,85 @@ export default function TransferTable() {
         }
     };
 
+    const getDropdownOptions = () => {
+        if (activeTab === 'current') return [todayStr];
+        const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean))).sort();
+        if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
+        return allDates.filter(d => d < todayStr);
+    };
 
-    const filteredRequests = requests.filter(req =>
-        boardFilter === "All" || req.boardMeetingDate === boardFilter
-    );
+    const handleTabChange = (tab: 'current' | 'upcoming' | 'past') => {
+        setActiveTab(tab);
+        setSelectedDate(tab === 'current' ? todayStr : 'All');
+    };
+
+    const filteredRequests = React.useMemo(() => {
+        return requests.filter(req => {
+            if (!req.boardMeetingDate) return false;
+            const pivotDate = todayStr;
+            if (activeTab === 'current') return req.boardMeetingDate === selectedDate;
+            if (activeTab === 'upcoming') {
+                if (selectedDate === 'All') return req.boardMeetingDate > pivotDate;
+                return req.boardMeetingDate === selectedDate;
+            }
+            if (activeTab === 'past') {
+                if (selectedDate === 'All') return req.boardMeetingDate < pivotDate;
+                return req.boardMeetingDate === selectedDate;
+            }
+            return true;
+        });
+    }, [requests, activeTab, selectedDate, todayStr]);
+
+    const isActionable = (dateString: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
+    };
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-bold text-gray-900">Board Transfer Reviews</h3>
-                <div className="flex items-center gap-3">
-                    <select
-                        value={boardFilter}
-                        onChange={(e) => setBoardFilter(e.target.value)}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm outline-none focus:border-primary"
+        <div className="space-y-6">
+            {/* Tabs & Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-2">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => handleTabChange('current')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                     >
-                        <option value="All">All Board Dates</option>
-                        {availableBoardDates.map(date => (
-                            <option key={date} value={date}>{date}</option>
-                        ))}
+                        Meeting View
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('upcoming')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Upcoming Meetings
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('past')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Past Meetings
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm mr-2 mb-2 sm:mb-0">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Meeting Date:</label>
+                    <select 
+                        className="bg-transparent text-sm font-medium text-gray-900 focus:outline-none cursor-pointer"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                    >
+                        {activeTab !== 'current' && <option value="All">All Dates</option>}
+                        {getDropdownOptions().map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                     <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
@@ -147,7 +206,7 @@ export default function TransferTable() {
                                 <td className="px-6 py-4 text-gray-600">{req.requestDate}</td>
                                 <td className="px-6 py-4 text-primary font-bold">
                                     {req.boardMeetingDate}
-                                    {req.boardMeetingDate === todayString && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded animate-pulse">TODAY</span>}
+                                    {req.boardMeetingDate === todayStr && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded animate-pulse">TODAY</span>}
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
@@ -166,7 +225,7 @@ export default function TransferTable() {
                                         >
                                             <Eye className="w-4 h-4" />
                                         </button>
-                                        {String(req.status) === 'SUBMITTED_TO_DIRECTOR' && (
+                                        {String(req.status) === 'SUBMITTED_TO_DIRECTOR' && isActionable(req.boardMeetingDate) && (
                                             <>
                                                 <button
                                                     onClick={() => handleApprove(req.id)}
@@ -191,13 +250,14 @@ export default function TransferTable() {
                         {filteredRequests.length === 0 && (
                             <tr>
                                 <td colSpan={6} className="py-12 text-center text-gray-500">
-                                    No requests available in this category.
+                                    No requests available for this selection.
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             </div>
+        </div>
 
             {/* View Details Modal */}
             {viewingRequest && (
