@@ -392,7 +392,7 @@ export default function WelfareRequestPage() {
     return (
         <div className="max-w-[1400px] w-full mx-auto grid grid-cols-12 gap-8">
             <div className="col-span-12 lg:col-span-9 space-y-8">
-                <h1 className="text-2xl font-bold text-primary">Welfare Request Management</h1>
+                <h1 className="text-2xl font-bold text-primary dark:text-white">Welfare Request Management</h1>
 
                 {/* Success Toast */}
                 {successMessage && (

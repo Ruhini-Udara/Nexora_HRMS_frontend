@@ -108,7 +108,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
     };
 
     return (
-        <div className={`rounded-xl border p-5 transition-all ${hasFile ? 'border-green-200 bg-green-50/30' : slot.mandatory ? 'border-slate-200 bg-white' : 'border-dashed border-slate-200 bg-slate-50/30'}`}>
+        <div className={`rounded-xl border p-5 transition-all ${hasFile ? 'border-green-200 dark:border-green-800/50 bg-green-50/30 dark:bg-green-950/20' : slot.mandatory ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60' : 'border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30'}`}>
             <input
                 ref={inputRef}
                 type="file"
@@ -117,32 +117,32 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                 onChange={handleChange}
             />
             <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${hasFile ? 'bg-green-100' : 'bg-slate-100'}`}>
-                    <span className={`material-symbols-outlined text-lg ${hasFile ? 'text-green-600' : 'text-slate-400'}`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${hasFile ? 'bg-green-100 dark:bg-green-900/40' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                    <span className={`material-symbols-outlined text-lg ${hasFile ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                         {hasFile ? 'check_circle' : slot.icon}
                     </span>
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-slate-800">{slot.label}</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-white">{slot.label}</p>
                         {slot.mandatory ? (
-                            <span className="text-[9px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded uppercase">Required</span>
+                            <span className="text-[9px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-1.5 py-0.5 rounded uppercase">Required</span>
                         ) : (
-                            <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase">Optional</span>
+                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase">Optional</span>
                         )}
                     </div>
 
                     {hasFile ? (
                         <div className="mt-2 flex items-center gap-2">
                             <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
-                            <p className="text-[11px] text-slate-600 truncate">{fileName}</p>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">{fileName}</p>
                             {slot.file && (
-                                <p className="text-[10px] text-slate-400 flex-shrink-0">({formatFileSize(slot.file.size)})</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0">({formatFileSize(slot.file.size)})</p>
                             )}
                             {!disabled && (
                                 <button
                                     type="button"
-                                    className="ml-auto text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                                    className="ml-auto text-slate-400 hover:text-red-500 transition-colors flex-shrink-0 cursor-pointer"
                                     onClick={() => onRemove(slot.key)}
                                 >
                                     <span className="material-symbols-outlined text-base">close</span>
@@ -152,7 +152,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                     ) : (
                         <button
                             type="button"
-                            className="mt-2 text-[11px] font-bold text-[#8B3A00] hover:underline flex items-center gap-1 disabled:opacity-40 disabled:no-underline"
+                            className="mt-2 text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 hover:underline flex items-center gap-1 disabled:opacity-40 disabled:no-underline cursor-pointer"
                             onClick={() => inputRef.current?.click()}
                             disabled={disabled}
                         >
@@ -169,30 +169,30 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
 // ── Active Request Banner ───────────────────────────────────────────
 const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }) => {
     const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-        NEW: { label: 'Draft', color: 'text-slate-600', bg: 'bg-slate-100' },
-        SUBMITTED: { label: 'Pending Approval', color: 'text-yellow-600', bg: 'bg-yellow-50' },
-        APPROVED: { label: 'Approved', color: 'text-green-600', bg: 'bg-green-50' },
-        REJECTED: { label: 'Rejected', color: 'text-red-600', bg: 'bg-red-50' },
-        VERIFIED_BY_HR: { label: 'Verified', color: 'text-blue-600', bg: 'bg-blue-50' },
-        PENDING_ADMIN: { label: 'Pending Admin', color: 'text-purple-600', bg: 'bg-purple-50' },
+        NEW: { label: 'Draft', color: 'text-slate-600 dark:text-slate-300', bg: 'bg-slate-100 dark:bg-slate-800' },
+        SUBMITTED: { label: 'Pending Approval', color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/40' },
+        APPROVED: { label: 'Approved', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/40' },
+        REJECTED: { label: 'Rejected', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/40' },
+        VERIFIED_BY_HR: { label: 'Verified', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40' },
+        PENDING_ADMIN: { label: 'Pending Admin', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/40' },
     };
     const cfg = statusConfig[request.status] || statusConfig.NEW;
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#8B3A00] text-[20px]">info</span>
-                <h2 className="font-bold text-slate-800 text-sm">Active Transfer Request</h2>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#8B3A00] dark:text-orange-500 text-[20px]">info</span>
+                <h2 className="font-bold text-slate-800 dark:text-white text-sm">Active Transfer Request</h2>
             </div>
             <div className="p-8">
-                <div className="flex items-center gap-4 p-6 bg-amber-50 border border-amber-200 rounded-xl">
-                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-amber-600 text-2xl">pending_actions</span>
+                <div className="flex items-center gap-4 p-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl">
+                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-2xl">pending_actions</span>
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-bold text-slate-800 text-sm">You already have an active transfer request</h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                            Request <span className="font-bold">{request.id}</span> is currently <span className={`font-bold ${cfg.color}`}>{cfg.label}</span>.
+                        <h3 className="font-bold text-slate-800 dark:text-white text-sm">You already have an active transfer request</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            Request <span className="font-bold text-slate-700 dark:text-slate-200">{request.id}</span> is currently <span className={`font-bold ${cfg.color}`}>{cfg.label}</span>.
                             You cannot create a new request until the existing one is resolved.
                         </p>
                     </div>
@@ -203,35 +203,35 @@ const ActiveRequestBanner: React.FC<{ request: TransferRequest }> = ({ request }
 
                 <div className="mt-6 grid grid-cols-2 gap-6">
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Current Location</p>
-                        <p className="text-sm text-slate-700">{request.currentBranch}</p>
+                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Current Location</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-200">{request.currentBranch}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Target Location</p>
-                        <p className="text-sm text-slate-700">{request.targetBranch}</p>
+                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Target Location</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-200">{request.targetBranch}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Effective Date</p>
-                        <p className="text-sm text-slate-700">{request.expectedDate}</p>
+                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Effective Date</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-200">{request.expectedDate}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Reason</p>
-                        <p className="text-sm text-slate-700">{request.reason}</p>
+                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Reason</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-200">{request.reason}</p>
                     </div>
                 </div>
 
                 {/* Documents attached */}
                 <div className="mt-6 space-y-2">
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Documents Submitted</p>
+                    <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Documents Submitted</p>
                     <div className="flex flex-wrap gap-2">
                         {request.documents?.some(d => d.key === 'justification') && (
-                            <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                            <span className="text-[11px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-900/40 px-2.5 py-1 rounded-lg flex items-center gap-1">
                                 <span className="material-symbols-outlined text-xs">check_circle</span> Transfer Justification
                             </span>
                         )}
                         {request.documents?.some(d => d.key === 'proof') && (
-                            <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
-                                <span className="material-symbols-outlined text-xs">check_circle</span> Proof Documents
+                            <span className="text-[11px] text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/40 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                                <span className="material-symbols-outlined text-xs">description</span> Proof Documents
                             </span>
                         )}
                     </div>
@@ -482,7 +482,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     // ── Render ─────────────────────────────────────────────────────
     return (
         <div className="max-w-7xl w-full mx-auto" key={formKey}>
-            <h1 className="text-2xl font-bold text-[#8B3A00] mb-8">Transfer Request Management</h1>
+            <h1 className="text-2xl font-bold text-[#8B3A00] dark:text-white mb-8">Transfer Request Management</h1>
 
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1 space-y-8">

@@ -155,20 +155,20 @@ export default function ShiftManagement() {
   const getShiftColor = (color: string) => {
     switch (color) {
       case "blue":
-        return "bg-blue-50 text-blue-600";
+        return "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400";
       case "orange":
-        return "bg-orange-50 text-orange-600";
+        return "bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400";
       case "purple":
-        return "bg-purple-50 text-purple-600";
+        return "bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400";
       default:
-        return "bg-slate-50 text-slate-600";
+        return "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400";
     }
   };
 
   const getShiftBadgeColor = (shiftName: string) => {
-    if (shiftName === "Normal Shift") return "bg-blue-100 text-blue-700";
-    if (shiftName === "Temporary Shift") return "bg-orange-100 text-orange-700";
-    return "bg-slate-100 text-slate-700";
+    if (shiftName === "Normal Shift") return "bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400";
+    if (shiftName === "Temporary Shift") return "bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400";
+    return "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300";
   };
 
   const handleEdit = (mapping: ShiftMapping) => {
@@ -179,18 +179,18 @@ export default function ShiftManagement() {
   const handleSave = async () => {
     if (editForm) {
       try {
-        const selectedShiftObj = shifts.find(s => s.name === editForm.assignedShift);
-        if (selectedShiftObj) {
-          await api.put(`/api/designations/${editForm.id}/shift/${selectedShiftObj.id}`);
-        } else {
-          await api.put(`/api/designations/${editForm.id}/shift`);
-        }
+        await api.put(`/api/designations/${editForm.id}`, {
+          designationName: editForm.role,
+          department: editForm.department,
+          assignedShift: editForm.assignedShift,
+          timeRange: editForm.timeRange
+        });
         await loadData();
         setEditingMapping(null);
         setEditForm(null);
       } catch (err) {
-        console.error("Error updating shift mapping:", err);
-        alert("Failed to update shift mapping.");
+        console.error("Error updating designation mapping:", err);
+        alert("Failed to update designation mapping.");
       }
     }
   };
@@ -247,14 +247,14 @@ export default function ShiftManagement() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#111827]">Shift & Designation Management</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-3xl font-bold text-[#111827] dark:text-white">Shift & Designation Management</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
             Configure shift timings and map designations to specific schedules.
           </p>
         </div>
         <button 
           onClick={() => setShowAddMapping(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors cursor-pointer"
         >
           <Plus size={18} />
           Add New Shift Mapping
@@ -264,8 +264,8 @@ export default function ShiftManagement() {
       {/* Defined Shift Types */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
-          <Clock size={20} className="text-amber-600" />
-          <h2 className="text-lg font-bold text-[#111827]">Defined Shift Types</h2>
+          <Clock size={20} className="text-amber-600 dark:text-amber-500" />
+          <h2 className="text-lg font-bold text-[#111827] dark:text-white">Defined Shift Types</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -276,20 +276,20 @@ export default function ShiftManagement() {
             return (
             <div
               key={shift.id}
-              className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 hover:shadow-md transition-all"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className={`p-3 rounded-lg ${getShiftColor(displayShift.color)}`}>
                   {getShiftIcon(displayShift.icon)}
                 </div>
               </div>
-              <h3 className="text-lg font-bold text-[#111827] mb-1">{displayShift.name}</h3>
-              <p className="text-sm text-slate-600 mb-4">{displayShift.description}</p>
+              <h3 className="text-lg font-bold text-[#111827] dark:text-white mb-1">{displayShift.name}</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{displayShift.description}</p>
               
               {isEditing ? (
                 <div className="space-y-3 mb-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Start Time</label>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Start Time</label>
                     <input
                       type="time"
                       value={displayShift.startTime}
@@ -298,11 +298,11 @@ export default function ShiftManagement() {
                         newShift.duration = calculateDuration(newShift.startTime, newShift.endTime);
                         setEditingShiftData(newShift);
                       }}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">End Time</label>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">End Time</label>
                     <input
                       type="time"
                       value={displayShift.endTime}
@@ -311,31 +311,31 @@ export default function ShiftManagement() {
                         newShift.duration = calculateDuration(newShift.startTime, newShift.endTime);
                         setEditingShiftData(newShift);
                       }}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
                     />
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl font-bold text-[#111827]">
+                  <span className="text-2xl font-bold text-[#111827] dark:text-white">
                     {displayShift.startTime} - {displayShift.endTime}
                   </span>
                 </div>
               )}
               
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">{displayShift.duration}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">{displayShift.duration}</span>
                 {isEditing ? (
                   <div className="flex gap-2">
                     <button 
                       onClick={handleSaveShift}
-                      className="text-sm text-green-600 hover:text-green-700 font-medium"
+                      className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 font-medium cursor-pointer"
                     >
                       Save
                     </button>
                     <button 
                       onClick={handleCancelShift}
-                      className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                      className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-700 font-medium cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -343,7 +343,7 @@ export default function ShiftManagement() {
                 ) : (
                   <button 
                     onClick={() => handleEditShift(shift)}
-                    className="text-sm text-amber-600 hover:text-amber-700 font-medium"
+                    className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 font-medium cursor-pointer"
                   >
                     Edit Details
                   </button>
@@ -356,47 +356,47 @@ export default function ShiftManagement() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 mb-6 transition-colors">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-2 uppercase">
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 uppercase">
               Designation
             </label>
             <select
               value={selectedDesignation}
               onChange={(e) => setSelectedDesignation(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
+              className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
             >
-              <option value="">All Designations</option>
-              <option value="Senior Engineer">Senior Engineer</option>
-              <option value="Engineer">Engineer</option>
-              <option value="HR Manager">HR Manager</option>
-              <option value="HR Executive">HR Executive</option>
-              <option value="Sales Executive">Sales Executive</option>
-              <option value="Product Manager">Product Manager</option>
-              <option value="Driver">Driver</option>
-              <option value="Support Staff">Support Staff</option>
+              <option value="" className="dark:bg-slate-800">All Designations</option>
+              <option value="Senior Engineer" className="dark:bg-slate-800">Senior Engineer</option>
+              <option value="Engineer" className="dark:bg-slate-800">Engineer</option>
+              <option value="HR Manager" className="dark:bg-slate-800">HR Manager</option>
+              <option value="HR Executive" className="dark:bg-slate-800">HR Executive</option>
+              <option value="Sales Executive" className="dark:bg-slate-800">Sales Executive</option>
+              <option value="Product Manager" className="dark:bg-slate-800">Product Manager</option>
+              <option value="Driver" className="dark:bg-slate-800">Driver</option>
+              <option value="Support Staff" className="dark:bg-slate-800">Support Staff</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-2 uppercase">
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 uppercase">
               Assigned Shift
             </label>
             <select
               value={selectedShift}
               onChange={(e) => setSelectedShift(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
+              className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
             >
-              <option value="">All Shifts</option>
-              <option value="Normal Shift">Normal Shift</option>
-              <option value="Temporary Shift">Temporary Shift</option>
-              <option value="Drivers Shift">Drivers Shift</option>
+              <option value="" className="dark:bg-slate-800">All Shifts</option>
+              <option value="Normal Shift" className="dark:bg-slate-800">Normal Shift</option>
+              <option value="Temporary Shift" className="dark:bg-slate-800">Temporary Shift</option>
+              <option value="Drivers Shift" className="dark:bg-slate-800">Drivers Shift</option>
             </select>
           </div>
           <div className="flex items-end">
             <button 
               onClick={handleResetFilters}
-              className="w-full px-6 py-2.5 border border-amber-900 text-amber-900 hover:bg-amber-50 font-medium rounded-lg transition-colors"
+              className="w-full px-6 py-2.5 border border-amber-900 dark:border-amber-700 text-amber-900 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-medium rounded-lg transition-colors cursor-pointer"
             >
               Clear Filters
             </button>
@@ -405,41 +405,41 @@ export default function ShiftManagement() {
       </div>
 
       {/* Designation to Shift Mapping Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[#111827]">Designation to Shift Mapping</h2>
-          <span className="text-sm text-slate-600">Total {filteredShiftMappings.length} Mappings</span>
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-[#111827] dark:text-white">Designation to Shift Mapping</h2>
+          <span className="text-sm text-slate-600 dark:text-slate-400">Total {filteredShiftMappings.length} Mappings</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Designation / Role
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Assigned Shift
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Time Range
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
+            <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
               {filteredShiftMappings.map((mapping) => (
-                <tr key={mapping.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={mapping.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-semibold text-sm">
                         {mapping.avatar}
                       </div>
                       <div>
-                        <div className="font-medium text-[#111827]">{mapping.role}</div>
-                        <div className="text-sm text-slate-500">{mapping.department}</div>
+                        <div className="font-medium text-[#111827] dark:text-white">{mapping.role}</div>
+                        <div className="text-sm text-slate-500 dark:text-slate-400">{mapping.department}</div>
                       </div>
                     </div>
                   </td>
@@ -453,22 +453,22 @@ export default function ShiftManagement() {
                       {mapping.assignedShift}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-700 font-medium">
+                  <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 font-medium">
                     {mapping.timeRange}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setViewingMapping(mapping)}
-                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                       >
-                        <Eye size={18} className="text-slate-600" />
+                        <Eye size={18} className="text-slate-600 dark:text-slate-400" />
                       </button>
                       <button 
                         onClick={() => handleEdit(mapping)}
-                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                       >
-                        <Pencil size={18} className="text-slate-600" />
+                        <Pencil size={18} className="text-slate-600 dark:text-slate-400" />
                       </button>
                     </div>
                   </td>
@@ -481,17 +481,17 @@ export default function ShiftManagement() {
 
       {/* View Shift Mapping Modal */}
       {viewingMapping && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Shift Mapping Details</h2>
-                <p className="text-sm text-slate-500 mt-1">View designation to shift mapping information</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Shift Mapping Details</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">View designation to shift mapping information</p>
               </div>
               <button
                 onClick={() => setViewingMapping(null)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
               >
                 <X size={24} />
               </button>
@@ -499,44 +499,44 @@ export default function ShiftManagement() {
             
             {/* Content */}
             <div className="p-6 space-y-4">
-              <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
-                <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-2xl">
+              <div className="flex items-center gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-amber-700 dark:text-amber-400 font-bold text-2xl">
                   {viewingMapping.avatar}
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900">{viewingMapping.role}</h3>
-                  <p className="text-amber-800 font-semibold">{viewingMapping.department}</p>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{viewingMapping.role}</h3>
+                  <p className="text-amber-800 dark:text-amber-400 font-semibold">{viewingMapping.department}</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Clock className="text-blue-600" size={18} />
-                    <label className="block text-sm font-medium text-blue-900">
+                    <Clock className="text-blue-600 dark:text-blue-400" size={18} />
+                    <label className="block text-sm font-medium text-blue-900 dark:text-blue-300">
                       Assigned Shift
                     </label>
                   </div>
-                  <p className="text-base text-gray-900 font-semibold">{viewingMapping.assignedShift}</p>
+                  <p className="text-base text-gray-900 dark:text-white font-semibold">{viewingMapping.assignedShift}</p>
                 </div>
                 
-                <div className="bg-purple-50 p-4 rounded-lg">
+                <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900/40 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Timer className="text-purple-600" size={18} />
-                    <label className="block text-sm font-medium text-purple-900">
+                    <Timer className="text-purple-600 dark:text-purple-400" size={18} />
+                    <label className="block text-sm font-medium text-purple-900 dark:text-purple-300">
                       Time Range
                     </label>
                   </div>
-                  <p className="text-base text-gray-900 font-semibold">{viewingMapping.timeRange}</p>
+                  <p className="text-base text-gray-900 dark:text-white font-semibold">{viewingMapping.timeRange}</p>
                 </div>
               </div>
             </div>
             
             {/* Footer */}
-            <div className="p-6 border-t border-slate-200">
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setViewingMapping(null)}
-                className="w-full bg-gray-200 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                className="w-full bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-300 py-2.5 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-700 transition-colors font-medium cursor-pointer"
               >
                 Close
               </button>
@@ -547,17 +547,17 @@ export default function ShiftManagement() {
 
       {/* Edit Shift Mapping Modal */}
       {editingMapping && editForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Edit Shift Mapping</h2>
-                <p className="text-sm text-slate-500 mt-1">Update designation to shift mapping</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Shift Mapping</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Update designation to shift mapping</p>
               </div>
               <button
                 onClick={handleCancel}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
               >
                 <X size={24} />
               </button>
@@ -566,35 +566,35 @@ export default function ShiftManagement() {
             {/* Form Content */}
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Designation / Role
                 </label>
                 <input
                   type="text"
                   value={editForm.role}
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Department
                 </label>
                 <input
                   type="text"
                   value={editForm.department}
                   onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Assigned Shift
                 </label>
                 <select
                   value={editForm.assignedShift}
                   onChange={(e) => setEditForm({ ...editForm, assignedShift: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
                   <option value="">Select Shift</option>
                   <option value="Normal Shift">Normal Shift</option>
@@ -603,7 +603,7 @@ export default function ShiftManagement() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                   Time Range
                 </label>
                 <input
@@ -611,23 +611,23 @@ export default function ShiftManagement() {
                   value={editForm.timeRange}
                   onChange={(e) => setEditForm({ ...editForm, timeRange: e.target.value })}
                   placeholder="08:30 - 16:30"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
               </div>
 
             </div>
             
             {/* Footer with Buttons */}
-            <div className="p-6 border-t border-slate-200 flex gap-3">
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex gap-3">
               <button
                 onClick={handleSave}
-                className="flex-1 bg-amber-900 text-white py-2.5 px-4 rounded-lg hover:bg-amber-800 transition-colors font-medium"
+                className="flex-1 bg-amber-900 dark:bg-amber-600 text-white py-2.5 px-4 rounded-lg hover:bg-amber-800 dark:hover:bg-amber-700 transition-colors font-medium cursor-pointer"
               >
                 Save Changes
               </button>
               <button
                 onClick={handleCancel}
-                className="flex-1 bg-gray-200 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                className="flex-1 bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-300 py-2.5 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-700 transition-colors font-medium cursor-pointer"
               >
                 Cancel
               </button>

@@ -274,18 +274,22 @@ export default function ManualAttendancePage() {
             </header>
 
             {/* ── Action Bar ─────────────────────────────────────────────────── */}
-            <div className="flex-shrink-0 bg-white border-b border-gray-100 px-8 h-[54px] flex items-center gap-2 overflow-x-auto">
+            <div className="flex-shrink-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-8 h-[54px] flex items-center gap-2 overflow-x-auto transition-colors">
                 {/* Department Filter */}
                 <div className="relative flex-shrink-0">
                     <select
                         id="dept-filter"
                         value={department}
                         onChange={e => setDepartment(e.target.value)}
-                        className="appearance-none text-[13px] font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#9e3f00]/20 focus:border-[#9e3f00]/50 cursor-pointer hover:border-[#9e3f00]/40 transition-colors"
+                        className="appearance-none text-[13px] font-medium text-gray-700 dark:text-slate-200 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#9e3f00]/20 focus:border-[#9e3f00]/50 cursor-pointer hover:border-[#9e3f00]/40 dark:hover:border-slate-600 transition-colors"
                     >
-                        {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                        {departments.map(d => (
+                            <option key={d} value={d} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                {d}
+                            </option>
+                        ))}
                     </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-slate-400" />
                 </div>
 
                 {/* Shift Filter */}
@@ -294,41 +298,45 @@ export default function ManualAttendancePage() {
                         id="shift-filter"
                         value={selectedShiftId}
                         onChange={e => setSelectedShiftId(e.target.value === "all" ? "all" : Number(e.target.value))}
-                        className="appearance-none text-[13px] font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#9e3f00]/20 focus:border-[#9e3f00]/50 cursor-pointer hover:border-[#9e3f00]/40 transition-colors"
+                        className="appearance-none text-[13px] font-medium text-gray-700 dark:text-slate-200 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#9e3f00]/20 focus:border-[#9e3f00]/50 cursor-pointer hover:border-[#9e3f00]/40 dark:hover:border-slate-600 transition-colors"
                     >
-                        <option value="all">All Shifts</option>
-                        {shifts.map(s => <option key={s.id} value={s.id}>{s.shiftName}</option>)}
+                        <option value="all" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Shifts</option>
+                        {shifts.map(s => (
+                            <option key={s.id} value={s.id} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                {s.shiftName}
+                            </option>
+                        ))}
                     </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                    <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-slate-400" />
                 </div>
 
                 {/* Date Filter */}
-                <div className="relative flex-shrink-0 flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-[#9e3f00]/40 transition-colors focus-within:ring-2 focus-within:ring-[#9e3f00]/20 focus-within:border-[#9e3f00]/50">
-                    <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div className="relative flex-shrink-0 flex items-center gap-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 hover:border-[#9e3f00]/40 dark:hover:border-slate-600 transition-colors focus-within:ring-2 focus-within:ring-[#9e3f00]/20 focus-within:border-[#9e3f00]/50">
+                    <Calendar className="w-4 h-4 text-gray-400 dark:text-slate-400 flex-shrink-0" />
                     <input
                         id="date-filter"
                         type="date"
                         value={date}
                         onChange={e => setDate(e.target.value)}
-                        className="text-[13px] font-medium text-gray-700 bg-transparent border-none outline-none cursor-pointer"
+                        className="text-[13px] font-medium text-gray-700 dark:text-slate-200 bg-transparent border-none outline-none cursor-pointer dark:[color-scheme:dark]"
                     />
                 </div>
 
                 {/* Active filter badges */}
                 {(department !== "All Departments" || selectedShiftId !== "all") && (
-                    <span className="flex-shrink-0 text-[11px] font-semibold text-[#9e3f00] bg-[#9e3f00]/8 border border-[#9e3f00]/20 px-2.5 py-1 rounded-full">
+                    <span className="flex-shrink-0 text-[11px] font-semibold text-[#9e3f00] dark:text-orange-400 bg-[#9e3f00]/8 dark:bg-orange-500/10 border border-[#9e3f00]/20 dark:border-orange-500/20 px-2.5 py-1 rounded-full">
                         {list.length} result{list.length !== 1 ? "s" : ""}
                     </span>
                 )}
 
                 <div className="ml-auto flex items-center gap-3 flex-shrink-0">
-                    <button onClick={markAll} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#9e3f00] border border-[#9e3f00]/25 rounded-lg px-4 py-[7px] hover:bg-[#9e3f00]/5 transition-colors">
+                    <button onClick={markAll} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#9e3f00] dark:text-orange-400 border border-[#9e3f00]/25 dark:border-orange-500/30 rounded-lg px-4 py-[7px] hover:bg-[#9e3f00]/5 dark:hover:bg-orange-500/10 transition-colors cursor-pointer">
                         <ArrowLeftRight className="w-3.5 h-3.5" /> Mark All Present
                     </button>
                     <button 
                         onClick={submitAll} 
                         disabled={submitting}
-                        className="flex items-center gap-2 text-[13px] font-bold text-white bg-[#9e3f00] rounded-lg px-5 py-[7px] hover:bg-[#7a3000] transition-colors shadow-sm disabled:opacity-70"
+                        className="flex items-center gap-2 text-[13px] font-bold text-white bg-[#9e3f00] dark:bg-orange-600 rounded-lg px-5 py-[7px] hover:bg-[#7a3000] dark:hover:bg-orange-700 transition-colors shadow-sm disabled:opacity-70 cursor-pointer"
                     >
                         {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                         {submitting ? "Saving..." : "Submit Updates"}
@@ -342,15 +350,15 @@ export default function ManualAttendancePage() {
                 {/* Card Grid */}
                 <div className="flex-1 overflow-y-auto p-6">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
-                            <Loader2 className="w-10 h-10 animate-spin text-[#9e3f00]/40" />
+                        <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 dark:text-slate-500">
+                            <Loader2 className="w-10 h-10 animate-spin text-[#9e3f00]/40 dark:text-orange-500/40" />
                             <p className="text-sm font-medium">Loading attendance sheet...</p>
                         </div>
                     ) : list.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400">
+                        <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400 dark:text-slate-500">
                             <Search className="w-10 h-10 opacity-20" />
                             <p className="text-sm font-medium">No employees found for this selection</p>
-                            <p className="text-xs text-gray-500">Try changing filters or searching for another name</p>
+                            <p className="text-xs text-gray-500 dark:text-slate-400">Try changing filters or searching for another name</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -382,13 +390,13 @@ export default function ManualAttendancePage() {
 
                         <div className="flex flex-col gap-5 px-6 py-5 flex-1">
                             {/* Employee chip */}
-                            <div className="flex items-center gap-3 bg-[#fdf9f7] border border-[#9e3f00]/10 rounded-xl p-4">
-                                <div className="w-12 h-12 rounded-full bg-[#9e3f00]/10 border-2 border-white shadow-sm flex items-center justify-center text-[#9e3f00] font-bold text-lg flex-shrink-0">
+                            <div className="flex items-center gap-3 bg-[#fdf9f7] dark:bg-slate-800/60 border border-[#9e3f00]/10 dark:border-slate-700 rounded-xl p-4">
+                                <div className="w-12 h-12 rounded-full bg-[#9e3f00]/10 dark:bg-orange-500/20 border-2 border-white dark:border-slate-700 shadow-sm flex items-center justify-center text-[#9e3f00] dark:text-orange-400 font-bold text-lg flex-shrink-0">
                                     {sel.employeeName.charAt(0)}
                                 </div>
                                 <div>
-                                    <p className="font-bold text-gray-900 text-sm">{sel.employeeName}</p>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">ID: {sel.employeeCode} · {sel.role}</p>
+                                    <p className="font-bold text-gray-900 dark:text-white text-sm">{sel.employeeName}</p>
+                                    <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">ID: {sel.employeeCode} · {sel.role}</p>
                                     {sel.isActiveShift && (
                                         <span className="inline-block mt-1.5 text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/40 px-2 py-0.5 rounded-full tracking-wide">
                                             ACTIVE SHIFT
@@ -441,7 +449,7 @@ export default function ManualAttendancePage() {
                                     Cancel
                                 </button>
                                 <button onClick={saveEntry}
-                                    className="w-full py-2.5 text-sm font-bold text-white bg-[#9e3f00] rounded-xl hover:bg-[#7a3000] transition-colors">
+                                    className="w-full py-2.5 text-sm font-bold text-white bg-[#9e3f00] dark:bg-orange-600 rounded-xl hover:bg-[#7a3000] dark:hover:bg-orange-700 transition-colors cursor-pointer">
                                     Save Entry
                                 </button>
                             </div>
@@ -464,7 +472,7 @@ export default function ManualAttendancePage() {
                         </span>
                     ))}
                 </div>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 dark:text-slate-400">
                     {emps.length > 0 ? `Showing ${emps.length} total employees` : "No data available"}
                 </span>
             </div>
@@ -503,30 +511,30 @@ function Card({ emp, selected, onStatus, onCustom }: {
 
             {/* Avatar + Info */}
             <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gray-50 border-2 border-gray-100 flex-shrink-0 flex items-center justify-center text-[#9e3f00] font-bold">
+                <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-slate-800 border-2 border-gray-100 dark:border-slate-700 flex-shrink-0 flex items-center justify-center text-[#9e3f00] dark:text-orange-400 font-bold">
                     {emp.employeeName.charAt(0)}
                 </div>
                 <div className="min-w-0">
-                    <p className="text-[14px] font-bold text-gray-900 leading-tight truncate">{emp.employeeName}</p>
-                    <p className="text-[11px] text-gray-400 leading-tight">ID: {emp.employeeCode}</p>
-                    <p className="text-[11px] text-[#9e3f00] font-semibold leading-tight truncate">{emp.role}</p>
+                    <p className="text-[14px] font-bold text-gray-900 dark:text-white leading-tight truncate">{emp.employeeName}</p>
+                    <p className="text-[11px] text-gray-400 dark:text-slate-400 leading-tight">ID: {emp.employeeCode}</p>
+                    <p className="text-[11px] text-[#9e3f00] dark:text-orange-400 font-semibold leading-tight truncate">{emp.role}</p>
                 </div>
             </div>
 
             {/* Present / Absent */}
             <div className="flex gap-2">
                 <button onClick={() => onStatus(emp.employeeId, "Present")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-[7px] rounded-lg text-xs font-semibold border transition-all ${emp.status === "Present"
-                        ? "bg-green-50 border-green-400 text-green-700"
-                        : "bg-white border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-600 hover:bg-green-50"
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-[7px] rounded-lg text-xs font-semibold border transition-all cursor-pointer ${emp.status === "Present"
+                        ? "bg-green-50 dark:bg-green-950/40 border-green-400 dark:border-green-800 text-green-700 dark:text-green-400"
+                        : "bg-white dark:bg-slate-800/80 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-300 hover:border-green-300 dark:hover:border-green-700 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/20"
                         }`}>
                     <span className={`w-[7px] h-[7px] rounded-full flex-shrink-0 ${emp.status === "Present" ? "bg-green-500" : "bg-gray-300 dark:bg-slate-600"}`} />
                     Present
                 </button>
                 <button onClick={() => onStatus(emp.employeeId, "Absent")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-[7px] rounded-lg text-xs font-semibold border transition-all ${emp.status === "Absent"
-                        ? "bg-red-50 border-red-400 text-red-600"
-                        : "bg-white border-gray-200 text-gray-500 hover:border-red-300 hover:text-red-600 hover:bg-red-50"
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-[7px] rounded-lg text-xs font-semibold border transition-all cursor-pointer ${emp.status === "Absent"
+                        ? "bg-red-50 dark:bg-red-950/40 border-red-400 dark:border-red-800 text-red-600 dark:text-red-400"
+                        : "bg-white dark:bg-slate-800/80 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-300 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
                         }`}>
                     <span className={`w-[7px] h-[7px] rounded-full flex-shrink-0 ${emp.status === "Absent" ? "bg-red-500" : "bg-gray-300 dark:bg-slate-600"}`} />
                     Absent
@@ -536,7 +544,7 @@ function Card({ emp, selected, onStatus, onCustom }: {
             {/* Custom Time */}
             <button onClick={onCustom}
                 className={`w-full flex items-center justify-center gap-2 py-[7px] rounded-lg text-xs font-semibold border transition-all cursor-pointer ${selected
-                    ? "bg-[#9e3f00] border-[#9e3f00] text-white"
+                    ? "bg-[#9e3f00] dark:bg-orange-600 border-[#9e3f00] dark:border-orange-600 text-white"
                     : "bg-white dark:bg-slate-800 border-[#9e3f00]/30 dark:border-orange-500/30 text-[#9e3f00] dark:text-orange-400 hover:bg-[#9e3f00]/5 dark:hover:bg-orange-500/10"
                     }`}>
                 <Clock className="w-3.5 h-3.5" />

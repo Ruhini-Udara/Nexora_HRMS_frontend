@@ -22,7 +22,7 @@ export default function SessionSummaryCard({
     expectedParticipants,
 }: SessionSummaryCardProps) {
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-slate-800 relative overflow-hidden flex flex-col justify-between">
             <div className="flex justify-between items-start">
                 <div>
                     <div className="flex flex-wrap gap-1.5 mb-2">
@@ -30,7 +30,7 @@ export default function SessionSummaryCard({
                             {type}
                         </span>
                         {trainingCode && (
-                            <span className="px-2 py-0.5 rounded bg-stone-100 text-stone-700 text-[9px] font-bold uppercase tracking-widest inline-block">
+                            <span className="px-2 py-0.5 rounded bg-stone-100 dark:bg-slate-800 text-stone-700 dark:text-slate-300 text-[9px] font-bold uppercase tracking-widest inline-block">
                                 {trainingCode}
                             </span>
                         )}
@@ -40,7 +40,7 @@ export default function SessionSummaryCard({
                     </h3>
                 </div>
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-slate-800">
                 <div className="flex flex-col">
                     <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">
                         Date & Time
