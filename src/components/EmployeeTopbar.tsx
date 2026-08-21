@@ -3,6 +3,7 @@ import React from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
 import { NotificationBell } from "@/components/NotificationBell";
+import UserAvatar from "@/components/common/UserAvatar";
 
 const EmployeeTopbar = () => {
   const { user } = useAuthStore();
@@ -25,7 +26,7 @@ const EmployeeTopbar = () => {
 
         <div className="h-8 w-px bg-border-light dark:bg-border-dark mx-2"></div>
 
-        <Link href="/employee/settings" className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-lg transition-colors group cursor-pointer">
+        <Link href="/employee/profile" className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded-lg transition-colors group cursor-pointer">
           <div className="text-right">
             <p className="text-sm font-semibold text-gray-900 dark:text-white leading-none group-hover:text-primary transition-colors">
                 {user?.name || "Employee"}
@@ -36,9 +37,7 @@ const EmployeeTopbar = () => {
                  user?.role === 'ROLE_DIRECTOR' ? 'Director Account' : 'Employee Account'}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs ring-2 ring-primary ring-offset-2 dark:ring-offset-gray-900 bg-slate-200">
-             {user?.name?.substring(0, 2).toUpperCase() || "EM"}
-          </div>
+          <UserAvatar user={user} size="md" />
         </Link>
       </div>
     </header>

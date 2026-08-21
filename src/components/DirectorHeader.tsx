@@ -2,6 +2,7 @@
 import { Search, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from "@/store/useAuthStore";
+import UserAvatar from "@/components/common/UserAvatar";
 
 const DirectorHeader = () => {
     const { user } = useAuthStore();
@@ -32,9 +33,7 @@ const DirectorHeader = () => {
                              user?.role === 'ROLE_DIRECTOR' ? 'Director Account' : 'User Account'}
                         </p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs border border-gray-200 overflow-hidden">
-                        {user?.name?.substring(0, 2).toUpperCase() || "DR"}
-                    </div>
+                    <UserAvatar user={user} size="md" />
                 </Link>
             </div>
         </header>
