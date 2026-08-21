@@ -27,7 +27,7 @@ export default function TrainingPage() {
                         Design and manage comprehensive training curriculums and learning
                         paths.
                     </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module{" "}
                         <span className="material-icons-round text-sm ml-1">
                             arrow_forward
@@ -51,7 +51,7 @@ export default function TrainingPage() {
                         Assign specific employees or departments to relevant training
                         programs.
                     </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module{" "}
                         <span className="material-icons-round text-sm ml-1">
                             arrow_forward
@@ -73,7 +73,7 @@ export default function TrainingPage() {
                         Track and verify employee participation and completion of scheduled
                         sessions.
                     </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module{" "}
                         <span className="material-icons-round text-sm ml-1">
                             arrow_forward

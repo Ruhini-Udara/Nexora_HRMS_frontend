@@ -3,6 +3,7 @@ import { Search, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthStore } from "@/store/useAuthStore";
 import UserAvatar from "@/components/common/UserAvatar";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const DirectorHeader = () => {
     const { user } = useAuthStore();
@@ -20,10 +21,7 @@ const DirectorHeader = () => {
                 />
             </div>
             <div className="flex items-center gap-6">
-                <button className="relative p-1 text-gray-400 hover:text-gray-600">
-                    <Bell className="h-6 w-6" />
-                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white"></span>
-                </button>
+                <NotificationBell />
                 <div className="h-8 border-l border-gray-200 dark:border-slate-800"></div>
                 <Link href="/director/profile" className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-800/50 p-2 rounded-lg transition-colors">
                     <div className="text-right">
