@@ -2,6 +2,7 @@
 
 import { Search, Bell } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
+import Link from "next/link";
 
 const SupervisorHeader = () => {
     const user = useAuthStore((state) => state.user);
@@ -36,7 +37,7 @@ const SupervisorHeader = () => {
                 <div className="h-8 border-l border-gray-200" />
 
                 {/* Profile */}
-                <div className="flex items-center gap-3">
+                <Link href="/supervisor/profile" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
                     <div className="text-right">
                         <p className="text-sm font-semibold text-gray-800">
                             {user?.name || "Supervisor"}
@@ -49,7 +50,7 @@ const SupervisorHeader = () => {
                     <div className="h-10 w-10 rounded-full border border-gray-200 bg-primary flex items-center justify-center text-white text-sm font-bold">
                         {initials}
                     </div>
-                </div>
+                </Link>
             </div>
         </header>
     );
