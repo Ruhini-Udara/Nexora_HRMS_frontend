@@ -60,7 +60,7 @@ export default function NormalLeaveRequestPage() {
             return res.data;
         }
     });
-    const normalLeaveTypes = leaveTypes.filter((t: any) => 
+    const normalLeaveTypes = leaveTypes.filter((t: { id: number; leaveTypeName: string }) => 
         t.leaveTypeName !== 'Maternity Leave' && t.leaveTypeName !== 'Overseas Leave'
     );
 
@@ -196,7 +196,7 @@ export default function NormalLeaveRequestPage() {
                                     disabled={isDisabled || typesLoading}
                                 >
                                     <option value="">{typesLoading ? "Loading..." : "Select leave type"}</option>
-                                    {normalLeaveTypes.map((type: any) => (
+                                    {normalLeaveTypes.map((type: { id: number; leaveTypeName: string }) => (
                                         <option key={type.id} value={type.id}>
                                             {type.leaveTypeName}
                                         </option>

@@ -528,7 +528,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                 <td className="px-6 py-5">
                   <div className="flex items-center gap-3">
                     {employee.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
+                       
                       <img
                         alt={employee.name}
                         className="w-10 h-10 rounded-full"
