@@ -8,10 +8,7 @@ import UserAvatar from "@/components/common/UserAvatar";
 const SupervisorHeader = () => {
     const user = useAuthStore((state) => state.user);
 
-    // Get initials for avatar fallback
-    const initials = user?.name
-        ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-        : "SP";
+
 
     return (
         <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-40">
