@@ -248,7 +248,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center justify-center gap-2">
-                                                        <button
+                                                                                        <button
                                                             onClick={() => {
                                                                 setSelectedRequest(request);
                                                                 setIsConfirmingAttendance(true);
@@ -262,7 +262,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                                 setSelectedRequest(request);
                                                                 setIsDecliningInvitation(true);
                                                             }}
-                                                            className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-100 text-[11px] font-bold rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
+                                                            className="px-3 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 text-[11px] font-bold rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
                                                         >
                                                             Reject
                                                         </button>
@@ -309,7 +309,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                             <button
                                                 className={`text-[11px] font-bold flex items-center gap-1 justify-center mx-auto px-3 py-1.5 rounded-lg transition-colors ${request.status === 'Approved' && request.attendanceConfirmed
                                                     ? submittedFeedbacks[request.eventId]
-                                                        ? "bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 cursor-pointer"
+                                                        ? "bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
                                                         : "text-primary hover:bg-primary/5 cursor-pointer"
                                                     : "text-slate-300 cursor-not-allowed"
                                                     }`}
@@ -353,7 +353,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                         <button 
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            className="size-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-primary transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="size-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                             <span className="material-symbols-outlined text-sm">chevron_left</span>
                         </button>
@@ -365,7 +365,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                 className={`size-8 flex items-center justify-center rounded-lg font-bold text-xs transition-all cursor-pointer ${
                                     currentPage === page 
                                         ? 'bg-primary text-white shadow-sm shadow-primary/20' 
-                                        : 'border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-primary'
+                                        : 'border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary'
                                 }`}
                             >
                                 {page}
@@ -375,7 +375,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                         <button 
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            className="size-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-primary transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="size-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                             <span className="material-symbols-outlined text-sm">chevron_right</span>
                         </button>
@@ -386,7 +386,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
             {/* Attendance Confirmation Modal */}
             {isConfirmingAttendance && selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200 border border-slate-100">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200 border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-4 mb-6">
                             <div className="w-12 h-12 rounded-full bg-[var(--color-training-primary)]/10 flex items-center justify-center text-[var(--color-training-primary)] shrink-0">
                                 <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -394,8 +394,8 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                 </span>
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900">Confirm Attendance?</h3>
-                                <p className="text-sm text-slate-500 mt-1">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Confirm Attendance?</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                                     Are you sure you want to confirm your attendance for <strong>{selectedRequest.trainingTitle}</strong> on {selectedRequest.trainingDate}?
                                 </p>
                             </div>
@@ -407,7 +407,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                     setIsConfirmingAttendance(false);
                                     setSelectedRequest(null);
                                 }}
-                                className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                                className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>
@@ -425,16 +425,16 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
             {/* Rejection Reason Modal */}
             {isRejectionModalOpen && selectedRejection && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200 border border-slate-100">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200 border border-slate-100 dark:border-slate-800">
                         <div className="flex items-start gap-4 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/20 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
                                 <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
                                     error
                                 </span>
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900">Rejection Reason</h3>
-                                <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Rejection Reason</h3>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 whitespace-pre-wrap">
                                     {selectedRejection}
                                 </p>
                             </div>
@@ -446,7 +446,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                     setIsRejectionModalOpen(false);
                                     setSelectedRejection(null);
                                 }}
-                                className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                                className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                             >
                                 Close
                             </button>
@@ -457,16 +457,16 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
             {/* Decline Invitation Modal */}
             {isDecliningInvitation && selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200 border border-slate-100">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200 border border-slate-100 dark:border-slate-800">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/20 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
                                 <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
                                     cancel
                                 </span>
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900">Decline Invitation?</h3>
-                                <p className="text-sm text-slate-500 mt-1">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Decline Invitation?</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                                     Are you sure you want to decline the invitation for <strong>{selectedRequest.trainingTitle}</strong>? This action cannot be undone.
                                 </p>
                             </div>
@@ -478,7 +478,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                     setIsDecliningInvitation(false);
                                     setSelectedRequest(null);
                                 }}
-                                className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                                className="px-5 py-2.5 rounded-xl font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                             >
                                 Back
                             </button>

@@ -483,46 +483,46 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
       )}
 
       {/* Employee Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-200">
+          <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
             <tr>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Employee Code
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Fingerprint ID
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Full Name
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Department
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Designation
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Employee Type
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Fingerprint
               </th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 text-right uppercase tracking-wider">
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 text-right uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {displayedEmployees.map((employee) => (
               <tr
                 key={employee.id}
-                className="hover:bg-slate-50 transition-colors"
+                className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               >
-                <td className="px-6 py-5 font-bold text-amber-900">
+                <td className="px-6 py-5 font-bold text-amber-900 dark:text-amber-600">
                   {employee.id}
                 </td>
-                <td className="px-6 py-5 text-sm font-semibold text-slate-700">
+                <td className="px-6 py-5 text-sm font-semibold text-slate-700 dark:text-slate-300">
                   {employee.fingerprintUserId ?? "Pending"}
                 </td>
                 <td className="px-6 py-5">
@@ -535,23 +535,23 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                         src={employee.avatar}
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                        <User className="text-slate-400" size={20} />
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <User className="text-slate-400 dark:text-slate-500" size={20} />
                       </div>
                     )}
                     <div>
-                      <p className="font-semibold text-[#111827]">{employee.name}</p>
-                      <p className="text-xs text-slate-500">{employee.email}</p>
+                      <p className="font-semibold text-[#111827] dark:text-white">{employee.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{employee.email}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-5 text-sm text-slate-600">
+                <td className="px-6 py-5 text-sm text-slate-600 dark:text-slate-300">
                   {employee.department}
                 </td>
-                <td className="px-6 py-5 text-sm text-slate-600">
+                <td className="px-6 py-5 text-sm text-slate-600 dark:text-slate-300">
                   {employee.designation}
                 </td>
-                <td className="px-6 py-5 text-sm text-slate-600">
+                <td className="px-6 py-5 text-sm text-slate-600 dark:text-slate-300">
                   {employee.employmentStatus}
                 </td>
                 <td className="px-6 py-5">
@@ -561,8 +561,8 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                       disabled={fingerprintUpdatingCode === employee.id}
                       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors disabled:opacity-60 ${
                         employee.fingerprintEnrolled
-                          ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/40"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                       }`}
                     >
                       <Fingerprint size={14} />
@@ -571,8 +571,8 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                   ) : (
                     <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ${
                       employee.fingerprintEnrolled
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-slate-100 text-slate-700"
+                        ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                     }`}>
                       <Fingerprint size={14} />
                       {employee.fingerprintEnrolled ? "Enrolled" : "Not Enrolled"}
@@ -607,15 +607,15 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
             ))}
           </tbody>
         </table>
-        <div className="px-6 py-4 flex items-center justify-between bg-slate-50 border-t border-slate-200">
-          <p className="text-sm text-slate-500">
+        <div className="px-6 py-4 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing {filteredEmployees.length > 0 ? indexOfFirstItem + 1 : 0} to {Math.min(indexOfLastItem, filteredEmployees.length)} of {filteredEmployees.length} entries
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1 || totalPages === 0}
-              className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-50"
+              className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50"
             >
               <ChevronLeft size={16} />
             </button>
@@ -625,8 +625,8 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                 onClick={() => handlePageChange(page)}
                 className={`w-10 h-10 rounded-lg font-medium ${
                   currentPage === page
-                    ? "bg-amber-900 text-white"
-                    : "border border-slate-200 hover:bg-white"
+                    ? "bg-amber-900 text-white shadow-sm shadow-amber-900/20"
+                    : "border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-slate-300 dark:text-slate-300"
                 }`}
               >
                 {page}
@@ -635,7 +635,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages || totalPages === 0}
-              className="p-2 border border-slate-200 rounded-lg hover:bg-white disabled:opacity-50"
+              className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50"
             >
               <ChevronRight size={16} />
             </button>

@@ -77,10 +77,10 @@ export default function AdminContent() {
     <div className="max-w-7xl mx-auto w-full">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-1">
+        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-1">
           Admin Dashboard
         </h1>
-        <p className="text-gray-500 text-base">
+        <p className="text-gray-500 dark:text-slate-400 text-base">
           Welcome back! Here&apos;s what&apos;s happening in HR MATE today.
         </p>
       </div>
@@ -108,7 +108,7 @@ export default function AdminContent() {
       </div>
 
       {/* Management Modules Section */}
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
         Management Modules
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-7">

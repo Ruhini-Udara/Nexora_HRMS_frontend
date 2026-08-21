@@ -40,9 +40,9 @@ interface AttendanceRow {
 
 const StatusBadge = ({ status }: { status: AttendanceStatus }) => {
     const configs: Record<AttendanceStatus, string> = {
-        Present: "bg-green-50 text-green-600 border-green-100",
-        "On Leave": "bg-amber-50 text-amber-600 border-amber-100",
-        Unknown: "bg-gray-50 text-gray-500 border-gray-100",
+        Present: "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/30",
+        "On Leave": "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30",
+        Unknown: "bg-gray-50 dark:bg-zinc-800 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-zinc-700",
     };
     return (
         <span className={`px-3 py-1 rounded-full text-[12px] font-bold border ${configs[status]}`}>
@@ -99,7 +99,7 @@ export default function TeamAttendancePage() {
                     <input
                         type="text"
                         placeholder="Search team members..."
-                        className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                        className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-800 text-slate-800 dark:text-slate-100"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -109,10 +109,10 @@ export default function TeamAttendancePage() {
                         <Bell className="h-5 w-5" />
                         <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
                     </button>
-                    <div className="h-8 w-px bg-gray-200 mx-2" />
+                    <div className="h-8 w-px bg-gray-200 dark:bg-zinc-700 mx-2" />
                     <div className="text-right">
-                        <p className="text-sm font-bold text-gray-900">{user?.name || "Supervisor"}</p>
-                        <p className="text-[11px] font-medium text-gray-500">{user?.designation || user?.role || "Supervisor"}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{user?.name || "Supervisor"}</p>
+                        <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">{user?.designation || user?.role || "Supervisor"}</p>
                     </div>
                 </div>
             </header>
@@ -120,8 +120,8 @@ export default function TeamAttendancePage() {
             <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
                 {/* Title */}
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Team Attendance</h1>
-                    <p className="text-slate-500 text-sm mt-1 font-medium">
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Team Attendance</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium">
                         Monitor daily attendance metrics and detailed logs for your team.
                     </p>
                 </div>
@@ -129,19 +129,19 @@ export default function TeamAttendancePage() {
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-medium">
                     {[
-                        { label: "Total Employees", value: String(filtered.length).padStart(2, "0"), sub: "Registered in system", icon: UserCheck, iconBg: "bg-[#fff4ed]", color: "text-[#9e3f00]", trend: "text-green-600" },
-                        { label: "Total Present", value: String(presentCount).padStart(2, "0"), sub: "On schedule today", icon: UserCheck, iconBg: "bg-green-50", color: "text-green-700", trend: "text-green-600" },
-                        { label: "On Leave / Absent", value: String(absentCount).padStart(2, "0"), sub: "Not available today", icon: UserMinus, iconBg: "bg-red-50", color: "text-red-700", trend: "text-red-500" },
+                        { label: "Total Employees", value: String(filtered.length).padStart(2, "0"), sub: "Registered in system", icon: UserCheck, iconBg: "bg-[#fff4ed] dark:bg-orange-950/30", color: "text-[#9e3f00] dark:text-orange-400", trend: "text-green-600 dark:text-green-400" },
+                        { label: "Total Present", value: String(presentCount).padStart(2, "0"), sub: "On schedule today", icon: UserCheck, iconBg: "bg-green-50 dark:bg-green-950/30", color: "text-green-700 dark:text-green-400", trend: "text-green-600 dark:text-green-400" },
+                        { label: "On Leave / Absent", value: String(absentCount).padStart(2, "0"), sub: "Not available today", icon: UserMinus, iconBg: "bg-red-50 dark:bg-red-950/30", color: "text-red-700 dark:text-red-400", trend: "text-red-500 dark:text-red-400" },
                     ].map((stat, i) => (
-                        <div key={i} className="bg-white border border-slate-100 p-6 rounded-2xl shadow-sm flex items-center justify-between">
+                        <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 p-6 rounded-2xl shadow-sm flex items-center justify-between">
                             <div>
                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em]">{stat.label}</p>
-                                <h3 className="text-4xl font-black text-slate-800 mt-1 leading-none tracking-tight">{stat.value}</h3>
+                                <h3 className="text-4xl font-black text-slate-800 dark:text-white mt-1 leading-none tracking-tight">{stat.value}</h3>
                                 <div className={`flex items-center gap-1 mt-3 ${stat.trend}`}>
                                     <span className="text-[10px] font-bold uppercase tracking-wider">{stat.sub}</span>
                                 </div>
                             </div>
-                            <div className={`${stat.iconBg} p-4 rounded-xl`}>
+                            <div className={`${stat.iconBg} p-4 rounded-xl border border-white/50 dark:border-zinc-700`}>
                                 <stat.icon className={`w-6 h-6 ${stat.color}`} />
                             </div>
                         </div>
@@ -149,34 +149,38 @@ export default function TeamAttendancePage() {
                 </div>
 
                 {/* Filter Bar */}
-                <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center gap-4">
+                <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center gap-4">
                     <div className="flex items-center gap-4 flex-1">
                         <div className="relative">
                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
                                 type="date"
-                                className="h-10 pl-10 pr-4 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20"
+                                className="h-10 pl-10 pr-4 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-orange-500/20"
                                 value={selectedDate}
                                 onChange={(e) => setSelectedDate(e.target.value)}
                             />
                         </div>
                         <div className="relative min-w-[200px]">
                             <select
-                                className="h-10 w-full appearance-none pl-4 pr-10 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20 cursor-pointer"
+                                className="h-10 w-full appearance-none pl-4 pr-10 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-orange-500/20 cursor-pointer"
                                 value={selectedDept}
                                 onChange={(e) => setSelectedDept(e.target.value)}
                             >
-                                {departments.map(d => <option key={d}>{d}</option>)}
+                                {departments.map(d => (
+                                    <option key={d} className="bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200">
+                                        {d}
+                                    </option>
+                                ))}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 h-10 px-5 bg-orange-400 hover:bg-orange-500 text-white font-bold text-[13px] rounded-xl transition-colors shadow-sm">
+                        <button className="flex items-center gap-2 h-10 px-5 bg-orange-400 hover:bg-orange-500 text-white font-bold text-[13px] rounded-xl transition-colors shadow-sm cursor-pointer">
                             <Download className="w-4 h-4" />
                             Export PDF
                         </button>
-                        <button className="flex items-center gap-2 h-10 px-5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[13px] rounded-xl transition-colors shadow-sm">
+                        <button className="flex items-center gap-2 h-10 px-5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[13px] rounded-xl transition-colors shadow-sm cursor-pointer">
                             <FileSpreadsheet className="w-4 h-4" />
                             Export Excel
                         </button>
@@ -184,7 +188,7 @@ export default function TeamAttendancePage() {
                 </div>
 
                 {/* Table */}
-                <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
                             <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
@@ -192,7 +196,7 @@ export default function TeamAttendancePage() {
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-[#fcfcfd] border-b border-slate-100">
+                                <thead className="bg-[#fcfcfd] dark:bg-zinc-800/50 border-b border-slate-100 dark:border-zinc-800">
                                     <tr>
                                         <th className="px-8 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Employee</th>
                                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Department</th>
@@ -202,32 +206,32 @@ export default function TeamAttendancePage() {
                                         <th className="px-8 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-50">
+                                <tbody className="divide-y divide-slate-50 dark:divide-zinc-800">
                                     {filtered.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="text-center py-12 text-gray-400">No employees found.</td>
+                                            <td colSpan={6} className="text-center py-12 text-gray-400 dark:text-slate-500">No employees found.</td>
                                         </tr>
                                     ) : filtered.map((row) => (
-                                        <tr key={row.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <tr key={row.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/40 transition-colors group">
                                             <td className="px-8 py-5">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-[#9e3f00] font-black text-xs border border-orange-200">
+                                                    <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-[#9e3f00] dark:text-orange-400 font-black text-xs border border-orange-200 dark:border-orange-900/30">
                                                         {row.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-slate-900 leading-tight">{row.name}</p>
-                                                        <p className="text-[11px] text-slate-500 mt-0.5 font-medium">{row.role} · {row.employeeCode}</p>
+                                                        <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{row.name}</p>
+                                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{row.role} · {row.employeeCode}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 text-sm text-slate-600">{row.department}</td>
+                                            <td className="px-6 py-5 text-sm text-slate-600 dark:text-slate-300">{row.department}</td>
                                             <td className="px-6 py-5"><StatusBadge status={row.status} /></td>
-                                            <td className="px-6 py-5 text-sm text-slate-500 flex items-center gap-1">
-                                                <Clock className="w-3.5 h-3.5 text-slate-300" />{row.checkIn}
+                                            <td className="px-6 py-5 text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                <Clock className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />{row.checkIn}
                                             </td>
-                                            <td className="px-6 py-5 text-sm text-slate-500">{row.checkOut}</td>
+                                            <td className="px-6 py-5 text-sm text-slate-500 dark:text-slate-400">{row.checkOut}</td>
                                             <td className="px-8 py-5 text-right">
-                                                <button className="text-[12px] font-bold text-[#9e3f00] hover:text-[#7a3100] transition-colors uppercase tracking-widest">
+                                                <button className="text-[12px] font-bold text-[#9e3f00] dark:text-orange-400 hover:text-[#7a3100] transition-colors uppercase tracking-widest cursor-pointer">
                                                     Details
                                                 </button>
                                             </td>
@@ -239,10 +243,10 @@ export default function TeamAttendancePage() {
                     )}
 
                     {/* Footer */}
-                    <div className="bg-[#fcfcfd] border-t border-slate-100 px-8 py-4 flex items-center justify-between">
+                    <div className="bg-[#fcfcfd] dark:bg-zinc-800/50 border-t border-slate-100 dark:border-zinc-800 px-8 py-4 flex items-center justify-between">
                         <p className="text-[12px] font-bold text-slate-400">
-                            Showing <span className="text-slate-900">{filtered.length}</span> of{" "}
-                            <span className="text-slate-900">{employees.length}</span> employees
+                            Showing <span className="text-slate-900 dark:text-white">{filtered.length}</span> of{" "}
+                            <span className="text-slate-900 dark:text-white">{employees.length}</span> employees
                         </p>
                         <div className="flex items-center gap-1 text-xs text-slate-400">
                             <AlertCircle className="w-3.5 h-3.5" />

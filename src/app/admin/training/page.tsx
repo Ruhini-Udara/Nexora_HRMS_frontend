@@ -129,8 +129,8 @@ export default function TrainingRequestsPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Training Request List</h2>
-                    <p className="text-gray-500 mt-1">Manage and review all pending training applications from your teams.</p>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Training Request List</h2>
+                    <p className="text-gray-500 dark:text-slate-400 mt-1">Manage and review all pending training applications from your teams.</p>
                 </div>
             </div>
 

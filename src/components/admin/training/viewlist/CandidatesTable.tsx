@@ -67,56 +67,56 @@ export default function CandidatesTable({ eventId }: CandidatesTableProps) {
     }, [eventId]);
 
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-primary/10 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-primary/10 dark:border-slate-800 overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/50">
                 <h4 className="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                     <Users className="w-5 h-5 text-primary" />
                     Selected Candidates
                 </h4>
-                <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-bold text-primary dark:text-orange-400 bg-primary/10 dark:bg-orange-950/40 px-2.5 py-1 rounded-full">
                     {candidates.length} Total Candidates
                 </span>
             </div>
             <div className="overflow-x-auto min-h-[150px] relative">
                 {isLoading ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 backdrop-blur-[1px] z-10">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-[1px] z-10">
                         <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
-                        <p className="text-xs font-medium text-slate-500">Loading candidates...</p>
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Loading candidates...</p>
                     </div>
                 ) : null}
 
                 <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                                 Employee Name
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                                 Department
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                                 Email
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                         {candidates.length > 0 ? (
                             candidates.map((candidate) => (
-                                <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
+                                <tr key={candidate.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {candidate.name}
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                                    <td className="px-6 py-4 text-sm font-medium text-gray-600 dark:text-slate-400">
                                         {candidate.department}
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
                                             <Mail className="w-4 h-4 text-primary" />
-                                            <span className="text-xs text-gray-500 font-medium">
+                                            <span className="text-xs text-gray-500 dark:text-slate-400 font-medium">
                                                 {candidate.email}
                                             </span>
                                         </div>
@@ -125,7 +125,7 @@ export default function CandidatesTable({ eventId }: CandidatesTableProps) {
                             ))
                         ) : !isLoading && (
                             <tr>
-                                <td colSpan={3} className="px-6 py-10 text-center text-slate-400 italic text-sm">
+                                <td colSpan={3} className="px-6 py-10 text-center text-slate-400 dark:text-slate-500 italic text-sm">
                                     No approved candidates found for this training.
                                 </td>
                             </tr>

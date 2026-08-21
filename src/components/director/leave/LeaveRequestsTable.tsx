@@ -36,12 +36,12 @@ interface OverseasLeave {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
     const map: Record<string, string> = {
-        PENDING_HR_APPROVAL: "bg-amber-100 text-amber-700",
-        PENDING_ADMIN_APPROVAL: "bg-blue-100 text-blue-700",
-        ADMIN_APPROVED: "bg-indigo-100 text-indigo-700",
-        PENDING_DIRECTOR_REVIEW: "bg-purple-100 text-purple-700",
-        APPROVED: "bg-emerald-100 text-emerald-800",
-        REJECTED: "bg-red-100 text-red-800",
+        PENDING_HR_APPROVAL: "bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/30",
+        PENDING_ADMIN_APPROVAL: "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/30",
+        ADMIN_APPROVED: "bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/30",
+        PENDING_DIRECTOR_REVIEW: "bg-purple-100 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-900/30",
+        APPROVED: "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/30",
+        REJECTED: "bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-900/30",
     };
     const label: Record<string, string> = {
         PENDING_HR_APPROVAL: "HR Review",
@@ -52,7 +52,7 @@ function StatusBadge({ status }: { status: string }) {
         REJECTED: "Rejected",
     };
     return (
-        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] ?? "bg-gray-100 text-gray-800"}`}>
+        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${map[status] ?? "bg-gray-100 dark:bg-zinc-800 text-gray-800 dark:text-gray-200"}`}>
             {label[status] ?? status}
         </span>
     );
@@ -189,12 +189,12 @@ const LeaveRequestsTable = () => {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="py-2 pl-3 pr-8 border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium outline-none focus:border-primary appearance-none"
+                        className="py-2 pl-3 pr-8 border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium outline-none focus:border-primary appearance-none cursor-pointer"
                     >
-                        <option value="ALL">All Requests</option>
-                        <option value="PENDING_DIRECTOR_REVIEW">Pending Review</option>
-                        <option value="APPROVED">Approved</option>
-                        <option value="REJECTED">Rejected</option>
+                        <option value="ALL" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-slate-200">All Requests</option>
+                        <option value="PENDING_DIRECTOR_REVIEW" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-slate-200">Pending Review</option>
+                        <option value="APPROVED" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-slate-200">Approved</option>
+                        <option value="REJECTED" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-slate-200">Rejected</option>
                     </select>
                     <button
                         onClick={fetchRequests}
