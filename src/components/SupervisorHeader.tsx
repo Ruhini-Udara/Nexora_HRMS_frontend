@@ -1,7 +1,9 @@
 'use client';
 
 import { Search, Bell } from "lucide-react";
+import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
+import UserAvatar from "@/components/common/UserAvatar";
 
 const SupervisorHeader = () => {
     const user = useAuthStore((state) => state.user);
@@ -36,7 +38,7 @@ const SupervisorHeader = () => {
                 <div className="h-8 border-l border-gray-200 dark:border-slate-800" />
 
                 {/* Profile */}
-                <div className="flex items-center gap-3">
+                <Link href="/supervisor/profile" className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-800/50 p-2 rounded-lg transition-colors cursor-pointer">
                     <div className="text-right">
                         <p className="text-sm font-semibold text-gray-800 dark:text-white">
                             {user?.name || "Supervisor"}
@@ -46,10 +48,8 @@ const SupervisorHeader = () => {
                         </p>
                     </div>
                     {/* Avatar with initials fallback */}
-                    <div className="h-10 w-10 rounded-full border border-gray-200 dark:border-slate-700 bg-primary flex items-center justify-center text-white text-sm font-bold">
-                        {initials}
-                    </div>
-                </div>
+                    <UserAvatar user={user} size="md" />
+                </Link>
             </div>
         </header>
     );
