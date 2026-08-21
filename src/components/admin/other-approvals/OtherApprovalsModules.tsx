@@ -52,7 +52,7 @@ export default function OtherApprovalsModules() {
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed">
                         {mod.description}
                     </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module{" "}
                         <span className="material-icons-round text-sm ml-1">
                             arrow_forward
