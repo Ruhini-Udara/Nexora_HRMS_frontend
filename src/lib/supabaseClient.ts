@@ -53,4 +53,3 @@ export async function getSignedUrl(filePath: string, expiresIn = 3600): Promise<
 
     return data.signedUrl;
 }
-

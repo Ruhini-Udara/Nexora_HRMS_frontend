@@ -8,7 +8,6 @@ export type ActiveView =
   | "registerEmployee"
   | "officeCalendar"
   | "shifts"
-  | "documents"
   | "reports"
   | "otherApprovals"
   | "training"
