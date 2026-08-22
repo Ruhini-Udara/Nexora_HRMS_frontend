@@ -50,6 +50,7 @@ export default function DirectorDashboard() {
                 <SummaryCard
                     title="Pending Approvals"
                     value={data?.pendingApprovalsCount?.toString() || "0"}
+                    subContent=""
                     icon={<AlertCircle className="w-6 h-6" />}
                     iconBgColor="bg-orange-50 dark:bg-orange-950/40"
                     iconColor="text-orange-600 dark:text-orange-400"
@@ -57,6 +58,7 @@ export default function DirectorDashboard() {
                 <SummaryCard
                     title="Company Attendance"
                     value={data?.companyAttendancePercentage || "0%"}
+                    subContent=""
                     icon={<TrendingUp className="w-6 h-6" />}
                     iconBgColor="bg-green-50 dark:bg-green-950/40"
                     iconColor="text-green-600 dark:text-green-400"
@@ -64,6 +66,7 @@ export default function DirectorDashboard() {
                 <SummaryCard
                     title="Total Employees"
                     value={data?.totalEmployeesCount?.toString() || "0"}
+                    subContent=""
                     icon={<Users className="w-6 h-6" />}
                     iconBgColor="bg-blue-50 dark:bg-blue-950/40"
                     iconColor="text-blue-600 dark:text-blue-400"
