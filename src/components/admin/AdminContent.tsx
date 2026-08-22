@@ -77,9 +77,10 @@ export default function AdminContent() {
     <div className="max-w-7xl mx-auto w-full">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
           Admin Dashboard
         </h1>
+
         <p className="text-gray-500 dark:text-slate-400 text-base">
           Welcome back! Here&apos;s what&apos;s happening in HR MATE today.
         </p>
@@ -90,15 +91,16 @@ export default function AdminContent() {
         <StatCard
           title="Total Employees"
           value={employeeCount}
-          icon={<Users className="w-7 h-7 text-amber-800" />}
-          iconBgColor="bg-orange-50"
+          icon={<Users className="w-7 h-7 text-primary" />}
+          iconBgColor="bg-primary/10"
         />
         <StatCard
           title="Documents Uploaded This Month"
           value="24"
-          icon={<CalendarDays className="w-7 h-7 text-yellow-600" />}
-          iconBgColor="bg-yellow-50"
+          icon={<CalendarDays className="w-7 h-7 text-primary" />}
+          iconBgColor="bg-primary/10"
         />
+
         <StatCard
           title="Today's Shifts"
           value={shiftCount}
