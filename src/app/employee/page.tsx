@@ -22,7 +22,6 @@ const EmployeeDashboardPage = () => {
 
   useEffect(() => {
     if (!user?.id) {
-      setLoading(false);
       return;
     }
 
@@ -36,6 +35,13 @@ const EmployeeDashboardPage = () => {
         setLoading(false);
       });
   }, [user]);
+
+  // Set loading to false only when user is not available
+  useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+    }
+  }, [user?.id]);
 
   if (loading) {
     return <div className="text-center py-10 text-slate-500">Loading dashboard data...</div>;
