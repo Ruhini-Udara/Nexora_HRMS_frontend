@@ -16,6 +16,8 @@ export type ActiveView =
 interface AdminNavigationContextType {
   activeView: ActiveView;
   setActiveView: (view: ActiveView) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 }
 
 const AdminNavigationContext = createContext<AdminNavigationContextType | undefined>(
@@ -24,9 +26,10 @@ const AdminNavigationContext = createContext<AdminNavigationContextType | undefi
 
 export function AdminNavigationProvider({ children }: { children: ReactNode }) {
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <AdminNavigationContext.Provider value={{ activeView, setActiveView }}>
+    <AdminNavigationContext.Provider value={{ activeView, setActiveView, searchQuery, setSearchQuery }}>
       {children}
     </AdminNavigationContext.Provider>
   );
