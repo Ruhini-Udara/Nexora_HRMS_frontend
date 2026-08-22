@@ -69,7 +69,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     setCurrentPage(1);
   }
   
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchEmployees = async () => {
