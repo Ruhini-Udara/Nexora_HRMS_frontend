@@ -21,19 +21,20 @@ const EmployeeDashboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.id) {
-      api.get(`/api/v1/dashboard/employee/${user.id}`)
-        .then((res) => {
-          setData(res.data);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Failed to fetch dashboard data", err);
-          setLoading(false);
-        });
-    } else {
+    if (!user?.id) {
       setLoading(false);
+      return;
     }
+
+    api.get(`/api/v1/dashboard/employee/${user.id}`)
+      .then((res) => {
+        setData(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch dashboard data", err);
+        setLoading(false);
+      });
   }, [user]);
 
   if (loading) {
