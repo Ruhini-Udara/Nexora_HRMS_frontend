@@ -5,7 +5,9 @@ import api from "@/lib/axiosInstance";
 
 interface HRDashboardData {
     totalStaff: number;
+    newHiresThisWeek: number;
     activeTrainingPrograms: number;
+    trainingsFinishingSoon: number;
     attendancePercentage: string;
     presentToday: number;
 }
@@ -34,6 +36,12 @@ export default function HRStats() {
                     <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                         {data ? data.totalStaff : "..."}
                     </h3>
+                    {data && (
+                        <p className="text-xs text-green-600 font-medium mt-2 flex items-center">
+                            <span className="material-icons-round text-sm mr-1">trending_up</span> 
+                            +{data.newHiresThisWeek} new hires this week
+                        </p>
+                    )}
                 </div>
                 <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
                     <span className="material-icons-round text-primary">groups</span>
@@ -45,6 +53,12 @@ export default function HRStats() {
                     <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                         {data ? data.activeTrainingPrograms : "..."}
                     </h3>
+                    {data && (
+                        <p className="text-xs text-amber-600 font-medium mt-2 flex items-center">
+                            <span className="material-icons-round text-sm mr-1">pending_actions</span> 
+                            {data.trainingsFinishingSoon} finishing soon
+                        </p>
+                    )}
                 </div>
                 <div className="w-12 h-12 bg-secondary/10 flex items-center justify-center rounded-lg">
                     <span className="material-icons-round text-secondary">school</span>
