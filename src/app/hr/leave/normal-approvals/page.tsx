@@ -525,7 +525,7 @@ export default function NormalApprovalsPage() {
                                             ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                                             : <span className="material-symbols-outlined text-[18px]">verified</span>
                                         }
-                                        "Approve Final"
+                                        &quot;Approve Final&quot;
                                     </button>
                                 </>
                             ) : (
