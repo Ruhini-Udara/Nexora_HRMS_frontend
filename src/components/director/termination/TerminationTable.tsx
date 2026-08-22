@@ -18,6 +18,18 @@ export type DirTermRequest = {
     rejectReason?: string;
 };
 
+const getTodayStr = () => new Date().toISOString().split('T')[0];
+const getFutureStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 10);
+    return d.toISOString().split('T')[0];
+};
+const getPastStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 10);
+    return d.toISOString().split('T')[0];
+};
+
 const mockData: DirTermRequest[] = [
     {
         id: 'TRM-2024-001',
@@ -28,7 +40,7 @@ const mockData: DirTermRequest[] = [
         reason: 'Poor performance over 3 quarters.',
         initiationDate: '2024-10-15',
         effectiveDate: '2024-11-01',
-        boardMeetingDate: '2024-11-10',
+        boardMeetingDate: getPastStr(),
         status: 'APPROVED'
     },
     {
@@ -40,7 +52,7 @@ const mockData: DirTermRequest[] = [
         reason: 'Career change',
         initiationDate: '2024-11-05',
         effectiveDate: '2024-12-01',
-        boardMeetingDate: '2024-11-20',
+        boardMeetingDate: getTodayStr(),
         specialRemark: 'Employee requested an expedited settlement for the loan clearance due to urgent departure.',
         status: 'BOARD_ASSIGNED'
     },
@@ -53,7 +65,7 @@ const mockData: DirTermRequest[] = [
         reason: 'Relocating abroad',
         initiationDate: '2024-11-06',
         effectiveDate: '2024-12-15',
-        boardMeetingDate: '2024-11-20',
+        boardMeetingDate: getTodayStr(),
         status: 'BOARD_ASSIGNED'
     },
     {
@@ -65,7 +77,7 @@ const mockData: DirTermRequest[] = [
         reason: 'Policy violation',
         initiationDate: '2024-11-10',
         effectiveDate: '2024-11-12',
-        boardMeetingDate: '2024-12-15',
+        boardMeetingDate: getFutureStr(),
         status: 'BOARD_ASSIGNED'
     }
 ];
@@ -74,6 +86,9 @@ export default function TerminationTable() {
     const [requests, setRequests] = useState<DirTermRequest[]>(mockData);
     const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
     
+    // Get today's date formatted as YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
+
     // View Modal State
     const [viewingRequest, setViewingRequest] = useState<DirTermRequest | null>(null);
     
@@ -84,28 +99,51 @@ export default function TerminationTable() {
     // Notification states
     const [hrNotified, setHrNotified] = useState(false);
     const [financeNotified, setFinanceNotified] = useState(false);
-    const [employeesNotified, setEmployeesNotified] = useState(false);
 
-    const [selectedDate, setSelectedDate] = useState('2024-11-20');
+    const [selectedDate, setSelectedDate] = useState(todayStr);
+
+    const isActionable = (dateString?: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
+    };
 
     // Toast State
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
 
+    const getDropdownOptions = () => {
+        if (activeTab === 'current') return [todayStr];
+        const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean))).sort();
+        if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
+        return allDates.filter(d => d < todayStr);
+    };
+
+    const handleTabChange = (tab: 'current' | 'upcoming' | 'past') => {
+        setActiveTab(tab);
+        setSelectedDate(tab === 'current' ? todayStr : 'All');
+    };
+
     // Filter Logic based on tabs
     const filteredRequests = useMemo(() => {
         return requests.filter(req => {
+            const pivotDate = todayStr;
             if (activeTab === 'current') return req.boardMeetingDate === selectedDate;
             if (activeTab === 'upcoming') {
-                // For mock purposes, using '2024-11-20' as the "current today" pivot
-                return req.boardMeetingDate > '2024-11-20';
+                if (selectedDate === 'All') return req.boardMeetingDate > pivotDate;
+                return req.boardMeetingDate === selectedDate;
             }
             if (activeTab === 'past') {
-                return req.boardMeetingDate < '2024-11-20';
+                if (selectedDate === 'All') return req.boardMeetingDate < pivotDate;
+                return req.boardMeetingDate === selectedDate;
             }
             return true;
         });
-    }, [requests, activeTab, selectedDate]);
+    }, [requests, activeTab, selectedDate, todayStr]);
 
     const isCurrentListFullyDecided = filteredRequests.length > 0 && filteredRequests.every(r => r.status !== 'BOARD_ASSIGNED');
 
@@ -125,71 +163,75 @@ export default function TerminationTable() {
 
     const StatusBadge = ({ status }: { status: string }) => {
         switch (status) {
-            case 'APPROVED': return <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">Approved</span>;
-            case 'REJECTED': return <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">Rejected</span>;
-            default: return <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">Pending Review</span>;
+            case 'APPROVED': return <span className="px-3 py-1 bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400 rounded-full text-xs font-bold">Approved</span>;
+            case 'REJECTED': return <span className="px-3 py-1 bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400 rounded-full text-xs font-bold">Rejected</span>;
+            default: return <span className="px-3 py-1 bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 rounded-full text-xs font-bold">Pending Review</span>;
         }
     };
 
     return (
         <div className="space-y-6">
             {/* Tabs & Filters */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-2">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-2">
                 <div className="flex gap-4">
                     <button 
-                        onClick={() => setActiveTab('current')}
-                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        onClick={() => handleTabChange('current')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
                     >
                         Meeting View
                     </button>
                     <button 
-                        onClick={() => setActiveTab('upcoming')}
-                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        onClick={() => handleTabChange('upcoming')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
                     >
                         Upcoming Meetings
                     </button>
                     <button 
-                        onClick={() => setActiveTab('past')}
-                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        onClick={() => handleTabChange('past')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
                     >
                         Past Meetings
                     </button>
                 </div>
 
-                {activeTab === 'current' && (
-                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm mr-2 mb-2 sm:mb-0">
-                        <label className="text-xs font-bold text-gray-500 uppercase">Meeting Date:</label>
-                        <input 
-                            type="date" 
-                            className="bg-transparent text-sm font-medium text-gray-900 focus:outline-none cursor-pointer"
-                            value={selectedDate}
-                            onChange={e => setSelectedDate(e.target.value)}
-                        />
-                    </div>
-                )}
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm mr-2 mb-2 sm:mb-0">
+                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">Meeting Date:</label>
+                    <select 
+                        className="bg-transparent text-sm font-medium text-gray-900 dark:text-slate-200 focus:outline-none cursor-pointer"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                    >
+                        {activeTab !== 'current' && <option value="All" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Dates</option>}
+                        {getDropdownOptions().map(d => (
+                            <option key={d} value={d} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                {d}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50 border-b border-gray-200">
+                        <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
                             <tr>
-                                <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Request ID</th>
-                                <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Employee</th>
-                                <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Branch</th>
-                                <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 font-semibold text-gray-700 text-xs uppercase tracking-wider text-right">Actions</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Request ID</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Employee</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Branch</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-xs uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 text-sm">
+                        <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-sm">
                             {filteredRequests.map(req => (
-                                <tr key={req.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-gray-900">{req.id}</td>
-                                    <td className="px-6 py-4 text-gray-700">{req.employeeName}</td>
-                                    <td className="px-6 py-4 text-gray-600">{req.branch}</td>
-                                    <td className="px-6 py-4 text-gray-600">{req.type}</td>
+                                <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{req.id}</td>
+                                    <td className="px-6 py-4 text-gray-700 dark:text-slate-200">{req.employeeName}</td>
+                                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{req.branch}</td>
+                                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{req.type}</td>
                                     <td className="px-6 py-4">
                                         <StatusBadge status={req.status} />
                                     </td>
@@ -197,23 +239,23 @@ export default function TerminationTable() {
                                         <div className="flex justify-end gap-2">
                                             <button 
                                                 onClick={() => setViewingRequest(req)}
-                                                className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors"
+                                                className="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
                                                 title="View Details"
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
-                                            {req.status === 'BOARD_ASSIGNED' && activeTab === 'current' && (
+                                            {req.status === 'BOARD_ASSIGNED' && isActionable(req.boardMeetingDate) && (
                                                 <>
                                                     <button 
                                                         onClick={() => handleApprove(req.id)}
-                                                        className="w-8 h-8 rounded-md bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-colors"
+                                                        className="w-8 h-8 rounded-md bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
                                                         title="Approve"
                                                     >
                                                         <Check className="w-4 h-4" />
                                                     </button>
                                                     <button 
                                                         onClick={() => setRejectingRequest(req)}
-                                                        className="w-8 h-8 rounded-md bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors"
+                                                        className="w-8 h-8 rounded-md bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
                                                         title="Reject"
                                                     >
                                                         <X className="w-4 h-4" />
@@ -226,7 +268,7 @@ export default function TerminationTable() {
                             ))}
                             {filteredRequests.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500 italic">No termination requests found for this meeting date.</td>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-slate-400 italic">No termination requests found for this meeting date.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -236,14 +278,14 @@ export default function TerminationTable() {
 
             {/* Finalization Communications Panel */}
             {activeTab === 'current' && isCurrentListFullyDecided && (
-                <div className="mt-8 bg-blue-50/50 border border-blue-100 rounded-xl p-8 shadow-sm">
+                <div className="mt-8 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-xl p-8 shadow-sm transition-colors">
                     <div className="flex items-start gap-4 mb-6">
-                        <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center shrink-0">
                             <Mails className="w-6 h-6" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-bold text-gray-900">Finalize Board Decisions</h3>
-                            <p className="text-gray-600 mt-1 max-w-2xl">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Finalize Board Decisions</h3>
+                            <p className="text-gray-600 dark:text-slate-400 mt-1 max-w-2xl">
                                 All requests for the current board meeting have been reviewed. Dispatch the official summary emails to HR and Finance. (Employees have already been notified individually upon approval).
                             </p>
                         </div>
@@ -253,7 +295,7 @@ export default function TerminationTable() {
                         <button 
                             onClick={() => { setHrNotified(true); showToast('✅ Summary email sent to HR Team'); }}
                             disabled={hrNotified}
-                            className={`p-4 rounded-lg border text-left transition-colors flex flex-col justify-center gap-2 ${hrNotified ? 'bg-green-50 border-green-200 cursor-not-allowed text-green-800' : 'bg-white border-blue-200 hover:bg-white hover:border-blue-400 hover:shadow-md cursor-pointer'}`}
+                            className={`p-4 rounded-lg border text-left transition-colors flex flex-col justify-center gap-2 ${hrNotified ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/40 cursor-not-allowed text-green-800 dark:text-green-300' : 'bg-white dark:bg-slate-900 border-blue-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-400 hover:shadow-md cursor-pointer'}`}
                         >
                             <span className="font-bold">{hrNotified ? '✓ Sent to HR' : 'Notify HR Team'}</span>
                             <span className="text-xs opacity-80">Summary of all approved &amp; rejected requests.</span>
@@ -262,7 +304,7 @@ export default function TerminationTable() {
                         <button 
                             onClick={() => { setFinanceNotified(true); showToast('✅ Summary email sent to Finance'); }}
                             disabled={financeNotified}
-                            className={`p-4 rounded-lg border text-left transition-colors flex flex-col justify-center gap-2 ${financeNotified ? 'bg-green-50 border-green-200 cursor-not-allowed text-green-800' : 'bg-white border-blue-200 hover:bg-white hover:border-blue-400 hover:shadow-md cursor-pointer'}`}
+                            className={`p-4 rounded-lg border text-left transition-colors flex flex-col justify-center gap-2 ${financeNotified ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900/40 cursor-not-allowed text-green-800 dark:text-green-300' : 'bg-white dark:bg-slate-900 border-blue-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-400 hover:shadow-md cursor-pointer'}`}
                         >
                             <span className="font-bold">{financeNotified ? '✓ Sent to Finance' : 'Notify Finance'}</span>
                             <span className="text-xs opacity-80">Roster of finalized approved terminations.</span>
@@ -271,61 +313,60 @@ export default function TerminationTable() {
                 </div>
             )}
 
-
             {/* View Details Modal */}
             {viewingRequest && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] transition-colors">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50">
                             <div>
-                                <h3 className="font-bold text-lg text-gray-900">Termination Request</h3>
-                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id} · View-only</p>
+                                <h3 className="font-bold text-lg text-gray-900 dark:text-white">Termination Request</h3>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{viewingRequest.id} · View-only</p>
                             </div>
-                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors cursor-pointer">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="p-6 overflow-y-auto space-y-4">
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Employee</span><p className="font-medium text-gray-900">{viewingRequest.employeeName}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Branch</span><p className="font-medium text-gray-900">{viewingRequest.branch}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Termination Type</span><p className="font-medium text-gray-900">{viewingRequest.type}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting Date</span><p className="font-medium text-primary">{viewingRequest.boardMeetingDate}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><span className="block text-xs font-bold text-gray-500 uppercase mb-1">Initiated</span><p className="font-medium text-gray-900">{viewingRequest.initiationDate}</p></div>
-                                <div className="p-3 bg-red-50 rounded-lg"><span className="block text-xs font-bold text-red-500 uppercase mb-1">Effective Date</span><p className="font-medium text-red-700">{viewingRequest.effectiveDate}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Employee</span><p className="font-medium text-gray-900 dark:text-white">{viewingRequest.employeeName}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Branch</span><p className="font-medium text-gray-900 dark:text-white">{viewingRequest.branch}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Termination Type</span><p className="font-medium text-gray-900 dark:text-white">{viewingRequest.type}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Board Meeting Date</span><p className="font-medium text-primary">{viewingRequest.boardMeetingDate}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Initiated</span><p className="font-medium text-gray-900 dark:text-white">{viewingRequest.initiationDate}</p></div>
+                                <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg"><span className="block text-xs font-bold text-red-500 uppercase mb-1">Effective Date</span><p className="font-medium text-red-700 dark:text-red-400">{viewingRequest.effectiveDate}</p></div>
                             </div>
-                            <div className="p-3 bg-gray-50 rounded-lg">
-                                <span className="block text-xs font-bold text-gray-500 uppercase mb-2">Reason for Termination</span>
-                                <p className="text-gray-800 text-sm">{viewingRequest.reason}</p>
+                            <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg">
+                                <span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-2">Reason for Termination</span>
+                                <p className="text-gray-800 dark:text-slate-200 text-sm">{viewingRequest.reason}</p>
                             </div>
                             {viewingRequest.specialRemark && (
-                                <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
-                                    <span className="block text-xs font-bold text-orange-700 uppercase mb-2">HR Special Remarks</span>
-                                    <p className="text-orange-900 text-sm">{viewingRequest.specialRemark}</p>
+                                <div className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-100 dark:border-orange-900/30">
+                                    <span className="block text-xs font-bold text-orange-700 dark:text-orange-400 uppercase mb-2">HR Special Remarks</span>
+                                    <p className="text-orange-900 dark:text-orange-300 text-sm">{viewingRequest.specialRemark}</p>
                                 </div>
                             )}
                             {viewingRequest.rejectReason && (
-                                <div className="p-3 bg-red-50 rounded-lg border border-red-100">
-                                    <span className="block text-xs font-bold text-red-700 uppercase mb-2">Rejection Reason</span>
-                                    <p className="text-red-900 text-sm">{viewingRequest.rejectReason}</p>
+                                <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-100 dark:border-red-900/30">
+                                    <span className="block text-xs font-bold text-red-700 dark:text-red-400 uppercase mb-2">Rejection Reason</span>
+                                    <p className="text-red-900 dark:text-red-300 text-sm">{viewingRequest.rejectReason}</p>
                                 </div>
                             )}
                             <div>
-                                <span className="block text-xs font-bold text-gray-500 uppercase mb-2">Attached Documents</span>
+                                <span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-2">Attached Documents</span>
                                 <div className="flex gap-3">
-                                    <a href="#" className="flex-1 border border-gray-200 rounded-lg p-3 hover:bg-gray-50 hover:border-blue-200 transition-all group flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700 group-hover:text-primary">Request Formulation.pdf</span>
+                                    <a href="#" className="flex-1 border border-gray-200 dark:border-slate-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-blue-200 transition-all group flex items-center justify-between">
+                                        <span className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-primary">Request Formulation.pdf</span>
                                         <MonitorPlay className="w-4 h-4 text-gray-400 group-hover:text-primary" />
                                     </a>
-                                    <a href="#" className="flex-1 border border-gray-200 rounded-lg p-3 hover:bg-gray-50 hover:border-blue-200 transition-all group flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700 group-hover:text-primary">Clearance Letter.pdf</span>
+                                    <a href="#" className="flex-1 border border-gray-200 dark:border-slate-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-blue-200 transition-all group flex items-center justify-between">
+                                        <span className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-primary">Clearance Letter.pdf</span>
                                         <MonitorPlay className="w-4 h-4 text-gray-400 group-hover:text-primary" />
                                     </a>
                                 </div>
                             </div>
                         </div>
-                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
-                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors cursor-pointer">Close</button>
+                        <div className="p-6 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex justify-end transition-colors">
+                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">Close</button>
                         </div>
                     </div>
                 </div>
@@ -334,33 +375,33 @@ export default function TerminationTable() {
             {/* Reject Modal */}
             {rejectingRequest && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
-                        <div className="p-6 border-b border-gray-100">
-                            <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
-                                <span className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center"><X className="w-5 h-5" /></span>
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 transition-colors">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                                <span className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center"><X className="w-5 h-5" /></span>
                                 Reject Request
                             </h3>
                         </div>
                         <div className="p-6 space-y-4">
-                            <p className="text-sm text-gray-600">Please provide a reason or constructive feedback for rejecting <span className="font-bold text-gray-900">{rejectingRequest.employeeName}&apos;s</span> termination request.</p>
+                            <p className="text-sm text-gray-600 dark:text-slate-300">Please provide a reason or constructive feedback for rejecting <span className="font-bold text-gray-900 dark:text-white">{rejectingRequest.employeeName}&apos;s</span> termination request.</p>
                             
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">Rejection Reason <span className="text-red-500">*</span></label>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase mb-2">Rejection Reason <span className="text-red-500">*</span></label>
                                 <textarea 
                                     value={rejectReason}
                                     onChange={e => setRejectReason(e.target.value)}
-                                    className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none h-28"
+                                    className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none h-28 transition-colors"
                                     placeholder="Brief explanation for the HR team..."
                                     autoFocus
                                 />
                             </div>
                         </div>
-                        <div className="p-6 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
-                            <button onClick={() => { setRejectingRequest(null); setRejectReason(''); }} className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">Cancel</button>
+                        <div className="p-6 bg-gray-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t border-gray-100 dark:border-slate-800 transition-colors">
+                            <button onClick={() => { setRejectingRequest(null); setRejectReason(''); }} className="px-4 py-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white transition-colors cursor-pointer">Cancel</button>
                             <button 
                                 onClick={handleConfirmReject} 
                                 disabled={!rejectReason.trim()}
-                                className="px-5 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                className="px-5 py-2 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                             >
                                 <X className="w-4 h-4" />
                                 Confirm Rejection
@@ -380,3 +421,4 @@ export default function TerminationTable() {
         </div>
     );
 }
+

@@ -44,27 +44,27 @@ const LeaveStats = () => {
             value: loading ? "..." : statsData.pending,
             subtext: "Waiting for your review",
             icon: Clock,
-            color: "text-secondary",
-            bgColor: "bg-secondary/10",
-            subTextColor: "text-secondary"
+            color: "text-amber-600 dark:text-amber-400",
+            bgColor: "bg-amber-100 dark:bg-amber-950/40",
+            subTextColor: "text-amber-600 dark:text-amber-400"
         },
         {
             label: "Approved",
             value: loading ? "..." : statsData.approved,
             subtext: "Finalized records",
             icon: CheckCircle,
-            color: "text-emerald-600",
-            bgColor: "bg-emerald-100",
-            subTextColor: "text-emerald-600"
+            color: "text-emerald-600 dark:text-emerald-400",
+            bgColor: "bg-emerald-100 dark:bg-emerald-950/40",
+            subTextColor: "text-emerald-600 dark:text-emerald-400"
         },
         {
             label: "Rejected",
             value: loading ? "..." : statsData.rejected,
             subtext: "Not authorized",
             icon: XCircle,
-            color: "text-red-600",
-            bgColor: "bg-red-100",
-            subTextColor: "text-red-600"
+            color: "text-red-600 dark:text-red-400",
+            bgColor: "bg-red-100 dark:bg-red-950/40",
+            subTextColor: "text-red-600 dark:text-red-400"
         },
         {
             label: "Total Overseas",
@@ -73,16 +73,16 @@ const LeaveStats = () => {
             icon: Wallet,
             color: "text-primary",
             bgColor: "bg-primary/10",
-            subTextColor: "text-gray-500"
+            subTextColor: "text-gray-500 dark:text-slate-400"
         }
     ];
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {stats.map((stat, index) => (
-                <div key={index} className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
+                <div key={index} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-500 text-sm font-medium">{stat.label}</span>
+                        <span className="text-gray-500 dark:text-slate-400 text-sm font-medium">{stat.label}</span>
                         <div className={`size-8 rounded-lg ${stat.bgColor} flex items-center justify-center ${stat.color}`}>
                             <stat.icon className="w-5 h-5" />
                         </div>
@@ -93,6 +93,7 @@ const LeaveStats = () => {
             ))}
         </div>
     );
+
 };
 
 export default LeaveStats;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +12,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
 import { DarkModeToggle } from "@/components/DarkModeToggle";
 
-
+// Validation Schema
 const loginSchema = z.object({
     email: z.string().email('Please enter a valid email address'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -25,8 +26,6 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
-
-
     const {
         register,
         handleSubmit,
@@ -40,7 +39,9 @@ export default function LoginPage() {
         setError(null);
 
         try {
-            const response = await api.post('/api/auth/login', data);
+            // Normalize email: trim whitespace and convert to lowercase to match DB storage
+            const normalizedData = { ...data, email: data.email.trim().toLowerCase() };
+            const response = await api.post('/api/auth/login', normalizedData);
             const { token, ...userData } = response.data;
 
             // Rationale: We save to Zustand for immediate, reactive UI updates throughout 
@@ -58,6 +59,7 @@ export default function LoginPage() {
             if (userData.role === 'ROLE_ADMIN') redirectPath = '/admin';
             else if (userData.role === 'ROLE_HR') redirectPath = '/hr';
             else if (userData.role === 'ROLE_DIRECTOR') redirectPath = '/director';
+            else if (userData.role === 'ROLE_SUPERVISOR') redirectPath = '/supervisor';
 
             router.push(redirectPath);
         } catch (err) {
@@ -125,9 +127,9 @@ export default function LoginPage() {
                                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                     Password
                                 </label>
-                                <a href="#" className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
+                                <Link href="/forgot-password" className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
                                     Forgot password?
-                                </a>
+                                </Link>
                             </div>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
@@ -183,7 +185,7 @@ export default function LoginPage() {
 
                 {/* Footer */}
                 <p className="text-center mt-10 text-xs text-slate-400 dark:text-slate-600">
-                    &copy; 2024 Nexora Solutions. All rights reserved.
+                    Copyright 2026 - 2030 HR MATE All right reserved
                 </p>
             </div>
 

@@ -164,11 +164,11 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
     return (
         <>
             {/* Filters */}
-            <div className="flex flex-col md:flex-row md:items-center mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row md:items-center mb-6 bg-white dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm gap-4">
                 <div className="relative inline-flex items-center">
                     <SlidersHorizontal className="w-4 h-4 text-gray-500 absolute left-4 pointer-events-none" />
                     <select
-                        className="appearance-none w-full flex items-center gap-2 pl-10 pr-10 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
+                        className="appearance-none w-full flex items-center gap-2 pl-10 pr-10 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 text-sm font-semibold rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
                     >
@@ -181,7 +181,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
 
                 <div className="relative inline-flex items-center">
                     <select
-                        className="appearance-none w-full flex items-center gap-2 pl-4 pr-10 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
+                        className="appearance-none w-full flex items-center gap-2 pl-4 pr-10 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 text-sm font-semibold rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
@@ -196,38 +196,38 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
             </div>
 
             {/* Data Table */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50 border-b border-gray-200">
+                        <thead className="bg-gray-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-800">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Training Program</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Training Type</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Submitted</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Training Program</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Training Type</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Date Submitted</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Action</th>
                                 {(filterStatus === "Rejected" || filterStatus === "Returned") && (
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-48">Reason</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider w-48">Reason</th>
                                 )}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                             {currentItems.map((req) => (
-                                <tr key={req.id} className="hover:bg-gray-50 transition-colors">
+                                <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-medium text-gray-900">{req.title}</span>
+                                            <span className="text-sm font-medium text-gray-900 dark:text-slate-100">{req.title}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-sm text-gray-600">{req.type}</p>
+                                        <p className="text-sm text-gray-600 dark:text-slate-400">{req.type}</p>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-medium text-gray-500">{req.submissionDate}</td>
+                                    <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-slate-400">{req.submissionDate}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                                            req.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                                                req.status === 'Returned' ? 'bg-orange-100 text-orange-800' :
-                                                    'bg-orange-100 text-orange-800'
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'Approved' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' :
+                                            req.status === 'Rejected' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' :
+                                                req.status === 'Returned' ? 'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-400' :
+                                                    'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-400'
                                             }`}>
                                             {req.status}
                                         </span>
@@ -242,7 +242,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                     </td>
                                     {(filterStatus === "Rejected" || filterStatus === "Returned") && (
                                         <td className="px-6 py-4 w-48">
-                                            <p className={`text-sm font-medium break-words line-clamp-3 ${req.status === 'Rejected' ? 'text-red-600' : 'text-orange-600'}`} title={req.rejectionReason || "No reason provided."}>
+                                            <p className={`text-sm font-medium break-words line-clamp-3 ${req.status === 'Rejected' ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'}`} title={req.rejectionReason || "No reason provided."}>
                                                 {req.rejectionReason || (req.status === 'Returned' ? "Returned for adjustments." : "No reason provided.")}
                                             </p>
                                         </td>
@@ -251,7 +251,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                             ))}
                             {currentItems.length === 0 && (
                                 <tr>
-                                    <td colSpan={(filterStatus === "Rejected" || filterStatus === "Returned") ? 6 : 5} className="px-6 py-10 text-center text-gray-500 italic">
+                                    <td colSpan={(filterStatus === "Rejected" || filterStatus === "Returned") ? 6 : 5} className="px-6 py-10 text-center text-gray-500 dark:text-slate-400 italic">
                                         No programs found matching the selected filters.
                                     </td>
                                 </tr>
@@ -261,15 +261,15 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                 </div>
 
                 {/* Pagination */}
-                <div className="px-6 py-5 border-t border-gray-100 flex items-center justify-between">
-                    <p className="text-sm text-gray-500 font-medium">
+                <div className="px-6 py-5 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
+                    <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">
                         Showing {totalItems > 0 ? startIndex + 1 : 0} to {endIndex} of {totalItems} results
                     </p>
                     <div className="flex gap-2">
                         <button
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
-                            className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             Previous
                         </button>
@@ -281,7 +281,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                 className={`px-3 py-1.5 rounded-md text-sm font-bold transition-all ${
                                     currentPage === page 
                                     ? 'bg-primary text-white shadow-sm shadow-primary/20' 
-                                    : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                    : 'border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'
                                 }`}
                             >
                                 {page}
@@ -291,7 +291,7 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === totalPages || totalPages === 0}
-                            className="px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-3 py-1.5 border border-gray-200 dark:border-slate-700 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             Next
                         </button>

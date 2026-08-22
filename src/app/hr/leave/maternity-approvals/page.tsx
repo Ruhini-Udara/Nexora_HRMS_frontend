@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getSignedUrl } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/axiosInstance";
+import { WorkflowTrackerStepper } from "@/components/WorkflowTrackerStepper";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MaternityLeave {
@@ -26,6 +27,7 @@ interface MaternityLeave {
     fromDate: string;
     endDate: string;
     totalDays: number;
+    createdAt?: string;
 }
 
 interface LeaveDocument {
@@ -33,6 +35,14 @@ interface LeaveDocument {
     documentType: string;
     filePathUrl: string;
     description: string;
+}
+
+interface LeaveImpactData {
+    riskLevel: 'Low Risk' | 'Medium Risk' | 'High Risk';
+    departmentEmployees: number;
+    alreadyOnLeave: number;
+    availableAfterApproval: number;
+    availabilityPercentage: number;
 }
 
 export default function MaternityApprovalsPage() {
@@ -48,6 +58,33 @@ export default function MaternityApprovalsPage() {
     const [statusFilter, setStatusFilter] = useState("PENDING_HR_APPROVAL");
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+    const [impactData, setImpactData] = useState<LeaveImpactData | null>(null);
+    const [impactLoading, setImpactLoading] = useState(false);
+
+    const getWorkflowSteps = (req: MaternityLeave) => {
+        const createdDate = req.createdAt ? new Date(req.createdAt) : new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); 
+        const isDelayed = (Date.now() - createdDate.getTime()) > 2 * 24 * 60 * 60 * 1000;
+        
+        return [
+            { label: 'Request Submitted', status: 'completed' as const },
+            { 
+                label: 'HR Verification', 
+                status: req.status === 'PENDING_HR_APPROVAL' ? 'current' as const : 
+                        req.status === 'REJECTED' ? 'pending' as const : 'completed' as const,
+                isDelayed: req.status === 'PENDING_HR_APPROVAL' && isDelayed,
+                timeSpent: req.status === 'PENDING_HR_APPROVAL' && isDelayed ? '> 2 Days' : undefined
+            },
+            { 
+                label: 'Admin Final Review', 
+                status: req.status === 'PENDING_ADMIN_APPROVAL' ? 'current' as const : 
+                        req.status === 'APPROVED' ? 'completed' as const : 'pending' as const 
+            },
+            { 
+                label: 'Salary Calculation Queue', 
+                status: req.status === 'APPROVED' ? 'current' as const : 'pending' as const 
+            }
+        ];
+    };
 
     // Fetch Requests
     const fetchRequests = useCallback(async () => {
@@ -72,7 +109,10 @@ export default function MaternityApprovalsPage() {
         setSelectedRequest(req);
         setHrRemarkInput("");
         setDocuments([]);
+        setImpactData(null);
         setDocsLoading(true);
+        setImpactLoading(true);
+
         try {
             const res = await api.get(`/api/v1/documents?refId=${req.id}&refType=MATERNITY_LEAVE`);
             setDocuments(res.data);
@@ -80,6 +120,15 @@ export default function MaternityApprovalsPage() {
             console.error("Error fetching documents", err);
         } finally {
             setDocsLoading(false);
+        }
+
+        try {
+            const res = await api.get(`/api/v1/leaves/maternity/${req.id}/impact`);
+            setImpactData(res.data);
+        } catch {
+            // non-critical
+        } finally {
+            setImpactLoading(false);
         }
     };
 
@@ -297,6 +346,8 @@ export default function MaternityApprovalsPage() {
                                 </div>
                             </div>
 
+                            <WorkflowTrackerStepper steps={getWorkflowSteps(selectedRequest)} />
+
                             <div>
                                 <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wider">Medical Documents</h4>
                                 {docsLoading ? (
@@ -321,6 +372,62 @@ export default function MaternityApprovalsPage() {
                                             </div>
                                         ))}
                                     </div>
+                                )}
+                            </div>
+
+                            {/* Leave Impact Analysis */}
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wider">Leave Impact Analysis</h4>
+                                {impactLoading ? (
+                                    <div className="flex items-center gap-2 text-slate-500 text-sm">
+                                        <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                                        Calculating impact...
+                                    </div>
+                                ) : impactData ? (
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
+                                            <div>
+                                                <h5 className="font-bold text-slate-900 dark:text-white">Department Availability</h5>
+                                                <p className="text-xs text-slate-500 mt-0.5">Projected availability if this leave is approved.</p>
+                                            </div>
+                                            <div className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 ${
+                                                impactData.riskLevel === 'Low Risk' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                                                impactData.riskLevel === 'Medium Risk' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                                                'bg-red-100 text-red-700 border border-red-200'
+                                            }`}>
+                                                <span className="material-symbols-outlined text-[18px]">
+                                                    {impactData.riskLevel === 'Low Risk' ? 'check_circle' : impactData.riskLevel === 'Medium Risk' ? 'warning' : 'error'}
+                                                </span>
+                                                {impactData.riskLevel}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 text-center">
+                                                <div className="text-2xl font-black text-slate-900 dark:text-white">{impactData.departmentEmployees}</div>
+                                                <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">Total in Dept</div>
+                                            </div>
+                                            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 text-center">
+                                                <div className="text-2xl font-black text-amber-600 dark:text-amber-500">{impactData.alreadyOnLeave}</div>
+                                                <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">Already On Leave</div>
+                                            </div>
+                                            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 text-center">
+                                                <div className="text-2xl font-black text-blue-600 dark:text-blue-500">{impactData.availableAfterApproval}</div>
+                                                <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">Available After</div>
+                                            </div>
+                                            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 text-center">
+                                                <div className={`text-2xl font-black ${
+                                                    impactData.riskLevel === 'Low Risk' ? 'text-emerald-600' :
+                                                    impactData.riskLevel === 'Medium Risk' ? 'text-amber-600' :
+                                                    'text-red-600'
+                                                }`}>
+                                                    {impactData.availabilityPercentage.toFixed(0)}%
+                                                </div>
+                                                <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">Availability</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-slate-500">Failed to load impact analysis.</p>
                                 )}
                             </div>
 

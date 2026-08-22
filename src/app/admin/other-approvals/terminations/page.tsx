@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
-type TerminationStatus = "SUBMITTED_FOR_ADMIN_APPROVAL" | "PENDING_BOARD_APPROVAL" | "APPROVED" | "REJECTED" | "SUBMITTED_TO_DIRECTOR";
+type TerminationStatus = "SUBMITTED_FOR_ADMIN_APPROVAL" | "PENDING_BOARD_APPROVAL" | "APPROVED" | "REJECTED" | "SUBMITTED_TO_DIRECTOR" | "PENDING_ADMIN";
 
 interface TerminationApplication {
     id: string;
@@ -16,44 +16,56 @@ interface TerminationApplication {
     boardMeetingDate?: string;
 }
 
-const INITIAL_REQUESTS: TerminationApplication[] = [
-    {
-        id: "TRM-2024-001",
-        employeeName: "Jagath Kumara",
-        type: "Involuntary",
-        branch: "Colombo HQ",
-        initiationDate: "2024-10-15",
-        effectiveDate: "2024-11-15",
-        status: "SUBMITTED_FOR_ADMIN_APPROVAL",
-    },
-    {
-        id: "TRM-2024-002",
-        employeeName: "Sunil Perera",
-        type: "Voluntary",
-        branch: "Kandy Branch",
-        initiationDate: "2024-10-18",
-        effectiveDate: "2024-11-18",
-        status: "SUBMITTED_FOR_ADMIN_APPROVAL",
-    },
-    {
-        id: "TRM-2024-003",
-        employeeName: "Amara Siriwardena",
-        type: "Involuntary",
-        branch: "Galle Branch",
-        initiationDate: "2024-10-16",
-        effectiveDate: "2024-11-16",
-        status: "PENDING_BOARD_APPROVAL",
-        boardMeetingDate: "2024-11-01",
+const loadLocalTerminations = (): TerminationApplication[] => {
+    if (typeof window === "undefined") return [];
+    const stored = localStorage.getItem("termination_requests");
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch (e) {
+            console.error(e);
+        }
     }
-];
+    const defaultData: TerminationApplication[] = [
+        {
+            id: "TRM-2024-001",
+            employeeName: "Jagath Kumara",
+            type: "Involuntary",
+            branch: "Colombo HQ",
+            initiationDate: "2024-10-15",
+            effectiveDate: "2024-11-15",
+            status: "PENDING_ADMIN",
+        },
+        {
+            id: "TRM-2024-002",
+            employeeName: "Sunil Perera",
+            type: "Voluntary",
+            branch: "Kandy Branch",
+            initiationDate: "2024-10-18",
+            effectiveDate: "2024-11-18",
+            status: "PENDING_ADMIN",
+        },
+        {
+            id: "TRM-2024-003",
+            employeeName: "Amara Siriwardena",
+            type: "Involuntary",
+            branch: "Galle Branch",
+            initiationDate: "2024-10-16",
+            effectiveDate: "2024-11-16",
+            status: "PENDING_BOARD_APPROVAL",
+            boardMeetingDate: "2024-11-01",
+        }
+    ];
+    localStorage.setItem("termination_requests", JSON.stringify(defaultData));
+    return defaultData;
+};
 
 export default function AdminTerminationsPage() {
-    const [requests, setRequests] = useState<TerminationApplication[]>(INITIAL_REQUESTS);
+    const [requests, setRequests] = useState<TerminationApplication[]>(() => loadLocalTerminations());
     const [activeTab, setActiveTab] = useState<"preparation" | "management">("preparation");
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [boardDate, setBoardDate] = useState<string>("");
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-
     const [filterDate, setFilterDate] = useState<string>("All");
 
     const handleCheckboxToggle = (id: string) => {
@@ -64,7 +76,7 @@ export default function AdminTerminationsPage() {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            const approvedIds = requests.filter(r => r.status === "SUBMITTED_FOR_ADMIN_APPROVAL").map(r => r.id);
+            const approvedIds = requests.filter(r => r.status === "PENDING_ADMIN").map(r => r.id);
             setSelectedIds(approvedIds);
         } else {
             setSelectedIds([]);
@@ -81,13 +93,15 @@ export default function AdminTerminationsPage() {
             return;
         }
 
-        setRequests((prev) =>
-            prev.map((req) =>
+        setRequests((prev) => {
+            const updated = prev.map((req) =>
                 selectedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_BOARD_APPROVAL", boardMeetingDate: boardDate }
+                    ? { ...req, status: "PENDING_BOARD_APPROVAL" as TerminationStatus, boardMeetingDate: boardDate }
                     : req
-            )
-        );
+            );
+            localStorage.setItem("termination_requests", JSON.stringify(updated));
+            return updated;
+        });
 
         setSelectedIds([]);
         setFilterDate(boardDate);
@@ -100,17 +114,19 @@ export default function AdminTerminationsPage() {
     };
 
     const handleConfirmSubmitToDirector = () => {
-        setRequests((prev) =>
-            prev.map((req) => {
+        setRequests((prev) => {
+            const updated = prev.map((req) => {
                 if (req.status !== "PENDING_BOARD_APPROVAL") return req;
                 if (filterDate !== "All" && req.boardMeetingDate !== filterDate) return req;
                 return { ...req, status: "SUBMITTED_TO_DIRECTOR" as TerminationStatus };
-            })
-        );
+            });
+            localStorage.setItem("termination_requests", JSON.stringify(updated));
+            return updated;
+        });
         setShowConfirmModal(false);
     };
 
-    const preparationList = requests.filter(r => r.status === "SUBMITTED_FOR_ADMIN_APPROVAL");
+    const preparationList = requests.filter(r => r.status === "PENDING_ADMIN");
     const availableDates = Array.from(new Set(requests.filter(r => r.status === "PENDING_BOARD_APPROVAL" && r.boardMeetingDate).map(r => r.boardMeetingDate as string)));
     
     const managementList = requests.filter(r => {
@@ -123,7 +139,7 @@ export default function AdminTerminationsPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-            <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
+            <div className="flex-1 p-8 pb-16 max-w-7xl mx-auto w-full">
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between print:hidden">
                     <div>

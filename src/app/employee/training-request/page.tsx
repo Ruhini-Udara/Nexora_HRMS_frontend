@@ -111,23 +111,23 @@ export default function TrainingRequestPage() {
         <div className="space-y-10 max-w-7xl mx-auto w-full">
             {/* Section 1: Available Training Events */}
             <section>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-stone-100 pb-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-stone-100 dark:border-slate-800 pb-4">
                     <div className="flex items-center gap-4 flex-wrap">
-                        <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c]">
+                        <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c] dark:text-white">
                             <span className="material-symbols-outlined text-[var(--color-training-primary)]">
                                 local_library
                             </span>
                             Available Training Events
                         </h2>
                         <div className="flex gap-1.5 flex-wrap">
-                            <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded-full border border-green-100">
+                            <span className="px-2.5 py-1 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 text-[10px] font-bold rounded-full border border-green-100 dark:border-green-900/30">
                                 {events.length} Available
                             </span>
-                            <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full border border-blue-100">
+                            <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 text-[10px] font-bold rounded-full border border-blue-100 dark:border-blue-900/30">
                                 {userRequests.length} Applied
                             </span>
                             {userRequests.filter(req => req.status === 'Rejected' || (req.status === 'Approved' && req.eventStatus === 'Rejected')).length > 0 && (
-                                <span className="px-2.5 py-1 bg-red-50 text-red-700 text-[10px] font-bold rounded-full border border-red-100">
+                                <span className="px-2.5 py-1 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 text-[10px] font-bold rounded-full border border-red-100 dark:border-red-900/30">
                                     {userRequests.filter(req => req.status === 'Rejected' || (req.status === 'Approved' && req.eventStatus === 'Rejected')).length} Rejected
                                 </span>
                             )}
@@ -135,7 +135,7 @@ export default function TrainingRequestPage() {
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-stone-500">Filter by Type:</span>
+                            <span className="text-sm font-semibold text-stone-500 dark:text-slate-400">Filter by Type:</span>
                             
                             {/* Category filter */}
                             <select
@@ -144,18 +144,18 @@ export default function TrainingRequestPage() {
                                     setSelectedCategory(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="bg-white border border-stone-200 text-stone-800 text-sm font-medium rounded-lg focus:ring-[var(--color-training-primary)] focus:border-[var(--color-training-primary)] block p-2 outline-none cursor-pointer"
+                                className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-stone-800 dark:text-slate-200 text-sm font-medium rounded-lg focus:ring-[var(--color-training-primary)] focus:border-[var(--color-training-primary)] block p-2 outline-none cursor-pointer transition-colors"
                             >
                                 {categories.map((category) => (
-                                    <option key={category} value={category}>
+                                    <option key={category} value={category} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
                                         {category === "All" ? "All Types" : category}
                                     </option>
                                 ))}
                             </select>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-stone-500">Status:</span>
-
+                            <span className="text-sm font-semibold text-stone-500 dark:text-slate-400">Status:</span>
+ 
                             {/* Status filter: New / Applied / All */}
                             <select
                                 value={statusFilter}
@@ -163,16 +163,16 @@ export default function TrainingRequestPage() {
                                     setStatusFilter(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="bg-white border border-stone-200 text-stone-800 text-sm font-medium rounded-lg focus:ring-[var(--color-training-primary)] focus:border-[var(--color-training-primary)] block p-2 outline-none cursor-pointer"
+                                className="bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-stone-800 dark:text-slate-200 text-sm font-medium rounded-lg focus:ring-[var(--color-training-primary)] focus:border-[var(--color-training-primary)] block p-2 outline-none cursor-pointer transition-colors"
                             >
-                                <option value="All">All Courses</option>
-                                <option value="New">Not Applied (New)</option>
-                                <option value="Applied">Already Applied</option>
+                                <option value="All" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Courses</option>
+                                <option value="New" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Not Applied (New)</option>
+                                <option value="Applied" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Already Applied</option>
                             </select>
                         </div>
                     </div>
                 </div>
-
+ 
                 {/* Event cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {currentItems.map((event) => {
@@ -192,14 +192,14 @@ export default function TrainingRequestPage() {
                         );
                     })}
                 </div>
-
+ 
                 {/* Pagination controls */}
                 {filteredEvents.length > itemsPerPage && (
                     <div className="mt-10 flex items-center justify-center gap-4">
                         <button 
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-400 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                         >
                             <span className="material-symbols-outlined">chevron_left</span>
                         </button>
@@ -212,29 +212,29 @@ export default function TrainingRequestPage() {
                                     className={`w-10 h-10 rounded-xl font-bold text-sm transition-all shadow-sm ${
                                         currentPage === page 
                                         ? 'bg-[var(--color-training-primary)] text-white' 
-                                        : 'bg-white border border-stone-200 text-stone-600 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)]'
+                                        : 'bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-stone-600 dark:text-slate-400 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)]'
                                     }`}
                                 >
                                     {page}
                                 </button>
                             ))}
                         </div>
-
+ 
                         <button 
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-600 dark:text-slate-400 hover:border-[var(--color-training-primary)] hover:text-[var(--color-training-primary)] transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                         >
                             <span className="material-symbols-outlined">chevron_right</span>
                         </button>
                     </div>
                 )}
             </section>
-
+ 
             {/* Section 2: My Training Status */}
             <section>
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c]">
+                    <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c] dark:text-white">
                         <span className="material-symbols-outlined text-[var(--color-training-primary)]">
                             assignment_turned_in
                         </span>

@@ -45,46 +45,46 @@ export default function WelfareTable() {
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-gray-900">Active Requests</h3>
-                <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                <h3 className="font-bold text-lg text-gray-900 dark:text-white">Active Requests</h3>
+                <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors shadow-sm cursor-pointer">
                     <Filter className="w-[18px] h-[18px]" /> Filter
                 </button>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
                         <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Employee Name</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Welfare Type</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Application Date</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Amount</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 text-center">Actions</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee Name</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Welfare Type</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Application Date</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Amount</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                         {requests.map((req) => (
-                            <tr key={req.id} className="hover:bg-gray-50 transition-colors">
+                            <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">{req.initials}</div>
-                                        <div><p className="text-sm font-medium text-gray-900">{req.employee}</p><p className="text-xs text-gray-500">{req.role}</p></div>
+                                        <div><p className="text-sm font-medium text-gray-900 dark:text-white">{req.employee}</p><p className="text-xs text-gray-500 dark:text-slate-400">{req.role}</p></div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 text-sm text-gray-600">{req.type}</td>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-500">{req.date}</td>
-                                <td className="px-6 py-4 text-sm font-bold text-gray-900">{req.amount}</td>
+                                <td className="px-6 py-4 text-sm text-gray-600 dark:text-slate-300">{req.type}</td>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-slate-400">{req.date}</td>
+                                <td className="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">{req.amount}</td>
                                 <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'Approved' ? 'bg-green-100 text-green-800' : req.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}>{req.status}</span>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'Approved' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' : req.status === 'Rejected' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' : 'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-400'}`}>{req.status}</span>
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <div className="flex justify-center gap-2">
-                                        <button onClick={() => setViewingRequest(req)} className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors" title="View Details"><Eye className="w-4 h-4" /></button>
+                                        <button onClick={() => setViewingRequest(req)} className="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" title="View Details"><Eye className="w-4 h-4" /></button>
                                         {req.status === 'Pending' && (<>
-                                            <button onClick={() => handleApprove(req.id)} className="w-8 h-8 rounded-md bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-colors" title="Approve"><Check className="w-4 h-4" /></button>
-                                            <button onClick={() => openRejectModal(req.id)} className="w-8 h-8 rounded-md bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors" title="Reject"><X className="w-4 h-4" /></button>
+                                            <button onClick={() => handleApprove(req.id)} className="w-8 h-8 rounded-md bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer" title="Approve"><Check className="w-4 h-4" /></button>
+                                            <button onClick={() => openRejectModal(req.id)} className="w-8 h-8 rounded-md bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors cursor-pointer" title="Reject"><X className="w-4 h-4" /></button>
                                         </>)}
                                     </div>
                                 </td>
@@ -96,32 +96,32 @@ export default function WelfareTable() {
 
             {viewingRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                            <div><h3 className="text-lg font-bold text-gray-900">Welfare Request Details</h3><p className="text-sm text-gray-500">Request #{viewingRequest.id}</p></div>
-                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transition-colors">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+                            <div><h3 className="text-lg font-bold text-gray-900 dark:text-white">Welfare Request Details</h3><p className="text-sm text-gray-500 dark:text-slate-400">Request #{viewingRequest.id}</p></div>
+                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"><X className="w-5 h-5" /></button>
                         </div>
                         <div className="p-6 grid grid-cols-2 gap-4 text-sm">
-                            <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900">{viewingRequest.employee}</p></div>
-                            <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Email</p><p className="font-semibold text-gray-900">{viewingRequest.email}</p></div>
-                            <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Role</p><p className="font-semibold text-gray-900">{viewingRequest.role}</p></div>
-                            <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Welfare Type</p><p className="font-semibold text-gray-900">{viewingRequest.type}</p></div>
-                            <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Amount</p><p className="font-semibold text-gray-900">{viewingRequest.amount}</p></div>
-                            <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Date</p><p className="font-semibold text-gray-900">{viewingRequest.date}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.employee}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Email</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.email}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Role</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.role}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Welfare Type</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.type}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Amount</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.amount}</p></div>
+                            <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Date</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.date}</p></div>
                         </div>
-                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end"><button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 cursor-pointer">Close</button></div>
+                        <div className="p-6 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex justify-end transition-colors"><button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white cursor-pointer">Close</button></div>
                     </div>
                 </div>
             )}
 
             {rejectModalOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="p-6 border-b border-gray-100"><h3 className="text-lg font-bold text-gray-900">Reject Welfare Request</h3><p className="text-sm text-gray-500 mt-1">Provide a reason. The employee will be notified by email.</p></div>
-                        <div className="p-6"><textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 resize-none" rows={4} placeholder="State the reason for rejection..." autoFocus /></div>
-                        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                            <button onClick={() => setRejectModalOpen(false)} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors cursor-pointer">Cancel</button>
-                            <button onClick={handleRejectSubmit} disabled={!rejectReason.trim()} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Confirm Rejection</button>
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden transition-colors">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800"><h3 className="text-lg font-bold text-gray-900 dark:text-white">Reject Welfare Request</h3><p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Provide a reason. The employee will be notified by email.</p></div>
+                        <div className="p-6"><textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg p-3 text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 resize-none transition-colors" rows={4} placeholder="State the reason for rejection..." autoFocus /></div>
+                        <div className="p-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex justify-end gap-3 transition-colors">
+                            <button onClick={() => setRejectModalOpen(false)} className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">Cancel</button>
+                            <button onClick={handleRejectSubmit} disabled={!rejectReason.trim()} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">Confirm Rejection</button>
                         </div>
                     </div>
                 </div>

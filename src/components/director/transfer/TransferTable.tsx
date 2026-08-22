@@ -1,5 +1,7 @@
+"use client";
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Filter, Check, X, Send, Eye } from 'lucide-react';
+import { Check, X, Eye, Send } from 'lucide-react';
 import { 
     getAllTransferRequests, 
     updateTransferStatus, 
@@ -9,7 +11,11 @@ import {
 export default function TransferTable() {
     const [requests, setRequests] = useState<TransferRequest[]>([]);
     const [loading, setLoading] = useState(true);
-    const [boardFilter, setBoardFilter] = useState("All");
+    const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
+    
+    // Get today's date formatted as YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState(todayStr);
 
     const loadRequests = useCallback(async () => {
         try {
@@ -56,8 +62,6 @@ export default function TransferTable() {
     // Toast State for simulating SMS/Email
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    const todayString = new Date().toISOString().split('T')[0];
-
     const handleApprove = async (id: string) => {
         try {
             await updateTransferStatus(id, "APPROVED");
@@ -68,8 +72,6 @@ export default function TransferTable() {
             console.error("Failed to approve", error);
         }
     };
-
-    const availableBoardDates = Array.from(new Set(requests.map(r => r.boardMeetingDate))).filter(d => d).sort();
 
     const openRejectModal = (id: string) => {
         setRequestToReject(id);
@@ -91,137 +93,201 @@ export default function TransferTable() {
         }
     };
 
+    const getDropdownOptions = () => {
+        if (activeTab === 'current') return [todayStr];
+        const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean))).sort() as string[];
+        if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
+        return allDates.filter(d => d < todayStr);
+    };
 
-    const filteredRequests = requests.filter(req =>
-        boardFilter === "All" || req.boardMeetingDate === boardFilter
-    );
+    const handleTabChange = (tab: 'current' | 'upcoming' | 'past') => {
+        setActiveTab(tab);
+        setSelectedDate(tab === 'current' ? todayStr : 'All');
+    };
+
+    const filteredRequests = React.useMemo(() => {
+        return requests.filter(req => {
+            if (!req.boardMeetingDate) return false;
+            const pivotDate = todayStr;
+            if (activeTab === 'current') return req.boardMeetingDate === selectedDate;
+            if (activeTab === 'upcoming') {
+                if (selectedDate === 'All') return req.boardMeetingDate > pivotDate;
+                return req.boardMeetingDate === selectedDate;
+            }
+            if (activeTab === 'past') {
+                if (selectedDate === 'All') return req.boardMeetingDate < pivotDate;
+                return req.boardMeetingDate === selectedDate;
+            }
+            return true;
+        });
+    }, [requests, activeTab, selectedDate, todayStr]);
+
+    const isActionable = (dateString?: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
+    };
 
     return (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-bold text-gray-900">Board Transfer Reviews</h3>
-                <div className="flex items-center gap-3">
-                    <select
-                        value={boardFilter}
-                        onChange={(e) => setBoardFilter(e.target.value)}
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm outline-none focus:border-primary"
+        <div className="space-y-6">
+            {/* Tabs & Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-2">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => handleTabChange('current')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
                     >
-                        <option value="All">All Board Dates</option>
-                        {availableBoardDates.map(date => (
-                            <option key={date} value={date}>{date}</option>
+                        Meeting View
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('upcoming')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Upcoming Meetings
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('past')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Past Meetings
+                    </button>
+                </div>
+
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm mr-2 mb-2 sm:mb-0">
+                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">Meeting Date:</label>
+                    <select 
+                        className="bg-transparent text-sm font-medium text-gray-900 dark:text-slate-200 focus:outline-none cursor-pointer"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                    >
+                        {activeTab !== 'current' && <option value="All" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Dates</option>}
+                        {getDropdownOptions().map(d => (
+                            <option key={d} value={d} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                {d}
+                            </option>
                         ))}
                     </select>
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Employee</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Movement</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">HR Date</th>
-                            <th className="px-6 py-4 font-semibold text-primary">Board Date</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {filteredRequests.map((req) => (
-                            <tr key={req.id} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                                            {req.employeeName.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-900">{req.employeeName}</p>
-                                            <p className="text-xs text-gray-500">{req.id}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <p className="font-medium text-gray-700 text-xs">From: {req.currentBranch}</p>
-                                    <p className="font-medium text-blue-600 text-xs">To: {req.targetBranch}</p>
-                                </td>
-                                <td className="px-6 py-4 text-gray-600">{req.requestDate}</td>
-                                <td className="px-6 py-4 text-primary font-bold">
-                                    {req.boardMeetingDate}
-                                    {req.boardMeetingDate === todayString && <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded animate-pulse">TODAY</span>}
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                        ${String(req.status) === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                                            String(req.status) === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                                                'bg-blue-100 text-blue-800'}`}>
-                                        {String(req.status).replace(/_/g, ' ')}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    <div className="flex justify-center gap-2">
-                                        <button
-                                            onClick={() => setViewingRequest(req)}
-                                            className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition-colors"
-                                            title="View Details"
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                        </button>
-                                        {String(req.status) === 'SUBMITTED_TO_DIRECTOR' && (
-                                            <>
-                                                <button
-                                                    onClick={() => handleApprove(req.id)}
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 text-green-600 hover:bg-green-100"
-                                                    title="Approve"
-                                                >
-                                                    <Check className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => openRejectModal(req.id)}
-                                                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 text-red-600 hover:bg-red-100"
-                                                    title="Reject"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {filteredRequests.length === 0 && (
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
                             <tr>
-                                <td colSpan={6} className="py-12 text-center text-gray-500">
-                                    No requests available in this category.
-                                </td>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Movement</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">HR Date</th>
+                                <th className="px-6 py-4 font-semibold text-primary">Board Date</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                            {filteredRequests.map((req) => (
+                                <tr key={req.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                                                {req.employeeName.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-gray-900 dark:text-white">{req.employeeName}</p>
+                                                <p className="text-xs text-gray-500 dark:text-slate-400">{req.id}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <p className="font-medium text-gray-700 dark:text-slate-300 text-xs">From: {req.currentBranch}</p>
+                                        <p className="font-medium text-blue-600 dark:text-blue-400 text-xs">To: {req.targetBranch}</p>
+                                    </td>
+                                    <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{req.requestDate}</td>
+                                    <td className="px-6 py-4 text-primary font-bold">
+                                        {req.boardMeetingDate}
+                                        {req.boardMeetingDate === todayStr && (
+                                            <span className="ml-2 text-[10px] bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded animate-pulse">
+                                                TODAY
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                            ${String(req.status) === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' :
+                                                String(req.status) === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' :
+                                                    'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-400'}`}>
+                                            {String(req.status).replace(/_/g, ' ')}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex justify-center gap-2">
+                                            <button
+                                                onClick={() => setViewingRequest(req)}
+                                                className="w-8 h-8 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                                                title="View Details"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                            {String(req.status) === 'SUBMITTED_TO_DIRECTOR' && isActionable(req.boardMeetingDate) && (
+                                                <>
+                                                    <button
+                                                        onClick={() => req.id && handleApprove(String(req.id))}
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 cursor-pointer"
+                                                        title="Approve"
+                                                    >
+                                                        <Check className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => req.id && openRejectModal(String(req.id))}
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 cursor-pointer"
+                                                        title="Reject"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredRequests.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="py-12 text-center text-gray-500 dark:text-slate-400">
+                                        No requests available for this selection.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* View Details Modal */}
             {viewingRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transition-colors">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">Transfer Request Details</h3>
-                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id}</p>
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Transfer Request Details</h3>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{viewingRequest.id}</p>
                             </div>
-                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
+                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"><X className="w-5 h-5" /></button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900">{viewingRequest.employeeName}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">EPF Number</p><p className="font-semibold text-gray-900">{viewingRequest.epfNumber}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">From</p><p className="font-semibold text-gray-900">{viewingRequest.currentBranch}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">To</p><p className="font-semibold text-blue-600">{viewingRequest.targetBranch}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Request Date</p><p className="font-semibold text-gray-900">{viewingRequest.requestDate}</p></div>
-                                <div className="p-3 bg-gray-50 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Meeting Date</p><p className="font-semibold text-primary">{viewingRequest.boardMeetingDate}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.employeeName}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">EPF Number</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.epfNumber}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">From</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.currentBranch}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">To</p><p className="font-semibold text-blue-600 dark:text-blue-400">{viewingRequest.targetBranch}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Request Date</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.requestDate}</p></div>
+                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Board Meeting Date</p><p className="font-semibold text-primary">{viewingRequest.boardMeetingDate}</p></div>
                             </div>
                         </div>
-                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 cursor-pointer">Close</button>
+                        <div className="p-6 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex justify-end gap-3 transition-colors">
+                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white cursor-pointer">Close</button>
                         </div>
                     </div>
                 </div>
@@ -230,28 +296,28 @@ export default function TransferTable() {
             {/* Reject Modal */}
             {rejectModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 print:hidden">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-900">Reject Transfer Application</h3>
-                            <p className="text-sm text-gray-500 mt-1">Please provide a mandatory reason for rejecting this transfer.</p>
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden transition-colors">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Reject Transfer Application</h3>
+                            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Please provide a mandatory reason for rejecting this transfer.</p>
                         </div>
                         <div className="p-6">
                             <textarea
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400"
+                                className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 rounded-lg p-3 text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 transition-colors"
                                 rows={4}
                                 placeholder="State the reason for rejection..."
                             />
                         </div>
-                        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-                            <button onClick={() => setRejectModalOpen(false)} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 transition-colors">
+                        <div className="p-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex justify-end gap-3 transition-colors">
+                            <button onClick={() => setRejectModalOpen(false)} className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">
                                 Cancel
                             </button>
                             <button
                                 onClick={handleRejectSubmit}
                                 disabled={!rejectReason.trim()}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 Confirm Rejection
                             </button>

@@ -12,17 +12,17 @@ const MOCK: ResignationRequest[] = [];
 
 // ── Status Badge Config ──────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; classes: string }> = {
-    "PENDING_ADMIN": {
-        label: "Pending Director",
-        classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    "Pending Director": {
+        label: "Pending Review",
+        classes: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
     },
     "Board Approved": {
-        label: "Board Approved",
-        classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        label: "Approved",
+        classes: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
     },
     "Board Rejected": {
-        label: "Board Rejected",
-        classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        label: "Rejected",
+        classes: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     },
 };
 
@@ -33,11 +33,12 @@ const fmt = (iso?: string) => {
 };
 
 const InfoRow = ({ label, value }: { label: string; value: string }) => (
-    <div className="flex justify-between text-sm py-1 border-b border-gray-100 dark:border-zinc-700/50">
-        <span className="text-gray-500">{label}</span>
+    <div className="flex justify-between text-sm py-1 border-b border-gray-100 dark:border-slate-800">
+        <span className="text-gray-500 dark:text-slate-400">{label}</span>
         <span className="font-medium text-gray-900 dark:text-white">{value}</span>
     </div>
 );
+
 
 const FlagRow = ({ label, active, note }: { label: string; active: boolean; note: string }) => (
     <div className="flex items-center gap-3">
@@ -70,7 +71,20 @@ export default function ResignationTable() {
     useEffect(() => {
         fetchRequests();
     }, []);
-    const [tabFilter, setTabFilter] = useState<"Today/Previous" | "Upcoming">("Today/Previous");
+
+    const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
+    const todayStr = new Date().toISOString().split("T")[0];
+    const [selectedDate, setSelectedDate] = useState(todayStr);
+
+    const isActionable = (dateString?: string) => {
+        if (!dateString) return false;
+        try {
+            const dateStr = new Date(dateString).toISOString().split('T')[0];
+            return dateStr === todayStr;
+        } catch (e) {
+            return false;
+        }
+    };
 
     // Reject popup
     const [rejectId, setRejectId] = useState<string | null>(null);
@@ -100,11 +114,43 @@ export default function ResignationTable() {
     const approved = requests.filter((r) => r.status === "Board Approved").length;
     const rejected = requests.filter((r) => r.status === "Board Rejected").length;
 
+    const normalizeDate = (d?: string) => {
+        if (!d) return "";
+        try {
+            const dateObj = new Date(d);
+            if (isNaN(dateObj.getTime())) return d;
+            return dateObj.toISOString().split('T')[0];
+        } catch(e) {
+            return d;
+        }
+    };
+
+    const getDropdownOptions = () => {
+        if (activeTab === 'current') return [todayStr];
+        const allDates = Array.from(new Set(requests.map(r => normalizeDate(r.boardMeetingDate)).filter(Boolean))).sort();
+        if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
+        return allDates.filter(d => d < todayStr);
+    };
+
+    const handleTabChange = (tab: 'current' | 'upcoming' | 'past') => {
+        setActiveTab(tab);
+        setSelectedDate(tab === 'current' ? todayStr : 'All');
+    };
+
     // ── Filtered list ─────────────────────────────────────────────────
     const filteredRequests = requests.filter((req) => {
-        const today = new Date().toISOString().split("T")[0];
-        const upcoming = (req.boardMeetingDate || "") > today;
-        return tabFilter === "Upcoming" ? upcoming : !upcoming;
+        const pivotDate = todayStr;
+        const reqDate = normalizeDate(req.boardMeetingDate);
+        if (activeTab === 'current') return reqDate === selectedDate;
+        if (activeTab === 'upcoming') {
+            if (selectedDate === 'All') return reqDate > pivotDate;
+            return reqDate === selectedDate;
+        }
+        if (activeTab === 'past') {
+            if (selectedDate === 'All') return reqDate < pivotDate;
+            return reqDate === selectedDate;
+        }
+        return true;
     });
 
     // ── Handlers ─────────────────────────────────────────────────────
@@ -141,55 +187,77 @@ export default function ResignationTable() {
             {/* Live Stats */}
             <ResignationStats total={total} pending={pending} approved={approved} rejected={rejected} />
 
-            {/* Main Table */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm overflow-hidden">
-                {/* Table Header */}
-                <div className="p-6 border-b border-gray-100 dark:border-zinc-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <h3 className="font-bold text-gray-900 dark:text-white">Board Resignation Reviews</h3>
-                    <div className="flex bg-gray-100 dark:bg-zinc-800 p-1 rounded-lg">
-                        {(["Today/Previous", "Upcoming"] as const).map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setTabFilter(tab)}
-                                className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all ${tabFilter === tab
-                                    ? "bg-white dark:bg-zinc-700 text-gray-900 dark:text-white shadow-sm"
-                                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                    }`}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
+            {/* Tabs & Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-2">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => handleTabChange('current')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Meeting View
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('upcoming')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Upcoming Meetings
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('past')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Past Meetings
+                    </button>
                 </div>
+
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm mr-2 mb-2 sm:mb-0">
+                    <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">Meeting Date:</label>
+                    <select 
+                        className="bg-transparent text-sm font-medium text-gray-900 dark:text-slate-200 focus:outline-none cursor-pointer"
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                    >
+                        {activeTab !== 'current' && <option value="All" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Dates</option>}
+                        {getDropdownOptions().map(d => (
+                            <option key={d} value={d} className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                {d}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+
+            {/* Main Table */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden">
 
                 {/* Table */}
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-gray-50 dark:bg-zinc-800/50 border-b border-gray-200 dark:border-zinc-700">
+                        <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
                             <tr>
 
-                                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-400">Employee</th>
-                                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-400">Reason</th>
-                                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-400">Effective Date</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Reason</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Effective Date</th>
                                 <th className="px-6 py-4 font-semibold text-primary">Board Date</th>
-                                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-400">Status</th>
-                                <th className="px-6 py-4 font-semibold text-gray-600 dark:text-gray-400 text-center">Actions</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-zinc-700/50">
+                        <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                             {filteredRequests.map((req) => {
                                 const st = statusConfig[req.status] || { label: req.status, classes: "bg-slate-100 text-slate-600" };
-                                const todayStr = new Date().toISOString().split("T")[0];
                                 const isToday = req.boardMeetingDate === todayStr;
                                 const isExpanded = expandedId === req.id;
-                                const isPending = req.status === "PENDING_ADMIN";
+                                const isPending = req.status === "Pending Director" || req.status === "PENDING_ADMIN";
                                 const initials = req.employeeName ? req.employeeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : "??";
-                                const actionsDisabled = tabFilter === "Upcoming";
+                                const actionsDisabled = !isActionable(req.boardMeetingDate || "");
 
                                 return (
                                     <React.Fragment key={req.id}>
                                         <tr
-                                            className="hover:bg-gray-50/50 dark:hover:bg-zinc-800/30 transition-colors cursor-pointer"
+                                            className="hover:bg-gray-50/50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                                             onClick={() => setExpandedId(isExpanded ? null : req.id)}
                                         >
                                             {/* Employee */}
@@ -200,14 +268,14 @@ export default function ResignationTable() {
                                                     </div>
                                                     <div>
                                                         <p className="font-medium text-gray-900 dark:text-white">{req.employeeName}</p>
-                                                        <p className="text-xs text-gray-500">{req.id} · {req.designation}</p>
+                                                        <p className="text-xs text-gray-500 dark:text-slate-400">{req.id} · {req.designation}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             {/* Reason */}
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{req.reason}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{req.reason}</td>
                                             {/* Effective Date */}
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400">{fmt(req.lastWorkingDate)}</td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{fmt(req.lastWorkingDate)}</td>
                                             {/* Board Date */}
                                             <td className="px-6 py-4 font-bold text-primary">
                                                 {fmt(req.boardMeetingDate)}
@@ -227,25 +295,23 @@ export default function ResignationTable() {
                                                     <button
                                                         title="View Details"
                                                         onClick={() => setViewingRequest(req)}
-                                                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer transition-all"
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 cursor-pointer transition-all"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
-                                                    {isPending && (
+                                                    {isPending && isActionable(req.boardMeetingDate || "") && (
                                                         <>
                                                             <button
                                                                 title="Approve"
                                                                 onClick={() => handleApprove(req.id)}
-                                                                disabled={actionsDisabled}
-                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${actionsDisabled ? "bg-gray-100 text-gray-300 cursor-not-allowed dark:bg-zinc-800" : "bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer"}`}
+                                                                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 cursor-pointer"
                                                             >
                                                                 <Check className="w-4 h-4" />
                                                             </button>
                                                             <button
                                                                 title="Reject"
                                                                 onClick={() => openRejectPopup(req.id)}
-                                                                disabled={actionsDisabled}
-                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${actionsDisabled ? "bg-gray-100 text-gray-300 cursor-not-allowed dark:bg-zinc-800" : "bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"}`}
+                                                                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 cursor-pointer"
                                                             >
                                                                 <X className="w-4 h-4" />
                                                             </button>
@@ -268,11 +334,11 @@ export default function ResignationTable() {
                                         {/* ── Expanded Detail Row ─────────────────────────────────── */}
                                         {isExpanded && (
                                             <tr>
-                                                <td colSpan={7} className="bg-gray-50/80 dark:bg-zinc-800/40 px-8 py-5 border-b border-gray-100 dark:border-zinc-700">
+                                                <td colSpan={7} className="bg-gray-50/80 dark:bg-slate-800/40 px-8 py-5 border-b border-gray-100 dark:border-slate-800">
                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                                         {/* Employee Details */}
                                                         <div className="space-y-3">
-                                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Employee Details</p>
+                                                            <p className="text-[11px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-widest">Employee Details</p>
                                                             <InfoRow label="EPF Number" value={req.epfNumber} />
                                                             <InfoRow label="Branch" value={req.branch} />
                                                             <InfoRow label="Initiation Date" value={fmt(req.resignationDate)} />
@@ -281,13 +347,13 @@ export default function ResignationTable() {
                                                         </div>
                                                         {/* Remarks */}
                                                         <div className="space-y-3">
-                                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Remarks</p>
+                                                            <p className="text-[11px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-widest">Remarks</p>
                                                             <InfoRow label="HR Remark" value={req.hrRemark || "—"} />
                                                             <InfoRow label="Director Remark" value={req.directorRemark || "—"} />
                                                         </div>
                                                         {/* Post-Approval Flags */}
                                                         <div className="space-y-3">
-                                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Post-Approval Workflow</p>
+                                                            <p className="text-[11px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-widest">Post-Approval Workflow</p>
                                                             <FlagRow label="Payroll Closure" active={false} note={`Effective: ${fmt(req.lastWorkingDate)}`} />
                                                             <FlagRow label="Account Deactivation" active={false} note={`Scheduled: ${fmt(req.lastWorkingDate)}`} />
 
@@ -301,11 +367,12 @@ export default function ResignationTable() {
                             })}
                             {filteredRequests.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} className="py-12 text-center text-gray-500 dark:text-gray-400">
+                                    <td colSpan={7} className="py-12 text-center text-gray-500 dark:text-slate-400">
                                         No resignation requests in this category.
                                     </td>
                                 </tr>
                             )}
+
                         </tbody>
                     </table>
                 </div>
