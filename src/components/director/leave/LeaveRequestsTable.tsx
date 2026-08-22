@@ -173,8 +173,8 @@ const LeaveRequestsTable = () => {
     });
 
     return (
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white">Pending Board Approvals</h3>
                 <div className="flex items-center gap-3">
                     <div className="relative">
@@ -183,22 +183,22 @@ const LeaveRequestsTable = () => {
                             placeholder="Search requests..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-4 pr-10 py-2 border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium outline-none focus:border-primary"
+                            className="pl-4 pr-10 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-medium outline-none focus:border-primary"
                         />
                     </div>
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="py-2 pl-3 pr-8 border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium outline-none focus:border-primary appearance-none cursor-pointer"
+                        className="py-2 pl-3 pr-8 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-medium outline-none focus:border-primary appearance-none cursor-pointer"
                     >
-                        <option value="ALL" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-slate-200">All Requests</option>
-                        <option value="PENDING_DIRECTOR_REVIEW" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-slate-200">Pending Review</option>
-                        <option value="APPROVED" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-slate-200">Approved</option>
-                        <option value="REJECTED" className="bg-white dark:bg-zinc-800 text-slate-800 dark:text-slate-200">Rejected</option>
+                        <option value="ALL" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Requests</option>
+                        <option value="PENDING_DIRECTOR_REVIEW" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Pending Review</option>
+                        <option value="APPROVED" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Approved</option>
+                        <option value="REJECTED" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Rejected</option>
                     </select>
                     <button
                         onClick={fetchRequests}
-                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary transition-colors shadow-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary transition-colors shadow-sm cursor-pointer"
                     >
                         <span className="material-symbols-outlined text-[18px]">refresh</span> Refresh
                     </button>
@@ -207,50 +207,50 @@ const LeaveRequestsTable = () => {
 
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                    <thead className="bg-gray-50 dark:bg-zinc-800/50 border-b border-gray-200 dark:border-zinc-800">
+                    <thead className="bg-gray-50 dark:bg-slate-800/60 border-b border-gray-200 dark:border-slate-800">
                         <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Employee</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Type</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Dates</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Days</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Actions</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Type</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Dates</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Days</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                         {loading ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">Loading requests...</td>
+                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-slate-400">Loading requests...</td>
                             </tr>
                         ) : error ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-12 text-center text-red-500">{error}</td>
+                                <td colSpan={6} className="px-6 py-12 text-center text-red-500 dark:text-red-400">{error}</td>
                             </tr>
                         ) : filteredRequests.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">No pending board approvals found.</td>
+                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-slate-400">No pending board approvals found.</td>
                             </tr>
                         ) : (
                             filteredRequests.map((request) => (
-                                <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                <tr key={request.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
                                     <td className="px-6 py-4">
                                         <div>
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {request.employeeName}
                                             </p>
-                                            <p className="text-xs text-gray-500">{request.employeeCode} • {request.department}</p>
+                                            <p className="text-xs text-gray-500 dark:text-slate-400">{request.employeeCode} • {request.department}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-bold uppercase text-[10px]">{(request as { refType?: string }).refType === 'MATERNITY_LEAVE' ? 'Maternity Leave' : 'Overseas Leave'}</p>
+                                        <p className="text-sm text-gray-600 dark:text-slate-400 font-bold uppercase text-[10px]">{(request as { refType?: string }).refType === 'MATERNITY_LEAVE' ? 'Maternity Leave' : 'Overseas Leave'}</p>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                                        <p className="text-sm text-gray-600 dark:text-slate-400 font-medium">
                                             {request.fromDate} to {request.endDate}
                                         </p>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300">
                                             {request.totalDays}
                                         </span>
                                     </td>
@@ -261,12 +261,12 @@ const LeaveRequestsTable = () => {
                                         {request.status === "PENDING_DIRECTOR_REVIEW" ? (
                                             <button
                                                 onClick={() => handleOpenReview(request)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-all"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-xs font-bold transition-all cursor-pointer"
                                             >
                                                 <Eye className="w-3.5 h-3.5" /> Review
                                             </button>
                                         ) : (
-                                            <span className="text-xs text-gray-400 font-medium">Reviewed</span>
+                                            <span className="text-xs text-gray-400 dark:text-slate-500 font-medium">Reviewed</span>
                                         )}
                                     </td>
                                 </tr>
@@ -276,13 +276,14 @@ const LeaveRequestsTable = () => {
                 </table>
             </div>
 
+
             {/* Review Modal */}
             {reviewModalOpen && selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-6 border-b border-gray-100 dark:border-zinc-800 flex justify-between items-center shrink-0">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center shrink-0">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Review Board Application</h3>
-                            <button onClick={() => setReviewModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                            <button onClick={() => setReviewModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
@@ -290,56 +291,56 @@ const LeaveRequestsTable = () => {
                         <div className="p-6 overflow-y-auto space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-4">
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Employee Details</h4>
+                                    <h4 className="text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider">Employee Details</h4>
                                     <div className="space-y-2">
                                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                             {selectedRequest.employeeName}
                                         </p>
-                                        <p className="text-xs text-gray-500">EPF: {selectedRequest.employeeCode}</p>
-                                        <p className="text-xs text-gray-500">Department: {selectedRequest.department}</p>
-                                        <p className="text-xs text-gray-500">Email: {selectedRequest.email}</p>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400">EPF: {selectedRequest.employeeCode}</p>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400">Department: {selectedRequest.department}</p>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400">Email: {selectedRequest.email}</p>
                                     </div>
                                 </div>
                                 <div className="space-y-4">
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Leave Info</h4>
+                                    <h4 className="text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider">Leave Info</h4>
                                     <div className="space-y-2">
                                         <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedRequest.fromDate} to {selectedRequest.endDate}</p>
-                                        <p className="text-xs text-gray-500">Duration: {selectedRequest.totalDays} Days</p>
-                                        <p className="text-xs text-gray-500">Passport: {selectedRequest.passportNumber}</p>
-                                        <p className="text-xs text-gray-500">Expiry: {selectedRequest.passportExpDate}</p>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400">Duration: {selectedRequest.totalDays} Days</p>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400">Passport: {selectedRequest.passportNumber}</p>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400">Expiry: {selectedRequest.passportExpDate}</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Reason & Remarks</h4>
-                                <div className="bg-gray-50 dark:bg-zinc-800/50 rounded-lg p-4 space-y-3">
+                                <h4 className="text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider">Reason & Remarks</h4>
+                                <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
                                     <div>
-                                        <p className="text-xs text-gray-500 font-medium">Reason for Leave</p>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{selectedRequest.reason}</p>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Reason for Leave</p>
+                                        <p className="text-sm text-gray-700 dark:text-slate-200 mt-1">{selectedRequest.reason}</p>
                                     </div>
                                     {selectedRequest.specialRemark && (
                                         <div>
-                                            <p className="text-xs text-gray-500 font-medium">Special Remark</p>
-                                            <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{selectedRequest.specialRemark}</p>
+                                            <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Special Remark</p>
+                                            <p className="text-sm text-gray-700 dark:text-slate-200 mt-1">{selectedRequest.specialRemark}</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Attached Documents</h4>
+                                <h4 className="text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider">Attached Documents</h4>
                                 {docsLoading ? (
-                                    <p className="text-sm text-gray-500">Loading documents...</p>
+                                    <p className="text-sm text-gray-500 dark:text-slate-400">Loading documents...</p>
                                 ) : documents.length === 0 ? (
-                                    <p className="text-sm text-gray-500">No documents attached.</p>
+                                    <p className="text-sm text-gray-500 dark:text-slate-400">No documents attached.</p>
                                 ) : (
                                     <div className="grid grid-cols-2 gap-3">
                                         {documents.map(doc => (
                                             <div
                                                 key={doc.id}
                                                 onClick={() => handleViewDocument(doc.filePathUrl)}
-                                                className="flex items-center gap-3 p-3 border border-gray-200 dark:border-zinc-800 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
+                                                className="flex items-center gap-3 p-3 border border-gray-200 dark:border-slate-800 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors group"
                                             >
                                                 <div className="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                                                     <FileText className="w-5 h-5" />
@@ -355,38 +356,39 @@ const LeaveRequestsTable = () => {
                             </div>
 
                             <div className="space-y-3">
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Board Final Review Remark</h4>
+                                <h4 className="text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider">Board Final Review Remark</h4>
                                 <textarea
                                     value={directorRemark}
                                     onChange={(e) => setDirectorRemark(e.target.value)}
-                                    className="w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-sm text-gray-700 dark:text-gray-200 outline-none focus:border-primary focus:ring-1 focus:ring-primary h-24 resize-none"
+                                    className="w-full bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl p-4 text-sm text-gray-700 dark:text-slate-200 outline-none focus:border-primary focus:ring-1 focus:ring-primary h-24 resize-none"
                                     placeholder="Enter any final comments for this board approval..."
                                 />
                             </div>
                         </div>
 
-                        <div className="p-6 border-t border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 flex justify-end gap-3 shrink-0">
+                        <div className="p-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 flex justify-end gap-3 shrink-0">
                             <button
                                 onClick={() => setReviewModalOpen(false)}
-                                className="px-6 py-2.5 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 rounded-xl text-sm font-bold hover:bg-gray-100 dark:hover:bg-slate-750 transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={() => handleDecision("REJECTED")}
                                 disabled={submitting}
-                                className="px-6 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
+                                className="px-6 py-2.5 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50 cursor-pointer"
                             >
                                 Reject
                             </button>
                             <button
                                 onClick={() => handleDecision("APPROVED")}
                                 disabled={submitting}
-                                className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 flex items-center gap-2"
+                                className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                             >
                                 {submitting ? "Processing..." : <><Check className="w-4 h-4" /> Final Approve</>}
                             </button>
                         </div>
+
                     </div>
                 </div>
             )}
