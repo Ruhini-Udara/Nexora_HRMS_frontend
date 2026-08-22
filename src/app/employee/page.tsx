@@ -18,29 +18,20 @@ interface DashboardData {
 const EmployeeDashboardPage = () => {
   const { user } = useAuthStore();
   const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // derive loading instead of storing it in state
+  const loading = user?.id ? data === null : false;
 
   useEffect(() => {
-    if (!user?.id) {
-      return;
-    }
+    if (!user?.id) return;
 
     api.get(`/api/v1/dashboard/employee/${user.id}`)
       .then((res) => {
         setData(res.data);
-        setLoading(false);
       })
       .catch((err) => {
         console.error("Failed to fetch dashboard data", err);
-        setLoading(false);
       });
-  }, [user]);
-
-  // Set loading to false only when user is not available
-  useEffect(() => {
-    if (!user?.id) {
-      setLoading(false);
-    }
   }, [user?.id]);
 
   if (loading) {
