@@ -164,6 +164,12 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
 
     // Print functionality (hides non-essential elements for clean printing)
     const handlePrint = () => {
+        const originalTitle = document.title;
+        const cleanName = (eventName || 'Training_Program')
+            .replace(/[^a-zA-Z0-9]/g, '_')
+            .replace(/_+/g, '_');
+        document.title = `Approved_Participants_${cleanName}`;
+
         const printStyles = document.createElement('style');
         printStyles.innerHTML = `
             @media print {
@@ -185,7 +191,10 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
         `;
         document.head.appendChild(printStyles);
         window.print();
-        document.head.removeChild(printStyles);
+        setTimeout(() => {
+            document.title = originalTitle;
+            document.head.removeChild(printStyles);
+        }, 1000);
     };
 
     if (!isOpen) return null;
