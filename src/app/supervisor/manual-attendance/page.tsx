@@ -6,6 +6,9 @@ import {
     X, Clock, LogIn, LogOut, CheckCircle, PenLine, ChevronDown, Loader2
 } from "lucide-react";
 import api from "@/lib/axiosInstance";
+import { useAuthStore } from "@/store/useAuthStore";
+import UserAvatar from "@/components/common/UserAvatar";
+import Link from "next/link";
 
 type Status = "Present" | "Absent" | "Late" | "Half_Day" | null;
 
@@ -21,6 +24,8 @@ interface EmployeeAttendance {
     inTime: string;
     outTime: string;
     remarks: string;
+    inDate?: string;
+    outDate?: string;
     isActiveShift?: boolean;
 }
 
@@ -32,6 +37,8 @@ interface Shift {
 }
 
 export default function ManualAttendancePage() {
+    const { user } = useAuthStore();
+    const [isClient, setIsClient] = useState(false);
     const [emps, setEmps] = useState<EmployeeAttendance[]>([]);
     const [shifts, setShifts] = useState<Shift[]>([]);
     const [loading, setLoading] = useState(true);
@@ -43,10 +50,14 @@ export default function ManualAttendancePage() {
     const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
     
     const [sel, setSel] = useState<EmployeeAttendance | null>(null);
+    const [inD, setInD] = useState("");
     const [inT, setInT] = useState("");
+    const [outD, setOutD] = useState("");
     const [outT, setOutT] = useState("");
     const [rem, setRem] = useState("");
     const [toast, setToast] = useState({ msg: "", on: false, type: "success" as "success" | "error" });
+
+    useEffect(() => { setIsClient(true); }, [])
 
     // Extract unique departments from the loaded employees to ensure filters always match data
     const departments = useMemo(() => {
@@ -59,7 +70,15 @@ export default function ManualAttendancePage() {
         const fetchShifts = async () => {
             try {
                 const res = await api.get("/api/attendance/shifts");
-                setShifts(res.data);
+                // Map the old database shift names to the newly recommended Hexa Co. shifts
+                const mappedShifts = res.data.map((s: any, index: number) => {
+                    let newName = s.shiftName;
+                    if (index === 0) newName = "Normal Shift (08:30–16:30)";
+                    else if (index === 1) newName = "Temporary Shift (08:15–16:45)";
+                    else if (index === 2) newName = "Driver Shift (08:00–17:00)";
+                    return { ...s, shiftName: newName };
+                });
+                setShifts(mappedShifts);
             } catch (err) {
                 console.error("Failed to fetch shifts", err);
             }
@@ -88,8 +107,8 @@ export default function ManualAttendancePage() {
                 department: item.department,
                 shiftName: item.shiftName,
                 status: item.status ? (item.status.charAt(0).toUpperCase() + item.status.slice(1).toLowerCase() as Status) : null,
-                inTime: item.inTime ? formatTime(item.inTime) : "",
-                outTime: item.outTime ? formatTime(item.outTime) : "",
+                inTime: item.inTime ? item.inTime.slice(0, 5) : "",
+                outTime: item.outTime ? item.outTime.slice(0, 5) : "",
                 remarks: item.remarks || "",
                 isActiveShift: false 
             }));
@@ -101,38 +120,22 @@ export default function ManualAttendancePage() {
         } finally {
             setLoading(false);
         }
-    }, [date, department]);
+    }, [date, department, user?.id]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
-    function formatTime(timeStr: string) {
-        if (!timeStr) return "";
-        const [h, m] = timeStr.split(":");
-        const hour = parseInt(h);
-        const ampm = hour >= 12 ? "PM" : "AM";
-        const h12 = hour % 12 || 12;
-        return `${String(h12).padStart(2, "0")}:${m} ${ampm}`;
-    }
-
-    function parseTimeForBackend(timeStr: string) {
-        if (!timeStr) return null;
-        const [time, ampm] = timeStr.split(" ");
-        const parts = time.split(":").map(Number);
-        let h = parts[0];
-        const m = parts[1];
-        if (ampm === "PM" && h !== 12) h += 12;
-        if (ampm === "AM" && h === 12) h = 0;
-        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-    }
+    // No longer needed due to native <input type="time">
+    // function formatTime(timeStr: string) { ... }
+    // function parseTimeForBackend(timeStr: string) { ... }
 
     // Fixed Filter Logic: 
     // 1. Search name/code
     // 2. Shift filtering: If an employee has a shift name, it must match. 
     //    If they DON'T have a shift name (unmarked), we show them anyway so the supervisor can mark them for THIS shift.
     const list = emps.filter(e => {
-        const matchSearch = e.employeeName.toLowerCase().includes(q.toLowerCase()) || e.employeeCode.toLowerCase().includes(q.toLowerCase());
+        const matchSearch = (e.employeeName || "").toLowerCase().includes(q.toLowerCase()) || (e.employeeCode || "").toLowerCase().includes(q.toLowerCase());
         
         const targetShiftName = shifts.find(s => s.id === selectedShiftId)?.shiftName;
         const matchShift = selectedShiftId === "all" || !e.shiftName || e.shiftName === targetShiftName;
@@ -147,15 +150,12 @@ export default function ManualAttendancePage() {
     const setStatus = (empId: number, s: Status) =>
         setEmps(p => p.map(e => e.employeeId === empId ? { ...e, status: s } : e));
 
-    const markAll = () => {
-        setEmps(p => p.map(e => ({ ...e, status: "Present" as Status })));
-        pop("All employees marked as Present locally. Click Submit to save.");
-    };
-
     const open = (emp: EmployeeAttendance) => {
         setSel(emp);
-        setInT(emp.inTime || "08:00 AM");
-        setOutT(emp.outTime || "05:00 PM");
+        setInD(emp.inDate || date);
+        setOutD(emp.outDate || date);
+        setInT(emp.inTime || "08:00");
+        setOutT(emp.outTime || "17:00");
         setRem(emp.remarks || "");
     };
 
@@ -163,12 +163,27 @@ export default function ManualAttendancePage() {
         if (!sel) return;
         setEmps(p => p.map(e => e.employeeId === sel.employeeId ? { 
             ...e, 
+            inDate: inD,
+            outDate: outD,
             inTime: inT, 
             outTime: outT, 
             remarks: rem,
             status: "Present" 
         } : e));
         pop(`${sel.employeeName}'s time entry updated locally.`);
+        setSel(null);
+    };
+
+    const clearEntry = () => {
+        if (!sel) return;
+        setEmps(p => p.map(e => e.employeeId === sel.employeeId ? { 
+            ...e, 
+            inTime: "", 
+            outTime: "", 
+            remarks: "",
+            status: null
+        } : e));
+        pop(`${sel.employeeName}'s manual entry cleared.`);
         setSel(null);
     };
 
@@ -190,8 +205,10 @@ export default function ManualAttendancePage() {
                 records: emps.filter(e => e.status !== null).map(e => ({
                     employeeId: e.employeeId,
                     status: e.status?.toUpperCase(),
-                    inTime: e.status === "Present" ? parseTimeForBackend(e.inTime) : null,
-                    outTime: e.status === "Present" ? parseTimeForBackend(e.outTime) : null,
+                    inDate: e.status === "Present" ? (e.inDate || date) : null,
+                    inTime: e.status === "Present" && e.inTime ? `${e.inTime.slice(0, 5)}:00` : null,
+                    outDate: e.status === "Present" ? (e.outDate || date) : null,
+                    outTime: e.status === "Present" && e.outTime ? `${e.outTime.slice(0, 5)}:00` : null,
                     remarks: e.remarks
                 }))
             };
@@ -199,9 +216,10 @@ export default function ManualAttendancePage() {
             await api.post("/api/attendance/manual/submit", payload);
             pop("Attendance data synced with Supabase successfully!");
             fetchData();
-        } catch (err) {
-            pop("Failed to save attendance", "error");
-            console.error(err);
+        } catch (err: any) {
+            const errorMsg = err.response?.data || "Failed to save attendance";
+            pop(typeof errorMsg === 'string' ? errorMsg : "Failed to save attendance", "error");
+            console.error("Submit Error:", err.response?.data || err);
         } finally {
             setSubmitting(false);
         }
@@ -212,26 +230,54 @@ export default function ManualAttendancePage() {
         setTimeout(() => setToast(t => ({ ...t, on: false })), 3500);
     };
 
-    const wh = (inT && outT) ? (
+    const wh = (inD && inT && outD && outT) ? (
         (() => {
-            const parse = (t: string) => {
-                const [time, mer] = t.split(" ");
-                const [hRaw, m] = time.split(":").map(Number);
-                let h = hRaw;
-                if (mer === "PM" && h !== 12) h += 12;
-                if (mer === "AM" && h === 12) h = 0;
-                return h * 60 + m;
-            };
-            const total = parse(outT) - parse(inT);
-            if (total <= 0) return { label: "—", ot: "" };
-            const h = Math.floor(total / 60), m = total % 60;
-            const ex = total - 480;
+            const inDate = new Date(`${inD}T${inT}`);
+            const outDate = new Date(`${outD}T${outT}`);
+            const diffMs = outDate.getTime() - inDate.getTime();
+            if (diffMs <= 0) return { label: "—", ot: "", warning: "", isLate: false };
+            
+            const totalMins = Math.floor(diffMs / 60000);
+            
+            // Expected Mins based on Designation Rules
+            let expectedMins = 480; // Normal: Management Assistant, Executive
+            let shiftStartHour = 8;
+            let shiftStartMin = 30; // Normal: 8:30 to 16:30
+            
+            if (sel?.role) {
+                const roleLower = sel.role.toLowerCase();
+                if (roleLower.includes("staff assistant")) {
+                    expectedMins = 510; // Temporary: 8:15 to 16:45 (8.5 Hrs)
+                    shiftStartHour = 8;
+                    shiftStartMin = 15;
+                } else if (roleLower.includes("driver")) {
+                    expectedMins = 540; // Drivers: 8:00 to 17:00 (9 Hrs)
+                    shiftStartHour = 8;
+                    shiftStartMin = 0;
+                }
+            }
+
+            const h = Math.floor(totalMins / 60);
+            const m = totalMins % 60;
+            const ex = totalMins - expectedMins;
+            
+            // Deficit calculations for Short Leave / Half Day
+            const deficit = expectedMins - totalMins;
+            let warning = "";
+            if (deficit >= 240) warning = "Half Day (4+ Hrs Deficit)";
+            else if (deficit >= 90) warning = "Short Leave (1.5+ Hrs Deficit)";
+            
+            // Late Check-in calculation
+            const isLate = (inDate.getHours() > shiftStartHour) || (inDate.getHours() === shiftStartHour && inDate.getMinutes() > shiftStartMin);
+
             return {
                 label: `${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m`,
                 ot: ex > 0 ? `Overtime: +${Math.floor(ex / 60)}h ${ex % 60}m` : "",
+                warning,
+                isLate
             };
         })()
-    ) : { label: "—", ot: "" };
+    ) : { label: "—", ot: "", warning: "", isLate: false };
 
     return (
         <div className="flex flex-col flex-1 min-h-0 bg-[#f9fafb] dark:bg-slate-950 transition-colors">
@@ -259,17 +305,20 @@ export default function ManualAttendancePage() {
                         <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-400 ring-2 ring-white dark:ring-slate-900" />
                     </button>
                     <div className="w-px h-8 bg-gray-200 dark:bg-slate-800" />
-                    <div className="flex items-center gap-2.5">
+                    <Link
+                        href="/supervisor/profile"
+                        className="flex items-center gap-2.5 hover:bg-gray-50 dark:hover:bg-slate-800/50 p-2 rounded-lg transition-colors cursor-pointer"
+                    >
                         <div className="text-right">
-                            <p className="text-[13px] font-semibold text-gray-800 dark:text-white leading-tight">Sarah Jenkins</p>
-                            <p className="text-[11px] text-gray-500 dark:text-slate-400 leading-tight">Operations Lead</p>
+                            <p className="text-[13px] font-semibold text-gray-800 dark:text-white leading-tight">
+                                {isClient && user ? user.name : "Loading..."}
+                            </p>
+                            <p className="text-[11px] text-gray-500 dark:text-slate-400 leading-tight">
+                                {isClient && user ? (user.designation || user.role) : "Supervisor"}
+                            </p>
                         </div>
-                        <img
-                            src="https://i.pravatar.cc/150?img=23"
-                            alt="Sarah Jenkins"
-                            className="w-10 h-10 rounded-full border-2 border-gray-100 dark:border-slate-700 bg-gray-100 dark:bg-slate-800"
-                        />
-                    </div>
+                        <UserAvatar user={isClient ? user : null} size="md" />
+                    </Link>
                 </div>
             </header>
 
@@ -330,9 +379,6 @@ export default function ManualAttendancePage() {
                 )}
 
                 <div className="ml-auto flex items-center gap-3 flex-shrink-0">
-                    <button onClick={markAll} className="flex items-center gap-1.5 text-[13px] font-semibold text-[#9e3f00] dark:text-orange-400 border border-[#9e3f00]/25 dark:border-orange-500/30 rounded-lg px-4 py-[7px] hover:bg-[#9e3f00]/5 dark:hover:bg-orange-500/10 transition-colors cursor-pointer">
-                        <ArrowLeftRight className="w-3.5 h-3.5" /> Mark All Present
-                    </button>
                     <button 
                         onClick={submitAll} 
                         disabled={submitting}
@@ -408,15 +454,16 @@ export default function ManualAttendancePage() {
                             {/* Time inputs */}
                             <div className="grid grid-cols-2 gap-3">
                                 {([
-                                    { label: "In Time", val: inT, set: setInT, Icon: LogIn, ph: "08:00 AM" },
-                                    { label: "Out Time", val: outT, set: setOutT, Icon: LogOut, ph: "05:00 PM" },
-                                ] as const).map(({ label, val, set, Icon, ph }) => (
+                                    { label: "In Date", val: inD, set: setInD, type: "date" },
+                                    { label: "Out Date", val: outD, set: setOutD, type: "date" },
+                                    { label: "In Time", val: inT, set: setInT, type: "time" },
+                                    { label: "Out Time", val: outT, set: setOutT, type: "time" },
+                                ] as const).map(({ label, val, set, type }) => (
                                     <div key={label}>
                                         <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">{label}</p>
                                         <div className="relative">
-                                            <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                            <input value={val} onChange={e => set(e.target.value)} placeholder={ph}
-                                                className="w-full pl-9 pr-2 py-2.5 text-sm font-semibold border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#9e3f00]/15 focus:border-[#9e3f00]/60 transition-colors" />
+                                            <input type={type} value={val} onChange={e => set(e.target.value)}
+                                                className="w-full px-3 py-2 text-sm font-semibold border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#9e3f00]/15 focus:border-[#9e3f00]/60 transition-colors" />
                                         </div>
                                     </div>
                                 ))}
@@ -430,28 +477,40 @@ export default function ManualAttendancePage() {
                                     className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#9e3f00]/15 focus:border-[#9e3f00]/60 placeholder-gray-400 dark:placeholder-slate-500 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-colors" />
                             </div>
 
-                            {/* Work Hours */}
+                            {/* Work Hours & Rules */}
                             <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-4 transition-colors">
                                 <div className="flex items-center gap-1.5 mb-3">
                                     <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
                                     <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Calculated Work Hours</p>
                                 </div>
-                                <div className="flex items-end justify-between">
-                                    <p className="text-4xl font-black text-gray-900 dark:text-white leading-none tracking-tight">{wh.label}</p>
-                                    {wh.ot && <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">{wh.ot}</p>}
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-end justify-between">
+                                        <p className="text-4xl font-black text-gray-900 dark:text-white leading-none tracking-tight">{wh.label}</p>
+                                        {wh.ot && <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">{wh.ot}</p>}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {wh.isLate && <span className="text-[10px] font-bold uppercase tracking-wider text-orange-700 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30 px-2 py-1 rounded-md border border-orange-200 dark:border-orange-800">Late Check-in</span>}
+                                        {wh.warning && <span className="text-[10px] font-bold uppercase tracking-wider text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-900/30 px-2 py-1 rounded-md border border-red-200 dark:border-red-800">{wh.warning}</span>}
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Buttons */}
                             <div className="flex flex-col gap-2.5 mt-auto">
-                                <button onClick={() => setSel(null)}
-                                    className="w-full py-2.5 text-sm font-semibold text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer">
-                                    Cancel
-                                </button>
                                 <button onClick={saveEntry}
-                                    className="w-full py-2.5 text-sm font-bold text-white bg-[#9e3f00] dark:bg-orange-600 rounded-xl hover:bg-[#7a3000] dark:hover:bg-orange-700 transition-colors cursor-pointer">
-                                    Save Entry
+                                    className="w-full py-2.5 text-sm font-bold text-white bg-[#9e3f00] dark:bg-orange-600 rounded-xl hover:bg-[#7a3000] dark:hover:bg-orange-700 transition-colors cursor-pointer shadow-sm">
+                                    Approve & Save Entry
                                 </button>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <button onClick={clearEntry}
+                                        className="w-full py-2 text-sm font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors cursor-pointer">
+                                        Clear Entry
+                                    </button>
+                                    <button onClick={() => setSel(null)}
+                                        className="w-full py-2 text-sm font-semibold text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer">
+                                        Cancel
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </aside>
@@ -541,14 +600,14 @@ function Card({ emp, selected, onStatus, onCustom }: {
                 </button>
             </div>
 
-            {/* Custom Time */}
+            {/* Custom Entry */}
             <button onClick={onCustom}
                 className={`w-full flex items-center justify-center gap-2 py-[7px] rounded-lg text-xs font-semibold border transition-all cursor-pointer ${selected
                     ? "bg-[#9e3f00] dark:bg-orange-600 border-[#9e3f00] dark:border-orange-600 text-white"
                     : "bg-white dark:bg-slate-800 border-[#9e3f00]/30 dark:border-orange-500/30 text-[#9e3f00] dark:text-orange-400 hover:bg-[#9e3f00]/5 dark:hover:bg-orange-500/10"
                     }`}>
                 <Clock className="w-3.5 h-3.5" />
-                Custom Time
+                Custom Entry
             </button>
         </div>
     );
