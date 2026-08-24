@@ -14,6 +14,7 @@ import {
 import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EmployeeFormData } from "./RegisterEmployee";
+import api from "@/lib/axiosInstance";
 
 interface RegisterEmployeeStep1Props {
   formData: EmployeeFormData;
@@ -34,6 +35,7 @@ export default function RegisterEmployeeStep1({
   const [viewDOB, setViewDOB] = useState<'days' | 'years'>('days');
   const [viewDJ, setViewDJ] = useState<'days' | 'years'>('days');
   const [error, setError] = useState<string | null>(null);
+  const [nicExists, setNicExists] = useState(false);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
   const djCalendarRef = useRef<HTMLDivElement>(null);
@@ -52,11 +54,43 @@ export default function RegisterEmployeeStep1({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const trimmed = formData.nicNumber?.trim() ?? "";
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+
+    if (!nicRegex.test(trimmed)) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await api.get<boolean>(`/api/employees/exists-nic/${trimmed}`);
+        if (!cancelled) {
+          setNicExists(response.data === true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Error checking NIC uniqueness:", err);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [formData.nicNumber]);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     updateFormData({ [name]: value });
+    if (name === "nicNumber") {
+      setNicExists(false);
+    }
     if (error) setError(null);
   };
 
@@ -203,6 +237,11 @@ export default function RegisterEmployeeStep1({
       return;
     }
 
+    if (nicExists) {
+      setError("NIC Number already registered");
+      return;
+    }
+
     setError(null);
     if (onNext) {
       onNext();
@@ -281,6 +320,11 @@ export default function RegisterEmployeeStep1({
                     className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
                   />
                 </div>
+                {nicExists && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    NIC Number already registered
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -380,7 +424,7 @@ export default function RegisterEmployeeStep1({
                             >
                               <ChevronLeft size={20} className="text-gray-600" />
                             </button>
-                            <span 
+                            <span
                               className="font-semibold text-gray-800 text-sm cursor-pointer hover:bg-gray-100 hover:text-[#8B3A00] px-2.5 py-1 rounded transition-all select-none"
                               onClick={() => setViewDOB('years')}
                               title="Click to select month and year"
@@ -565,7 +609,7 @@ export default function RegisterEmployeeStep1({
                             >
                               <ChevronLeft size={20} className="text-gray-600" />
                             </button>
-                            <span 
+                            <span
                               className="font-semibold text-gray-800 text-sm cursor-pointer hover:bg-gray-100 hover:text-[#8B3A00] px-2.5 py-1 rounded transition-all select-none"
                               onClick={() => setViewDJ('years')}
                               title="Click to select month and year"
