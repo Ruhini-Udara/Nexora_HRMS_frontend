@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EmployeeFormData } from "./RegisterEmployee";
 
@@ -31,6 +31,8 @@ export default function RegisterEmployeeStep1({
   const [showDateJoinedCalendar, setShowDateJoinedCalendar] = useState(false);
   const [currentMonthDOB, setCurrentMonthDOB] = useState(new Date());
   const [currentMonthDJ, setCurrentMonthDJ] = useState(new Date());
+  const [viewDOB, setViewDOB] = useState<'days' | 'years'>('days');
+  const [viewDJ, setViewDJ] = useState<'days' | 'years'>('days');
   const [error, setError] = useState<string | null>(null);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
@@ -143,6 +145,22 @@ export default function RegisterEmployeeStep1({
     return checkDate < today;
   };
 
+  const isFutureDate = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    return checkDate > today;
+  };
+
+  const isFutureMonth = (date: Date) => {
+    const today = new Date();
+    return (
+      date.getFullYear() > today.getFullYear() ||
+      (date.getFullYear() === today.getFullYear() && date.getMonth() > today.getMonth())
+    );
+  };
+
   const getMonthName = (date: Date) => {
     return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   };
@@ -205,7 +223,7 @@ export default function RegisterEmployeeStep1({
           <div className="flex items-center justify-between max-w-2xl mx-auto">
             {/* Step 1 - Active */}
             <div className="flex flex-col items-center flex-1">
-              <div className="w-14 h-14 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg mb-3 shadow-md">
+              <div className="w-14 h-14 rounded-full bg-[#8B3A00] text-white flex items-center justify-center font-bold text-lg mb-3 shadow-md">
                 01
               </div>
               <span className="text-sm font-semibold text-gray-900">Personal Info</span>
@@ -260,7 +278,7 @@ export default function RegisterEmployeeStep1({
                     placeholder="e.g. 199012345678"
                     value={formData.nicNumber}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500"
+                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
                   />
                 </div>
               </div>
@@ -275,7 +293,7 @@ export default function RegisterEmployeeStep1({
                     value={formData.sex}
                     onValueChange={(value) => handleSelectChange("sex", value)}
                   >
-                    <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500">
+                    <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]">
                       <SelectValue placeholder="Select Sex" />
                     </SelectTrigger>
                     <SelectContent>
@@ -302,7 +320,7 @@ export default function RegisterEmployeeStep1({
                     placeholder="e.g. Jonathan David Doe"
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500"
+                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
                   />
                 </div>
               </div>
@@ -319,7 +337,7 @@ export default function RegisterEmployeeStep1({
                     placeholder="e.g. Doe"
                     value={formData.surname}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500"
+                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
                   />
                 </div>
               </div>
@@ -338,72 +356,175 @@ export default function RegisterEmployeeStep1({
                     id="dateOfBirth"
                     value={formData.dateOfBirth}
                     onChange={(e) => handleInputChange(e)}
-                    onFocus={() => setShowDateOfBirthCalendar(true)}
+                    onFocus={() => {
+                      setShowDateOfBirthCalendar(true);
+                      setViewDOB('days');
+                    }}
                     placeholder="mm/dd/yyyy"
                     name="dateOfBirth"
-                    className="w-full pl-11 pr-4 h-12 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    className="w-full pl-11 pr-4 h-12 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B3A00]/20 focus:border-[#8B3A00] transition-all"
                   />
 
                   {/* Calendar Dropdown */}
                   {showDateOfBirthCalendar && (
                     <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4 w-80">
-                      {/* Calendar Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <button
-                          type="button"
-                          onClick={() => setCurrentMonthDOB(new Date(currentMonthDOB.getFullYear(), currentMonthDOB.getMonth() - 1, 1))}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        >
-                          <ChevronLeft size={20} className="text-gray-600" />
-                        </button>
-                        <span className="font-semibold text-gray-800">
-                          {getMonthName(currentMonthDOB)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setCurrentMonthDOB(new Date(currentMonthDOB.getFullYear(), currentMonthDOB.getMonth() + 1, 1))}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        >
-                          <ChevronRight size={20} className="text-gray-600" />
-                        </button>
-                      </div>
-
-                      {/* Calendar Grid */}
-                      <div className="grid grid-cols-7 gap-1">
-                        {/* Weekday Headers */}
-                        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-                          <div
-                            key={day}
-                            className="text-center text-xs font-medium text-gray-500 py-2"
-                          >
-                            {day}
-                          </div>
-                        ))}
-
-                        {/* Calendar Days */}
-                        {getDaysInMonth(currentMonthDOB).map((dayObj, idx) => {
-                          const isPast = isPastDate(dayObj.date);
-                          const isDisabled = !dayObj.isCurrentMonth;
-
-                          return (
+                      {viewDOB === 'days' ? (
+                        <>
+                          {/* Calendar Header */}
+                          <div className="flex items-center justify-between mb-4">
                             <button
-                              key={idx}
                               type="button"
-                              onClick={() => !isDisabled && handleDateSelect(dayObj.date, 'dateOfBirth')}
-                              disabled={isDisabled}
-                              className={`
-                                p-2 text-sm rounded-lg transition-colors
-                                ${!dayObj.isCurrentMonth ? "text-gray-300 cursor-not-allowed" : ""}
-                                ${isToday(dayObj.date) ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                                ${isSelectedDate(dayObj.date, formData.dateOfBirth) ? "bg-amber-500 text-white font-semibold" : ""}
-                                ${dayObj.isCurrentMonth && !isToday(dayObj.date) && !isSelectedDate(dayObj.date, formData.dateOfBirth) ? "hover:bg-gray-100 cursor-pointer" : ""}
-                              `}
+                              onClick={() => setCurrentMonthDOB(new Date(currentMonthDOB.getFullYear(), currentMonthDOB.getMonth() - 1, 1))}
+                              className="p-1 hover:bg-gray-100 rounded transition-colors shrink-0"
+                              title="Previous Month"
                             >
-                              {dayObj.day}
+                              <ChevronLeft size={20} className="text-gray-600" />
                             </button>
-                          );
-                        })}
-                      </div>
+                            <span 
+                              className="font-semibold text-gray-800 text-sm cursor-pointer hover:bg-gray-100 hover:text-[#8B3A00] px-2.5 py-1 rounded transition-all select-none"
+                              onClick={() => setViewDOB('years')}
+                              title="Click to select month and year"
+                            >
+                              {getMonthName(currentMonthDOB)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextMonth = new Date(currentMonthDOB.getFullYear(), currentMonthDOB.getMonth() + 1, 1);
+                                if (!isFutureMonth(nextMonth)) {
+                                  setCurrentMonthDOB(nextMonth);
+                                }
+                              }}
+                              disabled={isFutureMonth(new Date(currentMonthDOB.getFullYear(), currentMonthDOB.getMonth() + 1, 1))}
+                              className="p-1 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors shrink-0"
+                              title="Next Month"
+                            >
+                              <ChevronRight size={20} className="text-gray-600" />
+                            </button>
+                          </div>
+
+                          {/* Calendar Grid */}
+                          <div className="grid grid-cols-7 gap-1">
+                            {/* Weekday Headers */}
+                            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+                              <div
+                                key={day}
+                                className="text-center text-xs font-medium text-gray-500 py-2"
+                              >
+                                {day}
+                              </div>
+                            ))}
+
+                            {/* Calendar Days */}
+                            {getDaysInMonth(currentMonthDOB).map((dayObj, idx) => {
+                              const isFuture = isFutureDate(dayObj.date);
+                              const isDisabled = !dayObj.isCurrentMonth || isFuture;
+
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => !isDisabled && handleDateSelect(dayObj.date, 'dateOfBirth')}
+                                  disabled={isDisabled}
+                                  className={`
+                                    p-2 text-sm rounded-lg transition-colors
+                                    ${isDisabled ? "text-gray-300 cursor-not-allowed" : ""}
+                                    ${isToday(dayObj.date) ? "bg-blue-50 text-blue-600 font-semibold" : ""}
+                                    ${isSelectedDate(dayObj.date, formData.dateOfBirth) ? "bg-[#8B3A00] text-white font-semibold" : ""}
+                                    ${dayObj.isCurrentMonth && !isToday(dayObj.date) && !isSelectedDate(dayObj.date, formData.dateOfBirth) && !isFuture ? "hover:bg-gray-100 cursor-pointer" : ""}
+                                  `}
+                                >
+                                  {dayObj.day}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Calendar Header for Years/Months View */}
+                          <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                            <span className="font-bold text-gray-800 text-sm">
+                              Select Month & Year
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setViewDOB('days')}
+                              className="text-xs font-semibold text-[#8B3A00] hover:text-[#722F00] transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+
+                          <div className="flex gap-2">
+                            {/* Scrollable Month List */}
+                            <div className="flex-1 h-48 overflow-y-auto border border-gray-200 rounded-lg p-1 bg-gray-50 scrollbar-thin">
+                              <div className="text-[10px] font-bold text-gray-400 mb-1 px-2 uppercase tracking-wider">Month</div>
+                              {Array.from({ length: 12 }, (_, i) => {
+                                const isFuture = currentMonthDOB.getFullYear() === new Date().getFullYear() && i > new Date().getMonth();
+                                return (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    disabled={isFuture}
+                                    onClick={() => {
+                                      setCurrentMonthDOB(new Date(currentMonthDOB.getFullYear(), i, 1));
+                                    }}
+                                    className={`
+                                      w-full text-left px-2.5 py-1 text-xs rounded transition-colors font-medium mb-1 block
+                                      ${isFuture ? "opacity-30 cursor-not-allowed text-gray-400" : ""}
+                                      ${!isFuture && currentMonthDOB.getMonth() === i ? "bg-[#8B3A00] text-white font-semibold shadow-sm" : ""}
+                                      ${!isFuture && currentMonthDOB.getMonth() !== i ? "hover:bg-gray-200 text-gray-700" : ""}
+                                    `}
+                                  >
+                                    {new Date(2000, i, 1).toLocaleDateString("en-US", { month: "short" })}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Scrollable Year List */}
+                            <div className="flex-1 h-48 overflow-y-auto border border-gray-200 rounded-lg p-1 bg-gray-50 scrollbar-thin">
+                              <div className="text-[10px] font-bold text-gray-400 mb-1 px-2 uppercase tracking-wider">Year</div>
+                              {Array.from({ length: 101 }, (_, i) => {
+                                const year = new Date().getFullYear() - 100 + i;
+                                return year;
+                              }).reverse().map((year) => (
+                                <button
+                                  key={year}
+                                  type="button"
+                                  onClick={() => {
+                                    const nextDate = new Date(year, currentMonthDOB.getMonth(), 1);
+                                    const today = new Date();
+                                    if (year === today.getFullYear() && currentMonthDOB.getMonth() > today.getMonth()) {
+                                      setCurrentMonthDOB(new Date(year, today.getMonth(), 1));
+                                    } else {
+                                      setCurrentMonthDOB(nextDate);
+                                    }
+                                  }}
+                                  className={`
+                                    w-full text-left px-2.5 py-1 text-xs rounded transition-colors font-medium mb-1 block
+                                    ${currentMonthDOB.getFullYear() === year ? "bg-[#8B3A00] text-white font-semibold shadow-sm" : "hover:bg-gray-200 text-gray-700"}
+                                  `}
+                                >
+                                  {year}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Footer Apply button */}
+                          <div className="flex justify-end mt-3 border-t border-gray-150 pt-2.5">
+                            <button
+                              type="button"
+                              onClick={() => setViewDOB('days')}
+                              className="px-4 py-1.5 bg-[#8B3A00] hover:bg-[#722F00] text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
+                            >
+                              Apply Selection
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -420,71 +541,175 @@ export default function RegisterEmployeeStep1({
                     id="dateJoined"
                     value={formData.dateJoined}
                     onChange={(e) => handleInputChange(e)}
-                    onFocus={() => setShowDateJoinedCalendar(true)}
+                    onFocus={() => {
+                      setShowDateJoinedCalendar(true);
+                      setViewDJ('days');
+                    }}
                     placeholder="mm/dd/yyyy"
                     name="dateJoined"
-                    className="w-full pl-11 pr-4 h-12 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    className="w-full pl-11 pr-4 h-12 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B3A00]/20 focus:border-[#8B3A00] transition-all"
                   />
 
                   {/* Calendar Dropdown */}
                   {showDateJoinedCalendar && (
                     <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4 w-80">
-                      {/* Calendar Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <button
-                          type="button"
-                          onClick={() => setCurrentMonthDJ(new Date(currentMonthDJ.getFullYear(), currentMonthDJ.getMonth() - 1, 1))}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        >
-                          <ChevronLeft size={20} className="text-gray-600" />
-                        </button>
-                        <span className="font-semibold text-gray-800">
-                          {getMonthName(currentMonthDJ)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setCurrentMonthDJ(new Date(currentMonthDJ.getFullYear(), currentMonthDJ.getMonth() + 1, 1))}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        >
-                          <ChevronRight size={20} className="text-gray-600" />
-                        </button>
-                      </div>
-
-                      {/* Calendar Grid */}
-                      <div className="grid grid-cols-7 gap-1">
-                        {/* Weekday Headers */}
-                        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-                          <div
-                            key={day}
-                            className="text-center text-xs font-medium text-gray-500 py-2"
-                          >
-                            {day}
-                          </div>
-                        ))}
-
-                        {/* Calendar Days */}
-                        {getDaysInMonth(currentMonthDJ).map((dayObj, idx) => {
-                          const isDisabled = !dayObj.isCurrentMonth;
-
-                          return (
+                      {viewDJ === 'days' ? (
+                        <>
+                          {/* Calendar Header */}
+                          <div className="flex items-center justify-between mb-4">
                             <button
-                              key={idx}
                               type="button"
-                              onClick={() => !isDisabled && handleDateSelect(dayObj.date, 'dateJoined')}
-                              disabled={isDisabled}
-                              className={`
-                                p-2 text-sm rounded-lg transition-colors
-                                ${!dayObj.isCurrentMonth ? "text-gray-300 cursor-not-allowed" : ""}
-                                ${isToday(dayObj.date) ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                                ${isSelectedDate(dayObj.date, formData.dateJoined) ? "bg-amber-500 text-white font-semibold" : ""}
-                                ${dayObj.isCurrentMonth && !isToday(dayObj.date) && !isSelectedDate(dayObj.date, formData.dateJoined) ? "hover:bg-gray-100 cursor-pointer" : ""}
-                              `}
+                              onClick={() => setCurrentMonthDJ(new Date(currentMonthDJ.getFullYear(), currentMonthDJ.getMonth() - 1, 1))}
+                              className="p-1 hover:bg-gray-100 rounded transition-colors shrink-0"
+                              title="Previous Month"
                             >
-                              {dayObj.day}
+                              <ChevronLeft size={20} className="text-gray-600" />
                             </button>
-                          );
-                        })}
-                      </div>
+                            <span 
+                              className="font-semibold text-gray-800 text-sm cursor-pointer hover:bg-gray-100 hover:text-[#8B3A00] px-2.5 py-1 rounded transition-all select-none"
+                              onClick={() => setViewDJ('years')}
+                              title="Click to select month and year"
+                            >
+                              {getMonthName(currentMonthDJ)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextMonth = new Date(currentMonthDJ.getFullYear(), currentMonthDJ.getMonth() + 1, 1);
+                                if (!isFutureMonth(nextMonth)) {
+                                  setCurrentMonthDJ(nextMonth);
+                                }
+                              }}
+                              disabled={isFutureMonth(new Date(currentMonthDJ.getFullYear(), currentMonthDJ.getMonth() + 1, 1))}
+                              className="p-1 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors shrink-0"
+                              title="Next Month"
+                            >
+                              <ChevronRight size={20} className="text-gray-600" />
+                            </button>
+                          </div>
+
+                          {/* Calendar Grid */}
+                          <div className="grid grid-cols-7 gap-1">
+                            {/* Weekday Headers */}
+                            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+                              <div
+                                key={day}
+                                className="text-center text-xs font-medium text-gray-500 py-2"
+                              >
+                                {day}
+                              </div>
+                            ))}
+
+                            {/* Calendar Days */}
+                            {getDaysInMonth(currentMonthDJ).map((dayObj, idx) => {
+                              const isFuture = isFutureDate(dayObj.date);
+                              const isDisabled = !dayObj.isCurrentMonth || isFuture;
+
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => !isDisabled && handleDateSelect(dayObj.date, 'dateJoined')}
+                                  disabled={isDisabled}
+                                  className={`
+                                    p-2 text-sm rounded-lg transition-colors
+                                    ${isDisabled ? "text-gray-300 cursor-not-allowed" : ""}
+                                    ${isToday(dayObj.date) ? "bg-blue-50 text-blue-600 font-semibold" : ""}
+                                    ${isSelectedDate(dayObj.date, formData.dateJoined) ? "bg-[#8B3A00] text-white font-semibold" : ""}
+                                    ${dayObj.isCurrentMonth && !isToday(dayObj.date) && !isSelectedDate(dayObj.date, formData.dateJoined) && !isFuture ? "hover:bg-gray-100 cursor-pointer" : ""}
+                                  `}
+                                >
+                                  {dayObj.day}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Calendar Header for Years/Months View */}
+                          <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                            <span className="font-bold text-gray-800 text-sm">
+                              Select Month & Year
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setViewDJ('days')}
+                              className="text-xs font-semibold text-[#8B3A00] hover:text-[#722F00] transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+
+                          <div className="flex gap-2">
+                            {/* Scrollable Month List */}
+                            <div className="flex-1 h-48 overflow-y-auto border border-gray-200 rounded-lg p-1 bg-gray-50 scrollbar-thin">
+                              <div className="text-[10px] font-bold text-gray-400 mb-1 px-2 uppercase tracking-wider">Month</div>
+                              {Array.from({ length: 12 }, (_, i) => {
+                                const isFuture = currentMonthDJ.getFullYear() === new Date().getFullYear() && i > new Date().getMonth();
+                                return (
+                                  <button
+                                    key={i}
+                                    type="button"
+                                    disabled={isFuture}
+                                    onClick={() => {
+                                      setCurrentMonthDJ(new Date(currentMonthDJ.getFullYear(), i, 1));
+                                    }}
+                                    className={`
+                                      w-full text-left px-2.5 py-1 text-xs rounded transition-colors font-medium mb-1 block
+                                      ${isFuture ? "opacity-30 cursor-not-allowed text-gray-400" : ""}
+                                      ${!isFuture && currentMonthDJ.getMonth() === i ? "bg-[#8B3A00] text-white font-semibold shadow-sm" : ""}
+                                      ${!isFuture && currentMonthDJ.getMonth() !== i ? "hover:bg-gray-200 text-gray-700" : ""}
+                                    `}
+                                  >
+                                    {new Date(2000, i, 1).toLocaleDateString("en-US", { month: "short" })}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Scrollable Year List */}
+                            <div className="flex-1 h-48 overflow-y-auto border border-gray-200 rounded-lg p-1 bg-gray-50 scrollbar-thin">
+                              <div className="text-[10px] font-bold text-gray-400 mb-1 px-2 uppercase tracking-wider">Year</div>
+                              {Array.from({ length: 101 }, (_, i) => {
+                                const year = new Date().getFullYear() - 100 + i;
+                                return year;
+                              }).reverse().map((year) => (
+                                <button
+                                  key={year}
+                                  type="button"
+                                  onClick={() => {
+                                    const nextDate = new Date(year, currentMonthDJ.getMonth(), 1);
+                                    const today = new Date();
+                                    if (year === today.getFullYear() && currentMonthDJ.getMonth() > today.getMonth()) {
+                                      setCurrentMonthDJ(new Date(year, today.getMonth(), 1));
+                                    } else {
+                                      setCurrentMonthDJ(nextDate);
+                                    }
+                                  }}
+                                  className={`
+                                    w-full text-left px-2.5 py-1 text-xs rounded transition-colors font-medium mb-1 block
+                                    ${currentMonthDJ.getFullYear() === year ? "bg-[#8B3A00] text-white font-semibold shadow-sm" : "hover:bg-gray-200 text-gray-700"}
+                                  `}
+                                >
+                                  {year}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Footer Apply button */}
+                          <div className="flex justify-end mt-3 border-t border-gray-150 pt-2.5">
+                            <button
+                              type="button"
+                              onClick={() => setViewDJ('days')}
+                              className="px-4 py-1.5 bg-[#8B3A00] hover:bg-[#722F00] text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
+                            >
+                              Apply Selection
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -505,7 +730,7 @@ export default function RegisterEmployeeStep1({
                   placeholder="e.g. jonathan.doe@company.com"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500"
+                  className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
                 />
               </div>
             </div>
@@ -524,7 +749,7 @@ export default function RegisterEmployeeStep1({
                   value={formData.homeAddress}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full pl-11 pt-3 pr-4 pb-3 bg-gray-50 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                  className="w-full pl-11 pt-3 pr-4 pb-3 bg-gray-50 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-[#8B3A00]/20 focus:border-[#8B3A00] text-sm"
                 />
               </div>
             </div>
@@ -542,7 +767,7 @@ export default function RegisterEmployeeStep1({
                     handleSelectChange("maritalStatus", value)
                   }
                 >
-                  <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500">
+                  <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -578,7 +803,7 @@ export default function RegisterEmployeeStep1({
         <div className="flex justify-end gap-4 mt-8">
           <Button
             onClick={handleNextStep}
-            className="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-10 h-12 rounded-lg shadow-md transition-all"
+            className="bg-[#8B3A00] hover:bg-[#722F00] text-white font-semibold px-10 h-12 rounded-lg shadow-md transition-all"
           >
             Next Step →
           </Button>
