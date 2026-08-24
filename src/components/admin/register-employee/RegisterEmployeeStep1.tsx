@@ -36,9 +36,95 @@ export default function RegisterEmployeeStep1({
   const [viewDJ, setViewDJ] = useState<'days' | 'years'>('days');
   const [error, setError] = useState<string | null>(null);
   const [nicExists, setNicExists] = useState(false);
+  const [dobError, setDobError] = useState<string | null>(null);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
   const djCalendarRef = useRef<HTMLDivElement>(null);
+
+  const validateAge = (dobStr: string): boolean => {
+    const trimmed = dobStr.trim();
+    if (!trimmed) {
+      const errorMsg = "Date of Birth is required.";
+      setDobError(errorMsg);
+      setError(errorMsg);
+      return false;
+    }
+
+    const dobParts = trimmed.split('/');
+    if (dobParts.length !== 3) {
+      const errorMsg = "Please enter a valid Date of Birth in MM/DD/YYYY format.";
+      setDobError(errorMsg);
+      setError(errorMsg);
+      return false;
+    }
+    const dobMonth = parseInt(dobParts[0], 10);
+    const dobDay = parseInt(dobParts[1], 10);
+    const dobYear = parseInt(dobParts[2], 10);
+
+    if (isNaN(dobMonth) || isNaN(dobDay) || isNaN(dobYear)) {
+      const errorMsg = "Please enter a valid Date of Birth in MM/DD/YYYY format.";
+      setDobError(errorMsg);
+      setError(errorMsg);
+      return false;
+    }
+
+    const dob = new Date(dobYear, dobMonth - 1, dobDay);
+    if (
+      dob.getFullYear() !== dobYear ||
+      dob.getMonth() !== dobMonth - 1 ||
+      dob.getDate() !== dobDay
+    ) {
+      const errorMsg = "Please enter a valid Date of Birth.";
+      setDobError(errorMsg);
+      setError(errorMsg);
+      return false;
+    }
+
+    // Calculate age and check if under 18
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    if (age < 18) {
+      const errorMsg = "Employee must be at least 18 years old.";
+      setDobError(errorMsg);
+      setError(errorMsg);
+      return false;
+    }
+
+    setDobError(null);
+    setError(null);
+    return true;
+  };
+
+  const shouldClearError = (fieldName: string, currentError: string | null): boolean => {
+    if (!currentError) return false;
+    if (fieldName === "nicNumber") {
+      return currentError.includes("NIC");
+    }
+    if (fieldName === "fullName") {
+      return currentError.includes("Full Name");
+    }
+    if (fieldName === "surname") {
+      return currentError.includes("Surname");
+    }
+    if (fieldName === "sex") {
+      return currentError.includes("Sex");
+    }
+    if (fieldName === "email") {
+      return currentError.includes("Email");
+    }
+    if (fieldName === "dateOfBirth") {
+      return (
+        currentError.includes("Date of Birth") ||
+        currentError.includes("18 years old")
+      );
+    }
+    return true;
+  };
 
   // Close calendar when clicking outside
   useEffect(() => {
@@ -91,12 +177,19 @@ export default function RegisterEmployeeStep1({
     if (name === "nicNumber") {
       setNicExists(false);
     }
-    if (error) setError(null);
+    if (name === "dateOfBirth") {
+      setDobError(null);
+    }
+    if (error && shouldClearError(name, error)) {
+      setError(null);
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
     updateFormData({ [name]: value });
-    if (error) setError(null);
+    if (error && shouldClearError(name, error)) {
+      setError(null);
+    }
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -149,9 +242,11 @@ export default function RegisterEmployeeStep1({
   };
 
   const handleDateSelect = (date: Date, field: 'dateOfBirth' | 'dateJoined') => {
-    updateFormData({ [field]: formatDate(date) });
+    const formatted = formatDate(date);
+    updateFormData({ [field]: formatted });
     if (field === 'dateOfBirth') {
       setShowDateOfBirthCalendar(false);
+      validateAge(formatted);
     } else {
       setShowDateJoinedCalendar(false);
     }
@@ -239,6 +334,11 @@ export default function RegisterEmployeeStep1({
 
     if (nicExists) {
       setError("NIC Number already registered");
+      return;
+    }
+
+    // Date of Birth validation
+    if (!validateAge(formData.dateOfBirth)) {
       return;
     }
 
@@ -391,7 +491,7 @@ export default function RegisterEmployeeStep1({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-gray-700">
-                  Date of Birth
+                  Date of Birth <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative" ref={dobCalendarRef}>
                   <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none z-10" />
@@ -403,6 +503,17 @@ export default function RegisterEmployeeStep1({
                     onFocus={() => {
                       setShowDateOfBirthCalendar(true);
                       setViewDOB('days');
+                    }}
+                    onBlur={(e) => {
+                      // Only validate if focus is moving outside the calendar container
+                      if (
+                        dobCalendarRef.current &&
+                        e.relatedTarget &&
+                        dobCalendarRef.current.contains(e.relatedTarget as Node)
+                      ) {
+                        return;
+                      }
+                      validateAge(e.target.value);
                     }}
                     placeholder="mm/dd/yyyy"
                     name="dateOfBirth"
@@ -572,6 +683,11 @@ export default function RegisterEmployeeStep1({
                     </div>
                   )}
                 </div>
+                {dobError && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {dobError}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
