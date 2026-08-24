@@ -64,16 +64,10 @@ export default function RegisterEmployeeStep1({
   };
 
   useEffect(() => {
-    if (formData.nicNumber) {
-      const trimmed = formData.nicNumber.trim();
-      const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
-      if (nicRegex.test(trimmed)) {
-        checkNicUniqueness(trimmed);
-      } else {
-        setNicExists(false);
-      }
-    } else {
-      setNicExists(false);
+    const trimmed = formData.nicNumber?.trim() ?? "";
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (nicRegex.test(trimmed)) {
+      checkNicUniqueness(trimmed);
     }
   }, [formData.nicNumber]);
 
@@ -82,6 +76,9 @@ export default function RegisterEmployeeStep1({
   ) => {
     const { name, value } = e.target;
     updateFormData({ [name]: value });
+    if (name === "nicNumber") {
+      setNicExists(false);
+    }
     if (error) setError(null);
   };
 
