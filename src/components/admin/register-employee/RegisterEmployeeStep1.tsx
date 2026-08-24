@@ -54,21 +54,34 @@ export default function RegisterEmployeeStep1({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const checkNicUniqueness = async (nic: string) => {
-    try {
-      const response = await api.get<boolean>(`/api/employees/exists-nic/${nic}`);
-      setNicExists(response.data === true);
-    } catch (err) {
-      console.error("Error checking NIC uniqueness:", err);
-    }
-  };
-
   useEffect(() => {
     const trimmed = formData.nicNumber?.trim() ?? "";
     const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
-    if (nicRegex.test(trimmed)) {
-      checkNicUniqueness(trimmed);
+
+    if (!nicRegex.test(trimmed)) {
+      setNicExists(false);
+      return;
     }
+
+    let cancelled = false;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await api.get<boolean>(`/api/employees/exists-nic/${trimmed}`);
+        if (!cancelled) {
+          setNicExists(response.data === true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Error checking NIC uniqueness:", err);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [formData.nicNumber]);
 
   const handleInputChange = (
@@ -412,7 +425,7 @@ export default function RegisterEmployeeStep1({
                             >
                               <ChevronLeft size={20} className="text-gray-600" />
                             </button>
-                            <span 
+                            <span
                               className="font-semibold text-gray-800 text-sm cursor-pointer hover:bg-gray-100 hover:text-[#8B3A00] px-2.5 py-1 rounded transition-all select-none"
                               onClick={() => setViewDOB('years')}
                               title="Click to select month and year"
@@ -597,7 +610,7 @@ export default function RegisterEmployeeStep1({
                             >
                               <ChevronLeft size={20} className="text-gray-600" />
                             </button>
-                            <span 
+                            <span
                               className="font-semibold text-gray-800 text-sm cursor-pointer hover:bg-gray-100 hover:text-[#8B3A00] px-2.5 py-1 rounded transition-all select-none"
                               onClick={() => setViewDJ('years')}
                               title="Click to select month and year"
