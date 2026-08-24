@@ -126,7 +126,7 @@ export default function RegisterEmployeeStep2({
 
             {/* Step 2 - Active */}
             <div className="flex flex-col items-center flex-1">
-              <div className="w-14 h-14 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg mb-3 shadow-md">
+              <div className="w-14 h-14 rounded-full bg-[#8B3A00] text-white flex items-center justify-center font-bold text-lg mb-3 shadow-md">
                 02
               </div>
               <span className="text-sm font-semibold text-gray-900">Employment</span>
@@ -171,7 +171,7 @@ export default function RegisterEmployeeStep2({
                       if (error) setError(null);
                     }}
                   >
-                    <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500">
+                    <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]">
                       <SelectValue placeholder="Select Designation" />
                     </SelectTrigger>
                     <SelectContent>
@@ -195,7 +195,7 @@ export default function RegisterEmployeeStep2({
                     value={formData.employeeType}
                     onValueChange={(value) => handleSelectChange("employeeType", value)}
                   >
-                    <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500">
+                    <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]">
                       <SelectValue placeholder="Select Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -221,7 +221,7 @@ export default function RegisterEmployeeStep2({
                   value={formData.department}
                   onValueChange={(value) => handleSelectChange("department", value)}
                 >
-                  <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500">
+                  <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]">
                     <SelectValue placeholder="Select Department" />
                   </SelectTrigger>
                   <SelectContent>
@@ -249,7 +249,7 @@ export default function RegisterEmployeeStep2({
                     placeholder="e.g. EPF-12345"
                     value={formData.epfNumber}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500"
+                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
                   />
                 </div>
               </div>
@@ -266,7 +266,7 @@ export default function RegisterEmployeeStep2({
                     placeholder="e.g. ETF-67890"
                     value={formData.etfNumber}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-amber-500 focus:ring-amber-500"
+                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
                   />
                 </div>
               </div>
@@ -308,7 +308,7 @@ export default function RegisterEmployeeStep2({
           </Button>
           <Button
             onClick={handleNextStep}
-            className="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-10 h-12 rounded-lg shadow-md transition-all"
+            className="bg-[#8B3A00] hover:bg-[#722F00] text-white font-semibold px-10 h-12 rounded-lg shadow-md transition-all"
           >
             Next Step →
           </Button>
