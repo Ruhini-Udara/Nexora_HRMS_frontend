@@ -59,7 +59,6 @@ export default function RegisterEmployeeStep1({
     const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
 
     if (!nicRegex.test(trimmed)) {
-      setNicExists(false);
       return;
     }
 
