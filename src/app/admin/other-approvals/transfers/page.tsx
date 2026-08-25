@@ -132,10 +132,10 @@ export default function AdminTransfersPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col print:min-h-0 print:bg-white print:p-0 print:m-0 print:block">
             {/* Success Toast */}
             {successMessage && (
-                <div className="fixed bottom-6 right-6 z-50 animate-slide-in-right">
+                <div className="fixed bottom-6 right-6 z-50 animate-slide-in-right print:hidden">
                     <div className="bg-green-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-bold">
                         <span className="material-symbols-outlined text-[20px]">check_circle</span>
                         {successMessage}
@@ -143,7 +143,7 @@ export default function AdminTransfersPage() {
                 </div>
             )}
 
-            <div className="flex-1 p-8 pb-16 max-w-7xl mx-auto w-full">
+            <div className="flex-1 p-8 pb-16 max-w-7xl mx-auto w-full print:p-0 print:m-0 print:max-w-none print:w-full print:block">
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between print:hidden">
                     <div>
@@ -217,6 +217,7 @@ export default function AdminTransfersPage() {
                                     <input
                                         type="date"
                                         value={boardDate}
+                                        min={new Date().toISOString().split('T')[0]}
                                         onChange={(e) => setBoardDate(e.target.value)}
                                         className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#8B3A00]/50 focus:border-[#8B3A00]"
                                     />

@@ -8,15 +8,18 @@ type WelfareStatus = 'Pending' | 'Approved' | 'Rejected';
 interface WelfareRequest {
     id: number; employee: string; email: string; role: string; initials: string;
     type: string; date: string; amount: string; status: WelfareStatus;
+    createdAt?: string; boardMeetingDate?: string;
 }
 
 const MOCK: WelfareRequest[] = [
-    { id: 1, employee: "John Doe", email: "john.doe@example.com", role: "Senior UX Designer", initials: "JD", type: "Financial Aid", date: "12 Oct 2023", amount: "$500.00", status: "Pending" },
-    { id: 2, employee: "Jane Smith", email: "jane.smith@example.com", role: "Marketing Lead", initials: "JS", type: "Medical Assistance", date: "10 Oct 2023", amount: "$1,200.00", status: "Approved" },
-    { id: 3, employee: "Robert Brown", email: "robert.brown@example.com", role: "Systems Engineer", initials: "RB", type: "Education Support", date: "08 Oct 2023", amount: "$2,500.00", status: "Rejected" },
-    { id: 4, employee: "Emily Davis", email: "emily.davis@example.com", role: "Project Director", initials: "ED", type: "Financial Aid", date: "05 Oct 2023", amount: "$300.00", status: "Pending" },
-    { id: 5, employee: "Michael Wilson", email: "michael.wilson@example.com", role: "Content Strategist", initials: "MW", type: "Medical Assistance", date: "01 Oct 2023", amount: "$850.00", status: "Approved" },
+    { id: 1, employee: "John Doe", email: "john.doe@example.com", role: "Senior UX Designer", initials: "JD", type: "Financial Aid", date: "12 Oct 2023", amount: "$500.00", status: "Pending", createdAt: "2023-10-12", boardMeetingDate: "2023-10-15" },
+    { id: 2, employee: "Jane Smith", email: "jane.smith@example.com", role: "Marketing Lead", initials: "JS", type: "Medical Assistance", date: "10 Oct 2023", amount: "$1,200.00", status: "Approved", createdAt: "2023-10-10", boardMeetingDate: "2023-10-15" },
+    { id: 3, employee: "Robert Brown", email: "robert.brown@example.com", role: "Systems Engineer", initials: "RB", type: "Education Support", date: "08 Oct 2023", amount: "$2,500.00", status: "Rejected", createdAt: "2023-10-08", boardMeetingDate: "2023-10-15" },
+    { id: 4, employee: "Emily Davis", email: "emily.davis@example.com", role: "Project Director", initials: "ED", type: "Financial Aid", date: "05 Oct 2023", amount: "$300.00", status: "Pending", createdAt: "2023-10-05", boardMeetingDate: "2023-10-15" },
+    { id: 5, employee: "Michael Wilson", email: "michael.wilson@example.com", role: "Content Strategist", initials: "MW", type: "Medical Assistance", date: "01 Oct 2023", amount: "$850.00", status: "Approved", createdAt: "2023-10-01", boardMeetingDate: "2023-10-15" },
 ];
+
+const normalizeDate = (d?: string) => d || "";
 
 export default function WelfareTable() {
     const [requests, setRequests] = useState<WelfareRequest[]>(MOCK);
@@ -26,31 +29,177 @@ export default function WelfareTable() {
     const [rejectReason, setRejectReason] = useState('');
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+    const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
+    const todayStr = new Date().toISOString().split("T")[0];
+    const [selectedDate, setSelectedDate] = useState(todayStr);
+    const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year'>('year');
+    const [statusFilter, setStatusFilter] = useState('All');
+
     const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
 
     const handleApprove = (id: number) => {
-        const req = requests.find(r => r.id === id);
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
-        showToast(`Approval email sent to ${req?.employee} (${req?.email})`);
+        showToast(`application approved successfully !`);
     };
 
     const openRejectModal = (id: number) => { setRequestToReject(id); setRejectReason(''); setRejectModalOpen(true); };
 
     const handleRejectSubmit = () => {
         if (!rejectReason.trim() || requestToReject === null) return;
-        const req = requests.find(r => r.id === requestToReject);
         setRequests(prev => prev.map(r => r.id === requestToReject ? { ...r, status: 'Rejected' } : r));
-        showToast(`Rejection email sent to ${req?.employee} (${req?.email})`);
+        showToast(`application rejected !`);
         setRejectModalOpen(false); setRequestToReject(null);
     };
 
+    const timeFilteredRequests = React.useMemo(() => {
+        return requests.filter(req => {
+            const pivotDate = todayStr;
+            const reqDate = normalizeDate(req.boardMeetingDate);
+            if (!reqDate) return false;
+            const statusUpper = String(req.status).toUpperCase();
+            if (statusUpper === 'SUBMITTED' || statusUpper === 'DRAFT' || statusUpper === 'NEW' || statusUpper === 'PENDING_HR') return false;
+
+            let matchesTab = true;
+            if (activeTab === 'current') matchesTab = reqDate === selectedDate;
+            else if (activeTab === 'upcoming') {
+                if (selectedDate === 'All') matchesTab = reqDate > pivotDate;
+                else matchesTab = reqDate === selectedDate;
+            }
+            else if (activeTab === 'past') {
+                if (selectedDate === 'All') matchesTab = reqDate < pivotDate;
+                else matchesTab = reqDate === selectedDate;
+            }
+            if (!matchesTab) return false;
+
+            let matchesTime = true;
+            if (req.createdAt) {
+                const reqCreationDate = new Date(req.createdAt);
+                if (!isNaN(reqCreationDate.getTime())) {
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const reqDay = new Date(reqCreationDate.getFullYear(), reqCreationDate.getMonth(), reqCreationDate.getDate());
+                    
+                    if (timeFilter === 'today') {
+                        matchesTime = reqDay.getTime() === today.getTime();
+                    } else if (timeFilter === 'week') {
+                        const lastWeek = new Date(today);
+                        lastWeek.setDate(lastWeek.getDate() - 6);
+                        matchesTime = reqDay >= lastWeek && reqDay <= today;
+                    } else if (timeFilter === 'month') {
+                        matchesTime = reqDay.getMonth() === today.getMonth() && reqDay.getFullYear() === today.getFullYear();
+                    } else if (timeFilter === 'year') {
+                        matchesTime = reqDay.getFullYear() === today.getFullYear();
+                    }
+                }
+            }
+            return matchesTime;
+        });
+    }, [requests, activeTab, selectedDate, todayStr, timeFilter]);
+
+    const filteredRequests = React.useMemo(() => {
+        return timeFilteredRequests.filter(req => {
+            if (statusFilter !== 'All' && String(req.status) !== statusFilter) return false;
+            return true;
+        });
+    }, [timeFilteredRequests, statusFilter]);
+
+        const statsTags = [
+        { label: "Total Requests", status: "All", icon: "description", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
+        { label: "Pending", status: "Pending", icon: "schedule", color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-900/20", ring: "ring-yellow-500" },
+        { label: "Approved", status: "Approved", icon: "check_circle", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20", ring: "ring-green-500" },
+        { label: "Rejected", status: "Rejected", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
+    ] as const;
+
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-gray-900 dark:text-white">Active Requests</h3>
-                <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-750 transition-colors shadow-sm cursor-pointer">
-                    <Filter className="w-[18px] h-[18px]" /> Filter
-                </button>
+        <div className="space-y-6">
+            {toastMessage && (
+                <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 z-50">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <Check className="w-5 h-5 text-green-400" />
+                    </div>
+                    <p className="font-medium">{toastMessage}</p>
+                </div>
+            )}
+
+            {/* Time Filter Dropdown */}
+            <div className="flex justify-end mb-4">
+                <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value as any)}
+                    className="px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm text-sm font-bold"
+                >
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+            </div>
+
+            {/* Interactive Stats Tags */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {statsTags.map(({ label, status, icon, color, bg, ring }) => {
+                    const statCount = timeFilteredRequests.filter(r => status === 'All' || String(r.status) === status).length;
+
+                    return (
+                        <div 
+                            key={status} 
+                            onClick={() => setStatusFilter(statusFilter === status ? 'All' : status)}
+                            className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === status ? `ring-2 ${ring}` : ''}`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
+                                <span className="text-gray-600 dark:text-slate-300 font-bold text-sm">{label}</span>
+                            </div>
+                            <span className={`text-2xl font-black ${color}`}>{statCount}</span>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Tabs & Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-2">
+                <div className="flex gap-4">
+                    <button 
+                        onClick={() => setActiveTab('current')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'current' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Meeting View
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('upcoming')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Upcoming Meetings
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('past')}
+                        className={`pb-3 px-4 text-sm font-bold border-b-2 transition-colors cursor-pointer ${activeTab === 'past' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white'}`}
+                    >
+                        Past Meetings
+                    </button>
+                </div>
+                
+                <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+                    {/* Date Selector for Meeting View */}
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700">
+                        <span className="material-symbols-outlined text-[16px] text-gray-500 dark:text-slate-400">calendar_month</span>
+                        <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                            Meeting Date:
+                        </span>
+                        <select
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="bg-transparent text-sm font-bold text-gray-900 dark:text-white focus:outline-none cursor-pointer"
+                        >
+                            <option value="All">All Dates</option>
+                            <option value={todayStr}>{todayStr} (Today)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+            
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -65,7 +214,7 @@ export default function WelfareTable() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                        {requests.map((req) => (
+                        {filteredRequests.map((req) => (
                             <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">

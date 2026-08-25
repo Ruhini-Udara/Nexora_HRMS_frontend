@@ -2,27 +2,24 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, X, Eye, Send } from 'lucide-react';
-import { 
-    getAllTransferRequests, 
-    updateTransferStatus, 
-    TransferRequest 
-} from '@/lib/api/transferRequests';
-
+import { getHrmsSignedUrl } from '@/lib/supabaseClient';
+import { getAllTransferRequests, updateTransferStatus, TransferRequest } from '@/lib/api/transferRequests';
 export default function TransferTable() {
     const [requests, setRequests] = useState<TransferRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
     
-    // Get today's date formatted as YYYY-MM-DD
+    // Filters
     const todayStr = new Date().toISOString().split('T')[0];
     const [selectedDate, setSelectedDate] = useState(todayStr);
+    const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year'>('year');
+    const [statusFilter, setStatusFilter] = useState<string>('All');
 
     const loadRequests = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getAllTransferRequests();
             
-            // Filter: Only show "legit" requests (real employees, not mock/hardcoded data)
             const isLegit = (req: TransferRequest) => {
                 return (req.employeeName || "").trim().length > 0 && 
                        (req.epfNumber || "").trim().length > 0 && 
@@ -31,7 +28,6 @@ export default function TransferTable() {
                        !req.employeeName.toLowerCase().includes("kasun");
             };
 
-            // Show only those submitted to director or already approved/rejected by director
             const filtered = data.filter(r => 
                 isLegit(r) && (
                     String(r.status) === "SUBMITTED_TO_DIRECTOR" || 
@@ -51,22 +47,17 @@ export default function TransferTable() {
         loadRequests();
     }, [loadRequests]);
 
-    // Modal State
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [requestToReject, setRequestToReject] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState("");
-
-    // View Modal State
     const [viewingRequest, setViewingRequest] = useState<TransferRequest | null>(null);
-
-    // Toast State for simulating SMS/Email
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     const handleApprove = async (id: string) => {
         try {
             await updateTransferStatus(id, "APPROVED");
             await loadRequests();
-            setToastMessage(`Transfer application approved successfully`);
+            setToastMessage("application approved successfully !");
             setTimeout(() => setToastMessage(null), 4000);
         } catch (error) {
             console.error("Failed to approve", error);
@@ -84,7 +75,7 @@ export default function TransferTable() {
         try {
             await updateTransferStatus(requestToReject, "REJECTED", rejectReason);
             await loadRequests();
-            setToastMessage(`Transfer application rejected`);
+            setToastMessage("application rejected !");
             setTimeout(() => setToastMessage(null), 4000);
             setRejectModalOpen(false);
             setRequestToReject(null);
@@ -93,7 +84,21 @@ export default function TransferTable() {
         }
     };
 
-    const getDropdownOptions = () => {
+    
+    const handleDownload = async (path: string) => {
+        if (!path.includes('/')) {
+            alert('File not available (legacy format)');
+            return;
+        }
+        const url = await getHrmsSignedUrl(path);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('Failed to get download URL');
+        }
+    };
+
+const getDropdownOptions = () => {
         if (activeTab === 'current') return [todayStr];
         const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean))).sort() as string[];
         if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
@@ -105,35 +110,120 @@ export default function TransferTable() {
         setSelectedDate(tab === 'current' ? todayStr : 'All');
     };
 
-    const filteredRequests = React.useMemo(() => {
+    const timeFilteredRequests = React.useMemo(() => {
         return requests.filter(req => {
-            if (!req.boardMeetingDate) return false;
-            const pivotDate = todayStr;
-            if (activeTab === 'current') return req.boardMeetingDate === selectedDate;
-            if (activeTab === 'upcoming') {
-                if (selectedDate === 'All') return req.boardMeetingDate > pivotDate;
-                return req.boardMeetingDate === selectedDate;
+            const reqBoardDate = req.boardMeetingDate;
+            if (!reqBoardDate) return false;
+            const statusUpper = String(req.status).toUpperCase();
+            if (statusUpper === 'SUBMITTED' || statusUpper === 'DRAFT' || statusUpper === 'NEW' || statusUpper === 'PENDING_HR') return false;
+
+            let matchesTab = true;
+            if (activeTab === 'current') {
+                matchesTab = reqBoardDate === selectedDate;
+            } else if (activeTab === 'upcoming') {
+                if (selectedDate === 'All') matchesTab = reqBoardDate > todayStr;
+                else matchesTab = reqBoardDate === selectedDate;
+            } else if (activeTab === 'past') {
+                if (selectedDate === 'All') matchesTab = reqBoardDate < todayStr;
+                else matchesTab = reqBoardDate === selectedDate;
             }
-            if (activeTab === 'past') {
-                if (selectedDate === 'All') return req.boardMeetingDate < pivotDate;
-                return req.boardMeetingDate === selectedDate;
+            if (!matchesTab) return false;
+
+            let matchesTime = true;
+            if (req.requestDate) {
+                const reqDate = new Date(req.requestDate);
+                if (!isNaN(reqDate.getTime())) {
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const reqDay = new Date(reqDate.getFullYear(), reqDate.getMonth(), reqDate.getDate());
+                    
+                    if (timeFilter === 'today') {
+                        matchesTime = reqDay.getTime() === today.getTime();
+                    } else if (timeFilter === 'week') {
+                        const lastWeek = new Date(today);
+                        lastWeek.setDate(lastWeek.getDate() - 6);
+                        matchesTime = reqDay >= lastWeek && reqDay <= today;
+                    } else if (timeFilter === 'month') {
+                        matchesTime = reqDay.getMonth() === today.getMonth() && reqDay.getFullYear() === today.getFullYear();
+                    } else if (timeFilter === 'year') {
+                        matchesTime = reqDay.getFullYear() === today.getFullYear();
+                    }
+                }
             }
+            return matchesTime;
+        });
+    }, [requests, activeTab, selectedDate, todayStr, timeFilter]);
+
+    const filteredRequests = React.useMemo(() => {
+        return timeFilteredRequests.filter(req => {
+            if (statusFilter !== 'All' && String(req.status) !== statusFilter) return false;
             return true;
         });
-    }, [requests, activeTab, selectedDate, todayStr]);
+    }, [timeFilteredRequests, statusFilter]);
 
     const isActionable = (dateString?: string) => {
-        if (!dateString) return false;
+        if (!dateString) return true;
         try {
             const dateStr = new Date(dateString).toISOString().split('T')[0];
-            return dateStr === todayStr;
+            return dateStr <= todayStr;
         } catch (e) {
-            return false;
+            return true;
         }
     };
 
+    const statsTags = [
+        { label: "Total Requests", status: "All", icon: "description", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
+        { label: "Pending", status: "SUBMITTED_TO_DIRECTOR", icon: "schedule", color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-900/20", ring: "ring-yellow-500" },
+        { label: "Approved", status: "APPROVED", icon: "check_circle", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20", ring: "ring-green-500" },
+        { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
+    ] as const;
+
     return (
         <div className="space-y-6">
+            {toastMessage && (
+                <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 z-50">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <Check className="w-5 h-5 text-green-400" />
+                    </div>
+                    <p className="font-medium">{toastMessage}</p>
+                </div>
+            )}
+
+            {/* Time Filter Dropdown */}
+            <div className="flex justify-end mb-4">
+                <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value as any)}
+                    className="px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm text-sm font-bold"
+                >
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+            </div>
+
+            {/* Interactive Stats Tags */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {statsTags.map(({ label, status, icon, color, bg, ring }) => {
+                    const statCount = timeFilteredRequests.filter(r => status === 'All' || String(r.status) === status).length;
+
+                    return (
+                        <div 
+                            key={status} 
+                            onClick={() => setStatusFilter(statusFilter === status ? 'All' : status)}
+                            className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === status ? `ring-2 ${ring}` : ''}`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
+                                <span className="text-gray-600 dark:text-slate-300 font-bold text-sm">{label}</span>
+                            </div>
+                            <span className={`text-2xl font-black ${color}`}>{statCount}</span>
+                        </div>
+                    );
+                })}
+            </div>
+
             {/* Tabs & Filters */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-2">
                 <div className="flex gap-4">
@@ -182,7 +272,7 @@ export default function TransferTable() {
                                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
                                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Movement</th>
                                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">HR Date</th>
-                                <th className="px-6 py-4 font-semibold text-primary">Board Date</th>
+                                <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Board Date</th>
                                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
                                 <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
                             </tr>
@@ -215,12 +305,28 @@ export default function TransferTable() {
                                         )}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                            ${String(req.status) === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' :
-                                                String(req.status) === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' :
-                                                    'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-400'}`}>
-                                            {String(req.status).replace(/_/g, ' ')}
-                                        </span>
+                                        {(() => {
+                                            const st = String(req.status).toUpperCase();
+                                            if (st === 'APPROVED' || st === 'BOARD APPROVED') {
+                                                return (
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400">
+                                                        Approved
+                                                    </span>
+                                                );
+                                            }
+                                            if (st === 'REJECTED' || st === 'BOARD REJECTED') {
+                                                return (
+                                                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
+                                                        Rejected
+                                                    </span>
+                                                );
+                                            }
+                                            return (
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
+                                                    Pending Review
+                                                </span>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex justify-center gap-2">
