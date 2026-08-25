@@ -27,33 +27,13 @@ export default function AdminContent() {
     let isMounted = true;
     const fetchCounts = async () => {
       try {
-        let empCount = 0;
-        let sCount = 3;
-
-        try {
-          const empRes = await api.get("/api/employees");
-          if (Array.isArray(empRes.data)) {
-            empCount = empRes.data.length;
-          }
-        } catch {
-          // fallback
-        }
-
-        try {
-          const shiftRes = await fetch("/api/shifts");
-          if (shiftRes.ok) {
-            const shiftsData = await shiftRes.json();
-            if (Array.isArray(shiftsData)) {
-              sCount = shiftsData.length;
-            }
-          }
-        } catch {
-          // fallback
-        }
-
+        const [empRes, shiftRes] = await Promise.all([
+          api.get("/api/employees"),
+          api.get("/api/shifts"),
+        ]);
         if (isMounted) {
-          setEmployeeCount(empCount);
-          setShiftCount(sCount);
+          setEmployeeCount(Array.isArray(empRes.data) ? empRes.data.length : 0);
+          setShiftCount(Array.isArray(shiftRes.data) ? shiftRes.data.length : 0);
         }
       } catch (error) {
         console.error("Error fetching stats:", error);
