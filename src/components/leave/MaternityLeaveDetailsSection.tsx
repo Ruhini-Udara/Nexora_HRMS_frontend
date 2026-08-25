@@ -42,16 +42,19 @@ export function MaternityLeaveDetailsSection<T extends FieldValues>({ register, 
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                        End Date <span className="text-red-500">*</span>
+                        Maternity Leave Level <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <select
                         disabled={isDisabled}
-                        {...register("endDate" as Path<T>)}
-                        min={new Date().toISOString().split("T")[0]}
-                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
-                        type="date"
-                    />
-                    {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message?.toString()}</p>}
+                        {...register("level" as Path<T>)}
+                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none disabled:opacity-60 appearance-none ${errors.level ? 'border-red-500 focus:ring-red-500' : ''}`}
+                    >
+                        <option value="" disabled>Select Level</option>
+                        <option value="Level 1">Level 1 (84 Working Days, Full Salary)</option>
+                        <option value="Level 2">Level 2 (84 Calendar Days, Half Salary)</option>
+                        <option value="Level 3">Level 3 (84 Calendar Days, No Salary)</option>
+                    </select>
+                    {errors.level && <p className="text-red-500 text-xs mt-1">{errors.level.message?.toString()}</p>}
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Date of Request</label>
