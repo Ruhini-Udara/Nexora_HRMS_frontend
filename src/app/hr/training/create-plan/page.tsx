@@ -123,7 +123,7 @@ export default function CreateTrainingPlanPage() {
             {/* Hero Title */}
             <div className="flex items-end justify-between border-b border-primary/10 pb-6">
                 <div>
-                    <h1 className="text-3xl font-black text-[#1d130c] dark:text-white tracking-tight">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                         Create and Edit Training Plans
                     </h1>
                     <p className="text-stone-500 mt-1">
