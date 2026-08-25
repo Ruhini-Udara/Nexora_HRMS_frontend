@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import {
-    Home,
+    LayoutDashboard,
     ClipboardList, 
     Calendar,
     Users,
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 const navLinks = [
-    { label: "Dashboard", href: "/supervisor", icon: Home },
+    { label: "Dashboard", href: "/supervisor", icon: LayoutDashboard },
     { label: "Manual Attendance", href: "/supervisor/manual-attendance", icon: ClipboardList },
     { label: "Leave Management", href: "/supervisor/leave-management", icon: Calendar },
     { label: "Team Attendance", href: "/supervisor/team-attendance", icon: Users },

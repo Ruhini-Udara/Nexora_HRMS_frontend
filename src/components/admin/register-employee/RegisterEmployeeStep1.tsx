@@ -349,12 +349,12 @@ export default function RegisterEmployeeStep1({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
+    <div className="min-h-screen pb-10">
       <div className="max-w-5xl mx-auto px-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Register New Employee</h1>
-          <p className="text-gray-600 mt-2">Complete all required fields to add a new employee to the system</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Register New Employee</h1>
+          <p className="text-gray-600 dark:text-slate-400 mt-2">Complete all required fields to add a new employee to the system</p>
         </div>
 
         {/* Stepper */}
@@ -365,39 +365,39 @@ export default function RegisterEmployeeStep1({
               <div className="w-14 h-14 rounded-full bg-[#8B3A00] text-white flex items-center justify-center font-bold text-lg mb-3 shadow-md">
                 01
               </div>
-              <span className="text-sm font-semibold text-gray-900">Personal Info</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">Personal Info</span>
             </div>
 
             {/* Connector */}
-            <div className="flex-1 h-0.5 bg-gray-300 mx-4 mb-8"></div>
+            <div className="flex-1 h-0.5 bg-gray-300 dark:bg-slate-700 mx-4 mb-8"></div>
 
             {/* Step 2 - Inactive */}
             <div className="flex flex-col items-center flex-1">
-              <div className="w-14 h-14 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold text-lg mb-3">
+              <div className="w-14 h-14 rounded-full bg-gray-200 dark:bg-slate-800 text-gray-400 dark:text-slate-500 flex items-center justify-center font-bold text-lg mb-3">
                 02
               </div>
-              <span className="text-sm text-gray-500">Employment</span>
+              <span className="text-sm text-gray-500 dark:text-slate-400">Employment</span>
             </div>
 
             {/* Connector */}
-            <div className="flex-1 h-0.5 bg-gray-300 mx-4 mb-8"></div>
+            <div className="flex-1 h-0.5 bg-gray-300 dark:bg-slate-700 mx-4 mb-8"></div>
 
             {/* Step 3 - Inactive */}
             <div className="flex flex-col items-center flex-1">
-              <div className="w-14 h-14 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold text-lg mb-3">
+              <div className="w-14 h-14 rounded-full bg-gray-200 dark:bg-slate-800 text-gray-400 dark:text-slate-500 flex items-center justify-center font-bold text-lg mb-3">
                 03
               </div>
-              <span className="text-sm text-gray-500">System Access</span>
+              <span className="text-sm text-gray-500 dark:text-slate-400">System Access</span>
             </div>
           </div>
         </div>
 
         {/* Form Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 p-8">
           {/* Section Header */}
-          <div className="mb-8 pb-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">Basic Information</h2>
-            <p className="text-gray-600 mt-1">
+          <div className="mb-8 pb-6 border-b border-gray-200 dark:border-slate-800">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Basic Information</h2>
+            <p className="text-gray-600 dark:text-slate-400 mt-1">
               Please provide the personal details of the new employee.
             </p>
           </div>
@@ -406,7 +406,7 @@ export default function RegisterEmployeeStep1({
             {/* Employee NIC Number and Sex */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="nicNumber" className="text-sm font-semibold text-gray-700">
+                <Label htmlFor="nicNumber" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
                   Employee NIC Number <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
@@ -417,7 +417,7 @@ export default function RegisterEmployeeStep1({
                     placeholder="e.g. 199012345678"
                     value={formData.nicNumber}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
+                    className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                   />
                 </div>
                 {nicExists && (
@@ -428,7 +428,7 @@ export default function RegisterEmployeeStep1({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sex" className="text-sm font-semibold text-gray-700">
+                <Label htmlFor="sex" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
                   Sex <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
@@ -437,7 +437,7 @@ export default function RegisterEmployeeStep1({
                     value={formData.sex}
                     onValueChange={(value) => handleSelectChange("sex", value)}
                   >
-                    <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]">
+                    <SelectTrigger className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
                       <SelectValue placeholder="Select Sex" />
                     </SelectTrigger>
                     <SelectContent>
@@ -453,7 +453,7 @@ export default function RegisterEmployeeStep1({
             {/* Full Name and Surname */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-sm font-semibold text-gray-700">
+                <Label htmlFor="fullName" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
                   Full Name <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
@@ -464,13 +464,13 @@ export default function RegisterEmployeeStep1({
                     placeholder="e.g. Jonathan David Doe"
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
+                    className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="surname" className="text-sm font-semibold text-gray-700">
+                <Label htmlFor="surname" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
                   Surname <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
@@ -481,7 +481,7 @@ export default function RegisterEmployeeStep1({
                     placeholder="e.g. Doe"
                     value={formData.surname}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
+                    className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                   />
                 </div>
               </div>
@@ -490,9 +490,10 @@ export default function RegisterEmployeeStep1({
             {/* Date of Birth and Date Joined */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-gray-700">
-                  Date of Birth <span className="text-red-500">*</span>
-                </Label>
+                <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+  Date of Birth <span className="text-red-500">*</span>
+</Label>
+
                 <div className="relative" ref={dobCalendarRef}>
                   <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none z-10" />
                   <input
@@ -517,7 +518,7 @@ export default function RegisterEmployeeStep1({
                     }}
                     placeholder="mm/dd/yyyy"
                     name="dateOfBirth"
-                    className="w-full pl-11 pr-4 h-12 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B3A00]/20 focus:border-[#8B3A00] transition-all"
+                    className="w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
 
                   {/* Calendar Dropdown */}
@@ -691,7 +692,7 @@ export default function RegisterEmployeeStep1({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dateJoined" className="text-sm font-semibold text-gray-700">
+                <Label htmlFor="dateJoined" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
                   Date Joined
                 </Label>
                 <div className="relative" ref={djCalendarRef}>
@@ -707,7 +708,7 @@ export default function RegisterEmployeeStep1({
                     }}
                     placeholder="mm/dd/yyyy"
                     name="dateJoined"
-                    className="w-full pl-11 pr-4 h-12 bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#8B3A00]/20 focus:border-[#8B3A00] transition-all"
+                    className="w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
 
                   {/* Calendar Dropdown */}
@@ -878,7 +879,7 @@ export default function RegisterEmployeeStep1({
 
             {/* Email Address */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
+              <Label htmlFor="email" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
                 Email Address <span className="text-red-500">*</span>
               </Label>
               <div className="relative">
@@ -890,14 +891,14 @@ export default function RegisterEmployeeStep1({
                   placeholder="e.g. jonathan.doe@company.com"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]"
+                  className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                 />
               </div>
             </div>
 
             {/* Home Address */}
             <div className="space-y-2">
-              <Label htmlFor="homeAddress" className="text-sm font-semibold text-gray-700">
+              <Label htmlFor="homeAddress" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
                 Home Address
               </Label>
               <div className="relative">
@@ -909,14 +910,14 @@ export default function RegisterEmployeeStep1({
                   value={formData.homeAddress}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full pl-11 pt-3 pr-4 pb-3 bg-gray-50 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-[#8B3A00]/20 focus:border-[#8B3A00] text-sm"
+                  className="w-full pl-11 pt-3 pr-4 pb-3 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
                 />
               </div>
             </div>
 
             {/* Marital Status */}
             <div className="space-y-2">
-              <Label htmlFor="maritalStatus" className="text-sm font-semibold text-gray-700">
+              <Label htmlFor="maritalStatus" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
                 Marital Status
               </Label>
               <div className="relative">
@@ -927,7 +928,7 @@ export default function RegisterEmployeeStep1({
                     handleSelectChange("maritalStatus", value)
                   }
                 >
-                  <SelectTrigger className="pl-11 h-12 bg-gray-50 border-gray-300 focus:border-[#8B3A00] focus:ring-[#8B3A00]">
+                  <SelectTrigger className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -941,9 +942,9 @@ export default function RegisterEmployeeStep1({
             </div>
 
             {/* Info Alert */}
-            <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-              <p className="text-sm text-blue-800 leading-relaxed">
+            <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-lg">
+              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+              <p className="text-sm text-blue-800 dark:text-blue-300 leading-relaxed">
                 Please ensure all personal details match the employee&apos;s
                 government-issued ID documents (NIC) for compliance purposes.
               </p>
@@ -953,7 +954,7 @@ export default function RegisterEmployeeStep1({
 
         {/* Error Alert */}
         {error && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-250 rounded-xl text-red-600 text-sm flex items-center gap-3 animate-fadeIn">
+          <div className="mt-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 rounded-xl text-red-600 dark:text-red-400 text-sm flex items-center gap-3 animate-fadeIn">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <span className="font-semibold">{error}</span>
           </div>
