@@ -81,7 +81,7 @@ export default function LoginPage() {
                         <LogIn className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                        Nexora HRMS
+                        HRMATE
                     </h1>
                     <p className="mt-2 text-slate-600 dark:text-slate-400">
                         Sign in to access your dashboard
