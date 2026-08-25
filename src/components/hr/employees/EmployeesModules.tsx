@@ -18,7 +18,7 @@ export default function EmployeesModules() {
                     Manage internal department transfers and role changes. Ensure
                     seamless transitions between teams and update reporting structures.
                 </p>
-                <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -40,7 +40,7 @@ export default function EmployeesModules() {
                     Track and process voluntary employee resignation requests. Manage
                     notice periods, exit interviews, and documentation.
                 </p>
-                <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -62,7 +62,7 @@ export default function EmployeesModules() {
                     Handle involuntary employee separations and offboarding. Manage
                     legal compliance, final settlements, and equipment recovery.
                 </p>
-                <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward
@@ -84,7 +84,7 @@ export default function EmployeesModules() {
                     Manage records and benefits processing for deceased employees.
                     Coordinate with families for insurance claims and final benefits.
                 </p>
-                <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                     Open Module{" "}
                     <span className="material-icons-round text-sm ml-1">
                         arrow_forward

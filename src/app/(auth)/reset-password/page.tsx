@@ -20,7 +20,7 @@ export default function ResetPasswordPage() {
                 <div className="flex-1 flex flex-col items-center justify-center max-w-lg xl:max-w-xl text-center mx-auto min-h-0">
                     <div className="mb-8 relative flex-shrink-1 min-h-0 w-full px-4">
                         <div className="absolute inset-0 bg-[#8B3A00]/5 rounded-[40%] blur-3xl -z-10 transform scale-150 mix-blend-multiply transition-transform duration-700 hover:scale-[1.6]"></div>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        { }
                         <img
                             alt="Professional checking phone"
                             className="w-full h-auto object-contain mx-auto mix-blend-multiply max-h-[55vh] transform transition-transform duration-700 hover:scale-[1.03]"

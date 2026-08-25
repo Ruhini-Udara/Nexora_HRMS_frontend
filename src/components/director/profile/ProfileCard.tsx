@@ -5,7 +5,7 @@ export default function ProfileCard() {
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 p-8 flex flex-col items-center shadow-sm transition-colors">
             <div className="relative group">
                 <div className="w-32 h-32 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center overflow-hidden border-4 border-white dark:border-slate-800 shadow-md">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    { }
                     <img
                         alt="Admin Profile"
                         className="w-full h-full object-cover"

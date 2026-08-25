@@ -32,7 +32,7 @@ export default function DocumentsPage() {
                         Review and verify pending employee document submissions for
                         compliance and accuracy.
                     </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module{" "}
                         <span className="material-icons-round text-sm ml-1">
                             arrow_forward
@@ -54,7 +54,7 @@ export default function DocumentsPage() {
                         Access a complete historical log of all document uploads,
                         modifications, and verification statuses.
                     </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module{" "}
                         <span className="material-icons-round text-sm ml-1">
                             arrow_forward
@@ -76,7 +76,7 @@ export default function DocumentsPage() {
                         Browse and manage organized digital personnel files for all active
                         and inactive employees.
                     </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="v font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module{" "}
                         <span className="material-icons-round text-sm ml-1">
                             arrow_forward
@@ -98,7 +98,7 @@ export default function DocumentsPage() {
                         Manage and update internal company policies, standard operating
                         procedures, and compliance guidelines.
                     </p>
-                    <span className="text-secondary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
+                    <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module{" "}
                         <span className="material-icons-round text-sm ml-1">
                             arrow_forward

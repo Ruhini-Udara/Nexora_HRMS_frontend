@@ -28,11 +28,11 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
     fetchNotifications: async () => {
         const user = useAuthStore.getState().user;
-        if (!user || !user.employeeId) return;
+        if (!user || !user.id) return;
 
         set({ isLoading: true, error: null });
         try {
-            const response = await api.get(`/api/system-notifications/all?employeeId=${user.employeeId}`);
+            const response = await api.get(`/api/system-notifications/all?employeeId=${user.id}`);
             const data = response.data;
             const unreadCount = data.filter((n: Notification) => !n.isRead).length;
             set({ notifications: data, unreadCount, isLoading: false });

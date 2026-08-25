@@ -126,7 +126,7 @@ export default function RegisterEmployeeStep2({
 
             {/* Step 2 - Active */}
             <div className="flex flex-col items-center flex-1">
-              <div className="w-14 h-14 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg mb-3 shadow-md">
+              <div className="w-14 h-14 rounded-full bg-[#8B3A00] text-white flex items-center justify-center font-bold text-lg mb-3 shadow-md">
                 02
               </div>
               <span className="text-sm font-semibold text-gray-900 dark:text-white">Employment</span>
@@ -302,7 +302,7 @@ export default function RegisterEmployeeStep2({
           </Button>
           <Button
             onClick={handleNextStep}
-            className="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-10 h-12 rounded-lg shadow-md transition-all"
+            className="bg-[#8B3A00] hover:bg-[#722F00] text-white font-semibold px-10 h-12 rounded-lg shadow-md transition-all"
           >
             Next Step →
           </Button>

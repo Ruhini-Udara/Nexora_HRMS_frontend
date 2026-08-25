@@ -106,3 +106,20 @@ export const updateResignationStatus = async (idStr: string, status: string, rem
     });
     return mapDtoToFrontend(response.data);
 };
+
+export const updateResignationRequest = async (idStr: string, request: Partial<ResignationRequest>): Promise<ResignationRequest> => {
+    const numericId = parseInt(idStr.replace('RES-', ''), 10);
+    const payload = {
+        resignationDate: request.resignationDate,
+        lastWorkingDate: request.lastWorkingDate,
+        obligationDetails: request.obligationDetails,
+        reason: request.reason,
+        specialRemark: request.specialRemark,
+        status: request.status,
+        resignationLetterDoc: request.documents?.resignationLetter,
+        clearanceLetterDoc: request.documents?.clearanceLetter,
+        handoverChecklistDoc: request.documents?.handoverChecklist,
+    };
+    const response = await api.put(`/api/resignations/${numericId}`, payload);
+    return mapDtoToFrontend(response.data);
+};

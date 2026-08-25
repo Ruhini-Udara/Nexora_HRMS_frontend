@@ -30,7 +30,16 @@ export default function Page() {
             const data = user.role === 'ROLE_ADMIN'
                 ? await getAllTransferRequests()
                 : await getTransferRequestsByEmployee(user.id);
-            setRequests(data);
+            
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            
+            const recentData = data.filter(r => {
+                const reqDate = new Date(r.requestDate || '');
+                return isNaN(reqDate.getTime()) || reqDate >= oneYearAgo;
+            });
+            
+            setRequests(recentData);
         } catch (err) {
             console.error("Failed to fetch transfer requests", err);
         } finally {

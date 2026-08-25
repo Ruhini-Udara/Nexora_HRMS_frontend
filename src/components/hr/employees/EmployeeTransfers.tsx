@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { getAllTransferRequests, updateTransferStatus, TransferRequest, TransferStatus } from "@/lib/api/transferRequests";
+import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 import { Toast } from "@/components/ui/Toast";
 
 // Mock Data removed, using real API data.
@@ -29,13 +30,13 @@ const statusConfig: Record<TransferStatus, { label: string; classes: string }> =
         label: "Draft",
         classes: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400",
     },
-    PENDING_BOARD_APPROVAL: {
-        label: "Pending Board",
-        classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-    },
     SUBMITTED_TO_DIRECTOR: {
         label: "Submitted to Director",
         classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+    },
+    PENDING_BOARD_APPROVAL: {
+        label: "Pending Board",
+        classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
     },
     APPROVED: {
         label: "Approved",
@@ -43,7 +44,6 @@ const statusConfig: Record<TransferStatus, { label: string; classes: string }> =
     },
 };
 
-// ── ReadOnly input helper ────────────────────────────────────────────
 const ReadOnlyField = ({ label, value }: { label: string; value: string }) => (
     <div className="space-y-2">
         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -57,7 +57,6 @@ const ReadOnlyField = ({ label, value }: { label: string; value: string }) => (
     </div>
 );
 
-// ── ReadOnly textarea helper ─────────────────────────────────────────
 const ReadOnlyTextarea = ({ label, value, rows = 3 }: { label: string; value: string; rows?: number }) => (
     <div className="space-y-2">
         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -74,10 +73,25 @@ const ReadOnlyTextarea = ({ label, value, rows = 3 }: { label: string; value: st
 
 // ── Main Component ──────────────────────────────────────────────────
 export default function EmployeeTransfers() {
+
+    const handleDownload = async (path: string) => {
+        if (!path.includes('/')) {
+            alert('File not available (legacy format)');
+            return;
+        }
+        const url = await getHrmsSignedUrl(path);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('Failed to get download URL');
+        }
+    };
+
     const [requests, setRequests] = useState<TransferRequest[]>([]);
     const [selectedRequest, setSelectedRequest] = useState<TransferRequest | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
+    const [timeFilter, setTimeFilter] = useState("2days");
     const [showVerifiedList, setShowVerifiedList] = useState(false);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -199,7 +213,33 @@ export default function EmployeeTransfers() {
                 req.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 req.epfNumber.includes(searchTerm);
             const matchesStatus = statusFilter === "All" || req.status === statusFilter;
-            return matchesSearch && matchesStatus;
+
+            let matchesTime = true;
+            const d = req.createdAt || req.requestDate || req.expectedDate;
+            if (d && timeFilter !== 'all') {
+                const reqDate = new Date(d);
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                if (timeFilter === '2days') {
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    matchesTime = reqDate >= yesterday;
+                } else if (timeFilter === 'week') {
+                    const lastWeek = new Date(today);
+                    lastWeek.setDate(lastWeek.getDate() - 7);
+                    matchesTime = reqDate >= lastWeek;
+                } else if (timeFilter === 'month') {
+                    const lastMonth = new Date(today);
+                    lastMonth.setMonth(lastMonth.getMonth() - 1);
+                    matchesTime = reqDate >= lastMonth;
+                } else if (timeFilter === 'year') {
+                    const lastYear = new Date(today);
+                    lastYear.setFullYear(lastYear.getFullYear() - 1);
+                    matchesTime = reqDate >= lastYear;
+                }
+            }
+
+            return matchesSearch && matchesStatus && matchesTime;
         });
     };
 
@@ -301,6 +341,19 @@ export default function EmployeeTransfers() {
                                 <div className="flex items-center gap-2">
                                     <span className="material-symbols-outlined text-slate-400">filter_list</span>
                                     <select
+                                          value={timeFilter}
+                                          onChange={(e) => {
+                                              setTimeFilter(e.target.value);
+                                              setCurrentPage(1);
+                                          }}
+                                          className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
+                                      >
+                                          <option value="2days">Last 2 Days</option>
+                                          <option value="week">Last Week</option>
+                                          <option value="month">Last Month</option>
+                                          <option value="year">Last Year</option>
+                                      </select>
+                                      <select
                                         value={statusFilter}
                                         onChange={(e) => {
                                             setStatusFilter(e.target.value);
@@ -512,7 +565,7 @@ export default function EmployeeTransfers() {
                                                                 <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{doc.filename}</p>
                                                             </div>
                                                             <button 
-                                                                onClick={() => console.log('Downloading', doc.filename)}
+                                                                onClick={() => handleDownload(doc.filename)}
                                                                 className="text-slate-400 hover:text-primary transition-colors cursor-pointer"
                                                                 title="Download Document"
                                                             >

@@ -12,7 +12,6 @@ const menuItems = [
   { label: "Employee Master", icon: <Users size={18} />, view: "employeeMaster" as const, href: "/admin" },
   { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const, href: "/admin" },
   { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const, href: "/admin" },
-  { label: "Document Management", icon: <FileText size={18} />, view: "documents" as const, href: "/admin" },
   { label: "Other Approvals", icon: <ClipboardCheck size={18} />, view: "otherApprovals" as const, href: "/admin/other-approvals" },
   { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const, href: "/admin/training" },
   { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const, href: "/admin/leave-requests" },

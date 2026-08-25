@@ -11,6 +11,7 @@ interface User {
     department?: string;
     branch?: string;
     employeeId?: number;
+    profilePicturePath?: string;
 }
 
 interface AuthState {

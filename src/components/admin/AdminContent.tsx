@@ -6,11 +6,9 @@ import ModuleCard from "@/components/ui/ModuleCard";
 import api from "@/lib/axiosInstance";
 import {
   Users,
-  CalendarDays,
   Clock,
   Contact,
   Calendar,
-  FileText,
   BarChart2,
   GraduationCap
 } from "lucide-react";
@@ -18,7 +16,6 @@ import EmployeeMaster from "@/components/admin/employee-master/EmployeeMaster";
 import RegisterEmployee from "@/components/admin/register-employee/RegisterEmployee";
 import OfficeCalendar from "@/components/admin/office-calendar/OfficeCalendar";
 import ShiftManagement from "@/components/admin/shift-management/ShiftManagement";
-import DocumentManagement from "@/components/admin/document-management/DocumentManagement";
 import { useAdminNavigation } from "./AdminNavigationContext";
 
 export default function AdminContent() {
@@ -30,13 +27,33 @@ export default function AdminContent() {
     let isMounted = true;
     const fetchCounts = async () => {
       try {
-        const [empRes, shiftRes] = await Promise.all([
-          api.get("/api/employees"),
-          api.get("/api/shifts"),
-        ]);
+        let empCount = 0;
+        let sCount = 3;
+
+        try {
+          const empRes = await api.get("/api/employees");
+          if (Array.isArray(empRes.data)) {
+            empCount = empRes.data.length;
+          }
+        } catch {
+          // fallback
+        }
+
+        try {
+          const shiftRes = await fetch("/api/shifts");
+          if (shiftRes.ok) {
+            const shiftsData = await shiftRes.json();
+            if (Array.isArray(shiftsData)) {
+              sCount = shiftsData.length;
+            }
+          }
+        } catch {
+          // fallback
+        }
+
         if (isMounted) {
-          setEmployeeCount(Array.isArray(empRes.data) ? empRes.data.length : 0);
-          setShiftCount(Array.isArray(shiftRes.data) ? shiftRes.data.length : 0);
+          setEmployeeCount(empCount);
+          setShiftCount(sCount);
         }
       } catch (error) {
         console.error("Error fetching stats:", error);
@@ -69,9 +86,7 @@ export default function AdminContent() {
     return <ShiftManagement />;
   }
 
-  if (activeView === "documents") {
-    return <DocumentManagement />;
-  }
+
 
   return (
     <div className="max-w-7xl mx-auto w-full">
@@ -86,18 +101,11 @@ export default function AdminContent() {
         </p>
       </div>
 
-      {/* Top Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <StatCard
           title="Total Employees"
           value={employeeCount}
           icon={<Users className="w-7 h-7 text-primary" />}
-          iconBgColor="bg-primary/10"
-        />
-        <StatCard
-          title="Documents Uploaded This Month"
-          value="24"
-          icon={<CalendarDays className="w-7 h-7 text-primary" />}
           iconBgColor="bg-primary/10"
         />
 
@@ -135,13 +143,7 @@ export default function AdminContent() {
           onClick={() => setActiveView("shifts")}
           className="lg:col-span-2"
         />
-        <ModuleCard
-          title="Document Management"
-          description="Securely store and track employee contracts, policies, and certifications in one place."
-          icon={<FileText className="w-6 h-6" />}
-          onClick={() => setActiveView("documents")}
-          className="lg:col-span-2"
-        />
+
         <ModuleCard
           title="Register Employee"
           description="Seamlessly onboard new staff, assign roles, and configure their dual-identity system accounts."
