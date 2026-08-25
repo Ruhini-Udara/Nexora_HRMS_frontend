@@ -30,10 +30,33 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
     if (!formData.password) {
       generateRandomPassword();
     }
-    // Default account email based on name if empty
+    // Default account email based on name and NIC if empty
     if (!formData.accountEmail && formData.fullName) {
-      const namePart = formData.fullName.split(' ')[0].toLowerCase();
-      updateFormData({ accountEmail: `${namePart}@nexora.com` });
+      const nameParts = formData.fullName.trim().split(/\s+/);
+      const firstName = nameParts[0].toLowerCase();
+      
+      let lastName = "";
+      if (formData.surname) {
+        lastName = formData.surname.trim().toLowerCase();
+      } else if (nameParts.length > 1) {
+        lastName = nameParts[nameParts.length - 1].toLowerCase();
+      }
+      
+      // Sanitize to alphanumeric characters only
+      const cleanFirst = firstName.replace(/[^a-z0-9]/g, '');
+      const cleanLast = lastName.replace(/[^a-z0-9]/g, '');
+      
+      let emailPrefix = cleanLast ? `${cleanFirst}.${cleanLast}` : cleanFirst;
+      
+      if (formData.nicNumber) {
+        const cleanNic = formData.nicNumber.trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const nicSuffix = cleanNic.slice(-4);
+        if (nicSuffix) {
+          emailPrefix = `${emailPrefix}.${nicSuffix}`;
+        }
+      }
+      
+      updateFormData({ accountEmail: `${emailPrefix}@nexora.com` });
     }
   }, []);
 
