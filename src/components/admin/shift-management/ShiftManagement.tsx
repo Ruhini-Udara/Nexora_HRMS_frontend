@@ -80,31 +80,12 @@ export default function ShiftManagement() {
 
   const loadData = useCallback(async () => {
     try {
-      let rawShifts: ShiftApiResponse[] = [
-        { id: 1, name: "Normal Shift", description: "Standard office working hours", startTime: "08:30:00", endTime: "17:00:00" },
-        { id: 2, name: "Driver Shift", description: "Transport and logistics shift", startTime: "06:00:00", endTime: "15:00:00" },
-        { id: 3, name: "Night Shift", description: "Night security and operations shift", startTime: "18:00:00", endTime: "06:00:00" }
-      ];
+      const [shiftsRes, designationsRes] = await Promise.all([
+        api.get("/api/shifts"),
+        api.get("/api/designations")
+      ]);
 
-      try {
-        const shiftsRes = await fetch("/api/shifts");
-        if (shiftsRes.ok) {
-          const sData = await shiftsRes.json();
-          if (Array.isArray(sData) && sData.length > 0) rawShifts = sData;
-        }
-      } catch {
-        // fallback
-      }
-
-      let designationsData: DesignationApiResponse[] = [];
-      try {
-        const designationsRes = await api.get("/api/designations");
-        if (Array.isArray(designationsRes.data)) designationsData = designationsRes.data;
-      } catch {
-        // fallback
-      }
-
-      const fetchedShifts = rawShifts.map((s: ShiftApiResponse) => {
+      const fetchedShifts = shiftsRes.data.map((s: ShiftApiResponse) => {
         let icon: "sun" | "clock" | "truck" = "clock";
         let color = "orange";
         if (s.name.toLowerCase().includes("normal")) {
@@ -126,7 +107,7 @@ export default function ShiftManagement() {
         };
       });
 
-      const fetchedMappings = designationsData.map((d: DesignationApiResponse) => {
+      const fetchedMappings = designationsRes.data.map((d: DesignationApiResponse) => {
         const avatar = d.designationName ? d.designationName.substring(0, 2).toUpperCase() : "DS";
         let department = "Operations";
         if (d.designationName.toLowerCase().includes("hr") || d.designationName.toLowerCase().includes("admin")) {
