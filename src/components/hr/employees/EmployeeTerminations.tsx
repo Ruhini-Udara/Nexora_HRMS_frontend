@@ -30,15 +30,14 @@ export interface TerminationRequest {
 const MOCK_REQUESTS: TerminationRequest[] = [];
 
 // ── Status badge config ─────────────────────────────────────────────
-const statusConfig: Record<TerminationStatus, { label: string; classes: string }> = {
-    'NEW': { label: 'Draft', classes: 'bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-400' },
-    'SUBMITTED': { label: 'Submitted', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-    'VERIFIED_BY_HR': { label: 'Verified', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    'PENDING_ADMIN': { label: 'Pending Admin', classes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    'REJECTED': { label: 'Rejected', classes: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    'PENDING_BOARD_APPROVAL': { label: 'Pending Board', classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-    'SUBMITTED_TO_DIRECTOR': { label: 'Submitted to Director', classes: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-    'APPROVED': { label: 'Approved', classes: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' }
+const statusConfig: Record<string, { label: string; classes: string }> = {
+    NEW: { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400" },
+    SUBMITTED: { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+    VERIFIED_BY_HR: { label: "Verified", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+    PENDING_ADMIN: { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+    SUBMITTED_TO_DIRECTOR: { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
+    APPROVED: { label: "Approved", classes: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+    REJECTED: { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
 };
 
 // ── Main Component ──────────────────────────────────────────────────
@@ -98,11 +97,24 @@ const loadLocalTerminations = (): TerminationRequest[] => {
 };
 
 export default function EmployeeTerminations() {
-    const [requests, setRequests] = useState<TerminationRequest[]>(() => loadLocalTerminations());
+    const [requests, setRequests] = useState<TerminationRequest[]>([]);
+
+    React.useEffect(() => {
+        const data = loadLocalTerminations();
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        
+        const recentData = data.filter(r => {
+            const reqDate = new Date(r.initiationDate || '');
+            return isNaN(reqDate.getTime()) || reqDate >= oneYearAgo;
+        });
+        setRequests(recentData);
+    }, []);
 
     const [activeTab, setActiveTab] = useState<'pending' | 'board'>('pending');
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
+    const [timeFilter, setTimeFilter] = useState<'2days' | 'week' | 'month' | 'year'>('2days');
     const [selectedRequest, setSelectedRequest] = useState<TerminationRequest | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isReadOnly, setIsReadOnly] = useState(false);
@@ -128,7 +140,7 @@ export default function EmployeeTerminations() {
         setIsModalOpen(true);
     };
 
-    const handleSaveRequest = (newReq: TerminationRequest) => {
+    const handleSaveRequest = (newReq: TerminationRequest, closeAfterSave = true) => {
         const adaptedReq: TerminationRequest = {
             ...newReq,
         };
@@ -139,11 +151,12 @@ export default function EmployeeTerminations() {
                 updated = prev.map(r => r.id === adaptedReq.id ? adaptedReq : r);
             } else {
                 updated = [...prev, adaptedReq];
+                setSelectedRequest(adaptedReq);
             }
             localStorage.setItem("termination_requests", JSON.stringify(updated));
             return updated;
         });
-        setIsModalOpen(false);
+        if (closeAfterSave) setIsModalOpen(false);
     };
 
 
@@ -216,7 +229,28 @@ export default function EmployeeTerminations() {
         
         const matchesStatus = statusFilter === "All" || req.status === statusFilter;
         
-        return matchesTab && matchesSearch && matchesStatus;
+        let matchesTime = true;
+        const d = req.initiationDate;
+        if (d) {
+            const reqDate = new Date(d);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            if (timeFilter === '2days') {
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                matchesTime = reqDate >= yesterday;
+            } else if (timeFilter === 'week') {
+                const lastWeek = new Date(today);
+                lastWeek.setDate(lastWeek.getDate() - 7);
+                matchesTime = reqDate >= lastWeek;
+            } else if (timeFilter === 'month') {
+                const lastMonth = new Date(today);
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                matchesTime = reqDate >= lastMonth;
+            }
+        }
+        
+        return matchesTab && matchesSearch && matchesStatus && matchesTime;
     });
 
     const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
@@ -316,8 +350,21 @@ export default function EmployeeTerminations() {
                             >
                                 <option value="All">All Statuses</option>
                                 {Object.keys(statusConfig).map(st => (
-                                    <option key={st} value={st}>{statusConfig[st as TerminationStatus].label}</option>
+                                    <option key={st} value={st}>{statusConfig[st].label}</option>
                                 ))}
+                            </select>
+                            <select
+                                value={timeFilter}
+                                onChange={(e) => {
+                                    setTimeFilter(e.target.value as any);
+                                    setCurrentPage(1);
+                                }}
+                                className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
+                            >
+                                <option value="2days">Last 2 Days</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
                             </select>
                         </div>
                         {activeTab === 'pending' ? (
@@ -345,22 +392,55 @@ export default function EmployeeTerminations() {
                 <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {(
                         [
-                            { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
-                            { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-                            { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
-                            { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
+                            { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20", ring: "ring-amber-500" },
+                            { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20", ring: "ring-emerald-500" },
+                            { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
+                            { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
                         ] as const
-                    ).map(({ label, status, icon, color, bg }) => (
-                        <div key={status} className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center gap-3 shadow-sm`}>
-                            <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
-                            <div>
-                                <p className="text-2xl font-bold text-slate-800 dark:text-white">
-                                    {requests.filter((r) => r.status === status).length}
-                                </p>
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
+                    ).map(({ label, status, icon, color, bg, ring }) => {
+                        const statCount = requests.filter(r => r.status === status).filter(req => {
+                            let matchesTime = true;
+                            const d = req.initiationDate;
+                            if (d) {
+                                const reqDate = new Date(d);
+                                const now = new Date();
+                                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                if (timeFilter === '2days') {
+                                    const yesterday = new Date(today);
+                                    yesterday.setDate(yesterday.getDate() - 1);
+                                    matchesTime = reqDate >= yesterday;
+                                } else if (timeFilter === 'week') {
+                                    const lastWeek = new Date(today);
+                                    lastWeek.setDate(lastWeek.getDate() - 7);
+                                    matchesTime = reqDate >= lastWeek;
+                                } else if (timeFilter === 'month') {
+                                    const lastMonth = new Date(today);
+                                    lastMonth.setMonth(lastMonth.getMonth() - 1);
+                                    matchesTime = reqDate >= lastMonth;
+                                }
+                            }
+                            return matchesTime;
+                        }).length;
+
+                        return (
+                            <div 
+                                key={status} 
+                                onClick={() => {
+                                    setStatusFilter(statusFilter === status ? 'All' : status);
+                                    setCurrentPage(1);
+                                }}
+                                className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center gap-3 shadow-sm cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === status ? `ring-2 ${ring}` : ''}`}
+                            >
+                                <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
+                                <div>
+                                    <p className="text-2xl font-bold text-slate-800 dark:text-white">
+                                        {statCount}
+                                    </p>
+                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Data Table */}

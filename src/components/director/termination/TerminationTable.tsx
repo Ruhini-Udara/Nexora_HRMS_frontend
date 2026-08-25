@@ -1,93 +1,65 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Check, X, Eye, MonitorPlay, Mails, Send } from 'lucide-react';
 
 export type DirTermRequest = {
     id: string;
     employeeName: string;
-    email: string;
+    epfNumber?: string;
+    email?: string;
     branch: string;
     type: string;
     reason: string;
     initiationDate: string;
     effectiveDate: string;
-    boardMeetingDate: string;
+    boardMeetingDate?: string;
     specialRemark?: string;
-    status: 'BOARD_ASSIGNED' | 'APPROVED' | 'REJECTED';
+    status: string;
     rejectReason?: string;
+    documents?: {
+        request_for_termination?: string;
+        loan_clearance_letter?: string;
+        other_document?: string;
+    };
+    hrRemark?: string;
 };
 
 const getTodayStr = () => new Date().toISOString().split('T')[0];
-const getFutureStr = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 10);
-    return d.toISOString().split('T')[0];
-};
-const getPastStr = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 10);
-    return d.toISOString().split('T')[0];
-};
 
-const mockData: DirTermRequest[] = [
-    {
-        id: 'TRM-2024-001',
-        employeeName: 'John Doe',
-        email: 'john.doe@example.com',
-        branch: 'Colombo',
-        type: 'Involuntary',
-        reason: 'Poor performance over 3 quarters.',
-        initiationDate: '2024-10-15',
-        effectiveDate: '2024-11-01',
-        boardMeetingDate: getPastStr(),
-        status: 'APPROVED'
-    },
-    {
-        id: 'TRM-2024-002',
-        employeeName: 'Sunil Silva',
-        email: 'sunil.silva@example.com',
-        branch: 'Kandy',
-        type: 'Voluntary',
-        reason: 'Career change',
-        initiationDate: '2024-11-05',
-        effectiveDate: '2024-12-01',
-        boardMeetingDate: getTodayStr(),
-        specialRemark: 'Employee requested an expedited settlement for the loan clearance due to urgent departure.',
-        status: 'BOARD_ASSIGNED'
-    },
-    {
-        id: 'TRM-2024-003',
-        employeeName: 'Amal Perera',
-        email: 'amal.perera@example.com',
-        branch: 'Galle',
-        type: 'Voluntary',
-        reason: 'Relocating abroad',
-        initiationDate: '2024-11-06',
-        effectiveDate: '2024-12-15',
-        boardMeetingDate: getTodayStr(),
-        status: 'BOARD_ASSIGNED'
-    },
-    {
-        id: 'TRM-2024-004',
-        employeeName: 'Nuwan Fernando',
-        email: 'nuwan.fernando@example.com',
-        branch: 'Matara',
-        type: 'Involuntary',
-        reason: 'Policy violation',
-        initiationDate: '2024-11-10',
-        effectiveDate: '2024-11-12',
-        boardMeetingDate: getFutureStr(),
-        status: 'BOARD_ASSIGNED'
+const loadDirectorTerminations = (): DirTermRequest[] => {
+    if (typeof window === "undefined") return [];
+    const stored = localStorage.getItem("termination_requests");
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+                return parsed.filter((r: any) => 
+                    r.status === 'SUBMITTED_TO_DIRECTOR' || 
+                    r.status === 'PENDING_BOARD_APPROVAL' || 
+                    r.status === 'BOARD_ASSIGNED' ||
+                    r.status === 'APPROVED' || 
+                    r.status === 'REJECTED'
+                ).map((r: any) => ({
+                    ...r,
+                    boardMeetingDate: r.boardMeetingDate || getTodayStr(),
+                    email: r.email || `${r.employeeName ? r.employeeName.toLowerCase().replace(/\s+/g, '.') : 'employee'}@example.com`
+                }));
+            }
+        } catch (e) {
+            console.error(e);
+        }
     }
-];
+    return [];
+};
 
 export default function TerminationTable() {
-    const [requests, setRequests] = useState<DirTermRequest[]>(mockData);
+    const todayStr = getTodayStr();
+    const [requests, setRequests] = useState<DirTermRequest[]>([]);
     const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
-    
-    // Get today's date formatted as YYYY-MM-DD
-    const todayStr = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+    const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year'>('year');
+    const [statusFilter, setStatusFilter] = useState<string>('All');
 
     // View Modal State
     const [viewingRequest, setViewingRequest] = useState<DirTermRequest | null>(null);
@@ -100,25 +72,21 @@ export default function TerminationTable() {
     const [hrNotified, setHrNotified] = useState(false);
     const [financeNotified, setFinanceNotified] = useState(false);
 
-    const [selectedDate, setSelectedDate] = useState(todayStr);
-
-    const isActionable = (dateString?: string) => {
-        if (!dateString) return false;
-        try {
-            const dateStr = new Date(dateString).toISOString().split('T')[0];
-            return dateStr === todayStr;
-        } catch (e) {
-            return false;
-        }
-    };
-
     // Toast State
     const [toastMessage, setToastMessage] = useState<string | null>(null);
     const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
 
+    useEffect(() => {
+        setRequests(loadDirectorTerminations());
+    }, []);
+
+    const isPending = (status: string) => {
+        return status === 'SUBMITTED_TO_DIRECTOR' || status === 'PENDING_BOARD_APPROVAL' || status === 'BOARD_ASSIGNED';
+    };
+
     const getDropdownOptions = () => {
         if (activeTab === 'current') return [todayStr];
-        const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean))).sort();
+        const allDates = Array.from(new Set(requests.map(r => r.boardMeetingDate).filter(Boolean) as string[])).sort();
         if (activeTab === 'upcoming') return allDates.filter(d => d > todayStr);
         return allDates.filter(d => d < todayStr);
     };
@@ -129,34 +97,93 @@ export default function TerminationTable() {
     };
 
     // Filter Logic based on tabs
-    const filteredRequests = useMemo(() => {
+    const timeFilteredRequests = useMemo(() => {
         return requests.filter(req => {
-            const pivotDate = todayStr;
-            if (activeTab === 'current') return req.boardMeetingDate === selectedDate;
-            if (activeTab === 'upcoming') {
-                if (selectedDate === 'All') return req.boardMeetingDate > pivotDate;
-                return req.boardMeetingDate === selectedDate;
-            }
-            if (activeTab === 'past') {
-                if (selectedDate === 'All') return req.boardMeetingDate < pivotDate;
-                return req.boardMeetingDate === selectedDate;
-            }
-            return true;
-        });
-    }, [requests, activeTab, selectedDate, todayStr]);
+            const reqBoardDate = req.boardMeetingDate;
+            if (!reqBoardDate) return false;
+            const statusUpper = String(req.status).toUpperCase();
+            if (statusUpper === 'SUBMITTED' || statusUpper === 'DRAFT' || statusUpper === 'NEW' || statusUpper === 'PENDING_HR') return false;
 
-    const isCurrentListFullyDecided = filteredRequests.length > 0 && filteredRequests.every(r => r.status !== 'BOARD_ASSIGNED');
+            let matchesTab = true;
+            if (activeTab === 'current') {
+                matchesTab = reqBoardDate === selectedDate;
+            } else if (activeTab === 'upcoming') {
+                if (selectedDate === 'All') matchesTab = reqBoardDate > todayStr;
+                else matchesTab = reqBoardDate === selectedDate;
+            } else if (activeTab === 'past') {
+                if (selectedDate === 'All') matchesTab = reqBoardDate < todayStr;
+                else matchesTab = reqBoardDate === selectedDate;
+            }
+            if (!matchesTab) return false;
+
+            let matchesTime = true;
+            const dateToCheck = req.initiationDate || reqBoardDate;
+            if (dateToCheck) {
+                const reqDate = new Date(dateToCheck);
+                if (!isNaN(reqDate.getTime())) {
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const reqDay = new Date(reqDate.getFullYear(), reqDate.getMonth(), reqDate.getDate());
+                    
+                    if (timeFilter === 'today') {
+                        matchesTime = reqDay.getTime() === today.getTime();
+                    } else if (timeFilter === 'week') {
+                        const lastWeek = new Date(today);
+                        lastWeek.setDate(lastWeek.getDate() - 6);
+                        matchesTime = reqDay >= lastWeek && reqDay <= today;
+                    } else if (timeFilter === 'month') {
+                        matchesTime = reqDay.getMonth() === today.getMonth() && reqDay.getFullYear() === today.getFullYear();
+                    } else if (timeFilter === 'year') {
+                        matchesTime = reqDay.getFullYear() === today.getFullYear();
+                    }
+                }
+            }
+            return matchesTime;
+        });
+    }, [requests, activeTab, selectedDate, todayStr, timeFilter]);
+
+    const filteredRequests = useMemo(() => {
+        return timeFilteredRequests.filter(req => {
+            if (statusFilter === 'All') return true;
+            if (statusFilter === 'PENDING') return isPending(req.status);
+            return req.status === statusFilter;
+        });
+    }, [timeFilteredRequests, statusFilter]);
+
+    const isCurrentListFullyDecided = filteredRequests.length > 0 && filteredRequests.every(r => !isPending(r.status));
+
+    const saveToLocalStorage = (updatedRequests: DirTermRequest[]) => {
+        if (typeof window === "undefined") return;
+        const stored = localStorage.getItem("termination_requests");
+        if (stored) {
+            try {
+                const all = JSON.parse(stored);
+                const updatedAll = all.map((item: any) => {
+                    const found = updatedRequests.find(u => u.id === item.id);
+                    return found ? { ...item, ...found } : item;
+                });
+                localStorage.setItem("termination_requests", JSON.stringify(updatedAll));
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    };
 
     const handleApprove = (id: string) => {
         const req = requests.find(r => r.id === id);
-        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'APPROVED' } : r));
-        showToast(`✅ Approved — email sent to ${req?.employeeName} (${req?.email})`);
+        const updated = requests.map(r => r.id === id ? { ...r, status: 'APPROVED' } : r);
+        setRequests(updated);
+        saveToLocalStorage(updated);
+        showToast(`application approved successfully !`);
     };
 
     const handleConfirmReject = () => {
         if (!rejectingRequest || !rejectReason.trim()) return;
-        setRequests(prev => prev.map(r => r.id === rejectingRequest.id ? { ...r, status: 'REJECTED', rejectReason } : r));
-        showToast(`❌ Rejected — email sent to ${rejectingRequest.employeeName} (${rejectingRequest.email})`);
+        const id = rejectingRequest.id;
+        const updated = requests.map(r => r.id === id ? { ...r, status: 'REJECTED', rejectReason, hrRemark: rejectReason } : r);
+        setRequests(updated);
+        saveToLocalStorage(updated);
+        showToast(`application rejected !`);
         setRejectingRequest(null);
         setRejectReason('');
     };
@@ -169,8 +196,54 @@ export default function TerminationTable() {
         }
     };
 
+    const statsTags = [
+        { label: "Total Requests", status: "All", icon: "description", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
+        { label: "Pending", status: "PENDING", icon: "schedule", color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-900/20", ring: "ring-yellow-500" },
+        { label: "Approved", status: "APPROVED", icon: "check_circle", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20", ring: "ring-green-500" },
+        { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
+    ] as const;
+
     return (
         <div className="space-y-6">
+            {/* Time Filter Dropdown */}
+            <div className="flex justify-end mb-4">
+                <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value as any)}
+                    className="px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm text-sm font-bold"
+                >
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+            </div>
+
+            {/* Interactive Stats Tags */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {statsTags.map(({ label, status, icon, color, bg, ring }) => {
+                    const statCount = timeFilteredRequests.filter(r => {
+                        if (status === 'All') return true;
+                        if (status === 'PENDING') return isPending(r.status);
+                        return String(r.status) === status;
+                    }).length;
+
+                    return (
+                        <div 
+                            key={status} 
+                            onClick={() => setStatusFilter(statusFilter === status ? 'All' : status)}
+                            className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === status ? `ring-2 ${ring}` : ''}`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
+                                <span className="text-gray-600 dark:text-slate-300 font-bold text-sm">{label}</span>
+                            </div>
+                            <span className={`text-2xl font-black ${color}`}>{statCount}</span>
+                        </div>
+                    );
+                })}
+            </div>
+
             {/* Tabs & Filters */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-2">
                 <div className="flex gap-4">
@@ -229,7 +302,7 @@ export default function TerminationTable() {
                             {filteredRequests.map(req => (
                                 <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 transition-colors">
                                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{req.id}</td>
-                                    <td className="px-6 py-4 text-gray-700 dark:text-slate-200">{req.employeeName}</td>
+                                    <td className="px-6 py-4 text-gray-700 dark:text-slate-200 font-medium">{req.employeeName}</td>
                                     <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{req.branch}</td>
                                     <td className="px-6 py-4 text-gray-600 dark:text-slate-400">{req.type}</td>
                                     <td className="px-6 py-4">
@@ -244,7 +317,7 @@ export default function TerminationTable() {
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
-                                            {req.status === 'BOARD_ASSIGNED' && isActionable(req.boardMeetingDate) && (
+                                            {isPending(req.status) && (
                                                 <>
                                                     <button 
                                                         onClick={() => handleApprove(req.id)}
@@ -421,4 +494,3 @@ export default function TerminationTable() {
         </div>
     );
 }
-

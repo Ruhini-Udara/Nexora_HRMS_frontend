@@ -5,6 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { createTransferRequest, updateTransferRequest, TransferRequest, TransferStatus } from '@/lib/api/transferRequests';
 import { useAuthStore } from '@/store/useAuthStore';
+import { uploadHrmsDocument } from '@/lib/supabaseClient';
+import { Loader2 } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────────────
 // ── Types ───────────────────────────────────────────────────────────
@@ -24,7 +26,7 @@ interface DocumentSlot {
 const transferSchema = z.object({
     currentLocation: z.string().min(1, 'Current location is required'),
     targetLocation: z.string().min(1, 'Target location is required'),
-    expectedDate: z.string().min(1, 'Effective date is required'),
+    expectedDate: z.string().min(1, 'Effective date is required').refine(date => new Date(date) >= new Date(new Date().setHours(0,0,0,0)), 'Date must be today or in the future'),
     validReason: z.string().min(1, 'Reason is required'),
 });
 
@@ -35,6 +37,7 @@ interface ConfirmModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
+    isUploading?: boolean;
 }
 
 const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm }) => {
@@ -252,7 +255,9 @@ export interface TransferRequestPageRef {
 }
 
 const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPageProps>(({ requests, onRequestChange }, ref) => {
+    const todayISO = new Date().toISOString().split('T')[0];
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const [editingDraft, setEditingDraft] = useState<TransferRequest | null>(null);
@@ -437,8 +442,8 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                     const savedReq = await createTransferRequest(payload, userDetails);
                     onRequestChange([...requests, savedReq]);
                     showSuccess(`Draft ${savedReq.id} saved successfully`);
+                    setEditingDraft(savedReq);
                 }
-                resetForm();
             } catch (error) {
                 console.error('Failed to save draft:', error);
             }
@@ -453,8 +458,9 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     };
 
     const handleConfirmSubmit = async () => {
+        setIsUploading(true);
         const values = getValues();
-        const payload = buildPayload(values, 'SUBMITTED');
+        const payload = await buildPayload(values, 'SUBMITTED');
         try {
             if (editingDraft) {
                 const updated = await updateTransferRequest(editingDraft.id, payload);
@@ -556,6 +562,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                         </label>
                                         <input
                                             type="date"
+                                            min={todayISO}
                                             {...register('expectedDate')}
                                             className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.expectedDate ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
                                         />

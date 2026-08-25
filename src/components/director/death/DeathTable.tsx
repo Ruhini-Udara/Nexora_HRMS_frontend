@@ -29,18 +29,16 @@ export default function DeathTable() {
     const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
 
     const handleApprove = (id: number) => {
-        const app = applications.find(a => a.id === id);
         setApplications(prev => prev.map(a => a.id === id ? { ...a, status: 'Approved' } : a));
-        showToast(`Approval email sent to ${app?.employee} (${app?.email})`);
+        showToast(`application approved successfully !`);
     };
 
     const openRejectModal = (id: number) => { setAppToReject(id); setRejectReason(''); setRejectModalOpen(true); };
 
     const handleRejectSubmit = () => {
         if (!rejectReason.trim() || appToReject === null) return;
-        const app = applications.find(a => a.id === appToReject);
         setApplications(prev => prev.map(a => a.id === appToReject ? { ...a, status: 'Rejected' } : a));
-        showToast(`Rejection email sent to ${app?.employee} (${app?.email})`);
+        showToast(`application rejected !`);
         setRejectModalOpen(false); setAppToReject(null);
     };
 

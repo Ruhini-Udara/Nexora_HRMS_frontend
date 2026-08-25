@@ -1,5 +1,6 @@
+"use client";
 
-import TerminationStats from '@/components/director/termination/TerminationStats';
+import React from 'react';
 import TerminationTable from '@/components/director/termination/TerminationTable';
 
 export default function TerminationRequestsPage() {
@@ -10,10 +11,7 @@ export default function TerminationRequestsPage() {
                 <p className="text-gray-500 dark:text-slate-400 mt-1">Manage employee termination processes and exit procedures.</p>
             </div>
 
-            <TerminationStats />
-
             <TerminationTable />
         </div>
     );
 }
-
