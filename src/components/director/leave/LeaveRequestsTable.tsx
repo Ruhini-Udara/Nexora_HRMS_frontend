@@ -210,21 +210,13 @@ const LeaveRequestsTable = () => {
                 <table className="w-full text-left">
                     <thead className="bg-gray-50 dark:bg-zinc-800/50 border-b border-gray-200 dark:border-zinc-800">
                         <tr>
-<<<<<<< Updated upstream
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Employee</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Type</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Requested Date</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Dates</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Days</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-gray-300 text-center">Actions</th>
-=======
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Type</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Requested Date</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Days</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
->>>>>>> Stashed changes
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
@@ -255,13 +247,13 @@ const LeaveRequestsTable = () => {
                                         <p className="text-sm text-gray-600 dark:text-gray-400 font-bold uppercase text-[10px]">{(request as { refType?: string }).refType === 'MATERNITY_LEAVE' ? 'Maternity Leave' : 'Overseas Leave'}</p>
                                     </td>
                                     <td className="px-6 py-4">
-<<<<<<< Updated upstream
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                                            {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                    </td>
+                                    <td className="px-6 py-4">
                                         <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                                             {request.fromDate} to {request.endDate}
-=======
-                                        <p className="text-sm text-gray-600 dark:text-slate-400 font-medium">
-                                            {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}
->>>>>>> Stashed changes
                                         </p>
                                     </td>
                                     <td className="px-6 py-4 text-center">
