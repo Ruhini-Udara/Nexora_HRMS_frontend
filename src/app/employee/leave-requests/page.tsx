@@ -191,6 +191,7 @@ export default function LeaveRequestsDashboard() {
                         <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">
                             <tr>
                                 <th className="px-6 py-4">Leave Type</th>
+                                <th className="px-6 py-4">Requested Date</th>
                                 <th className="px-6 py-4">From - To</th>
                                 <th className="px-6 py-4">Days</th>
                                 <th className="px-6 py-4">Status</th>
@@ -200,7 +201,7 @@ export default function LeaveRequestsDashboard() {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                                         <div className="flex items-center justify-center gap-2">
                                             <span className="material-symbols-outlined animate-spin">progress_activity</span>
                                             Loading requests...
@@ -209,7 +210,7 @@ export default function LeaveRequestsDashboard() {
                                 </tr>
                             ) : filteredRequests.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 italic">
+                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 italic">
                                         No requests found.
                                     </td>
                                 </tr>
@@ -219,6 +220,9 @@ export default function LeaveRequestsDashboard() {
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-slate-800 dark:text-white">{req.type}</div>
                                             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate max-w-[200px]">{req.reason}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm font-medium">
+                                            {new Date(req.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300 text-sm">
                                             {new Date(req.fromDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}

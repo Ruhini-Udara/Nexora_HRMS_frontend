@@ -47,17 +47,17 @@ const calculateDuration = (startTime: string, endTime: string): string => {
   if (!startTime || !endTime) return "-";
   const [startHour, startMin] = startTime.split(':').map(Number);
   const [endHour, endMin] = endTime.split(':').map(Number);
-  
+
   let totalMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
-  
+
   // Handle overnight shifts
   if (totalMinutes < 0) {
     totalMinutes += 24 * 60;
   }
-  
+
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  
+
   if (minutes === 0) {
     return `${hours}h Work Duration`;
   } else {
@@ -233,7 +233,7 @@ export default function ShiftManagement() {
   const filteredShiftMappings = shiftMappings.filter((mapping) => {
     const matchesDesignation = !selectedDesignation || mapping.role === selectedDesignation;
     const matchesShift = !selectedShift || mapping.assignedShift === selectedShift;
-    
+
     return matchesDesignation && matchesShift;
   });
 
@@ -252,9 +252,13 @@ export default function ShiftManagement() {
             Configure shift timings and map designations to specific schedules.
           </p>
         </div>
-        <button 
+        <button
           onClick={() => setShowAddMapping(true)}
+<<<<<<< Updated upstream
           className="flex items-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors"
+=======
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-9e3f00  text-white font-medium rounded-lg transition-colors cursor-pointer"
+>>>>>>> Stashed changes
         >
           <Plus size={18} />
           Add New Shift Mapping
@@ -272,8 +276,9 @@ export default function ShiftManagement() {
           {shifts.map((shift) => {
             const isEditing = editingShiftId === shift.id;
             const displayShift = isEditing && editingShiftData ? editingShiftData : shift;
-            
+
             return (
+<<<<<<< Updated upstream
             <div
               key={shift.id}
               className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow"
@@ -347,9 +352,84 @@ export default function ShiftManagement() {
                   >
                     Edit Details
                   </button>
+=======
+              <div
+                key={shift.id}
+                className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`p-3 rounded-lg ${getShiftColor(displayShift.color)}`}>
+                    {getShiftIcon(displayShift.icon)}
+                  </div>
+                </div>
+                <h3 className="text-lg font-bold text-[#111827] dark:text-white mb-1">{displayShift.name}</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{displayShift.description}</p>
+
+                {isEditing ? (
+                  <div className="space-y-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Start Time</label>
+                      <input
+                        type="time"
+                        value={displayShift.startTime}
+                        onChange={(e) => {
+                          const newShift = { ...displayShift, startTime: e.target.value };
+                          newShift.duration = calculateDuration(newShift.startTime, newShift.endTime);
+                          setEditingShiftData(newShift);
+                        }}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">End Time</label>
+                      <input
+                        type="time"
+                        value={displayShift.endTime}
+                        onChange={(e) => {
+                          const newShift = { ...displayShift, endTime: e.target.value };
+                          newShift.duration = calculateDuration(newShift.startTime, newShift.endTime);
+                          setEditingShiftData(newShift);
+                        }}
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl font-bold text-[#111827] dark:text-white">
+                      {displayShift.startTime} - {displayShift.endTime}
+                    </span>
+                  </div>
+>>>>>>> Stashed changes
                 )}
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">{displayShift.duration}</span>
+                  {isEditing ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveShift}
+                        className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 font-medium cursor-pointer"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancelShift}
+                        className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-700 font-medium cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleEditShift(shift)}
+                      className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 font-medium cursor-pointer"
+                    >
+                      Edit Details
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
             );
           })}
         </div>
@@ -394,7 +474,7 @@ export default function ShiftManagement() {
             </select>
           </div>
           <div className="flex items-end">
-            <button 
+            <button
               onClick={handleResetFilters}
               className="w-full px-6 py-2.5 border border-amber-900 text-amber-900 hover:bg-amber-50 font-medium rounded-lg transition-colors"
             >
@@ -458,13 +538,13 @@ export default function ShiftManagement() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button 
+                      <button
                         onClick={() => setViewingMapping(mapping)}
                         className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                       >
                         <Eye size={18} className="text-slate-600" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleEdit(mapping)}
                         className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                       >
@@ -496,7 +576,7 @@ export default function ShiftManagement() {
                 <X size={24} />
               </button>
             </div>
-            
+
             {/* Content */}
             <div className="p-6 space-y-4">
               <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
@@ -508,7 +588,7 @@ export default function ShiftManagement() {
                   <p className="text-amber-800 font-semibold">{viewingMapping.department}</p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
@@ -519,8 +599,13 @@ export default function ShiftManagement() {
                   </div>
                   <p className="text-base text-gray-900 font-semibold">{viewingMapping.assignedShift}</p>
                 </div>
+<<<<<<< Updated upstream
                 
                 <div className="bg-purple-50 p-4 rounded-lg">
+=======
+
+                <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900/40 p-4 rounded-lg">
+>>>>>>> Stashed changes
                   <div className="flex items-center gap-2 mb-2">
                     <Timer className="text-purple-600" size={18} />
                     <label className="block text-sm font-medium text-purple-900">
@@ -531,7 +616,7 @@ export default function ShiftManagement() {
                 </div>
               </div>
             </div>
-            
+
             {/* Footer */}
             <div className="p-6 border-t border-slate-200">
               <button
@@ -562,7 +647,7 @@ export default function ShiftManagement() {
                 <X size={24} />
               </button>
             </div>
-            
+
             {/* Form Content */}
             <div className="p-6 space-y-4">
               <div>
@@ -616,7 +701,7 @@ export default function ShiftManagement() {
               </div>
 
             </div>
-            
+
             {/* Footer with Buttons */}
             <div className="p-6 border-t border-slate-200 flex gap-3">
               <button
@@ -638,8 +723,8 @@ export default function ShiftManagement() {
 
       {/* Add New Shift Mapping Modal */}
       {showAddMapping && (
-        <AddNewShiftMapping 
-          onClose={() => setShowAddMapping(false)} 
+        <AddNewShiftMapping
+          onClose={() => setShowAddMapping(false)}
           onSuccess={() => {
             loadData();
             setShowAddMapping(false);

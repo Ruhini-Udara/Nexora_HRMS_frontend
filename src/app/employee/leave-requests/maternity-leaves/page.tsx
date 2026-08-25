@@ -34,10 +34,12 @@ const STATUS_EDITING = "editing";
 
 export default function MaternityLeaveRequestPage() {
     const { user } = useAuthStore();
-    const { register, handleSubmit, control, getValues, reset, setValue, formState: { errors } } = useForm<MaternityFormValues>({
+    const { register, handleSubmit, control, getValues, reset, setValue, watch, formState: { errors } } = useForm<MaternityFormValues>({
         resolver: zodResolver(maternitySchema),
+        mode: "onChange",
         defaultValues: {
             dateOfRequest: new Date().toISOString().split("T")[0],
+            level: "Level 1"
         }
     });
 
@@ -97,9 +99,34 @@ export default function MaternityLeaveRequestPage() {
                 setValue("designation", employeeData.designation?.designationName || user?.designation || "");
                 setValue("branch", employeeData.branch || user?.branch || "");
                 setValue("epfNumber", employeeData.epfNumber || user?.epfNumber || "");
+                setValue("contactNumber", employeeData.contactNumber || employeeData.phoneNumber || "");
             }
         }
     }, [employeeData, setValue, status, user]);
+
+    const watchStartDate = watch("startDate");
+    const watchLevel = watch("level");
+
+    useEffect(() => {
+        if (watchStartDate && watchLevel) {
+            const start = new Date(watchStartDate);
+            const end = new Date(start);
+            if (watchLevel === "Level 1") {
+                // 84 working days inclusive
+                let count = (start.getDay() !== 0 && start.getDay() !== 6) ? 1 : 0;
+                while (count < 84) {
+                    end.setDate(end.getDate() + 1);
+                    if (end.getDay() !== 0 && end.getDay() !== 6) { // skip weekends
+                        count++;
+                    }
+                }
+            } else {
+                // 84 calendar days inclusive
+                end.setDate(end.getDate() + 83);
+            }
+            setValue("endDate", end.toISOString().split("T")[0], { shouldValidate: true });
+        }
+    }, [watchStartDate, watchLevel, setValue]);
 
     const noOfDays = useLeaveDays(control, "startDate", "endDate").toString();
 
@@ -161,6 +188,7 @@ export default function MaternityLeaveRequestPage() {
                 endDate: data.endDate,
                 totalDays: Number(noOfDays),
                 reason: data.leaveReason,
+                level: data.level,
                 childNumber: data.childNumber,
                 employeeType: data.employeeType,
                 branch: data.branch,
@@ -201,9 +229,12 @@ export default function MaternityLeaveRequestPage() {
             // Invalidate the 'leaves' query to refresh the dashboard
             queryClient.invalidateQueries({ queryKey: ['leaves', user?.id] });
         },
-        onError: (error: Error) => {
+        onError: (error: unknown) => {
             console.error("Maternity submission error:", error);
-            setFileError(error.message || "Submission failed. Please try again.");
+            const err = error as { response?: { data?: { message?: string } }; message?: string };
+            const backendMsg = err.response?.data?.message;
+            const fallbackMsg = err.message || "Submission failed. Please try again.";
+            setFileError(backendMsg || fallbackMsg);
         }
     });
 
@@ -212,6 +243,29 @@ export default function MaternityLeaveRequestPage() {
             setFileError("Medical Certificate and Leave Letter are mandatory for submission.");
             return;
         }
+
+        // Pre-flight eligibility checks to prevent unnecessary file uploads
+        if (employeeData) {
+            if (employeeData.sex?.toUpperCase() !== "FEMALE") {
+                setFileError("Only female employees are eligible to apply for maternity leave.");
+                return;
+            }
+            if (!employeeData.dateJoined) {
+                setFileError("Employee's joined date is not set, cannot verify eligibility.");
+                return;
+            }
+            if (data.startDate) {
+                const joinedDate = new Date(employeeData.dateJoined);
+                const startDate = new Date(data.startDate);
+                const diffTime = startDate.getTime() - joinedDate.getTime();
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+                if (diffDays < 80) {
+                    setFileError("Employee must have a minimum service of 80 days before the leave starts.");
+                    return;
+                }
+            }
+        }
+
         submitMutation.mutate(data);
     };
 
@@ -255,14 +309,9 @@ export default function MaternityLeaveRequestPage() {
                         }}
                     />
                 )}
-
-                {fileError && (
-                    <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-xl border border-red-200 dark:border-red-800/30 flex items-center gap-3 mb-6">
-                        <span className="material-symbols-outlined text-red-500">error</span>
-                        <div className="text-sm font-medium">{fileError}</div>
-                    </div>
-                )}
             </div>
+
+
 
             {!isDisabled && (
                 <div className="contents">
@@ -301,7 +350,7 @@ export default function MaternityLeaveRequestPage() {
                                 {/* Maternity Leave Request Letter */}
                                 <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                                             <span className="material-symbols-outlined">description</span>
                                         </div>
                                         <div>
@@ -330,7 +379,7 @@ export default function MaternityLeaveRequestPage() {
                                 {/* Medical Certificate */}
                                 <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                                             <span className="material-symbols-outlined">medical_information</span>
                                         </div>
                                         <div>
@@ -359,7 +408,7 @@ export default function MaternityLeaveRequestPage() {
                                 {/* Any supporting document */}
                                 <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center flex-shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0">
                                             <span className="material-symbols-outlined">attach_file</span>
                                         </div>
                                         <div>
@@ -419,6 +468,13 @@ export default function MaternityLeaveRequestPage() {
                                 </label>
                                 {errors.acknowledgement && <p className="text-red-500 text-xs mt-2 font-medium">{errors.acknowledgement.message}</p>}
                             </div>
+
+                            {fileError && (
+                                <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-xl border border-red-200 dark:border-red-800/30 flex items-center gap-3 mb-6">
+                                    <span className="material-symbols-outlined text-red-500">error</span>
+                                    <div className="text-sm font-medium">{fileError}</div>
+                                </div>
+                            )}
 
                             <div className="flex items-center gap-4">
                                 {!isDisabled && (

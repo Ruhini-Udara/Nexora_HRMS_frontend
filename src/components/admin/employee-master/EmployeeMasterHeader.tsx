@@ -15,9 +15,9 @@ export default function EmployeeMasterHeader() {
           Manage all employee records and organizational information.
         </p>
       </div>
-      <button 
+      <button
         onClick={() => setActiveView("registerEmployee")}
-        className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-3 px-6 rounded-lg flex items-center gap-2 shadow-sm transition-all active:scale-95"
+        className="bg-primary hover:bg-amber-500 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 shadow-sm transition-all active:scale-95"
       >
         <UserPlus size={20} />
         Add New Employee

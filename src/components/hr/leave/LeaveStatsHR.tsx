@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle, XCircle, FileText, AlertCircle } from 'lucide-react';
 import api from "@/lib/axiosInstance";
+import { useAuthStore } from "@/store/useAuthStore";
 
-const LeaveStats = () => {
+const LeaveStatsHR = ({ type }: { type: 'OVERSEAS' | 'MATERNITY' }) => {
+    const { user } = useAuthStore();
     const [statsData, setStatsData] = useState({
         pending: 0,
         approved: 0,
@@ -16,32 +18,38 @@ const LeaveStats = () => {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const [pendingO, approvedO, rejectedO, pendingM, approvedM, rejectedM] = await Promise.all([
-                    api.get('/api/v1/leaves/overseas/status/PENDING_DIRECTOR_REVIEW'),
-                    api.get('/api/v1/leaves/overseas/status/APPROVED'),
-                    api.get('/api/v1/leaves/overseas/status/REJECTED'),
-                    api.get('/api/v1/leaves/maternity/status/PENDING_DIRECTOR_REVIEW'),
-                    api.get('/api/v1/leaves/maternity/status/APPROVED'),
-                    api.get('/api/v1/leaves/maternity/status/REJECTED')
+                const endpointPrefix = `/api/v1/leaves/${type.toLowerCase()}/status`;
+                const [pendingO, approvedO, rejectedO] = await Promise.all([
+                    api.get(`${endpointPrefix}/PENDING_HR_APPROVAL`),
+                    api.get(`${endpointPrefix}/APPROVED`),
+                    api.get(`${endpointPrefix}/REJECTED`)
                 ]);
                 
                 const now = new Date();
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
                 
-                const isThisMonth = (req: any) => {
+                const isValidReq = (req: { employeeId?: number; createdAt?: string }) => {
+                    return req.employeeId !== user?.id;
+                };
+
+                const isThisMonth = (req: { employeeId?: number; createdAt?: string }) => {
                     if (!req.createdAt) return false;
                     const date = new Date(req.createdAt);
                     return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
                 };
 
+                const validPending = pendingO.data.filter(isValidReq);
+                const validApproved = approvedO.data.filter(isValidReq);
+                const validRejected = rejectedO.data.filter(isValidReq);
+
                 // Pending requests for display should show all time pending
-                const pendingCountAllTime = pendingO.data.length + pendingM.data.length;
+                const pendingCountAllTime = validPending.length;
                 
-                // For Total calculation, we strictly need this month's pending requests
-                const pendingCountThisMonth = pendingO.data.filter(isThisMonth).length + pendingM.data.filter(isThisMonth).length;
-                const approvedCountThisMonth = approvedO.data.filter(isThisMonth).length + approvedM.data.filter(isThisMonth).length;
-                const rejectedCountThisMonth = rejectedO.data.filter(isThisMonth).length + rejectedM.data.filter(isThisMonth).length;
+                // For Total calculation, we strictly need this month's requests
+                const pendingCountThisMonth = validPending.filter(isThisMonth).length;
+                const approvedCountThisMonth = validApproved.filter(isThisMonth).length;
+                const rejectedCountThisMonth = validRejected.filter(isThisMonth).length;
                 
                 const totalCountThisMonth = pendingCountThisMonth + approvedCountThisMonth + rejectedCountThisMonth;
 
@@ -59,7 +67,7 @@ const LeaveStats = () => {
         };
 
         fetchStats();
-    }, []);
+    }, [type, user?.id]);
 
     const stats = [
         {
@@ -73,70 +81,43 @@ const LeaveStats = () => {
             subIcon: null
         },
         {
-            label: "Pending",
+            label: "Pending Verification",
             value: loading ? "..." : statsData.pending,
             subtext: "Awaiting review",
             icon: Clock,
-<<<<<<< Updated upstream
-            color: "text-secondary",
-            bgColor: "bg-secondary/10",
-            subTextColor: "text-secondary"
-=======
             color: "text-amber-600 dark:text-amber-400",
             bgColor: "bg-amber-100 dark:bg-amber-950/40",
             subTextColor: "text-xs font-bold text-amber-600 dark:text-amber-400",
             subIcon: AlertCircle
->>>>>>> Stashed changes
         },
         {
             label: "Approved",
             value: loading ? "..." : statsData.approved,
             subtext: "This month",
             icon: CheckCircle,
-<<<<<<< Updated upstream
-            color: "text-emerald-600",
-            bgColor: "bg-emerald-100",
-            subTextColor: "text-emerald-600"
-=======
             color: "text-emerald-600 dark:text-emerald-400",
             bgColor: "bg-emerald-100 dark:bg-emerald-950/40",
             subTextColor: "text-xs font-bold text-emerald-600 dark:text-emerald-400",
             subIcon: CheckCircle
->>>>>>> Stashed changes
         },
         {
             label: "Rejected",
             value: loading ? "..." : statsData.rejected,
             subtext: "This month",
             icon: XCircle,
-<<<<<<< Updated upstream
-            color: "text-red-600",
-            bgColor: "bg-red-100",
-            subTextColor: "text-red-600"
-        },
-        {
-            label: "Total Overseas",
-            value: loading ? "..." : (statsData.pending + statsData.approved + statsData.rejected),
-            subtext: "Cumulative history",
-            icon: Wallet,
-            color: "text-primary",
-            bgColor: "bg-primary/10",
-            subTextColor: "text-gray-500"
-=======
             color: "text-red-600 dark:text-red-400",
             bgColor: "bg-red-100 dark:bg-red-950/40",
             subTextColor: "text-xs font-bold text-red-600 dark:text-red-400",
             subIcon: null
->>>>>>> Stashed changes
         }
     ];
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             {stats.map((stat, index) => (
-                <div key={index} className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-primary/5 shadow-sm">
+                <div key={index} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-gray-500 text-sm font-medium">{stat.label}</span>
+                        <span className="text-gray-500 dark:text-slate-400 text-sm font-medium">{stat.label}</span>
                         <div className={`size-8 rounded-lg ${stat.bgColor} flex items-center justify-center ${stat.color}`}>
                             <stat.icon className="w-5 h-5" />
                         </div>
@@ -152,4 +133,4 @@ const LeaveStats = () => {
     );
 };
 
-export default LeaveStats;
+export default LeaveStatsHR;

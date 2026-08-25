@@ -30,6 +30,10 @@ export default function HrAnalyticsPage() {
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const [exportMonth, setExportMonth] = useState(new Date().getMonth() + 1);
+    const [exportYear, setExportYear] = useState(new Date().getFullYear());
+    const [isExporting, setIsExporting] = useState(false);
+
     useEffect(() => {
         const fetchAnalytics = async () => {
             try {
@@ -56,6 +60,44 @@ export default function HrAnalyticsPage() {
     }
 
     if (!data) return null;
+
+    const handleDownloadPayroll = async () => {
+        setIsExporting(true);
+        try {
+            const res = await api.get(`/api/v1/payroll/approved-leaves?month=${exportMonth}&year=${exportYear}`);
+            const leaves = res.data;
+            if (leaves.length === 0) {
+                alert("No approved leaves found for this period.");
+                return;
+            }
+
+            // Convert to CSV
+            const headers = ["Leave ID", "Employee ID", "Employee Name", "EPF Number", "Leave Type", "From Date", "End Date", "Total Days", "Status"];
+            const rows = leaves.map((l: any) => [
+                l.leaveId, l.employeeId, `"${l.employeeName}"`, `"${l.epfNumber}"`, l.leaveType, l.fromDate, l.endDate, l.totalDays, l.status
+            ]);
+
+            const csvContent = [
+                headers.join(","),
+                ...rows.map((row: any[]) => row.join(","))
+            ].join("\n");
+
+            // Trigger Download
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Payroll_Export_${exportMonth}_${exportYear}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error("Failed to export payroll data", error);
+            alert("Failed to export payroll data. Please try again.");
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     // Calculate max values for bar charts
     const maxEmployees = Math.max(...Object.values(data.departmentEmployeeCount), 1);
@@ -249,6 +291,49 @@ export default function HrAnalyticsPage() {
                     </div>
                 </div>
 
+            </div>
+
+            {/* Payroll Export Section */}
+            <div className="mt-8 bg-surface-light dark:bg-surface-dark rounded-xl card-shadow border border-border-light dark:border-border-dark p-6">
+                <div className="flex items-center gap-3 mb-6 border-b border-border-light dark:border-border-dark pb-4">
+                    <span className="material-icons-round text-primary text-2xl">request_quote</span>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Payroll & Finance Export</h3>
+                </div>
+                <div className="flex flex-col sm:flex-row items-end gap-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-border-light dark:border-border-dark">
+                    <div className="w-full sm:w-1/3">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Month</label>
+                        <select 
+                            value={exportMonth}
+                            onChange={(e) => setExportMonth(Number(e.target.value))}
+                            className="w-full bg-white dark:bg-slate-900 border border-border-light dark:border-border-dark rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
+                        >
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                                <option key={m} value={m}>{new Date(0, m - 1).toLocaleString('default', { month: 'long' })}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="w-full sm:w-1/3">
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Year</label>
+                        <input 
+                            type="number"
+                            value={exportYear}
+                            onChange={(e) => setExportYear(Number(e.target.value))}
+                            className="w-full bg-white dark:bg-slate-900 border border-border-light dark:border-border-dark rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
+                        />
+                    </div>
+                    <div className="w-full sm:w-1/3">
+                        <button 
+                            onClick={handleDownloadPayroll}
+                            disabled={isExporting}
+                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            <span className="material-icons-round text-[18px]">
+                                {isExporting ? 'sync' : 'download'}
+                            </span>
+                            {isExporting ? 'Generating...' : 'Export to CSV'}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

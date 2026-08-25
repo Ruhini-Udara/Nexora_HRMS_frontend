@@ -210,6 +210,7 @@ export default function MaternityLeaveApprovals() {
                             <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-widest">
                                 <th className="py-5 px-6">Request ID</th>
                                 <th className="py-5 px-6">Employee</th>
+                                <th className="py-5 px-6">Requested Date</th>
                                 <th className="py-5 px-6">Duration</th>
                                 <th className="py-5 px-6">Status</th>
                                 <th className="py-5 px-6 text-right">Actions</th>
@@ -217,13 +218,20 @@ export default function MaternityLeaveApprovals() {
                         </thead>
                         <tbody className="text-sm">
                             {loading ? (
+<<<<<<< Updated upstream
                                 <tr><td colSpan={5} className="py-20 text-center text-slate-500 font-medium italic">Fetching requests...</td></tr>
+=======
+                                <tr><td colSpan={6} className="py-20 text-center text-slate-500 dark:text-slate-400 font-medium italic">Fetching requests...</td></tr>
+>>>>>>> Stashed changes
                             ) : filteredRequests.map(req => (
                                 <tr key={req.id} className="border-b border-slate-100 hover:bg-slate-50/50 :bg-slate-700/20 transition-colors group">
                                     <td className="py-5 px-6 font-bold text-slate-900">#{req.id}</td>
                                     <td className="py-5 px-6">
                                         <div className="font-bold text-slate-800">{req.employeeName}</div>
                                         <div className="text-xs text-slate-500 font-medium">{req.employeeCode} • {req.department}</div>
+                                    </td>
+                                    <td className="py-5 px-6 text-slate-600 dark:text-slate-300 font-bold">
+                                        {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'N/A'}
                                     </td>
                                     <td className="py-5 px-6">
                                         <div className="font-medium text-slate-600">{req.fromDate} to {req.endDate}</div>
@@ -245,7 +253,11 @@ export default function MaternityLeaveApprovals() {
                                 </tr>
                             ))}
                             {!loading && filteredRequests.length === 0 && (
+<<<<<<< Updated upstream
                                 <tr><td colSpan={5} className="py-20 text-center text-slate-500 font-medium">No maternity leave requests found.</td></tr>
+=======
+                                <tr><td colSpan={6} className="py-20 text-center text-slate-500 dark:text-slate-400 font-medium">No maternity leave requests found.</td></tr>
+>>>>>>> Stashed changes
                             )}
                         </tbody>
                     </table>

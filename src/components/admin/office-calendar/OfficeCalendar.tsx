@@ -50,7 +50,7 @@ export default function OfficeCalendar() {
     const startingDayOfWeek = firstDay.getDay();
 
     const days = [];
-    
+
     // Previous month days
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
@@ -114,16 +114,24 @@ export default function OfficeCalendar() {
           <h1 className="text-3xl font-bold text-[#111827]">Office Calendar</h1>
         </div>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setShowAddEvent(true)}
+<<<<<<< Updated upstream
             className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors"
+=======
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-amber-500 text-white font-medium rounded-lg transition-colors cursor-pointer"
+>>>>>>> Stashed changes
           >
             <Plus size={18} />
             Add Event
           </button>
-          <button 
+          <button
             onClick={() => setShowAddHoliday(true)}
+<<<<<<< Updated upstream
             className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors"
+=======
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-amber-500 text-white font-medium rounded-lg transition-colors cursor-pointer"
+>>>>>>> Stashed changes
           >
             <Plus size={18} />
             Add Holiday
@@ -181,6 +189,7 @@ export default function OfficeCalendar() {
               return (
                 <div
                   key={index}
+<<<<<<< Updated upstream
                   className={`bg-white min-h-[120px] p-2 ${
                     !dayObj.isCurrentMonth ? "bg-slate-50" : ""
                   } ${isToday ? "bg-amber-50" : ""}`}
@@ -193,6 +202,20 @@ export default function OfficeCalendar() {
                         ? "text-amber-600 font-bold"
                         : "text-slate-700"
                     }`}
+=======
+                  className={`min-h-[120px] p-2 transition-colors ${!dayObj.isCurrentMonth
+                    ? "bg-slate-50 dark:bg-slate-900/40"
+                    : "bg-white dark:bg-slate-900"
+                    } ${isToday ? "bg-amber-50 dark:bg-amber-950/30" : ""}`}
+                >
+                  <div
+                    className={`text-sm font-medium mb-1 ${!dayObj.isCurrentMonth
+                      ? "text-slate-400 dark:text-slate-600"
+                      : isToday
+                        ? "text-amber-600 dark:text-amber-400 font-bold"
+                        : "text-slate-700 dark:text-slate-200"
+                      }`}
+>>>>>>> Stashed changes
                   >
                     {dayObj.day}
                   </div>
@@ -226,7 +249,7 @@ export default function OfficeCalendar() {
           }}
         />
       )}
-      
+
       {/* Add Event Modal */}
       {showAddEvent && (
         <AddCompanyEvent
