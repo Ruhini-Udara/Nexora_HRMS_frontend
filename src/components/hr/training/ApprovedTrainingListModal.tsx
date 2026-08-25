@@ -44,6 +44,9 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
     // Filter only approved requests
     const approvedRequests = requests.filter(req => req.status === 'Approved');
 
+    // Check if training event is already sent, approved, or rejected
+    const isAlreadySent = Boolean(approvedBy) || eventStatus === 'Pending Admin Approval' || eventStatus === 'Approved' || eventStatus === 'Sent' || eventStatus === 'Rejected';
+
     // States for adding employee (autocomplete search dropdown)
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -161,6 +164,12 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
 
     // Print functionality (hides non-essential elements for clean printing)
     const handlePrint = () => {
+        const originalTitle = document.title;
+        const cleanName = (eventName || 'Training_Program')
+            .replace(/[^a-zA-Z0-9]/g, '_')
+            .replace(/_+/g, '_');
+        document.title = `Approved_Participants_${cleanName}`;
+
         const printStyles = document.createElement('style');
         printStyles.innerHTML = `
             @media print {
@@ -182,7 +191,10 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
         `;
         document.head.appendChild(printStyles);
         window.print();
-        document.head.removeChild(printStyles);
+        setTimeout(() => {
+            document.title = originalTitle;
+            document.head.removeChild(printStyles);
+        }, 1000);
     };
 
     if (!isOpen) return null;
@@ -204,26 +216,22 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                             <p className="text-sm font-medium text-slate-500 mt-1">
                                 Participants for <span className="text-primary font-bold">&quot;{eventName}&quot;</span>
                             </p>
-                            {eventStatus === 'Approved' && approvedBy && (
-                                <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-md">
-                                    <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[14px]">verified</span>
-                                    <span className="text-[10px] font-bold text-green-700 dark:text-green-300 uppercase tracking-tight">
-                                        Approved by {approvedBy} {approvedAt ? `on ${new Date(approvedAt).toLocaleDateString()}` : ''}
-                                    </span>
-                                </div>
-                            )}
                         </div>
+
                     </div>
                     <div className="flex items-center gap-4 relative" ref={searchRef}>
-                        <button 
-                            onClick={() => setIsSearchOpen(!isSearchOpen)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-semibold transition-colors no-print"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">person_add</span>
-                            Add Employee
-                        </button>
+                        {!isAlreadySent && (
+                            <button 
+                                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-semibold transition-colors no-print"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">person_add</span>
+                                Add Employee
+                            </button>
+                        )}
 
-                        {isSearchOpen && (
+                        {!isAlreadySent && isSearchOpen && (
+
                             <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-[70] p-4 space-y-3 no-print">
                                 <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Search Employee</div>
                                 <div className="relative">
@@ -355,25 +363,19 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                         >
                             Close
                         </button>
-                        {(eventStatus === 'Pending Admin Approval' || eventStatus === 'Approved') ? (
-                            <div className="flex items-center gap-2 px-6 py-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-lg font-bold text-sm border border-slate-200 dark:border-slate-700">
-                                <span className="material-symbols-outlined text-[18px]">done_all</span>
-                                {eventStatus === 'Approved' ? 'List Finalized' : 'Sent to Admin'}
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => setIsConfirming(true)}
-                                disabled={eventStatus === 'Rejected'}
-                                className={`px-6 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-sm ${
-                                    eventStatus === 'Rejected'
-                                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500'
-                                        : 'bg-primary hover:bg-primary/90 text-white'
-                                }`}
-                            >
-                                <span className="material-symbols-outlined text-[18px]">send</span>
-                                Send for Admin Approval
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setIsConfirming(true)}
+                            disabled={isAlreadySent}
+                            className={`px-6 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-sm ${
+                                isAlreadySent
+                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500'
+                                    : 'bg-primary hover:bg-primary/90 text-white'
+                            }`}
+                        >
+                            <span className="material-symbols-outlined text-[18px]">send</span>
+                            Send for Admin Approval
+                        </button>
+
                     </div>
                 </div>
 

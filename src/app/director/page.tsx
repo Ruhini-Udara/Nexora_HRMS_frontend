@@ -1,55 +1,73 @@
+"use client";
 
-import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, Heart, UserX, LogOut } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AlertCircle, TrendingUp, Calendar, ArrowLeftRight, UserMinus, LogOut, UserX, Users } from 'lucide-react';
 import SummaryCard from '@/components/dashboard/SummaryCard';
 import ModuleCard from '@/components/dashboard/ModuleCard';
+import api from '@/lib/axiosInstance';
+import { useAuthStore } from '@/store/useAuthStore';
+
+interface DirectorDashboardData {
+    pendingApprovalsCount: number;
+    urgentApprovalsCount: number;
+    companyAttendancePercentage: string;
+    totalEmployeesCount: number;
+}
 
 export default function DirectorDashboard() {
+    const { user } = useAuthStore();
+    const [data, setData] = useState<DirectorDashboardData | null>(null);
+
+    // derive loading instead of storing it in state
+    const loading = user?.id ? data === null : false;
+
+    useEffect(() => {
+        if (!user?.id) return;
+
+        api.get('/api/v1/dashboard/director')
+            .then((res) => {
+                setData(res.data);
+            })
+            .catch((err) => {
+                console.error("Failed to fetch director dashboard data", err);
+            });
+    }, [user?.id]);
+
+    if (loading) {
+        return <div className="text-center py-10 text-slate-500">Loading dashboard data...</div>;
+    }
+
     return (
         <div className="p-8 max-w-7xl mx-auto">
             {/* Page Title */}
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Director Dashboard</h1>
-                <p className="text-gray-500 dark:text-slate-400 mt-1">Manage your team&apos;s requests and monitor department performance.</p>
+                <p className="text-gray-500 dark:text-slate-400 mt-1">Manage your team&apos;s requests and monitor company performance.</p>
             </div>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                 <SummaryCard
                     title="Pending Approvals"
-                    value="18"
-                    subContent={
-                        <div className="text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            <span>! 4 require immediate attention</span>
-                        </div>
-                    }
+                    value={data?.pendingApprovalsCount?.toString() || "0"}
+                    subContent=""
                     icon={<AlertCircle className="w-6 h-6" />}
                     iconBgColor="bg-orange-50 dark:bg-orange-950/40"
                     iconColor="text-orange-600 dark:text-orange-400"
                 />
                 <SummaryCard
-                    title="Department Attendance"
-                    value="94%"
-                    subContent={
-                        <div className="text-green-600 dark:text-green-400 flex items-center gap-1">
-                            <TrendingUp className="w-4 h-4" />
-                            <span>Stable compared to last week</span>
-                        </div>
-                    }
+                    title="Company Attendance"
+                    value={data?.companyAttendancePercentage || "0%"}
+                    subContent=""
                     icon={<TrendingUp className="w-6 h-6" />}
                     iconBgColor="bg-green-50 dark:bg-green-950/40"
                     iconColor="text-green-600 dark:text-green-400"
                 />
                 <SummaryCard
-                    title="Upcoming Team Events"
-                    value="3"
-                    subContent={
-                        <div className="text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            <span>Next: Team Workshop (Thu)</span>
-                        </div>
-                    }
-                    icon={<Calendar className="w-6 h-6" />}
+                    title="Total Employees"
+                    value={data?.totalEmployeesCount?.toString() || "0"}
+                    subContent=""
+                    icon={<Users className="w-6 h-6" />}
                     iconBgColor="bg-blue-50 dark:bg-blue-950/40"
                     iconColor="text-blue-600 dark:text-blue-400"
                 />
@@ -94,4 +112,3 @@ export default function DirectorDashboard() {
         </div>
     );
 }
-

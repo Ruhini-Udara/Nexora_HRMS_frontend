@@ -180,6 +180,7 @@ export default function TrainingRequestPage() {
                         return (
                             <TrainingEventCard 
                                 key={event.id} 
+                                id={event.id}
                                 category={event.category}
                                 imageSrc={event.imageSrc || "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"}
                                 imageAlt={event.imageAlt || event.title}

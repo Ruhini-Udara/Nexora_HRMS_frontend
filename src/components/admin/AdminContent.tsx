@@ -6,11 +6,9 @@ import ModuleCard from "@/components/ui/ModuleCard";
 import api from "@/lib/axiosInstance";
 import {
   Users,
-  CalendarDays,
   Clock,
   Contact,
   Calendar,
-  FileText,
   BarChart2,
   GraduationCap
 } from "lucide-react";
@@ -18,7 +16,6 @@ import EmployeeMaster from "@/components/admin/employee-master/EmployeeMaster";
 import RegisterEmployee from "@/components/admin/register-employee/RegisterEmployee";
 import OfficeCalendar from "@/components/admin/office-calendar/OfficeCalendar";
 import ShiftManagement from "@/components/admin/shift-management/ShiftManagement";
-import DocumentManagement from "@/components/admin/document-management/DocumentManagement";
 import { useAdminNavigation } from "./AdminNavigationContext";
 
 export default function AdminContent() {
@@ -69,36 +66,29 @@ export default function AdminContent() {
     return <ShiftManagement />;
   }
 
-  if (activeView === "documents") {
-    return <DocumentManagement />;
-  }
+
 
   return (
     <div className="max-w-7xl mx-auto w-full">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
           Admin Dashboard
         </h1>
+
         <p className="text-gray-500 dark:text-slate-400 text-base">
           Welcome back! Here&apos;s what&apos;s happening in HR MATE today.
         </p>
       </div>
 
-      {/* Top Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <StatCard
           title="Total Employees"
           value={employeeCount}
-          icon={<Users className="w-7 h-7 text-amber-800" />}
-          iconBgColor="bg-orange-50"
+          icon={<Users className="w-7 h-7 text-primary" />}
+          iconBgColor="bg-primary/10"
         />
-        <StatCard
-          title="Documents Uploaded This Month"
-          value="24"
-          icon={<CalendarDays className="w-7 h-7 text-yellow-600" />}
-          iconBgColor="bg-yellow-50"
-        />
+
         <StatCard
           title="Today's Shifts"
           value={shiftCount}
@@ -133,13 +123,7 @@ export default function AdminContent() {
           onClick={() => setActiveView("shifts")}
           className="lg:col-span-2"
         />
-        <ModuleCard
-          title="Document Management"
-          description="Securely store and track employee contracts, policies, and certifications in one place."
-          icon={<FileText className="w-6 h-6" />}
-          onClick={() => setActiveView("documents")}
-          className="lg:col-span-2"
-        />
+
         <ModuleCard
           title="Register Employee"
           description="Seamlessly onboard new staff, assign roles, and configure their dual-identity system accounts."

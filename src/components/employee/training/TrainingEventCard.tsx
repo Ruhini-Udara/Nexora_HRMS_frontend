@@ -6,6 +6,7 @@ import { formatTime } from "@/lib/utils";
 
 // Props describing a single training event card
 interface TrainingEventProps {
+    id?: number;
     category: string;
     imageSrc: string;
     title: string;
@@ -17,6 +18,7 @@ interface TrainingEventProps {
 }
 
 const TrainingEventCard: React.FC<TrainingEventProps> = ({
+    id,
     category,
     title,
     date,
@@ -79,7 +81,7 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
                         </div>
                     ) : (
                         <Link
-                            href={`/employee/training-request/${title.toLowerCase().replace(/ /g, '-')}`}
+                            href={`/employee/training-request/${encodeURIComponent(title.toLowerCase().replace(/ /g, '-'))}${id ? `?id=${id}` : ''}`}
                             className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 w-max bg-[var(--color-training-primary)] text-white rounded-md font-bold text-[10px] hover:bg-[#853500] transition-colors cursor-pointer ml-auto"
                         >
                             <span className="material-symbols-outlined text-[12px]">send</span>

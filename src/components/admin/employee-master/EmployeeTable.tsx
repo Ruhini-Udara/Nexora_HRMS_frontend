@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, User, X, Mail, Building2, Briefcase, BadgeCheck, Fingerprint } from "lucide-react";
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useAdminNavigation } from "../AdminNavigationContext";
 
 interface Employee {
   id: string;
@@ -44,6 +45,7 @@ interface EmployeeTableProps {
 }
 
 export default function EmployeeTable({ department, jobTitle, status }: EmployeeTableProps) {
+  const { searchQuery } = useAdminNavigation();
   const { user, token } = useAuthStore();
   const isAdmin = user?.role === 'ROLE_ADMIN';
 
@@ -55,14 +57,19 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
   const [fingerprintUpdatingCode, setFingerprintUpdatingCode] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [prevFilters, setPrevFilters] = useState({ department, jobTitle, status });
+  const [prevFilters, setPrevFilters] = useState({ department, jobTitle, status, searchQuery });
 
-  if (department !== prevFilters.department || jobTitle !== prevFilters.jobTitle || status !== prevFilters.status) {
-    setPrevFilters({ department, jobTitle, status });
+  if (
+    department !== prevFilters.department ||
+    jobTitle !== prevFilters.jobTitle ||
+    status !== prevFilters.status ||
+    searchQuery !== prevFilters.searchQuery
+  ) {
+    setPrevFilters({ department, jobTitle, status, searchQuery });
     setCurrentPage(1);
   }
   
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -107,13 +114,18 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
       .catch(err => console.error("Error fetching designations:", err));
   }, []);
 
-  // Filter employees based on selected filters
+  // Filter employees based on selected filters and search query
   const filteredEmployees = employees.filter((employee) => {
     const matchesDepartment = !department || employee.department?.toLowerCase() === department.toLowerCase();
     const matchesJobTitle = !jobTitle || employee.designation?.toLowerCase() === jobTitle.toLowerCase();
     const matchesStatus = !status || employee.employmentStatus?.toLowerCase() === status.toLowerCase();
+    
+    const matchesSearch = !searchQuery || 
+      employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesDepartment && matchesJobTitle && matchesStatus;
+    return matchesDepartment && matchesJobTitle && matchesStatus && matchesSearch;
   });
 
   const handleDelete = async (employeeId: string) => {

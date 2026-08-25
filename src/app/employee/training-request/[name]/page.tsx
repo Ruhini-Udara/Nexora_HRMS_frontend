@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import api from "@/lib/axiosInstance";
 import { uploadDocument } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatTime } from "@/lib/utils";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Toast } from "@/components/ui/Toast";
@@ -27,6 +27,8 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
     const resolvedParams = React.use(params);
     const name = resolvedParams.name;
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const eventIdParam = searchParams.get('id');
     const { user } = useAuthStore();
     
     // File upload
@@ -80,9 +82,14 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
         }
     }, [user]);
 
-    const eventDetails = events.find(
-        event => event.title.toLowerCase() === formattedTitle.toLowerCase()
-    );
+    const eventDetails = events.find(event => {
+        if (eventIdParam && !isNaN(Number(eventIdParam))) {
+            return event.id === Number(eventIdParam);
+        }
+        const cleanEventTitle = event.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanFormattedTitle = formattedTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return cleanEventTitle === cleanFormattedTitle || event.title.toLowerCase() === formattedTitle.toLowerCase();
+    });
 
     // Fallback UI object if event not yet loaded
     const displayEvent = eventDetails || {
