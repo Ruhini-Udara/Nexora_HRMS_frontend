@@ -146,7 +146,7 @@ export default function CreateTrainingPlanForm() {
         <div className="p-8 max-w-5xl mx-auto w-full relative">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                         {editId ? 'Edit Training Plan' : 'Create Training Plan'}
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Design and schedule professional development programs for your teams.</p>
