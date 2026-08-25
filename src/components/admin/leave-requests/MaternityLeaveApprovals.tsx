@@ -169,17 +169,17 @@ export default function MaternityLeaveApprovals() {
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-4">
-                    <Link href="/admin/leave-requests" className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-500 hover:text-primary transition-colors">
+                    <Link href="/admin/leave-requests" className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
                         <span className="material-symbols-outlined">arrow_back</span>
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-1">Maternity Leave Approvals</h1>
-                        <p className="text-gray-500 text-base font-medium">Finalize maternity leave requests and trigger salary calculation.</p>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Maternity Leave Approvals</h1>
+                        <p className="text-gray-500 dark:text-slate-400 text-base font-medium">Finalize maternity leave requests and trigger salary calculation.</p>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8 flex flex-col md:flex-row gap-6">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 mb-8 flex flex-col md:flex-row gap-6">
                 <div className="relative flex-1">
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
                     <input
@@ -187,14 +187,14 @@ export default function MaternityLeaveApprovals() {
                         placeholder="Search by employee name or request ID..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium"
                     />
                 </div>
                 <div className="w-full md:w-64">
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold cursor-pointer"
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold cursor-pointer"
                     >
                         <option value="PENDING_ADMIN_APPROVAL">Pending Admin Approval</option>
                         <option value="APPROVED">Final Approved (Salary Calc)</option>
@@ -203,11 +203,11 @@ export default function MaternityLeaveApprovals() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                            <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                                 <th className="py-5 px-6">Request ID</th>
                                 <th className="py-5 px-6">Employee</th>
                                 <th className="py-5 px-6">Requested Date</th>
@@ -218,46 +218,38 @@ export default function MaternityLeaveApprovals() {
                         </thead>
                         <tbody className="text-sm">
                             {loading ? (
-<<<<<<< Updated upstream
-                                <tr><td colSpan={5} className="py-20 text-center text-slate-500 font-medium italic">Fetching requests...</td></tr>
-=======
                                 <tr><td colSpan={6} className="py-20 text-center text-slate-500 dark:text-slate-400 font-medium italic">Fetching requests...</td></tr>
->>>>>>> Stashed changes
                             ) : filteredRequests.map(req => (
-                                <tr key={req.id} className="border-b border-slate-100 hover:bg-slate-50/50 :bg-slate-700/20 transition-colors group">
-                                    <td className="py-5 px-6 font-bold text-slate-900">#{req.id}</td>
+                                <tr key={req.id} className="border-b border-slate-100 dark:border-slate-805 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                    <td className="py-5 px-6 font-bold text-slate-900 dark:text-white">#{req.id}</td>
                                     <td className="py-5 px-6">
-                                        <div className="font-bold text-slate-800">{req.employeeName}</div>
-                                        <div className="text-xs text-slate-500 font-medium">{req.employeeCode} • {req.department}</div>
+                                        <div className="font-bold text-slate-800 dark:text-slate-200">{req.employeeName}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{req.employeeCode} • {req.department}</div>
                                     </td>
                                     <td className="py-5 px-6 text-slate-600 dark:text-slate-300 font-bold">
                                         {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'N/A'}
                                     </td>
                                     <td className="py-5 px-6">
-                                        <div className="font-medium text-slate-600">{req.fromDate} to {req.endDate}</div>
-                                        <div className="text-xs text-slate-400 font-bold uppercase">{req.totalDays} Days</div>
+                                        <div className="font-medium text-slate-600 dark:text-slate-350">{req.fromDate} to {req.endDate}</div>
+                                        <div className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">{req.totalDays} Days</div>
                                     </td>
                                     <td className="py-5 px-6">
-                                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${req.status === "PENDING_ADMIN_APPROVAL" ? "bg-amber-100 text-amber-700" :
-                                                req.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" :
-                                                    "bg-red-100 text-red-700"
+                                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${req.status === "PENDING_ADMIN_APPROVAL" ? "bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400" :
+                                                req.status === "APPROVED" ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400" :
+                                                    "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
                                             }`}>
                                             {req.status.replace(/_/g, ' ')}
                                         </span>
                                     </td>
                                     <td className="py-5 px-6 text-right">
-                                        <button onClick={() => handleView(req)} className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-primary hover:text-white text-slate-700 rounded-xl text-xs font-black transition-all">
+                                        <button onClick={() => handleView(req)} className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black transition-all">
                                             <span className="material-symbols-outlined text-[18px]">visibility</span> REVIEW
                                         </button>
                                     </td>
                                 </tr>
                             ))}
                             {!loading && filteredRequests.length === 0 && (
-<<<<<<< Updated upstream
-                                <tr><td colSpan={5} className="py-20 text-center text-slate-500 font-medium">No maternity leave requests found.</td></tr>
-=======
                                 <tr><td colSpan={6} className="py-20 text-center text-slate-500 dark:text-slate-400 font-medium">No maternity leave requests found.</td></tr>
->>>>>>> Stashed changes
                             )}
                         </tbody>
                     </table>
@@ -267,13 +259,13 @@ export default function MaternityLeaveApprovals() {
             {/* Final Approval Modal */}
             {selectedRequest && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
-                        <div className="flex items-center justify-between p-8 border-b border-slate-100 shrink-0">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+                        <div className="flex items-center justify-between p-8 border-b border-slate-100 dark:border-slate-800 shrink-0">
                             <div>
-                                <h3 className="text-2xl font-black text-slate-900">Admin Final Review</h3>
-                                <p className="text-sm text-slate-500 font-bold mt-1 uppercase tracking-wider">Maternity Leave Request #{selectedRequest.id}</p>
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white">Admin Final Review</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-wider">Maternity Leave Request #{selectedRequest.id}</p>
                             </div>
-                            <button onClick={() => setSelectedRequest(null)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 :bg-slate-800 text-slate-500 transition-colors">
+                            <button onClick={() => setSelectedRequest(null)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
@@ -283,21 +275,21 @@ export default function MaternityLeaveApprovals() {
                                 <div className="space-y-6">
                                     <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-4">Employee Information</h4>
                                     <div className="space-y-4 text-sm">
-                                        <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500 font-bold">Full Name</span> <span className="font-black text-slate-800">{selectedRequest.employeeName}</span></div>
-                                        <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500 font-bold">EPF Code</span> <span className="font-black text-slate-800">{selectedRequest.employeeCode}</span></div>
-                                        <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500 font-bold">Department</span> <span className="font-black text-slate-800">{selectedRequest.department}</span></div>
-                                        <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500 font-bold">E-mail Address</span> <span className="font-black text-slate-800">{selectedRequest.email}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Full Name</span> <span className="font-black text-slate-800 dark:text-slate-200">{selectedRequest.employeeName}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">EPF Code</span> <span className="font-black text-slate-800 dark:text-slate-200">{selectedRequest.employeeCode}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Department</span> <span className="font-black text-slate-800 dark:text-slate-200">{selectedRequest.department}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">E-mail Address</span> <span className="font-black text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
                                     </div>
                                 </div>
                                 <div className="space-y-6">
                                     <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-4">Leave Parameters</h4>
                                     <div className="space-y-4 text-sm">
-                                        <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500 font-bold">Duration</span> <span className="font-black text-slate-800">{selectedRequest.fromDate} to {selectedRequest.endDate}</span></div>
-                                        <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500 font-bold">Total Days</span> <span className="font-black text-slate-800">{selectedRequest.totalDays} Days</span></div>
-                                        <div className="flex justify-between border-b border-slate-50 pb-2"><span className="text-slate-500 font-bold">Child Count</span> <span className="font-black text-slate-800">{selectedRequest.childNumber}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Duration</span> <span className="font-black text-slate-800 dark:text-slate-200">{selectedRequest.fromDate} to {selectedRequest.endDate}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Total Days</span> <span className="font-black text-slate-800 dark:text-slate-200">{selectedRequest.totalDays} Days</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Child Count</span> <span className="font-black text-slate-800 dark:text-slate-200">{selectedRequest.childNumber}</span></div>
                                         <div className="pt-2">
                                             <span className="text-slate-500 font-bold block mb-2 uppercase text-[10px]">Application Reason</span>
-                                            <p className="bg-slate-50 p-4 rounded-2xl text-slate-700 border border-slate-100 font-medium leading-relaxed">{selectedRequest.reason}</p>
+                                            <p className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-slate-700 dark:text-slate-350 border border-slate-100 dark:border-slate-800 font-medium leading-relaxed">{selectedRequest.reason}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -310,10 +302,10 @@ export default function MaternityLeaveApprovals() {
                                 {docsLoading ? <p className="text-sm font-medium animate-pulse">Checking document integrity...</p> : documents.length === 0 ? <p className="text-sm text-slate-500 font-medium">No files attached.</p> : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {documents.map(doc => (
-                                            <div key={doc.id} onClick={() => handleViewDocument(doc.filePathUrl)} className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl bg-slate-50/50 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group">
+                                            <div key={doc.id} onClick={() => handleViewDocument(doc.filePathUrl)} className="flex items-center gap-4 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-800 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group">
                                                 <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"><span className="material-symbols-outlined">description</span></div>
                                                 <div className="overflow-hidden">
-                                                    <div className="text-sm font-black text-slate-800 truncate">{doc.description || doc.documentType}</div>
+                                                    <div className="text-sm font-black text-slate-800 dark:text-slate-200 truncate">{doc.description || doc.documentType}</div>
                                                     <div className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">Open Securely</div>
                                                 </div>
                                             </div>

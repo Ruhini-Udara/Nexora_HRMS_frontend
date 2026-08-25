@@ -27,6 +27,7 @@ interface LeaveResponse {
     status: string;
     reason: string;
     createdAt: string;
+    leaveTypeName?: string;
 }
 
 export default function LeaveRequestsDashboard() {
@@ -51,18 +52,21 @@ export default function LeaveRequestsDashboard() {
     const { data: requests = [], isLoading: loading } = useQuery({
         queryKey: ['leaves', employeeId],
         queryFn: async () => {
-            const [overseasRes, maternityRes] = await Promise.all([
+            const [overseasRes, maternityRes, normalRes] = await Promise.all([
                 api.get(`/api/v1/leaves/overseas/employee/${employeeId}`),
-                api.get(`/api/v1/leaves/maternity/employee/${employeeId}`)
+                api.get(`/api/v1/leaves/maternity/employee/${employeeId}`),
+                api.get(`/api/v1/leaves/normal/employee/${employeeId}`)
             ]);
 
             const overseasData = overseasRes.data;
             const maternityData = maternityRes.data;
+            const normalData = normalRes.data;
 
-            // Merge and format
+            // Merge and format all leave types
             return [
                 ...overseasData.map((r: LeaveResponse) => ({ ...r, type: "Overseas Leave" })),
-                ...maternityData.map((r: LeaveResponse) => ({ ...r, type: "Maternity Leave" }))
+                ...maternityData.map((r: LeaveResponse) => ({ ...r, type: "Maternity Leave" })),
+                ...normalData.map((r: LeaveResponse) => ({ ...r, type: r.leaveTypeName || "Normal Leave" }))
             ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         },
         enabled: !!employeeId
@@ -107,6 +111,8 @@ export default function LeaveRequestsDashboard() {
                 return "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400";
             case "PENDING_HR_APPROVAL":
                 return "bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400";
+            case "PENDING_SUPERVISOR_APPROVAL":
+                return "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400";
             case "PENDING_ADMIN_APPROVAL":
             case "ADMIN_APPROVED":
                 return "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400";
@@ -178,6 +184,7 @@ export default function LeaveRequestsDashboard() {
                             className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                         >
                             <option value="ALL">All Statuses</option>
+                            <option value="PENDING_SUPERVISOR_APPROVAL">Pending Supervisor</option>
                             <option value="PENDING_HR_APPROVAL">Pending HR</option>
                             <option value="PENDING_ADMIN_APPROVAL">Pending Admin</option>
                             <option value="APPROVED">Approved</option>

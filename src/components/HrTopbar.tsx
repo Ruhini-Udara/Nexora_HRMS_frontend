@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
 import { NotificationBell } from "@/components/NotificationBell";
+import UserAvatar from "@/components/common/UserAvatar";
 
 const HrTopbar = () => {
     const { user } = useAuthStore();
@@ -35,9 +36,7 @@ const HrTopbar = () => {
                             {user?.role === 'ROLE_ADMIN' ? 'Admin Account' : 'HR Account'}
                         </p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs ring-2 ring-primary ring-offset-2 dark:ring-offset-gray-900">
-                        {user?.name?.substring(0, 2).toUpperCase() || "HR"}
-                    </div>
+                    <UserAvatar user={user} size="md" />
                 </Link>
             </div>
         </header>

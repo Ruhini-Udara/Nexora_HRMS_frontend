@@ -54,3 +54,32 @@ export async function getSignedUrl(filePath: string, expiresIn = 3600): Promise<
     return data.signedUrl;
 }
 
+const HRMS_BUCKET = "hrms-documents";
+
+export async function uploadHrmsDocument(file: File, folder: string): Promise<string | null> {
+    const filePath = `${folder}/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+
+    const { error } = await supabase.storage
+        .from(HRMS_BUCKET)
+        .upload(filePath, file, { upsert: false });
+
+    if (error) {
+        console.error("Supabase HRMS upload error:", error.message);
+        return null;
+    }
+
+    return filePath;
+}
+
+export async function getHrmsSignedUrl(filePath: string, expiresIn = 3600): Promise<string | null> {
+    const { data, error } = await supabase.storage
+        .from(HRMS_BUCKET)
+        .createSignedUrl(filePath, expiresIn);
+
+    if (error) {
+        console.error("HRMS Signed URL error:", error.message);
+        return null;
+    }
+
+    return data.signedUrl;
+}

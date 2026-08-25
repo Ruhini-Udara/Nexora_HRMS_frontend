@@ -173,7 +173,7 @@ export default function HrAnalyticsPage() {
                     <span className="material-icons-round text-primary text-2xl">work</span>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">Department Leave Impact</h3>
                 </div>
-                
+
                 {departments.length === 0 ? (
                     <p className="text-gray-500 italic py-8 text-center">No department data available.</p>
                 ) : (
@@ -195,7 +195,7 @@ export default function HrAnalyticsPage() {
                                         {/* Employee Count Bar */}
                                         <div className="flex items-center gap-3">
                                             <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden flex-1 relative">
-                                                <div 
+                                                <div
                                                     className="bg-gray-400 dark:bg-gray-500 h-full rounded-full transition-all duration-1000"
                                                     style={{ width: `${empWidth}%` }}
                                                 />
@@ -205,7 +205,7 @@ export default function HrAnalyticsPage() {
                                         {/* Leaves Count Bar */}
                                         <div className="flex items-center gap-3">
                                             <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden flex-1 relative">
-                                                <div 
+                                                <div
                                                     className="bg-primary h-full rounded-full transition-all duration-1000"
                                                     style={{ width: `${leaveCount === 0 ? 0 : leaveWidth}%` }}
                                                 />
@@ -222,7 +222,7 @@ export default function HrAnalyticsPage() {
 
             {/* Bottom Row: Alerts Lists */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
+
                 {/* Passports */}
                 <div className="bg-surface-light dark:bg-surface-dark rounded-xl card-shadow border border-border-light dark:border-border-dark p-6 flex flex-col h-96">
                     <div className="flex items-center justify-between mb-6">
@@ -232,7 +232,7 @@ export default function HrAnalyticsPage() {
                         </h3>
                         <span className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-bold border border-amber-200 dark:border-amber-800">{data.passportExpiryAlerts.length}</span>
                     </div>
-                    
+
                     <div className="flex-1 overflow-y-auto pr-2">
                         {data.passportExpiryAlerts.length === 0 ? (
                             <div className="h-full flex items-center justify-center text-gray-500 text-sm py-12">
@@ -247,7 +247,7 @@ export default function HrAnalyticsPage() {
                                             <p className="text-xs text-gray-500 mt-1">Passport: {alert.passportNumber}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Expires</p>
+                                            <p className="text-xs font-semibold text-primary dark:text-amber-400 uppercase tracking-wider">Expires</p>
                                             <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{alert.expiryDate}</p>
                                         </div>
                                     </div>
@@ -266,7 +266,7 @@ export default function HrAnalyticsPage() {
                         </h3>
                         <span className="bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 px-3 py-1 rounded-full text-xs font-bold border border-pink-200 dark:border-pink-800">{data.upcomingMaternityReturns.length}</span>
                     </div>
-                    
+
                     <div className="flex-1 overflow-y-auto pr-2">
                         {data.upcomingMaternityReturns.length === 0 ? (
                             <div className="h-full flex items-center justify-center text-gray-500 text-sm py-12">

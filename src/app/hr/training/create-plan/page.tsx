@@ -123,7 +123,7 @@ export default function CreateTrainingPlanPage() {
             {/* Hero Title */}
             <div className="flex items-end justify-between border-b border-primary/10 pb-6">
                 <div>
-                    <h1 className="text-3xl font-black text-[#1d130c] tracking-tight">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                         Create and Edit Training Plans
                     </h1>
                     <p className="text-stone-500 mt-1">
@@ -143,7 +143,7 @@ export default function CreateTrainingPlanPage() {
 
             {/* Section Header and Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c]">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-[#1d130c] dark:text-white">
                     <span className="material-symbols-outlined text-primary">
                         local_library
                     </span>
@@ -158,7 +158,7 @@ export default function CreateTrainingPlanPage() {
                                 setCurrentPageUpcoming(1);
                                 setCurrentPagePast(1);
                             }}
-                            className="appearance-none bg-white text-stone-700 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 outline-none cursor-pointer hover:bg-stone-50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
+                            className="appearance-none bg-white dark:bg-slate-800 text-stone-700 dark:text-stone-300 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 dark:border-slate-700 outline-none cursor-pointer hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
                         >
                             {categories.map((category) => (
                                 <option key={category} value={category}>
@@ -166,7 +166,7 @@ export default function CreateTrainingPlanPage() {
                                 </option>
                             ))}
                         </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none text-lg">
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 dark:text-slate-400 pointer-events-none text-lg">
                             expand_more
                         </span>
                     </div>
@@ -179,7 +179,7 @@ export default function CreateTrainingPlanPage() {
                                 setCurrentPageUpcoming(1);
                                 setCurrentPagePast(1);
                             }}
-                            className="appearance-none bg-white text-stone-700 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 outline-none cursor-pointer hover:bg-stone-50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
+                            className="appearance-none bg-white dark:bg-slate-800 text-stone-700 dark:text-stone-300 text-sm font-bold rounded-lg px-4 py-2 pr-10 border border-stone-200 dark:border-slate-700 outline-none cursor-pointer hover:bg-stone-50 dark:hover:bg-slate-700/50 transition-colors focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
                         >
                             <option value="All">All Status</option>
                             <option value="Sent">Already Sent</option>
@@ -194,8 +194,8 @@ export default function CreateTrainingPlanPage() {
 
             {/* Section: Upcoming Training Events */}
             <section className="space-y-6">
-                <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2 text-[#1d130c]">
+                <div className="flex items-center justify-between border-b border-stone-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-lg font-bold flex items-center gap-2 text-[#1d130c] dark:text-white">
                         Upcoming Training Events
                         <span className="ml-2 text-xs font-semibold px-2 py-0.5 bg-primary/10 text-primary rounded-full">
                             {upcomingEvents.length}
@@ -220,9 +220,9 @@ export default function CreateTrainingPlanPage() {
                         ))}
                     </div>
                 ) : (
-                    <div className="py-12 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200">
-                        <span className="material-symbols-outlined text-stone-300 text-5xl mb-2">event_busy</span>
-                        <p className="text-stone-500 font-medium">No upcoming training events found.</p>
+                    <div className="py-12 text-center bg-stone-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-stone-200 dark:border-slate-800">
+                        <span className="material-symbols-outlined text-stone-300 dark:text-stone-700 text-5xl mb-2">event_busy</span>
+                        <p className="text-stone-500 dark:text-stone-400 font-medium">No upcoming training events found.</p>
                     </div>
                 )}
 
@@ -232,7 +232,7 @@ export default function CreateTrainingPlanPage() {
                         <button
                             disabled={currentPageUpcoming === 1}
                             onClick={() => setCurrentPageUpcoming(prev => Math.max(prev - 1, 1))}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-600 dark:text-stone-300 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                         >
                             <span className="material-symbols-outlined">chevron_left</span>
                         </button>
@@ -243,7 +243,7 @@ export default function CreateTrainingPlanPage() {
                                     onClick={() => setCurrentPageUpcoming(page)}
                                     className={`w-10 h-10 rounded-xl font-bold text-sm transition-all shadow-sm ${currentPageUpcoming === page
                                         ? 'bg-primary text-white'
-                                        : 'bg-white border border-stone-200 text-stone-600 hover:border-primary hover:text-primary'
+                                        : 'bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-stone-600 dark:text-stone-300 hover:border-primary hover:text-primary'
                                         }`}
                                 >
                                     {page}
@@ -253,7 +253,7 @@ export default function CreateTrainingPlanPage() {
                         <button
                             disabled={currentPageUpcoming === totalPagesUpcoming}
                             onClick={() => setCurrentPageUpcoming(prev => Math.min(prev + 1, totalPagesUpcoming))}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-600 dark:text-stone-300 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                         >
                             <span className="material-symbols-outlined">chevron_right</span>
                         </button>
@@ -265,15 +265,15 @@ export default function CreateTrainingPlanPage() {
             <section className="space-y-4">
                 <button
                     onClick={() => setIsPastEventsOpen(!isPastEventsOpen)}
-                    className="w-full flex items-center justify-between text-left focus:outline-none cursor-pointer border-b border-stone-100 pb-3"
+                    className="w-full flex items-center justify-between text-left focus:outline-none cursor-pointer border-b border-stone-100 dark:border-slate-800 pb-3"
                 >
-                    <h3 className="text-lg font-bold flex items-center gap-2 text-stone-700">
+                    <h3 className="text-lg font-bold flex items-center gap-2 text-stone-700 dark:text-white">
                         Past / Completed Events
-                        <span className="ml-2 text-xs font-semibold px-2 py-0.5 bg-stone-200 text-stone-600 rounded-full">
+                        <span className="ml-2 text-xs font-semibold px-2 py-0.5 bg-stone-200 dark:bg-slate-800 text-stone-600 dark:text-slate-400 rounded-full">
                             {pastEvents.length}
                         </span>
                     </h3>
-                    <span className="material-symbols-outlined text-stone-500 transition-transform duration-200" style={{ transform: isPastEventsOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
+                    <span className="material-symbols-outlined text-stone-500 dark:text-slate-400 transition-transform duration-200" style={{ transform: isPastEventsOpen ? 'rotate(180deg)' : 'rotate(0)' }}>
                         expand_more
                     </span>
                 </button>
@@ -297,9 +297,9 @@ export default function CreateTrainingPlanPage() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="py-8 text-center bg-white rounded-xl border border-dashed border-stone-200">
-                                <span className="material-symbols-outlined text-stone-300 text-4xl mb-2">history_toggle_off</span>
-                                <p className="text-stone-400 font-medium text-sm">No completed training events found.</p>
+                             <div className="py-8 text-center bg-white dark:bg-slate-900/50 rounded-xl border border-dashed border-stone-200 dark:border-slate-800">
+                                <span className="material-symbols-outlined text-stone-300 dark:text-stone-700 text-4xl mb-2">history_toggle_off</span>
+                                <p className="text-stone-400 dark:text-stone-500 font-medium text-sm">No completed training events found.</p>
                             </div>
                         )}
 
@@ -309,7 +309,7 @@ export default function CreateTrainingPlanPage() {
                                 <button
                                     disabled={currentPagePast === 1}
                                     onClick={() => setCurrentPagePast(prev => Math.max(prev - 1, 1))}
-                                    className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                                    className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-600 dark:text-stone-300 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                                 >
                                     <span className="material-symbols-outlined">chevron_left</span>
                                 </button>
@@ -320,7 +320,7 @@ export default function CreateTrainingPlanPage() {
                                             onClick={() => setCurrentPagePast(page)}
                                             className={`w-10 h-10 rounded-xl font-bold text-sm transition-all shadow-sm ${currentPagePast === page
                                                 ? 'bg-primary text-white'
-                                                : 'bg-white border border-stone-200 text-stone-600 hover:border-primary hover:text-primary'
+                                                : 'bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-stone-600 dark:text-stone-300 hover:border-primary hover:text-primary'
                                                 }`}
                                         >
                                             {page}
@@ -330,7 +330,7 @@ export default function CreateTrainingPlanPage() {
                                 <button
                                     disabled={currentPagePast === totalPagesPast}
                                     onClick={() => setCurrentPagePast(prev => Math.min(prev + 1, totalPagesPast))}
-                                    className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-stone-600 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                                    className="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-stone-600 dark:text-stone-300 hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
                                 >
                                     <span className="material-symbols-outlined">chevron_right</span>
                                 </button>
@@ -343,7 +343,7 @@ export default function CreateTrainingPlanPage() {
             {/* View Event Modal */}
             {selectedViewEvent && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
@@ -355,12 +355,12 @@ export default function CreateTrainingPlanPage() {
                                             {selectedViewEvent.category}
                                         </span>
                                         {selectedViewEvent.trainingCode && (
-                                            <span className="bg-stone-100 text-stone-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider inline-block">
+                                            <span className="bg-stone-100 dark:bg-slate-800 text-stone-700 dark:text-stone-300 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider inline-block">
                                                 {selectedViewEvent.trainingCode}
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className="text-xl font-bold text-stone-900 leading-tight">{selectedViewEvent.title}</h3>
+                                    <h3 className="text-xl font-bold text-stone-900 dark:text-white leading-tight">{selectedViewEvent.title}</h3>
                                 </div>
                             </div>
                             <button
@@ -371,72 +371,72 @@ export default function CreateTrainingPlanPage() {
                             </button>
                         </div>
 
-                        <div className="space-y-4 py-4 border-y border-stone-100 max-h-[60vh] overflow-y-auto pr-2">
+                        <div className="space-y-4 py-4 border-y border-stone-100 dark:border-slate-800 max-h-[60vh] overflow-y-auto pr-2">
                             {selectedViewEvent.description && (
                                 <div>
-                                    <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">Description</p>
-                                    <p className="text-sm text-stone-700">{selectedViewEvent.description}</p>
+                                    <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1">Description</p>
+                                    <p className="text-sm text-stone-700 dark:text-stone-300">{selectedViewEvent.description}</p>
                                 </div>
                             )}
                             <div className="grid grid-cols-2 gap-4 mt-2">
-                                <div className="flex items-center gap-3 text-stone-600">
-                                    <span className="material-symbols-outlined text-stone-400">calendar_month</span>
+                                <div className="flex items-center gap-3 text-stone-600 dark:text-stone-300">
+                                    <span className="material-symbols-outlined text-stone-400 dark:text-stone-500">calendar_month</span>
                                     <div>
-                                        <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Date</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.proposedStartDate}</p>
+                                        <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Date</p>
+                                        <p className="font-medium text-sm text-stone-900 dark:text-stone-100">{selectedViewEvent.proposedStartDate}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 text-stone-600">
-                                    <span className="material-symbols-outlined text-stone-400">schedule</span>
+                                <div className="flex items-center gap-3 text-stone-600 dark:text-stone-300">
+                                    <span className="material-symbols-outlined text-stone-400 dark:text-stone-500">schedule</span>
                                     <div>
-                                        <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Time</p>
-                                        <p className="font-medium text-sm">{formatTime(selectedViewEvent.time)}</p>
+                                        <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Time</p>
+                                        <p className="font-medium text-sm text-stone-900 dark:text-stone-100">{formatTime(selectedViewEvent.time)}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 text-stone-600">
-                                    <span className="material-symbols-outlined text-stone-400">group</span>
+                                <div className="flex items-center gap-3 text-stone-600 dark:text-stone-300">
+                                    <span className="material-symbols-outlined text-stone-400 dark:text-stone-500">group</span>
                                     <div>
-                                        <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Participants</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.expectedParticipants} Expected</p>
+                                        <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Participants</p>
+                                        <p className="font-medium text-sm text-stone-900 dark:text-stone-100">{selectedViewEvent.expectedParticipants} Expected</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 text-stone-600">
-                                    <span className="material-symbols-outlined text-stone-400">event_busy</span>
+                                <div className="flex items-center gap-3 text-stone-600 dark:text-stone-300">
+                                    <span className="material-symbols-outlined text-stone-400 dark:text-stone-500">event_busy</span>
                                     <div>
-                                        <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Apply Before</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.applyBefore}</p>
+                                        <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Apply Before</p>
+                                        <p className="font-medium text-sm text-stone-900 dark:text-stone-100">{selectedViewEvent.applyBefore}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 text-stone-600">
-                                    <span className="material-symbols-outlined text-stone-400">location_on</span>
+                                <div className="flex items-center gap-3 text-stone-600 dark:text-stone-300">
+                                    <span className="material-symbols-outlined text-stone-400 dark:text-stone-500">location_on</span>
                                     <div>
-                                        <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Location</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.location}</p>
+                                        <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Location</p>
+                                        <p className="font-medium text-sm text-stone-900 dark:text-stone-100">{selectedViewEvent.location}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 text-stone-600">
-                                    <span className="material-symbols-outlined text-stone-400">payments</span>
+                                <div className="flex items-center gap-3 text-stone-600 dark:text-stone-300">
+                                    <span className="material-symbols-outlined text-stone-400 dark:text-stone-500">payments</span>
                                     <div>
-                                        <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Budget</p>
-                                        <p className="font-medium text-sm">LKR {selectedViewEvent.budget}</p>
+                                        <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Budget</p>
+                                        <p className="font-medium text-sm text-stone-900 dark:text-stone-100">LKR {selectedViewEvent.budget}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 text-stone-600">
+                                <div className="flex items-center gap-3 text-stone-600 dark:text-stone-300">
                                     {selectedViewEvent.trainingCode && (
                                         <>
-                                            <span className="material-symbols-outlined text-stone-400">qr_code</span>
+                                            <span className="material-symbols-outlined text-stone-400 dark:text-stone-500">qr_code</span>
                                             <div>
-                                                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Training Code</p>
-                                                <p className="font-medium text-sm">{selectedViewEvent.trainingCode}</p>
+                                                <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Training Code</p>
+                                                <p className="font-medium text-sm text-stone-900 dark:text-stone-100">{selectedViewEvent.trainingCode}</p>
                                             </div>
                                         </>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-3 text-stone-600">
-                                    <span className="material-symbols-outlined text-stone-400">person</span>
+                                <div className="flex items-center gap-3 text-stone-600 dark:text-stone-300">
+                                    <span className="material-symbols-outlined text-stone-400 dark:text-stone-500">person</span>
                                     <div>
-                                        <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Instructor</p>
-                                        <p className="font-medium text-sm">{selectedViewEvent.instructor}</p>
+                                        <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Instructor</p>
+                                        <p className="font-medium text-sm text-stone-900 dark:text-stone-100">{selectedViewEvent.instructor}</p>
                                     </div>
                                 </div>
                             </div>
@@ -445,7 +445,7 @@ export default function CreateTrainingPlanPage() {
                         <div className="mt-6 flex justify-end">
                             <button
                                 onClick={() => setSelectedViewEvent(null)}
-                                className="px-5 py-2.5 rounded-xl bg-stone-100 font-semibold text-stone-700 hover:bg-stone-200 transition-colors"
+                                className="px-5 py-2.5 rounded-xl bg-stone-100 dark:bg-slate-800 font-semibold text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-slate-750 transition-colors"
                             >
                                 Close
                             </button>
@@ -457,14 +457,14 @@ export default function CreateTrainingPlanPage() {
             {/* Confirmation Modal for Deletion */}
             {eventToDelete !== null && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                            <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950/30 flex items-center justify-center text-rose-600 shrink-0">
                                 <span className="material-symbols-outlined text-2xl">delete_forever</span>
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-stone-900 leading-tight">Delete Training Plan?</h3>
-                                <p className="text-sm text-stone-500 mt-1">This action cannot be undone. All related data will be permanently removed.</p>
+                                <h3 className="text-xl font-bold text-stone-900 dark:text-white leading-tight">Delete Training Plan?</h3>
+                                <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">This action cannot be undone. All related data will be permanently removed.</p>
                             </div>
                         </div>
 
@@ -472,7 +472,7 @@ export default function CreateTrainingPlanPage() {
                             <button
                                 onClick={() => setEventToDelete(null)}
                                 disabled={isDeleting}
-                                className="px-5 py-2.5 rounded-xl font-semibold text-stone-700 hover:bg-stone-100 transition-colors disabled:opacity-50"
+                                className="px-5 py-2.5 rounded-xl font-semibold text-stone-700 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>

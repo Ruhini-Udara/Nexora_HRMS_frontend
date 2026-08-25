@@ -1,74 +1,100 @@
 import React from "react";
-import { Calendar, GraduationCap, ArrowLeftRight, Heart, MoreVertical } from "lucide-react";
+import { Calendar, GraduationCap, ArrowLeftRight, Heart, Plane, FileText, MoreVertical } from "lucide-react";
 
-const RecentRequestsTable = () => (
-  <div className="bg-white border border-[#F1F5F9] shadow-sm rounded-2xl p-8">
-    <div className="flex justify-between items-center border-b border-[#F1F5F9] pb-6 mb-4">
-      <h3 className="font-bold text-xl text-[#0F172A]">My Recent Requests</h3>
-      <a href="#" className="text-[#8B4513] font-semibold text-base">View All</a>
+export interface RecentRequestItem {
+  type: string;
+  dateSubmitted: string;
+  status: string;
+}
+
+interface RecentRequestsTableProps {
+  requests: RecentRequestItem[];
+}
+
+const getRequestIcon = (type: string) => {
+  if (type.toLowerCase().includes('leave')) {
+    return (
+      <div className="bg-[#FFFBEB] dark:bg-amber-950/20 text-[#D97706] dark:text-amber-400 rounded p-1">
+        {type.toLowerCase().includes('overseas') ? <Plane className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+      </div>
+    );
+  }
+  if (type.toLowerCase().includes('training')) {
+    return (
+      <div className="bg-[#EFF6FF] dark:bg-blue-950/20 text-[#2563EB] dark:text-blue-400 rounded p-1">
+        <GraduationCap className="w-4 h-4" />
+      </div>
+    );
+  }
+  if (type.toLowerCase().includes('transfer')) {
+    return (
+      <div className="bg-[#FAF5FF] dark:bg-purple-950/20 text-[#9333EA] dark:text-purple-400 rounded p-1">
+        <ArrowLeftRight className="w-4 h-4" />
+      </div>
+    );
+  }
+  if (type.toLowerCase().includes('welfare')) {
+    return (
+      <div className="bg-[#ECFDF5] dark:bg-green-950/20 text-[#059669] dark:text-green-400 rounded p-1">
+        <Heart className="w-4 h-4" />
+      </div>
+    );
+  }
+  return (
+    <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded p-1">
+      <FileText className="w-4 h-4" />
+    </div>
+  );
+};
+
+const getStatusBadge = (status: string) => {
+  const s = status.toLowerCase();
+  if (s === 'approved' || s === 'completed') {
+    return <span className="bg-[#ECFDF5] dark:bg-green-950/20 text-[#047857] dark:text-green-400 px-3 py-1 rounded-full text-xs font-medium">{status}</span>;
+  }
+  if (s === 'rejected' || s === 'declined') {
+    return <span className="bg-[#FEF2F2] dark:bg-red-950/20 text-[#B91C1C] dark:text-red-400 px-3 py-1 rounded-full text-xs font-medium">{status}</span>;
+  }
+  return <span className="bg-[#FFFBEB] dark:bg-amber-950/20 text-[#B45309] dark:text-amber-400 px-3 py-1 rounded-full text-xs font-medium">{status}</span>;
+};
+
+const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
+  <div className="bg-white dark:bg-slate-900 border border-[#F1F5F9] dark:border-slate-800 shadow-sm rounded-2xl p-8 transition-colors">
+    <div className="flex justify-between items-center border-b border-[#F1F5F9] dark:border-slate-800 pb-6 mb-4">
+      <h3 className="font-bold text-xl text-[#0F172A] dark:text-white">My Recent Requests</h3>
+      <a href="#" className="text-[#8B4513] dark:text-amber-500 font-semibold text-base hover:underline">View All</a>
     </div>
     <table className="w-full text-left">
       <thead>
-        <tr className="bg-[#F8FAFC] text-[#64748B] text-xs font-bold uppercase tracking-wide">
+        <tr className="bg-[#F8FAFC] dark:bg-slate-900/50 text-[#64748B] dark:text-slate-400 text-xs font-bold uppercase tracking-wide border-b border-[#F1F5F9] dark:border-slate-800">
           <th className="py-3 px-6">Request Type</th>
           <th className="py-3 px-6">Date Submitted</th>
           <th className="py-3 px-6">Status</th>
           <th className="py-3 px-6 text-right">Actions</th>
         </tr>
       </thead>
-      <tbody className="text-[#334155] text-sm">
-        <tr className="border-t border-[#F1F5F9]">
-          <td className="py-4 px-6 flex items-center gap-2">
-            <div className="bg-[#FFFBEB] text-[#D97706] rounded p-1">
-              <Calendar className="w-4 h-4" />
-            </div>
-            Annual Leave
-          </td>
-          <td className="py-4 px-6">Oct 12, 2023</td>
-          <td className="py-4 px-6"><span className="bg-[#ECFDF5] text-[#047857] px-3 py-1 rounded-full text-xs font-medium">Approved</span></td>
-          <td className="py-4 px-6 text-right">
-            <MoreVertical className="w-5 h-5 text-[#94A3B8] cursor-pointer inline-block" />
-          </td>
-        </tr>
-        <tr className="border-t border-[#F1F5F9]">
-          <td className="py-4 px-6 flex items-center gap-2">
-            <div className="bg-[#EFF6FF] text-[#2563EB] rounded p-1">
-              <GraduationCap className="w-4 h-4" />
-            </div>
-            UI/UX Training Course
-          </td>
-          <td className="py-4 px-6">Oct 10, 2023</td>
-          <td className="py-4 px-6"><span className="bg-[#FFFBEB] text-[#B45309] px-3 py-1 rounded-full text-xs font-medium">Pending</span></td>
-          <td className="py-4 px-6 text-right">
-            <MoreVertical className="w-5 h-5 text-[#94A3B8] cursor-pointer inline-block" />
-          </td>
-        </tr>
-        <tr className="border-t border-[#F1F5F9]">
-          <td className="py-4 px-6 flex items-center gap-2">
-            <div className="bg-[#FAF5FF] text-[#9333EA] rounded p-1">
-              <ArrowLeftRight className="w-4 h-4" />
-            </div>
-            Department Transfer
-          </td>
-          <td className="py-4 px-6">Oct 05, 2023</td>
-          <td className="py-4 px-6"><span className="bg-[#FEF2F2] text-[#B91C1C] px-3 py-1 rounded-full text-xs font-medium">Rejected</span></td>
-          <td className="py-4 px-6 text-right">
-            <MoreVertical className="w-5 h-5 text-[#94A3B8] cursor-pointer inline-block" />
-          </td>
-        </tr>
-        <tr className="border-t border-[#F1F5F9]">
-          <td className="py-4 px-6 flex items-center gap-2">
-            <div className="bg-[#ECFDF5] text-[#059669] rounded p-1">
-              <Heart className="w-4 h-4" />
-            </div>
-            Medical Reimbursement
-          </td>
-          <td className="py-4 px-6">Oct 01, 2023</td>
-          <td className="py-4 px-6"><span className="bg-[#ECFDF5] text-[#047857] px-3 py-1 rounded-full text-xs font-medium">Approved</span></td>
-          <td className="py-4 px-6 text-right">
-            <MoreVertical className="w-5 h-5 text-[#94A3B8] cursor-pointer inline-block" />
-          </td>
-        </tr>
+      <tbody className="text-[#334155] dark:text-slate-300 text-sm">
+        {requests.length === 0 ? (
+          <tr>
+            <td colSpan={4} className="py-8 text-center text-slate-500">No recent requests found</td>
+          </tr>
+        ) : (
+          requests.map((req, i) => (
+            <tr key={i} className="border-t border-[#F1F5F9] dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+              <td className="py-4 px-6 flex items-center gap-2">
+                {getRequestIcon(req.type)}
+                {req.type}
+              </td>
+              <td className="py-4 px-6">
+                {new Date(req.dateSubmitted).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })}
+              </td>
+              <td className="py-4 px-6">{getStatusBadge(req.status)}</td>
+              <td className="py-4 px-6 text-right">
+                <MoreVertical className="w-5 h-5 text-[#94A3B8] cursor-pointer inline-block" />
+              </td>
+            </tr>
+          ))
+        )}
       </tbody>
     </table>
   </div>

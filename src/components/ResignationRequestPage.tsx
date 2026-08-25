@@ -4,6 +4,9 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getAllResignationRequests, createResignationRequest, updateResignationStatus, ResignationRequest as ApiResignationRequest } from '@/lib/api/resignationRequests';
 import { useAuthStore } from '@/store/useAuthStore';
+import { uploadHrmsDocument } from '@/lib/supabaseClient';
+import { Loader2 } from 'lucide-react';
+import api from '@/lib/axiosInstance';
 
 // We use ApiResignationRequest from @/lib/api/resignationRequests
 type RequestStatus = ApiResignationRequest['status'];
@@ -23,18 +26,22 @@ export type ResignationRequest = ApiResignationRequest;
 const resignationSchema = z.object({
     resignationReason: z.string().min(1, 'Reason for resignation is required'),
     resignationDate: z.string().min(1, 'Resignation date is required'),
-    lastWorkingDate: z.string().min(1, 'Last working date is required'),
+    lastWorkingDate: z.string().min(1, 'Last working date is required').refine((val) => {
+        const today = new Date().toISOString().split('T')[0];
+        return val >= today;
+    }, {
+        message: 'Resignation effective date cannot be in the past',
+    }),
     obligationDetails: z.string().min(1, 'Obligation details are required'),
     specialRemark: z.string().optional(),
 });
 
 type ResignationFormData = z.infer<typeof resignationSchema>;
 
-// ── Mock Leave Balance Data ─────────────────────────────────────────
-const leaveBalances = [
-    { type: 'Annual Leave', total: 14, used: 6, remaining: 8, color: '#8B3A00', bg: '#FEF3EB' },
-    { type: 'Sick Leave', total: 7, used: 2, remaining: 5, color: '#0D9488', bg: '#F0FDFA' },
-    { type: 'Casual Leave', total: 7, used: 4, remaining: 3, color: '#6366F1', bg: '#EEF2FF' },
+const defaultLeaveBalances = [
+    { type: 'Annual Leave', total: 14, used: 0, remaining: 14, color: '#8B3A00', bg: '#FEF3EB' },
+    { type: 'Sick Leave', total: 7, used: 0, remaining: 7, color: '#0D9488', bg: '#F0FDFA' },
+    { type: 'Casual Leave', total: 7, used: 0, remaining: 7, color: '#6366F1', bg: '#EEF2FF' },
 ];
 
 // ── Resignation Reason Options ──────────────────────────────────────
@@ -52,6 +59,7 @@ interface ConfirmModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
+    isUploading?: boolean;
 }
 
 const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm }) => {
@@ -59,29 +67,29 @@ const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onCo
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transition-colors">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                         <span className="material-symbols-outlined text-[#8B3A00]">warning</span>
                         Confirm Submission
                     </h3>
                     <button
                         type="button"
-                        className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors"
                         onClick={onClose}
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
                 <div className="p-6">
-                    <p className="text-sm text-slate-600 leading-relaxed">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                         After submission, the request cannot be edited as it is submitted for approvals.
                     </p>
                 </div>
-                <div className="p-6 bg-slate-50 flex items-center justify-end gap-3">
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-end gap-3 transition-colors">
                     <button
                         type="button"
-                        className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 cursor-pointer"
+                        className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors"
                         onClick={onClose}
                     >
                         Cancel
@@ -125,7 +133,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
     };
 
     return (
-        <div className={`rounded-xl border p-5 transition-all ${hasFile ? 'border-green-200 bg-green-50/30' : slot.mandatory ? 'border-slate-200 bg-white' : 'border-dashed border-slate-200 bg-slate-50/30'}`}>
+        <div className={`rounded-xl border p-5 transition-all ${hasFile ? 'border-green-200 dark:border-green-900/50 bg-green-50/30 dark:bg-green-900/10' : slot.mandatory ? 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900' : 'border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/50'}`}>
             <input
                 ref={inputRef}
                 type="file"
@@ -134,32 +142,32 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                 onChange={handleChange}
             />
             <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${hasFile ? 'bg-green-100' : 'bg-slate-100'}`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${hasFile ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-100 dark:bg-slate-800'}`}>
                     <span className={`material-symbols-outlined text-lg ${hasFile ? 'text-green-600' : 'text-slate-400'}`}>
                         {hasFile ? 'check_circle' : slot.icon}
                     </span>
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-slate-800">{slot.label}</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{slot.label}</p>
                         {slot.mandatory ? (
-                            <span className="text-[9px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded uppercase">Required</span>
+                            <span className="text-[9px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded uppercase">Required</span>
                         ) : (
-                            <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase">Optional</span>
+                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded uppercase">Optional</span>
                         )}
                     </div>
 
                     {hasFile ? (
                         <div className="mt-2 flex items-center gap-2">
                             <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
-                            <p className="text-[11px] text-slate-600 truncate">{fileName}</p>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{fileName}</p>
                             {slot.file && (
-                                <p className="text-[10px] text-slate-400 flex-shrink-0">({formatFileSize(slot.file.size)})</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0">({formatFileSize(slot.file.size)})</p>
                             )}
                             {!disabled && (
                                 <button
                                     type="button"
-                                    className="ml-auto text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                                    className="ml-auto text-slate-400 hover:text-red-500 transition-colors flex-shrink-0 cursor-pointer"
                                     onClick={() => onRemove(slot.key)}
                                 >
                                     <span className="material-symbols-outlined text-base">close</span>
@@ -169,7 +177,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                     ) : (
                         <button
                             type="button"
-                            className="mt-2 text-[11px] font-bold text-[#8B3A00] hover:underline flex items-center gap-1 disabled:opacity-40 disabled:no-underline"
+                            className="mt-2 text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 hover:underline flex items-center gap-1 disabled:opacity-40 disabled:no-underline cursor-pointer"
                             onClick={() => inputRef.current?.click()}
                             disabled={disabled}
                         >
@@ -197,19 +205,19 @@ const ActiveRequestBanner: React.FC<{ request: ResignationRequest }> = ({ reques
     const cfg = statusConfig[request.status] || { label: request.status, color: 'text-slate-600', bg: 'bg-slate-50' };
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#8B3A00] text-[20px]">info</span>
-                <h2 className="font-bold text-slate-800 text-sm">Active Resignation Request</h2>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#8B3A00] dark:text-orange-500 text-[20px]">info</span>
+                <h2 className="font-bold text-slate-800 dark:text-white text-sm">Active Resignation Request</h2>
             </div>
             <div className="p-8">
-                <div className="flex items-center gap-4 p-6 bg-amber-50 border border-amber-200 rounded-xl">
-                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-amber-600 text-2xl">pending_actions</span>
+                <div className="flex items-center gap-4 p-6 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl transition-colors">
+                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-2xl">pending_actions</span>
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-bold text-slate-800 text-sm">Active Resignation Request in Progress</h3>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Active Resignation Request in Progress</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                             Request <span className="font-bold">{request.id}</span> is currently <span className={`font-bold ${cfg.color}`}>{cfg.label}</span>.
                             You can track its progress here while continuing to use the form below for any new submissions.
                         </p>
@@ -221,47 +229,47 @@ const ActiveRequestBanner: React.FC<{ request: ResignationRequest }> = ({ reques
 
                 <div className="mt-6 grid grid-cols-2 gap-6">
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Resignation Date</p>
-                        <p className="text-sm text-slate-700">{request.resignationDate}</p>
+                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Resignation Date</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-200">{request.resignationDate}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Last Working Date</p>
-                        <p className="text-sm text-slate-700">{request.lastWorkingDate}</p>
+                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Last Working Date</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-200">{request.lastWorkingDate}</p>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Reason</p>
-                        <p className="text-sm text-slate-700">{request.reason}</p>
+                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Reason</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-200">{request.reason}</p>
                     </div>
                     {request.obligationDetails && (
                         <div className="col-span-2 space-y-1">
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Obligation Details</p>
-                            <p className="text-sm text-slate-700 whitespace-pre-wrap">{request.obligationDetails}</p>
+                            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Obligation Details</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{request.obligationDetails}</p>
                         </div>
                     )}
                     {request.specialRemark && (
                         <div className="col-span-2 space-y-1">
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Special Remark</p>
-                            <p className="text-sm text-slate-700">{request.specialRemark}</p>
+                            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Special Remark</p>
+                            <p className="text-sm text-slate-700 dark:text-slate-200">{request.specialRemark}</p>
                         </div>
                     )}
                 </div>
 
                 {/* Documents attached */}
                 <div className="mt-6 space-y-2">
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Documents Submitted</p>
+                    <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Documents Submitted</p>
                     <div className="flex flex-wrap gap-2">
                         {request.documents.resignationLetter && (
-                            <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                            <span className="text-[11px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors">
                                 <span className="material-symbols-outlined text-xs">check_circle</span> Resignation Letter
                             </span>
                         )}
                         {request.documents.clearanceLetter && (
-                            <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                            <span className="text-[11px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors">
                                 <span className="material-symbols-outlined text-xs">check_circle</span> Obligations Clearance
                             </span>
                         )}
                         {request.documents.handoverChecklist && (
-                            <span className="text-[11px] text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                            <span className="text-[11px] text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors">
                                 <span className="material-symbols-outlined text-xs">check_circle</span> Handover Checklist
                             </span>
                         )}
@@ -292,6 +300,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
 }) => {
     const { user } = useAuthStore();
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     // ── Document slots state ────────────────────────────────────────
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
@@ -299,6 +308,44 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
         { key: 'clearanceLetter', label: 'Obligations Clearance Letter', icon: 'fact_check', mandatory: true, file: null },
         { key: 'handoverChecklist', label: 'Employee Handover Checklist', icon: 'checklist', mandatory: false, file: null },
     ]);
+
+    // ── Dynamic Leave Balances from Database ────────────────────────
+    const [leaveBalances, setLeaveBalances] = useState(defaultLeaveBalances);
+
+    useEffect(() => {
+        const fetchLeaveBalance = async () => {
+            if (!user?.id) return;
+            try {
+                const currentYear = new Date().getFullYear();
+                const response = await fetch(`/api/leave-balance?employeeId=${user.id}&year=${currentYear}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) {
+                        const annualQuota = data.annualLeaveQuota ?? 14;
+                        const annualUsed = data.annualLeaveUsed ?? 0;
+                        const annualRem = data.annualLeaveRemaining ?? Math.max(0, annualQuota - annualUsed);
+
+                        const sickQuota = data.medicalLeaveQuota ?? (data.sickLeaveQuota ?? 7);
+                        const sickUsed = data.medicalLeaveUsed ?? (data.sickLeaveUsed ?? 0);
+                        const sickRem = data.medicalLeaveRemaining ?? Math.max(0, sickQuota - sickUsed);
+
+                        const casualQuota = data.casualLeaveQuota ?? 7;
+                        const casualUsed = data.casualLeaveUsed ?? 0;
+                        const casualRem = data.casualLeaveRemaining ?? Math.max(0, casualQuota - casualUsed);
+
+                        setLeaveBalances([
+                            { type: 'Annual Leave', total: annualQuota, used: annualUsed, remaining: annualRem, color: '#8B3A00', bg: '#FEF3EB' },
+                            { type: 'Sick Leave', total: sickQuota, used: sickUsed, remaining: sickRem, color: '#0D9488', bg: '#F0FDFA' },
+                            { type: 'Casual Leave', total: casualQuota, used: casualUsed, remaining: casualRem, color: '#6366F1', bg: '#EEF2FF' },
+                        ]);
+                    }
+                }
+            } catch (err) {
+                // Silently fallback to default values without logging AxiosError
+            }
+        };
+        fetchLeaveBalance();
+    }, [user?.id]);
 
     // ── Determine form mode ────────────────────────────────────────
     const isEditing = !!selectedRequest;
@@ -391,7 +438,30 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
         .some((s) => s.file === null && s.existingName === undefined);
 
     // ── Actions ─────────────────────────────────────────────────────
+    
+    const uploadDocs = async () => {
+        const payloadDocs: any = {
+            resignationLetter: undefined,
+            clearanceLetter: undefined,
+            handoverChecklist: undefined
+        };
+        for (const slot of docSlots) {
+            if (slot.file) {
+                const path = await uploadHrmsDocument(slot.file, 'resignation');
+                if (path) {
+                    payloadDocs[slot.key] = path;
+                } else {
+                    throw new Error('Upload failed for ' + slot.label);
+                }
+            } else if (slot.existingName) {
+                payloadDocs[slot.key] = slot.existingName;
+            }
+        }
+        return payloadDocs;
+    };
+
     const handleSaveAsDraft = async () => {
+        setIsUploading(true);
         const values = getValues();
         const payload: Partial<ResignationRequest> = {
             employeeName: user?.name || '',
@@ -427,6 +497,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
     };
 
     const handleConfirmSubmit = async () => {
+        setIsUploading(true);
         const values = getValues();
         const payload: Partial<ResignationRequest> = {
             employeeName: user?.name || '',
@@ -477,11 +548,11 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
 
                     {/* Form Section: Always available for new requests, or for editing/viewing specific ones */}
                     <form onSubmit={handleSubmit(onSubmitValid)}>
-                            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+                                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-[#8B3A00] text-[20px]">assignment_late</span>
-                                        <h2 className="font-bold text-slate-800 text-sm">
+                                        <span className="material-symbols-outlined text-[#8B3A00] dark:text-orange-500 text-[20px]">assignment_late</span>
+                                        <h2 className="font-bold text-slate-800 dark:text-white text-sm">
                                             {isViewOnly ? `View Request — ${selectedRequest?.id}` : isEditing ? `Edit Draft — ${selectedRequest?.id}` : 'Create Resign Request'}
                                         </h2>
                                     </div>
@@ -490,18 +561,18 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                             <button 
                                                 type="button"
                                                 onClick={onCancelEdit}
-                                                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-slate-100 px-3 py-1 rounded uppercase tracking-wider transition-colors cursor-pointer"
+                                                className="text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded uppercase tracking-wider transition-colors cursor-pointer"
                                             >
                                                 {isViewOnly ? 'Close View' : 'Cancel Edit'}
                                             </button>
                                         )}
                                         {isEditing && !isViewOnly && (
-                                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded uppercase tracking-wider">
+                                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-1 rounded uppercase tracking-wider">
                                                 Editing Draft
                                             </span>
                                         )}
                                         {isViewOnly && (
-                                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded uppercase tracking-wider">
+                                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded uppercase tracking-wider">
                                                 View Mode
                                             </span>
                                         )}
@@ -511,28 +582,29 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
 
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                                 Resignation Initiation Date <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="date"
                                                 {...register('resignationDate')}
                                                 disabled={isViewOnly}
-                                                className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.resignationDate ? 'border-red-400' : 'border-slate-200'} ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
+                                                className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.resignationDate ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'} ${isViewOnly ? 'bg-slate-50 dark:bg-slate-800/60 opacity-80' : ''}`}
                                             />
                                             {errors.resignationDate && (
                                                 <p className="text-xs text-red-500 mt-1">{errors.resignationDate.message}</p>
                                             )}
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                                 Resignation Effective Date <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="date"
                                                 {...register('lastWorkingDate')}
+                                                min={todayISO}
                                                 disabled={isViewOnly}
-                                                className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${errors.lastWorkingDate ? 'border-red-400' : 'border-slate-200'} ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
+                                                className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.lastWorkingDate ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'} ${isViewOnly ? 'bg-slate-50 dark:bg-slate-800/60 opacity-80' : ''}`}
                                             />
                                             {errors.lastWorkingDate && (
                                                 <p className="text-xs text-red-500 mt-1">{errors.lastWorkingDate.message}</p>
@@ -543,13 +615,13 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                     {/* Form Fields — Row 2: Reason for Resignation */}
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                                 Reason for Resignation <span className="text-red-500">*</span>
                                             </label>
                                             <select
                                                 {...register('resignationReason')}
                                                 disabled={isViewOnly}
-                                                className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 bg-white ${errors.resignationReason ? 'border-red-400' : 'border-slate-200'} ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
+                                                className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 bg-white dark:bg-slate-800 ${errors.resignationReason ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'} ${isViewOnly ? 'bg-slate-50 dark:bg-slate-800/60 opacity-80' : ''}`}
                                             >
                                                 <option value="">Select Reason</option>
                                                 {resignationReasons.map((reason) => (
@@ -561,21 +633,21 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                             )}
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                                 Special Remark <span className="text-slate-400 normal-case font-normal">(Optional)</span>
                                             </label>
                                             <input
                                                 {...register('specialRemark')}
                                                 disabled={isViewOnly}
                                                 placeholder="Any other specific comments"
-                                                className={`w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
+                                                className={`w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${isViewOnly ? 'bg-slate-50 dark:bg-slate-800/60 opacity-80' : ''}`}
                                             />
                                         </div>
                                     </div>
 
                                     {/* Form Fields — Row 3: Obligation Details */}
                                     <div className="space-y-2">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                             Direct and Indirect Obligations <span className="text-red-500">*</span>
                                         </label>
                                         <textarea
@@ -583,7 +655,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                             disabled={isViewOnly}
                                             rows={4}
                                             placeholder="Detail any pending projects, assets to return, or other obligations..."
-                                            className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 resize-none ${errors.obligationDetails ? 'border-red-400' : 'border-slate-200'} ${isViewOnly ? 'bg-slate-50 opacity-80' : ''}`}
+                                            className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 resize-none ${errors.obligationDetails ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'} ${isViewOnly ? 'bg-slate-50 dark:bg-slate-800/60 opacity-80' : ''}`}
                                         />
                                         {errors.obligationDetails && (
                                             <p className="text-xs text-red-500 mt-1">{errors.obligationDetails.message}</p>
@@ -592,13 +664,13 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
 
                                     {/* Leave Balance Display */}
                                     <div className="space-y-3">
-                                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">Leave Balance Details</label>
+                                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Leave Balance Details</label>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                             {leaveBalances.map((leave) => (
                                                 <div
                                                     key={leave.type}
-                                                    className="rounded-xl border border-slate-200 p-4"
-                                                    style={{ backgroundColor: leave.bg }}
+                                                    className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 transition-colors"
+                                                    style={{ backgroundColor: `${leave.color}10` }}
                                                 >
                                                     <div className="flex items-center gap-2 mb-3">
                                                         <div
@@ -612,16 +684,16 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                                                 event_available
                                                             </span>
                                                         </div>
-                                                        <p className="text-xs font-bold text-slate-700">{leave.type}</p>
+                                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{leave.type}</p>
                                                     </div>
                                                     <div className="flex items-end justify-between">
                                                         <div>
                                                             <p className="text-2xl font-bold" style={{ color: leave.color }}>{leave.remaining}</p>
-                                                            <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Remaining</p>
+                                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-0.5">Remaining</p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-xs text-slate-500">
-                                                                <span className="font-bold text-slate-600">{leave.used}</span> / {leave.total} used
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                                <span className="font-bold text-slate-600 dark:text-slate-300">{leave.used}</span> / {leave.total} used
                                                             </p>
                                                         </div>
                                                     </div>
@@ -642,11 +714,11 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                     {/* Document Uploads */}
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                                 Required Documents
                                             </label>
                                             {mandatoryDocsMissing && (
-                                                <span className="text-[10px] text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
+                                                <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1">
                                                     <span className="material-symbols-outlined text-xs">warning</span>
                                                     Upload mandatory documents to submit
                                                 </span>
@@ -667,12 +739,12 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                 </div>
 
                                     {/* Footer Actions */}
-                                    <div className="px-8 py-6 border-t border-slate-100 flex items-center justify-between">
+                                    <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                         {!isViewOnly ? (
                                             <>
                                                 <button
                                                     type="button"
-                                                    className="px-8 py-3 bg-white border border-slate-200 rounded-lg font-bold text-slate-600 text-sm hover:bg-slate-100 transition-all cursor-pointer"
+                                                    className="px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
                                                     onClick={handleSaveAsDraft}
                                                 >
                                                     {isEditing ? 'Update Draft' : 'Save as Draft'}
@@ -682,7 +754,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                                         type="submit"
                                                         disabled={mandatoryDocsMissing}
                                                         className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all cursor-pointer ${mandatoryDocsMissing
-                                                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                                            ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                                                             : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
                                                             }`}
                                                     >
@@ -727,51 +799,51 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
 // ── Sidebar Panel (extracted to avoid duplication) ──────────────────
 const SidebarPanel = () => (
     <>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors">
             <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-[#FFF7F2] rounded-lg flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[#8B3A00] text-xl">info</span>
+                <div className="w-8 h-8 bg-[#FFF7F2] dark:bg-orange-950/40 rounded-lg flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[#8B3A00] dark:text-orange-500 text-xl">info</span>
                 </div>
-                <h2 className="font-bold text-slate-800 text-sm">Resignation Policy</h2>
+                <h2 className="font-bold text-slate-800 dark:text-white text-sm">Resignation Policy</h2>
             </div>
             <ul className="space-y-4">
                 <li className="flex gap-3">
                     <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check_circle</span>
                     <div>
-                        <p className="text-xs font-bold text-slate-800">Notice Period</p>
-                        <p className="text-[11px] text-slate-500 mt-1">A minimum of 30 days notice period is required for all resignations.</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Notice Period</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">A minimum of 30 days notice period is required for all resignations.</p>
                     </div>
                 </li>
                 <li className="flex gap-3">
                     <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check_circle</span>
                     <div>
-                        <p className="text-xs font-bold text-slate-800">Knowledge Transfer</p>
-                        <p className="text-[11px] text-slate-500 mt-1">Complete all assigned KT sessions before the last working day.</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Knowledge Transfer</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Complete all assigned KT sessions before the last working day.</p>
                     </div>
                 </li>
                 <li className="flex gap-3">
                     <span className="material-symbols-outlined text-green-500 text-sm mt-0.5">check_circle</span>
                     <div>
-                        <p className="text-xs font-bold text-slate-800">Exit Interview</p>
-                        <p className="text-[11px] text-slate-500 mt-1">An HR representative will schedule a mandatory exit interview.</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Exit Interview</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">An HR representative will schedule a mandatory exit interview.</p>
                     </div>
                 </li>
             </ul>
-            <div className="mt-6 pt-6 border-t border-slate-100">
-                <a href="#" className="text-[11px] font-bold text-[#8B3A00] flex items-center gap-1 hover:underline transition-all">
+            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <a href="#" className="text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 flex items-center gap-1 hover:underline transition-all">
                     Read Full Policy Documents
                     <span className="material-symbols-outlined text-xs">open_in_new</span>
                 </a>
             </div>
         </div>
 
-        <div className="bg-[#FEF3EB] rounded-xl p-6 text-slate-800 shadow-sm border border-[#FDE6D5] relative overflow-hidden">
-            <div className="absolute -right-4 -bottom-4 opacity-5">
-                <span className="material-symbols-outlined text-[100px] text-[#8B3A00]">help</span>
+        <div className="bg-[#FEF3EB] dark:bg-orange-950/20 rounded-xl p-6 text-slate-800 dark:text-slate-200 shadow-sm border border-[#FDE6D5] dark:border-orange-900/30 relative overflow-hidden transition-colors">
+            <div className="absolute -right-4 -bottom-4 opacity-5 dark:opacity-10">
+                <span className="material-symbols-outlined text-[100px] text-[#8B3A00] dark:text-orange-400">help</span>
             </div>
             <h3 className="font-bold text-sm mb-3">Need Help?</h3>
-            <p className="text-xs text-slate-600 leading-relaxed mb-4">Contact HR Operations for queries regarding notice period, final settlement, or exit clearance process.</p>
-            <button className="w-full py-2 bg-[#FFC5C0] text-slate-800 font-bold rounded-lg text-xs hover:opacity-90 transition-colors">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">Contact HR Operations for queries regarding notice period, final settlement, or exit clearance process.</p>
+            <button className="w-full py-2 bg-[#FFC5C0] dark:bg-orange-900/50 text-slate-800 dark:text-orange-200 font-bold rounded-lg text-xs hover:opacity-90 transition-colors cursor-pointer">
                 Contact HR
             </button>
         </div>

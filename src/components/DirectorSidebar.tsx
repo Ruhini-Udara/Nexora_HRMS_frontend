@@ -3,12 +3,33 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from "@/store/useAuthStore";
-import { LayoutDashboard, ArrowLeftRight, UserX, Heart, UserMinus, ShieldQuestion, Calendar, LogOut } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, UserX, Heart, UserMinus, ShieldQuestion, Calendar, LogOut, Sun, Moon } from 'lucide-react';
+import { useState, useEffect } from "react";
 
 const DirectorSidebar = () => {
     const pathname = usePathname();
     const router = useRouter();
     const logout = useAuthStore((state) => state.logout);
+    const [isDark, setIsDark] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsDark(document.documentElement.classList.contains("dark"));
+        }, 0);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const toggleTheme = () => {
+        if (document.documentElement.classList.contains("dark")) {
+            document.documentElement.classList.remove("dark");
+            localStorage.setItem("theme", "light");
+            setIsDark(false);
+        } else {
+            document.documentElement.classList.add("dark");
+            localStorage.setItem("theme", "dark");
+            setIsDark(true);
+        }
+    };
 
     const handleLogout = () => {
         logout();
@@ -26,12 +47,12 @@ const DirectorSidebar = () => {
     ];
 
     return (
-        <aside className="w-[260px] bg-white border-r border-gray-200 flex flex-col fixed inset-y-0 left-0 z-50">
+        <aside className="w-[260px] bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col fixed inset-y-0 left-0 z-50">
             <div className="p-6 flex items-center gap-2">
                 <div className="w-10 h-10 bg-primary rounded-custom flex items-center justify-center text-white font-bold text-xl">
                     HM
                 </div>
-                <span className="text-xl font-bold tracking-tight text-primary">HR MATE</span>
+                <span className="text-xl font-bold tracking-tight text-primary dark:text-white">HR MATE</span>
             </div>
             <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
                 {navLinks.map(({ label, href, icon: Icon }) => {
@@ -41,8 +62,8 @@ const DirectorSidebar = () => {
                             key={href}
                             href={href}
                             className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-custom transition-colors ${isActive
-                                ? "bg-primary-light text-primary border-r-4 border-primary"
-                                : "text-sidebar-text hover:bg-gray-50"
+                                ? "bg-primary-light text-primary border-r-4 border-primary dark:bg-primary/10 dark:text-primary dark:border-primary"
+                                : "text-sidebar-text dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800/50"
                                 }`}
                         >
                             <Icon className="w-5 h-5" />
@@ -51,14 +72,17 @@ const DirectorSidebar = () => {
                     );
                 })}
             </nav>
-            <div className="p-4 border-t border-gray-200 space-y-2">
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-custom hover:bg-gray-50">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path></svg>
+            <div className="p-4 border-t border-gray-200 dark:border-zinc-800 space-y-2">
+                <button
+                    onClick={toggleTheme}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-custom hover:bg-gray-50 dark:hover:bg-zinc-750 cursor-pointer"
+                >
+                    {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                     Toggle Theme
                 </button>
                 <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-custom hover:bg-red-100 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/30 rounded-custom hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
                 >
                     <LogOut size={18} />
                     Logout

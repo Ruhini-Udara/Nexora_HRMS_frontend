@@ -7,10 +7,10 @@ export default function AdminLeaveModules() {
         <div className="max-w-7xl mx-auto w-full">
             {/* Page Header */}
             <div className="mb-8 pt-2">
-                <h1 className="text-3xl font-bold text-gray-900 mb-1">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
                     Leave Approvals
                 </h1>
-                <p className="text-gray-500 text-base">
+                <p className="text-gray-500 dark:text-slate-400 text-base">
                     Review and verify employee leave requests requiring administrative attention.
                 </p>
             </div>

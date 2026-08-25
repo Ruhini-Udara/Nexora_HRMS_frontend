@@ -34,7 +34,16 @@ export default function Page() {
         const fetchRequests = async () => {
             try {
                 const data = await getResignationRequestsByEmployee(user.id);
-                setRequests(data);
+                
+                const oneYearAgo = new Date();
+                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                
+                const recentData = data.filter(r => {
+                    const reqDate = new Date(r.createdAt || r.resignationDate || '');
+                    return isNaN(reqDate.getTime()) || reqDate >= oneYearAgo;
+                });
+                
+                setRequests(recentData);
             } catch (error) {
                 console.error("Failed to fetch resignations:", error);
             }
@@ -71,7 +80,7 @@ export default function Page() {
                 onRequestChange={setRequests}
                 selectedRequest={null}
                 isViewOnly={false}
-                onCancelEdit={() => {}}
+                onCancelEdit={() => { }}
             />
 
             {/* View/Edit Modal */}
@@ -82,7 +91,7 @@ export default function Page() {
                             <h3 className="text-lg font-bold text-slate-800 dark:text-white">
                                 {isViewOnly ? 'View Resignation Request' : 'Edit Resignation Draft'}
                             </h3>
-                            <button 
+                            <button
                                 onClick={() => {
                                     setIsModalOpen(false);
                                     setSelectedRequest(null);
@@ -150,7 +159,7 @@ export default function Page() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 flex items-center gap-3">
-                                                <button 
+                                                <button
                                                     className="text-slate-400 hover:text-[#8B3A00] transition-colors cursor-pointer"
                                                     title="View Request"
                                                     onClick={() => {
@@ -162,7 +171,7 @@ export default function Page() {
                                                     <span className="material-symbols-outlined text-[20px]">visibility</span>
                                                 </button>
                                                 {req.status === 'NEW' && (
-                                                    <button 
+                                                    <button
                                                         className="text-slate-400 hover:text-[#8B3A00] transition-colors cursor-pointer"
                                                         title="Edit Draft"
                                                         onClick={() => {

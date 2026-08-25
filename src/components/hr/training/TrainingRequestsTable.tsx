@@ -341,7 +341,7 @@ export default function TrainingRequestsTable() {
                             </h2>
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-slate-500">Type:</span>
+                                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Type:</span>
                                     <div className="relative">
                                         <select
                                             value={selectedCategory}
@@ -350,20 +350,20 @@ export default function TrainingRequestsTable() {
                                                 setSelectedEventId(null);
                                                 setCurrentPageEvents(1);
                                             }}
-                                            className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
+                                            className="pl-3 pr-8 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
                                         >
-                                            <option value="All">All Types</option>
-                                            <option value="Internal">Internal</option>
-                                            <option value="External">External</option>
+                                            <option value="All" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">All Types</option>
+                                            <option value="Internal" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">Internal</option>
+                                            <option value="External" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">External</option>
                                         </select>
-                                        <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">
+                                        <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none text-[18px]">
                                             arrow_drop_down
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-slate-500">Status:</span>
+                                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Status:</span>
                                     <div className="relative">
                                         <select
                                             value={selectedStatus}
@@ -372,18 +372,19 @@ export default function TrainingRequestsTable() {
                                                 setSelectedEventId(null);
                                                 setCurrentPageEvents(1);
                                             }}
-                                            className="pl-3 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none"
+                                            className="pl-3 pr-8 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
                                         >
-                                            <option value="All">All Status</option>
-                                            <option value="Sent">Already Sent</option>
-                                            <option value="Not Sent">Not Sent Yet</option>
+                                            <option value="All" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">All Status</option>
+                                            <option value="Sent" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">Already Sent</option>
+                                            <option value="Not Sent" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">Not Sent Yet</option>
                                         </select>
-                                        <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">
+                                        <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none text-[18px]">
                                             arrow_drop_down
                                         </span>
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {currentEvents.map((event) => (
@@ -760,7 +761,7 @@ export default function TrainingRequestsTable() {
                 requests={filteredRequests}
                 eventName={selectedEvent?.title || "Selected Training"}
                 eventId={selectedEvent?.id}
-                eventStatus={selectedEvent?.status}
+                eventStatus={selectedEvent?.approvedBy ? 'Approved' : selectedEvent?.status}
                 approvedBy={selectedEvent?.approvedBy}
                 approvedAt={selectedEvent?.approvedAt}
                 onStatusUpdate={() => {
