@@ -242,9 +242,7 @@ export default function Page() {
                                                     <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{doc.label}</p>
                                                     <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{doc.filename}</p>
                                                 </div>
-                                                <button className="text-slate-300 dark:text-slate-500 hover:text-[#8B3A00] dark:hover:text-orange-400 transition-colors">
-                                                    <span className="material-symbols-outlined text-lg">download</span>
-                                                </button>
+
                                             </div>
                                         ))}
                                     </div>

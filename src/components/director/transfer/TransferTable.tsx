@@ -85,7 +85,7 @@ const ReadOnlyTextarea = ({ label, value, rows = 3 }: { label: string; value: st
         try {
             await updateTransferStatus(id, "APPROVED");
             await loadRequests();
-            setToastMessage("application approved successfully !");
+            setToastMessage("successfully approved and email sent!");
             setTimeout(() => setToastMessage(null), 4000);
         } catch (error) {
             console.error("Failed to approve", error);
@@ -510,15 +510,7 @@ const getDropdownOptions = () => {
                 </div>
             )}
 
-            {/* Toast Notification */}
-            {toastMessage && (
-                <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg font-medium text-sm animate-in slide-in-from-bottom-5 print:hidden">
-                    <div className="flex items-center gap-2">
-                        <Send className="w-4 h-4 text-primary" />
-                        {toastMessage}
-                    </div>
-                </div>
-            )}
+            {/* The redundant second toast notification was removed here. */}
 
         </div>
     );
