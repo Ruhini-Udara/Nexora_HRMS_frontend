@@ -9,6 +9,10 @@ export function MaternityGuidelines() {
             </h3>
             <ul className="space-y-4 text-sm text-slate-600 dark:text-slate-400">
                 <li className="flex gap-3">
+                    <span className="material-symbols-outlined text-[16px] text-primary mt-0.5">rule</span>
+                    <span><strong>Eligibility:</strong> Female employees must have a minimum of 80 days of service before the leave start date to be eligible for maternity leave.</span>
+                </li>
+                <li className="flex gap-3">
                     <span className="material-symbols-outlined text-[16px] text-primary mt-0.5">looks_one</span>
                     <span><strong>First Level:</strong> 84 Working Day leaves with full salary.</span>
                 </li>
