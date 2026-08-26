@@ -1,6 +1,6 @@
 import api from '../axiosInstance';
 
-export type RequestStatus = 'NEW' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+export type RequestStatus = 'NEW' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'VERIFIED_BY_HR' | 'PENDING_ADMIN' | 'PENDING_BOARD_APPROVAL' | 'SUBMITTED_TO_DIRECTOR';
 
 export interface WelfareRequest {
     id: string;
@@ -62,11 +62,24 @@ export const getWelfareRequestsByEmployee = async (employeeId: number): Promise<
     return response.data.map(mapDtoToFrontend);
 };
 
-export const createWelfareRequest = async (request: Partial<WelfareRequest>, userDetails?: { id: number; name: string; email: string }): Promise<WelfareRequest> => {
+export const createWelfareRequest = async (
+    request: Partial<WelfareRequest>, 
+    userDetails?: { 
+        id: number; 
+        name: string; 
+        email: string;
+        epfNumber?: string;
+        designation?: string;
+        branch?: string;
+    }
+): Promise<WelfareRequest> => {
     const payload = {
         employeeId: userDetails?.id || 1, 
         employeeName: userDetails?.name || "Current User",
         email: userDetails?.email || "user@hexaco.com",
+        epfNumber: userDetails?.epfNumber || request.epfNumber || "",
+        designation: userDetails?.designation || request.designation || "",
+        branch: userDetails?.branch || request.branch || "",
         role: request.employeeType,
         initials: userDetails?.name ? userDetails.name.split(' ').map(n => n[0]).join('') : "CU",
         welfareType: request.welfareType,

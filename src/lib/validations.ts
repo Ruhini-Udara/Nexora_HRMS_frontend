@@ -13,8 +13,9 @@ export const maternitySchema = z.object({
         return val >= today;
     }, "Start Date cannot be in the past"),
     endDate: z.string().min(1, "End Date is required"),
+    level: z.enum(["Level 1", "Level 2", "Level 3"], { error: "Level is required" }),
     childNumber: z.string().min(1, "Child Number is required"),
-    contactNumber: z.string().regex(/^\+?[0-9\s\-]{9,15}$/, "Invalid phone format"),
+    contactNumber: z.string().regex(/^(?:0|\+94)[0-9]{9}$/, "Invalid phone format. Please enter a valid Sri Lankan phone number (e.g., 0771234567 or +94771234567)."),
     email: z.string().email("Invalid email address").min(1, "Email is required"),
     specialRemark: z.string().optional(),
     acknowledgement: z.boolean().refine(val => val === true, "You must acknowledge the terms to proceed.")
@@ -40,9 +41,9 @@ export const overseasSchema = z.object({
         return val >= today;
     }, "Start Date cannot be in the past"),
     endDate: z.string().min(1, "End Date is required"),
-    passportNumber: z.string().min(1, "Passport Number is required"),
+    passportNumber: z.string().regex(/^[NDO]\d{7}$/, "Invalid Passport Number format. Must start with N, D, or O followed by 7 digits."),
     passportExpDate: z.string().min(1, "Passport Expiry Date is required"),
-    contactNumber: z.string().regex(/^\+?[0-9\s\-]{9,15}$/, "Invalid phone format"),
+    contactNumber: z.string().regex(/^(?:0|\+94)[0-9]{9}$/, "Invalid phone format. Please enter a valid Sri Lankan phone number (e.g., 0771234567 or +94771234567)."),
     email: z.string().email("Invalid email address").min(1, "Email is required"),
     specialRemark: z.string().optional(),
     acknowledgement: z.boolean().refine(val => val === true, "You must acknowledge the terms to proceed.")

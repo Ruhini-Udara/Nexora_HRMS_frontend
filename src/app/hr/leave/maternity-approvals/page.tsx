@@ -6,6 +6,7 @@ import { getSignedUrl } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/axiosInstance";
 import { WorkflowTrackerStepper } from "@/components/WorkflowTrackerStepper";
+import LeaveStatsHR from "@/components/hr/leave/LeaveStatsHR";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface MaternityLeave {
@@ -189,7 +190,7 @@ export default function MaternityApprovalsPage() {
     });
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col">
             <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
                 <div className="mb-8 flex items-center justify-between">
                     <div>
@@ -206,6 +207,8 @@ export default function MaternityApprovalsPage() {
                         </p>
                     </div>
                 </div>
+
+                <LeaveStatsHR type="MATERNITY" />
 
                 <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
                     <div className="relative w-full sm:w-96">
@@ -242,6 +245,7 @@ export default function MaternityApprovalsPage() {
                                 <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
                                     <th className="py-4 px-6">ID</th>
                                     <th className="py-4 px-6">Employee</th>
+                                    <th className="py-4 px-6">Requested Date</th>
                                     <th className="py-4 px-6">Date Range</th>
                                     <th className="py-4 px-6">Status</th>
                                     <th className="py-4 px-6 text-right">Actions</th>
@@ -264,6 +268,9 @@ export default function MaternityApprovalsPage() {
                                                         {req.employeeCode} • {req.department}
                                                     </div>
                                                 </div>
+                                        </td>
+                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300 font-medium">
+                                            {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'N/A'}
                                         </td>
                                         <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
                                             {req.fromDate} to {req.endDate} <br />

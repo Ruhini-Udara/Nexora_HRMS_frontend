@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Send, Eye, Check } from 'lucide-react';
+import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 
 const mockRequests = [
     {
@@ -41,6 +42,20 @@ const mockRequests = [
     }
 ];
 
+
+    const handleDownload = async (path: string) => {
+        if (!path.includes('/')) {
+            alert('File not available (legacy format)');
+            return;
+        }
+        const url = await getHrmsSignedUrl(path);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('Failed to get download URL');
+        }
+    };
+
 const ResignationRequestsTable = () => {
     const [requests, setRequests] = useState(mockRequests);
     const [boardFilter, setBoardFilter] = useState("All");
@@ -60,7 +75,7 @@ const ResignationRequestsTable = () => {
         const req = requests.find(r => r.id === id);
         setRequests(prev => prev.map(req => req.id === id ? { ...req, status: "Approved" } : req));
         setViewModalOpen(false);
-        setToastMessage(`Status update sent to ${req?.name} (${req?.email})`);
+        setToastMessage(`application approved successfully !`);
         setTimeout(() => setToastMessage(null), 3000);
     };
 
@@ -73,16 +88,15 @@ const ResignationRequestsTable = () => {
 
     const handleRejectSubmit = () => {
         if (!rejectReason.trim()) return;
-        const req = requests.find(r => r.id === requestToReject);
         setRequests(prev => prev.map(req => req.id === requestToReject ? { ...req, status: "Rejected" } : req));
         setRejectModalOpen(false);
         setRequestToReject(null);
-        setToastMessage(`Status update sent to ${req?.name} (${req?.email})`);
+        setToastMessage(`application rejected !`);
         setTimeout(() => setToastMessage(null), 3000);
     };
 
     const handleShareStatus = (req: typeof mockRequests[0]) => {
-        setToastMessage(`Status update sent to ${req.name} (${req.email} & ${req.phone})`);
+        setToastMessage(`application approved successfully !`);
         setTimeout(() => setToastMessage(null), 3000);
     };
 
@@ -98,14 +112,16 @@ const ResignationRequestsTable = () => {
     };
 
     const todayStr = new Date().toISOString().split('T')[0];
+    const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year'>('year');
+    const [statusFilter, setStatusFilter] = useState('All');
 
     const isActionable = (dateString?: string) => {
-        if (!dateString) return false;
+        if (!dateString) return true;
         try {
             const dateStr = new Date(dateString).toISOString().split('T')[0];
-            return dateStr === todayStr;
+            return dateStr <= todayStr;
         } catch (e) {
-            return false;
+            return true;
         }
     };
 

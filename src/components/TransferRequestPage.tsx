@@ -5,6 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import { createTransferRequest, updateTransferRequest, TransferRequest, TransferStatus } from '@/lib/api/transferRequests';
 import { useAuthStore } from '@/store/useAuthStore';
+import { uploadHrmsDocument } from '@/lib/supabaseClient';
+import { Loader2 } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────────────
 // ── Types ───────────────────────────────────────────────────────────
@@ -24,7 +26,7 @@ interface DocumentSlot {
 const transferSchema = z.object({
     currentLocation: z.string().min(1, 'Current location is required'),
     targetLocation: z.string().min(1, 'Target location is required'),
-    expectedDate: z.string().min(1, 'Effective date is required'),
+    expectedDate: z.string().min(1, 'Effective date is required').refine(date => new Date(date) >= new Date(new Date().setHours(0,0,0,0)), 'Date must be today or in the future'),
     validReason: z.string().min(1, 'Reason is required'),
 });
 
@@ -35,6 +37,7 @@ interface ConfirmModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
+    isUploading?: boolean;
 }
 
 const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm }) => {
@@ -252,7 +255,9 @@ export interface TransferRequestPageRef {
 }
 
 const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPageProps>(({ requests, onRequestChange }, ref) => {
+    const todayISO = new Date().toISOString().split('T')[0];
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const [editingDraft, setEditingDraft] = useState<TransferRequest | null>(null);
@@ -368,18 +373,22 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
         .some((s) => s.file === null && s.existingName === undefined);
 
     // ── Build payload helper ────────────────────────────────────────
-    const buildPayload = (data: TransferFormData, status: TransferStatus): Partial<TransferRequest> => {
+    const buildPayload = async (data: TransferFormData, status: TransferStatus): Promise<Partial<TransferRequest>> => {
         const docs = [];
-        const justificationFileName = docSlots.find((s) => s.key === 'justification_letter')?.file?.name
-            || docSlots.find((s) => s.key === 'justification_letter')?.existingName;
-        if (justificationFileName) {
-            docs.push({ key: 'justification', label: 'Transfer Justification Letter', filename: justificationFileName });
-        }
+        
+        for (const slot of docSlots) {
+            let key: string = slot.key;
+            if (slot.key === 'justification_letter') key = 'justification';
+            if (slot.key === 'proof_documents') key = 'proof';
 
-        const proofFileName = docSlots.find((s) => s.key === 'proof_documents')?.file?.name
-            || docSlots.find((s) => s.key === 'proof_documents')?.existingName;
-        if (proofFileName) {
-            docs.push({ key: 'proof', label: 'Proof Document', filename: proofFileName });
+            if (slot.file) {
+                const path = await uploadHrmsDocument(slot.file, 'transfer');
+                if (path) {
+                    docs.push({ key, label: slot.label, filename: path });
+                }
+            } else if (slot.existingName) {
+                docs.push({ key, label: slot.label, filename: slot.existingName });
+            }
         }
 
         return {
@@ -420,7 +429,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
 
     const onFormValid = async (data: TransferFormData) => {
         if (pendingAction === 'draft') {
-            const payload = buildPayload(data, 'NEW');
+            const payload = await buildPayload(data, 'NEW');
             try {
                 if (editingDraft) {
                     const updated = await updateTransferRequest(editingDraft.id, payload);
@@ -437,8 +446,8 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                     const savedReq = await createTransferRequest(payload, userDetails);
                     onRequestChange([...requests, savedReq]);
                     showSuccess(`Draft ${savedReq.id} saved successfully`);
+                    setEditingDraft(savedReq);
                 }
-                resetForm();
             } catch (error) {
                 console.error('Failed to save draft:', error);
             }
@@ -453,8 +462,9 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     };
 
     const handleConfirmSubmit = async () => {
+        setIsUploading(true);
         const values = getValues();
-        const payload = buildPayload(values, 'SUBMITTED');
+        const payload = await buildPayload(values, 'SUBMITTED');
         try {
             if (editingDraft) {
                 const updated = await updateTransferRequest(editingDraft.id, payload);
@@ -486,10 +496,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
 
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1 space-y-8">
-                    {/* List active submitted requests here if needed, but they are in the table below in page.tsx */}
-                    {submittedRequests.map(req => (
-                        <ActiveRequestBanner key={req.id} request={req} />
-                    ))}
+                    {/* Active submitted requests hidden per user request */}
 
                     <form onSubmit={handleSubmit(onFormValid)}>
                         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
@@ -556,6 +563,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                         </label>
                                         <input
                                             type="date"
+                                            min={todayISO}
                                             {...register('expectedDate')}
                                             className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.expectedDate ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
                                         />

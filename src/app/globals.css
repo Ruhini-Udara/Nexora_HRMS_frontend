@@ -87,3 +87,36 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: #f1f5f9 !important;
 }
 
+@media print {
+  @page {
+    margin: 12mm 15mm;
+    size: auto;
+  }
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  aside,
+  header,
+  nav,
+  footer,
+  button,
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+  .print\:flex {
+    display: flex !important;
+  }
+  .print\:table-cell {
+    display: table-cell !important;
+  }
+}
+
+

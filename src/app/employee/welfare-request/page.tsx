@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import api from '@/lib/axiosInstance';
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { WelfareRequest, getAllWelfareRequests, getWelfareRequestsByEmployee, createWelfareRequest, updateWelfareRequest, RequestStatus } from "@/lib/api/welfareRequests";
 import { useAuthStore } from "@/store/useAuthStore";
+import { uploadHrmsDocument } from '@/lib/supabaseClient';
 
 interface DocumentSlot {
     key: 'supporting_document';
@@ -33,6 +35,10 @@ const StatusBadge = ({ status }: { status: RequestStatus }) => {
         'NEW': 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300',
         'SUBMITTED': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400',
         'APPROVED': 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+        'VERIFIED_BY_HR': 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+        'PENDING_ADMIN': 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+        'PENDING_BOARD_APPROVAL': 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400',
+        'SUBMITTED_TO_DIRECTOR': 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
         'REJECTED': 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
     };
     return (
@@ -206,13 +212,38 @@ export default function WelfareRequestPage() {
     const [pendingAction, setPendingAction] = useState<'draft' | 'submit' | null>(null);
     const { user } = useAuthStore();
 
-    const employeeProfile = {
-        epfNumber: user?.epfNumber || "N/A",
-        employeeName: user?.name || "N/A",
-        designation: user?.designation || "N/A",
-        dateJoined: "N/A", // Not in auth store
-        branch: user?.department || "N/A"
-    };
+    const [employeeProfile, setEmployeeProfile] = useState({
+        epfNumber: user?.epfNumber || "—",
+        employeeName: user?.name || "—",
+        designation: user?.designation || "—",
+        dateJoined: "—",
+        branch: user?.department || "—"
+    });
+
+    useEffect(() => {
+        const fetchEmployeeProfile = async () => {
+            if (!user?.id && !user?.email) return;
+            try {
+                const queryParam = user?.id ? `employeeId=${user.id}` : `email=${encodeURIComponent(user?.email || '')}`;
+                const res = await fetch(`/api/employee-profile?${queryParam}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        setEmployeeProfile({
+                            epfNumber: data.epfNumber || '—',
+                            employeeName: data.employeeName || user?.name || '—',
+                            designation: data.designation || user?.designation || '—',
+                            dateJoined: data.dateJoined || '—',
+                            branch: data.branch || user?.department || '—'
+                        });
+                    }
+                }
+            } catch (err) {
+                // Silently fallback to current state
+            }
+        };
+        fetchEmployeeProfile();
+    }, [user?.id, user?.email, user?.name, user?.designation, user?.department, user?.epfNumber]);
 
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
         { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null },
@@ -305,9 +336,18 @@ export default function WelfareRequestPage() {
         .filter((s) => s.mandatory)
         .some((s) => s.file === null && s.existingName === undefined);
 
-    const buildPayload = (data: WelfareFormData, status: RequestStatus): Partial<WelfareRequest> => {
+    const buildPayload = async (data: WelfareFormData, status: RequestStatus): Promise<Partial<WelfareRequest>> => {
         const supportingDoc = docSlots.find(s => s.key === 'supporting_document');
-        const docName = supportingDoc?.file?.name || supportingDoc?.existingName;
+        let docName = supportingDoc?.existingName;
+
+        if (supportingDoc?.file) {
+            const path = await uploadHrmsDocument(supportingDoc.file, 'welfare');
+            if (path) {
+                docName = path;
+            } else {
+                throw new Error('Failed to upload document');
+            }
+        }
 
         return {
             status,
@@ -315,6 +355,10 @@ export default function WelfareRequestPage() {
             employeeType: data.employeeType,
             amount: parseFloat(data.amount) || 0,
             employeeRemarks: data.specialRemark || '',
+            epfNumber: employeeProfile.epfNumber !== '—' ? employeeProfile.epfNumber : undefined,
+            designation: employeeProfile.designation !== '—' ? employeeProfile.designation : undefined,
+            branch: employeeProfile.branch !== '—' ? employeeProfile.branch : undefined,
+            employeeName: employeeProfile.employeeName !== '—' ? employeeProfile.employeeName : undefined,
             documents: docName ? [{ key: 'support', label: 'Supporting Document', filename: docName }] : []
         };
     };
@@ -330,14 +374,21 @@ export default function WelfareRequestPage() {
     // Called when form validation passes (for both draft save and submit)
     const onFormValid = async (data: WelfareFormData) => {
         if (pendingAction === 'draft') {
-            const payload = buildPayload(data, 'NEW');
+            const payload = await buildPayload(data, 'NEW');
             try {
                 if (editingDraft) {
                     const updated = await updateWelfareRequest(editingDraft.id, payload);
                     setRequests(prev => prev.map(r => r.id === editingDraft.id ? updated : r));
                     showSuccess(`Draft ${updated.id} updated successfully`);
                 } else {
-                    const userDetails = user ? { id: user.id, name: user.name, email: user.email } : undefined;
+                    const userDetails = user ? {
+                        id: user.id,
+                        name: employeeProfile.employeeName !== '—' ? employeeProfile.employeeName : user.name,
+                        email: user.email,
+                        epfNumber: employeeProfile.epfNumber !== '—' ? employeeProfile.epfNumber : user.epfNumber,
+                        designation: employeeProfile.designation !== '—' ? employeeProfile.designation : user.designation,
+                        branch: employeeProfile.branch !== '—' ? employeeProfile.branch : user.department,
+                    } : undefined;
                     const savedReq = await createWelfareRequest(payload, userDetails);
                     setRequests(prev => [...prev, savedReq]);
                     showSuccess(`Draft ${savedReq.id} saved successfully`);
@@ -358,14 +409,21 @@ export default function WelfareRequestPage() {
 
     const handleConfirmSubmit = async () => {
         const values = getValues();
-        const payload = buildPayload(values, 'SUBMITTED');
         try {
+            const payload = await buildPayload(values, 'SUBMITTED');
             if (editingDraft) {
                 const updated = await updateWelfareRequest(editingDraft.id, payload);
                 setRequests(prev => prev.map(r => r.id === editingDraft.id ? updated : r));
                 showSuccess(`Request ${updated.id} submitted for certification`);
             } else {
-                const userDetails = user ? { id: user.id, name: user.name, email: user.email } : undefined;
+                const userDetails = user ? {
+                    id: user.id,
+                    name: employeeProfile.employeeName !== '—' ? employeeProfile.employeeName : user.name,
+                    email: user.email,
+                    epfNumber: employeeProfile.epfNumber !== '—' ? employeeProfile.epfNumber : user.epfNumber,
+                    designation: employeeProfile.designation !== '—' ? employeeProfile.designation : user.designation,
+                    branch: employeeProfile.branch !== '—' ? employeeProfile.branch : user.department,
+                } : undefined;
                 const savedReq = await createWelfareRequest(payload, userDetails);
                 setRequests(prev => [...prev, savedReq]);
                 showSuccess(`Request ${savedReq.id} submitted for certification`);

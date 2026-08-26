@@ -8,6 +8,7 @@ export interface DeathRequest {
     dateOfDeath: string;
     natureOfDeath: string;
     requesterName: string;
+    requesterNic?: string;
     requesterBranch: string;
     requesterDesignation: string;
     requesterEmpId: string;
@@ -30,6 +31,7 @@ export interface DeathRequest {
     };
     hrRemark?: string;
     boardMeetingDate?: string;
+    createdAt?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,6 +44,7 @@ const mapDtoToFrontend = (dto: any): DeathRequest => {
         dateOfDeath: dto.dateOfDeath || '',
         natureOfDeath: dto.natureOfDeath || '',
         requesterName: dto.requesterName || '',
+        requesterNic: dto.requesterNic || '',
         requesterBranch: dto.requesterBranch || '',
         requesterDesignation: dto.requesterDesignation || '',
         requesterEmpId: dto.requesterEmpId || '',
@@ -64,6 +67,7 @@ const mapDtoToFrontend = (dto: any): DeathRequest => {
         },
         hrRemark: dto.hrRemark || '',
         boardMeetingDate: dto.boardMeetingDate || '',
+        createdAt: dto.createdAt,
     };
 };
 
@@ -81,6 +85,7 @@ export const createDeathRequest = async (request: Partial<DeathRequest>, userDet
         dateOfDeath: request.dateOfDeath,
         natureOfDeath: request.natureOfDeath,
         requesterName: request.requesterName,
+        requesterNic: request.requesterNic,
         requesterBranch: request.requesterBranch,
         requesterDesignation: request.requesterDesignation,
         requesterEmpId: request.requesterEmpId,
@@ -115,6 +120,7 @@ export const updateDeathRequest = async (idStr: string, request: Partial<DeathRe
         dateOfDeath: request.dateOfDeath,
         natureOfDeath: request.natureOfDeath,
         requesterName: request.requesterName,
+        requesterNic: request.requesterNic,
         requesterBranch: request.requesterBranch,
         requesterDesignation: request.requesterDesignation,
         requesterEmpId: request.requesterEmpId,

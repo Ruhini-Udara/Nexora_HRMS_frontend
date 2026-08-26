@@ -30,15 +30,14 @@ export interface TerminationRequest {
 const MOCK_REQUESTS: TerminationRequest[] = [];
 
 // ── Status badge config ─────────────────────────────────────────────
-const statusConfig: Record<TerminationStatus, { label: string; classes: string }> = {
-    'NEW': { label: 'Draft', classes: 'bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-400' },
-    'SUBMITTED': { label: 'Submitted', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-    'VERIFIED_BY_HR': { label: 'Verified', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-    'PENDING_ADMIN': { label: 'Pending Admin', classes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-    'REJECTED': { label: 'Rejected', classes: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-    'PENDING_BOARD_APPROVAL': { label: 'Pending Board', classes: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-    'SUBMITTED_TO_DIRECTOR': { label: 'Submitted to Director', classes: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-    'APPROVED': { label: 'Approved', classes: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' }
+const statusConfig: Record<string, { label: string; classes: string }> = {
+    NEW: { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400" },
+    SUBMITTED: { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+    VERIFIED_BY_HR: { label: "Verified", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+    PENDING_ADMIN: { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+    SUBMITTED_TO_DIRECTOR: { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
+    APPROVED: { label: "Approved", classes: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+    REJECTED: { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
 };
 
 // ── Main Component ──────────────────────────────────────────────────
@@ -98,11 +97,24 @@ const loadLocalTerminations = (): TerminationRequest[] => {
 };
 
 export default function EmployeeTerminations() {
-    const [requests, setRequests] = useState<TerminationRequest[]>(() => loadLocalTerminations());
+    const [requests, setRequests] = useState<TerminationRequest[]>([]);
+
+    React.useEffect(() => {
+        const data = loadLocalTerminations();
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        
+        const recentData = data.filter(r => {
+            const reqDate = new Date(r.initiationDate || '');
+            return isNaN(reqDate.getTime()) || reqDate >= oneYearAgo;
+        });
+        setRequests(recentData);
+    }, []);
 
     const [activeTab, setActiveTab] = useState<'pending' | 'board'>('pending');
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
+    const [timeFilter, setTimeFilter] = useState<'2days' | 'week' | 'month' | 'year'>('2days');
     const [selectedRequest, setSelectedRequest] = useState<TerminationRequest | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isReadOnly, setIsReadOnly] = useState(false);
@@ -128,7 +140,7 @@ export default function EmployeeTerminations() {
         setIsModalOpen(true);
     };
 
-    const handleSaveRequest = (newReq: TerminationRequest) => {
+    const handleSaveRequest = (newReq: TerminationRequest, closeAfterSave = true) => {
         const adaptedReq: TerminationRequest = {
             ...newReq,
         };
@@ -139,11 +151,12 @@ export default function EmployeeTerminations() {
                 updated = prev.map(r => r.id === adaptedReq.id ? adaptedReq : r);
             } else {
                 updated = [...prev, adaptedReq];
+                setSelectedRequest(adaptedReq);
             }
             localStorage.setItem("termination_requests", JSON.stringify(updated));
             return updated;
         });
-        setIsModalOpen(false);
+        if (closeAfterSave) setIsModalOpen(false);
     };
 
 
@@ -216,7 +229,28 @@ export default function EmployeeTerminations() {
         
         const matchesStatus = statusFilter === "All" || req.status === statusFilter;
         
-        return matchesTab && matchesSearch && matchesStatus;
+        let matchesTime = true;
+        const d = req.initiationDate;
+        if (d) {
+            const reqDate = new Date(d);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            if (timeFilter === '2days') {
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                matchesTime = reqDate >= yesterday;
+            } else if (timeFilter === 'week') {
+                const lastWeek = new Date(today);
+                lastWeek.setDate(lastWeek.getDate() - 7);
+                matchesTime = reqDate >= lastWeek;
+            } else if (timeFilter === 'month') {
+                const lastMonth = new Date(today);
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                matchesTime = reqDate >= lastMonth;
+            }
+        }
+        
+        return matchesTab && matchesSearch && matchesStatus && matchesTime;
     });
 
     const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
@@ -229,6 +263,7 @@ export default function EmployeeTerminations() {
     };
 
     const verifiedCount = requests.filter(r => r.status === 'VERIFIED_BY_HR').length;
+    const printRequests = requests.filter(r => r.status === 'VERIFIED_BY_HR');
 
     return (
         <div className="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col">
@@ -316,8 +351,21 @@ export default function EmployeeTerminations() {
                             >
                                 <option value="All">All Statuses</option>
                                 {Object.keys(statusConfig).map(st => (
-                                    <option key={st} value={st}>{statusConfig[st as TerminationStatus].label}</option>
+                                    <option key={st} value={st}>{statusConfig[st].label}</option>
                                 ))}
+                            </select>
+                            <select
+                                value={timeFilter}
+                                onChange={(e) => {
+                                    setTimeFilter(e.target.value as any);
+                                    setCurrentPage(1);
+                                }}
+                                className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
+                            >
+                                <option value="2days">Last 2 Days</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="year">This Year</option>
                             </select>
                         </div>
                         {activeTab === 'pending' ? (
@@ -329,14 +377,23 @@ export default function EmployeeTerminations() {
                                 New Request
                             </button>
                         ) : (
-                            <button
-                                onClick={() => setShowConfirmDialog(true)}
-                                disabled={verifiedCount === 0}
-                                className="px-6 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">send</span>
-                                Submit for Admin Approvals
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => window.print()}
+                                    className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-all cursor-pointer whitespace-nowrap"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">print</span>
+                                    Print List
+                                </button>
+                                <button
+                                    onClick={() => setShowConfirmDialog(true)}
+                                    disabled={verifiedCount === 0}
+                                    className="px-6 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">send</span>
+                                    Submit for Admin Approvals
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -345,22 +402,55 @@ export default function EmployeeTerminations() {
                 <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {(
                         [
-                            { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
-                            { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-                            { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
-                            { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
+                            { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20", ring: "ring-amber-500" },
+                            { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20", ring: "ring-emerald-500" },
+                            { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
+                            { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
                         ] as const
-                    ).map(({ label, status, icon, color, bg }) => (
-                        <div key={status} className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center gap-3 shadow-sm`}>
-                            <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
-                            <div>
-                                <p className="text-2xl font-bold text-slate-800 dark:text-white">
-                                    {requests.filter((r) => r.status === status).length}
-                                </p>
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
+                    ).map(({ label, status, icon, color, bg, ring }) => {
+                        const statCount = requests.filter(r => r.status === status).filter(req => {
+                            let matchesTime = true;
+                            const d = req.initiationDate;
+                            if (d) {
+                                const reqDate = new Date(d);
+                                const now = new Date();
+                                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                if (timeFilter === '2days') {
+                                    const yesterday = new Date(today);
+                                    yesterday.setDate(yesterday.getDate() - 1);
+                                    matchesTime = reqDate >= yesterday;
+                                } else if (timeFilter === 'week') {
+                                    const lastWeek = new Date(today);
+                                    lastWeek.setDate(lastWeek.getDate() - 7);
+                                    matchesTime = reqDate >= lastWeek;
+                                } else if (timeFilter === 'month') {
+                                    const lastMonth = new Date(today);
+                                    lastMonth.setMonth(lastMonth.getMonth() - 1);
+                                    matchesTime = reqDate >= lastMonth;
+                                }
+                            }
+                            return matchesTime;
+                        }).length;
+
+                        return (
+                            <div 
+                                key={status} 
+                                onClick={() => {
+                                    setStatusFilter(statusFilter === status ? 'All' : status);
+                                    setCurrentPage(1);
+                                }}
+                                className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center gap-3 shadow-sm cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === status ? `ring-2 ${ring}` : ''}`}
+                            >
+                                <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
+                                <div>
+                                    <p className="text-2xl font-bold text-slate-800 dark:text-white">
+                                        {statCount}
+                                    </p>
+                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Data Table */}
@@ -552,6 +642,88 @@ export default function EmployeeTerminations() {
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* Printable Document (Hidden on Screen, Visible on Print) */}
+            <style type="text/css" media="print">
+                {`
+                    body * {
+                        visibility: hidden;
+                    }
+                    #termination-print-section, #termination-print-section * {
+                        visibility: visible;
+                    }
+                    #termination-print-section {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                    }
+                `}
+            </style>
+            <div id="termination-print-section" className="hidden print:block w-full text-black bg-white min-h-screen text-left print:p-8">
+                <div className="text-center mb-10 border-b-2 border-slate-800 pb-6">
+                    <h1 className="text-3xl font-bold uppercase tracking-widest text-slate-900 mb-2">HR MATE</h1>
+                    <h2 className="text-xl font-semibold mb-1">Admin Approval Request</h2>
+                    <h3 className="text-lg font-medium text-slate-700">Employee Termination Requests</h3>
+                    <p className="text-sm mt-3 text-slate-500 font-bold">List Generated: {new Date().toLocaleDateString()}</p>
+                </div>
+
+                <div className="bg-white overflow-hidden print:shadow-none print:border-none print:rounded-none">
+                    <div className="overflow-x-auto print:overflow-visible">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-800 text-xs uppercase tracking-wider font-bold text-slate-800 bg-white">
+                                    <th className="py-2 px-4">Req ID</th>
+                                    <th className="py-2 px-4">Employee Name</th>
+                                    <th className="py-2 px-4">EPF</th>
+                                    <th className="py-2 px-4">Branch</th>
+                                    <th className="py-2 px-4">Initiation Date</th>
+                                    <th className="py-2 px-4 text-center w-32 border-l border-slate-300">Board Decision</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-xs">
+                                {printRequests.map((req) => (
+                                    <tr key={req.id} className="border-b border-slate-400 hover:bg-slate-50 transition-colors">
+                                        <td className="py-3 px-4 font-semibold text-black">{req.id}</td>
+                                        <td className="py-3 px-4 text-black">{req.employeeName}</td>
+                                        <td className="py-3 px-4 text-black">{req.epfNumber || '—'}</td>
+                                        <td className="py-3 px-4 text-black">{req.branch || '—'}</td>
+                                        <td className="py-3 px-4 text-black">{formatDate(req.initiationDate)}</td>
+                                        <td className="py-3 px-4 text-center align-middle border-l border-slate-300">
+                                            <div className="w-20 border-b border-black mx-auto"></div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {printRequests.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="py-8 text-center text-slate-500 italic">
+                                            No termination requests found for this board queue.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="hidden print:flex justify-between items-end mt-32 px-12">
+                    <div className="text-center">
+                        <div className="border-b border-black w-48 mx-auto mb-2"></div>
+                        <p className="font-bold text-slate-800 text-sm">Prepared By (HR)</p>
+                        <p className="text-xs text-slate-500 mt-1 uppercase font-semibold">Signature & Date</p>
+                    </div>
+                    <div className="text-center">
+                        <div className="border-b border-black w-48 mx-auto mb-2"></div>
+                        <p className="font-bold text-slate-800 text-sm">Reviewed By (Director)</p>
+                        <p className="text-xs text-slate-500 mt-1 uppercase font-semibold">Signature & Date</p>
+                    </div>
+                    <div className="text-center">
+                        <div className="border-b border-black w-48 mx-auto mb-2"></div>
+                        <p className="font-bold text-slate-800 text-sm">Admin Approval</p>
+                        <p className="text-xs text-slate-500 mt-1 uppercase font-semibold">Signature & Date</p>
+                    </div>
+                </div>
             </div>
         </div>
     );
