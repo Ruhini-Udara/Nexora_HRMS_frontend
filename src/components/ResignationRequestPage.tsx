@@ -463,6 +463,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
     const handleSaveAsDraft = async () => {
         setIsUploading(true);
         const values = getValues();
+        const uploadedDocs = await uploadDocs();
         const payload: Partial<ResignationRequest> = {
             employeeName: user?.name || '',
             epfNumber: user?.epfNumber || '',
@@ -474,11 +475,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
             obligationDetails: values.obligationDetails,
             specialRemark: values.specialRemark,
             status: 'NEW',
-            documents: {
-                resignationLetter: docSlots.find((s) => s.key === 'resignationLetter')?.file?.name || docSlots.find((s) => s.key === 'resignationLetter')?.existingName,
-                clearanceLetter: docSlots.find((s) => s.key === 'clearanceLetter')?.file?.name || docSlots.find((s) => s.key === 'clearanceLetter')?.existingName,
-                handoverChecklist: docSlots.find((s) => s.key === 'handoverChecklist')?.file?.name || docSlots.find((s) => s.key === 'handoverChecklist')?.existingName,
-            }
+            documents: uploadedDocs
         };
 
         try {
@@ -499,6 +496,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
     const handleConfirmSubmit = async () => {
         setIsUploading(true);
         const values = getValues();
+        const uploadedDocs = await uploadDocs();
         const payload: Partial<ResignationRequest> = {
             employeeName: user?.name || '',
             epfNumber: user?.epfNumber || '',
@@ -510,11 +508,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
             obligationDetails: values.obligationDetails,
             specialRemark: values.specialRemark,
             status: 'SUBMITTED',
-            documents: {
-                resignationLetter: docSlots.find((s) => s.key === 'resignationLetter')?.file?.name || docSlots.find((s) => s.key === 'resignationLetter')?.existingName,
-                clearanceLetter: docSlots.find((s) => s.key === 'clearanceLetter')?.file?.name || docSlots.find((s) => s.key === 'clearanceLetter')?.existingName,
-                handoverChecklist: docSlots.find((s) => s.key === 'handoverChecklist')?.file?.name || docSlots.find((s) => s.key === 'handoverChecklist')?.existingName,
-            }
+            documents: uploadedDocs
         };
 
         try {
@@ -532,19 +526,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1 space-y-8">
                     
-                    {/* Status Sector: Active Requests — Hide if in modal to save space */}
-                    {!isModal && activeRequests.map(req => (
-                        <ActiveRequestBanner key={req.id} request={req} />
-                    ))}
-
-                    {/* Finalized Status — Hide if in modal */}
-                    {!isModal && finalizedRequests.length > 0 && activeRequests.length === 0 && !isEditing && (
-                         <div className="opacity-80">
-                            {finalizedRequests.slice(0, 1).map(req => (
-                                <ActiveRequestBanner key={req.id} request={req} />
-                            ))}
-                         </div>
-                    )}
+                    {/* Active/Finalized requests hidden per user request */}
 
                     {/* Form Section: Always available for new requests, or for editing/viewing specific ones */}
                     <form onSubmit={handleSubmit(onSubmitValid)}>

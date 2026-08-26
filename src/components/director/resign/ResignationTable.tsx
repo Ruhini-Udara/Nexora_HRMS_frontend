@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { User, Calendar, MapPin, Briefcase, FileText, CheckCircle2, XCircle, Search, Clock, ArrowRight, Printer, Eye, Mail, Phone, ExternalLink, Check, X, Send } from "lucide-react";
-
+import { User, Calendar, MapPin, Briefcase, FileText, CheckCircle2, XCircle, Search, Clock, ArrowRight, Printer, Eye, Mail, Phone, ExternalLink, Check, X, Send, MonitorPlay } from "lucide-react";
+import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 import { getAllResignationRequests, updateResignationStatus, ResignationRequest } from "@/lib/api/resignationRequests";
+import { ResignationRequestForm } from '@/app/hr/employees/resignations/components/ResignationRequestForm';
 
 type RequestStatus = ResignationRequest['status'];
 
@@ -109,6 +110,19 @@ export default function ResignationTable() {
         setToast(msg);
         setTimeout(() => setToast(null), 4000);
     }, []);
+
+    const handleDownload = async (path: string) => {
+        if (!path || !path.includes('/')) {
+            alert('File not available (legacy format)');
+            return;
+        }
+        const url = await getHrmsSignedUrl(path);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('Failed to get download URL');
+        }
+    };
 
     const normalizeDate = useCallback((d?: string) => {
         if (!d) return "";
@@ -456,26 +470,29 @@ export default function ResignationTable() {
 
             {/* ── View Details Modal ───────────────────────────────────────── */}
             {viewingRequest && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-zinc-700">
-                        <div className="p-6 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Resignation Details</h3>
-                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id} · {viewingRequest.employeeName}</p>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-full transition-colors relative">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                                    <span className="material-symbols-outlined text-2xl">person_remove</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Resignation Request Details</h3>
+                                    <p className="text-sm text-slate-500">Request ID: {viewingRequest.id}</p>
+                                </div>
                             </div>
-                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
+                            <button onClick={() => setViewingRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors cursor-pointer">
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
-                        <div className="p-6 grid grid-cols-2 gap-4 text-sm">
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.employeeName}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Designation</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.designation}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Branch</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.branch}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Reason</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.reason}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Effective Date</p><p className="font-semibold text-gray-900 dark:text-white">{fmt(viewingRequest.lastWorkingDate)}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Date</p><p className="font-semibold text-primary">{fmt(viewingRequest.boardMeetingDate)}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg col-span-2"><p className="text-xs font-bold text-gray-500 uppercase mb-1">HR Remark</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.hrRemark || '—'}</p></div>
-                        </div>
-                        <div className="p-6 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 flex justify-end">
-                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 cursor-pointer">Close</button>
+                        <div className="p-2 overflow-y-auto flex-1">
+                            <ResignationRequestForm 
+                                initialData={viewingRequest as any}
+                                isReadOnly={true}
+                                onSave={() => {}}
+                                onCancel={() => setViewingRequest(null)}
+                            />
                         </div>
                     </div>
                 </div>
@@ -610,7 +627,7 @@ export default function ResignationTable() {
 
                                 {/* Letterhead */}
                                 <div className="text-center pb-5 border-b border-gray-300 mb-6">
-                                    <p className="text-xl font-bold tracking-wide text-gray-900">NEXORA HRMS</p>
+                                    <p className="text-xl font-bold tracking-wide text-gray-900">HR MATE</p>
                                     <p className="text-xs text-gray-500 mt-0.5">Human Resources Management System</p>
                                 </div>
 
@@ -679,7 +696,7 @@ export default function ResignationTable() {
                                 <div className="pt-10">
                                     <div className="w-36 border-t border-gray-500 mb-2" />
                                     <p className="font-semibold">Director — Human Resources</p>
-                                    <p className="text-gray-500 text-[12px]">Nexora HRMS</p>
+                                    <p className="text-gray-500 text-[12px]">HR MATE</p>
                                 </div>
                             </div>
 

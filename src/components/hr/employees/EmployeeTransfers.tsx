@@ -50,7 +50,7 @@ const ReadOnlyField = ({ label, value }: { label: string; value: string }) => (
             {label}
         </label>
         <input
-            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-700 dark:text-slate-300"
+            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm  text-slate-900 font-bold dark:text-white"
             readOnly
             value={value}
         />
@@ -63,7 +63,7 @@ const ReadOnlyTextarea = ({ label, value, rows = 3 }: { label: string; value: st
             {label}
         </label>
         <textarea
-            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-700 dark:text-slate-300 resize-none"
+            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm  resize-none text-slate-900 font-bold dark:text-white"
             readOnly
             rows={rows}
             value={value}

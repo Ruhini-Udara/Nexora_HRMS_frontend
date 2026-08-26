@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Eye, Check } from 'lucide-react';
+import { X, Eye, Check, MonitorPlay } from 'lucide-react';
+import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 import { 
     getAllDeathRequests, 
     updateDeathStatus, 
     rejectDeathRequest,
     DeathRequest 
 } from '@/lib/api/deathRequests';
+import { DeathRequestForm } from '@/components/hr/employees/DeathRequestForm';
 
 const DeathRequestsTable = () => {
     const [requests, setRequests] = useState<DeathRequest[]>([]);
@@ -63,6 +65,19 @@ const DeathRequestsTable = () => {
             setTimeout(() => setToastMessage(null), 4000);
         } catch (error) {
             console.error("Failed to approve", error);
+        }
+    };
+
+    const handleDownload = async (path: string) => {
+        if (!path || !path.includes('/')) {
+            alert('File not available (legacy format)');
+            return;
+        }
+        const url = await getHrmsSignedUrl(path);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('Failed to get download URL');
         }
     };
 
@@ -338,49 +353,35 @@ const DeathRequestsTable = () => {
                 </div>
             </div>
 
-            {/* View Details Modal — Read-only popup */}
+            {/* View Details Modal */}
             {viewModalOpen && selectedRequest && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors">
-                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Death Benefit Application</h3>
-                                <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{selectedRequest.id} · View-only</p>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-full transition-colors relative">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-primary text-2xl">person_remove</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Death Application Details</h3>
+                                    <p className="text-sm text-slate-500">Request ID: {selectedRequest.id}</p>
+                                </div>
                             </div>
-                            <button onClick={() => setViewModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer">
-                                <X className="w-5 h-5" />
+                            <button
+                                onClick={() => setViewModalOpen(false)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors cursor-pointer"
+                            >
+                                <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
-                        <div className="p-6 overflow-y-auto space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Employee Name</p><p className="font-semibold text-gray-900 dark:text-white">{selectedRequest.employeeName}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Date of Death</p><p className="font-semibold text-gray-900 dark:text-white">{selectedRequest.dateOfDeath}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Nature of Death</p><p className="font-semibold text-gray-900 dark:text-white">{selectedRequest.natureOfDeath}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Requester / Beneficiary</p><p className="font-semibold text-gray-900 dark:text-white">{selectedRequest.requesterName}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Contact Email</p><p className="font-semibold text-gray-900 dark:text-white">N/A</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Contact Phone</p><p className="font-semibold text-gray-900 dark:text-white">{selectedRequest.contactNumber}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Board Meeting</p><p className="font-semibold text-primary">{selectedRequest.boardMeetingDate}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Status</p>
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${selectedRequest.status === 'APPROVED' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' : selectedRequest.status === 'REJECTED' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' : 'bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-400'}`}>{selectedRequest.status === 'APPROVED' ? 'Approved' : selectedRequest.status === 'REJECTED' ? 'Rejected' : 'Pending Review'}</span>
-                                </div>
-                            </div>
-                            {Object.keys(selectedRequest.documents).length > 0 && (
-                                <div>
-                                    <p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-2">Provided Documents</p>
-                                    <div className="space-y-2">
-                                        {Object.entries(selectedRequest.documents).map(([key, value]) => (
-                                            <div key={key} className="flex items-center gap-3 p-3 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                                                <span className="material-symbols-outlined text-red-500 text-lg">picture_as_pdf</span>
-                                                <span className="text-sm font-medium text-gray-700 dark:text-slate-300 flex-1">{value}</span>
-                                                <button className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs font-bold cursor-pointer">Preview</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        <div className="p-6 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex justify-end transition-colors">
-                            <button onClick={() => setViewModalOpen(false)} className="px-5 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">Close</button>
+                        <div className="p-2 overflow-y-auto flex-1">
+                            <DeathRequestForm 
+                                initialData={selectedRequest}
+                                isReadOnly={true}
+                                hideFooter={false}
+                                onSave={() => {}}
+                                onCancel={() => setViewModalOpen(false)}
+                            />
                         </div>
                     </div>
                 </div>

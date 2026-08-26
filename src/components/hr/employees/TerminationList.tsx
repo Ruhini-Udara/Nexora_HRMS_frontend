@@ -369,7 +369,7 @@ export function TerminationList({ requests, onUpdateRequests, onCreateNew, onEdi
             </style>
             <div id="termination-print-section" className="hidden print:block w-full text-black bg-white min-h-screen text-left print:p-8">
                 <div className="text-center mb-10 border-b-2 border-slate-800 pb-6">
-                    <h1 className="text-3xl font-bold uppercase tracking-widest text-slate-900 mb-2">Nexora HRMS</h1>
+                    <h1 className="text-3xl font-bold uppercase tracking-widest text-slate-900 mb-2">HR MATE</h1>
                     <h2 className="text-xl font-semibold mb-1">Admin Approval Request</h2>
                     <h3 className="text-lg font-medium text-slate-700">Employee Terminations</h3>
                     <p className="text-sm mt-3 text-slate-500 font-bold">List Generated: {new Date().toLocaleDateString()}</p>
