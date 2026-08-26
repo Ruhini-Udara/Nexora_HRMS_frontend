@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Check, X, Eye, MonitorPlay, Mails, Send } from 'lucide-react';
+import { getHrmsSignedUrl } from '@/lib/supabaseClient';
+import { TerminationRequestForm } from '@/components/hr/employees/TerminationRequestForm';
 
 export type DirTermRequest = {
     id: string;
@@ -79,6 +81,19 @@ export default function TerminationTable() {
     useEffect(() => {
         setRequests(loadDirectorTerminations());
     }, []);
+
+    const handleDownload = async (path: string) => {
+        if (!path || !path.includes('/')) {
+            alert('File not available (legacy format)');
+            return;
+        }
+        const url = await getHrmsSignedUrl(path);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('Failed to get download URL');
+        }
+    };
 
     const isPending = (status: string) => {
         return status === 'SUBMITTED_TO_DIRECTOR' || status === 'PENDING_BOARD_APPROVAL' || status === 'BOARD_ASSIGNED';
@@ -388,58 +403,30 @@ export default function TerminationTable() {
 
             {/* View Details Modal */}
             {viewingRequest && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] transition-colors">
-                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50">
-                            <div>
-                                <h3 className="font-bold text-lg text-gray-900 dark:text-white">Termination Request</h3>
-                                <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{viewingRequest.id} · View-only</p>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-full transition-colors relative">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+                                    <span className="material-symbols-outlined text-2xl">person_remove</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Termination Request</h3>
+                                    <p className="text-sm text-slate-500">Request ID: {viewingRequest.id}</p>
+                                </div>
                             </div>
-                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors cursor-pointer">
+                            <button onClick={() => setViewingRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors cursor-pointer">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="p-6 overflow-y-auto space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Employee</span><p className="font-medium text-gray-900 dark:text-white">{viewingRequest.employeeName}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Branch</span><p className="font-medium text-gray-900 dark:text-white">{viewingRequest.branch}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Termination Type</span><p className="font-medium text-gray-900 dark:text-white">{viewingRequest.type}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Board Meeting Date</span><p className="font-medium text-primary">{viewingRequest.boardMeetingDate}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Initiated</span><p className="font-medium text-gray-900 dark:text-white">{viewingRequest.initiationDate}</p></div>
-                                <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg"><span className="block text-xs font-bold text-red-500 uppercase mb-1">Effective Date</span><p className="font-medium text-red-700 dark:text-red-400">{viewingRequest.effectiveDate}</p></div>
-                            </div>
-                            <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg">
-                                <span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-2">Reason for Termination</span>
-                                <p className="text-gray-800 dark:text-slate-200 text-sm">{viewingRequest.reason}</p>
-                            </div>
-                            {viewingRequest.specialRemark && (
-                                <div className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-100 dark:border-orange-900/30">
-                                    <span className="block text-xs font-bold text-orange-700 dark:text-orange-400 uppercase mb-2">HR Special Remarks</span>
-                                    <p className="text-orange-900 dark:text-orange-300 text-sm">{viewingRequest.specialRemark}</p>
-                                </div>
-                            )}
-                            {viewingRequest.rejectReason && (
-                                <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-100 dark:border-red-900/30">
-                                    <span className="block text-xs font-bold text-red-700 dark:text-red-400 uppercase mb-2">Rejection Reason</span>
-                                    <p className="text-red-900 dark:text-red-300 text-sm">{viewingRequest.rejectReason}</p>
-                                </div>
-                            )}
-                            <div>
-                                <span className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-2">Attached Documents</span>
-                                <div className="flex gap-3">
-                                    <a href="#" className="flex-1 border border-gray-200 dark:border-slate-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-blue-200 transition-all group flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-primary">Request Formulation.pdf</span>
-                                        <MonitorPlay className="w-4 h-4 text-gray-400 group-hover:text-primary" />
-                                    </a>
-                                    <a href="#" className="flex-1 border border-gray-200 dark:border-slate-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-blue-200 transition-all group flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-primary">Clearance Letter.pdf</span>
-                                        <MonitorPlay className="w-4 h-4 text-gray-400 group-hover:text-primary" />
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-6 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex justify-end transition-colors">
-                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-bold hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer">Close</button>
+                        <div className="p-2 overflow-y-auto flex-1">
+                            <TerminationRequestForm 
+                                initialData={viewingRequest as any}
+                                isReadOnly={true}
+                                hideFooter={false}
+                                onSave={() => {}}
+                                onCancel={() => setViewingRequest(null)}
+                            />
                         </div>
                     </div>
                 </div>

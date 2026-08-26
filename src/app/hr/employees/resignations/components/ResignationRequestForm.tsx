@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ResignationRequest } from './ResignationRequestList';
+import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 
 interface DocumentSlot {
     key: 'resignationLetter' | 'handoverChecklist';
@@ -14,6 +15,7 @@ interface DocumentSlot {
     icon: string;
     mandatory: boolean;
     file: File | null;
+    existingName?: string;
 }
 
 const resignationSchema = z.object({
@@ -33,16 +35,36 @@ interface DocUploadCardProps {
     slot: DocumentSlot;
     onUpload: (key: DocumentSlot['key'], file: File) => void;
     onRemove: (key: DocumentSlot['key']) => void;
+    isReadOnly?: boolean;
 }
 
-const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove }) => {
+const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove, isReadOnly }) => {
     const inputRef = useRef<HTMLInputElement>(null);
-    const hasFile = slot.file !== null;
-    const fileName = slot.file?.name || '';
+    const hasFile = !!slot.file || !!slot.existingName;
+    const fileName = slot.file?.name || slot.existingName || '';
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
             onUpload(slot.key, e.target.files[0]);
+        }
+    };
+
+    const handleDownload = async () => {
+        if (slot.existingName) {
+            try {
+                const url = await getHrmsSignedUrl(slot.existingName);
+                if (url) {
+                    window.open(url, '_blank');
+                } else {
+                    alert('Failed to fetch document.');
+                }
+            } catch (err) {
+                console.error("Error fetching doc:", err);
+                alert("Could not load the file.");
+            }
+        } else if (slot.file) {
+            const objectUrl = URL.createObjectURL(slot.file);
+            window.open(objectUrl, '_blank');
         }
     };
 
@@ -75,23 +97,37 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove 
                         <div className="mt-2 flex items-center gap-2">
                             <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
                             <p className="text-[11px] text-slate-600 truncate">{fileName}</p>
+                            
                             <button
                                 type="button"
-                                className="ml-auto text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
-                                onClick={() => onRemove(slot.key)}
+                                className="ml-auto text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors flex-shrink-0 mr-2 cursor-pointer"
+                                onClick={handleDownload}
+                                title="Download Document"
                             >
-                                <span className="material-symbols-outlined text-base">close</span>
+                                <span className="material-symbols-outlined text-[18px]">download</span>
                             </button>
+                            
+                            {!isReadOnly && (
+                                <button
+                                    type="button"
+                                    className="text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                                    onClick={() => onRemove(slot.key)}
+                                >
+                                    <span className="material-symbols-outlined text-base">close</span>
+                                </button>
+                            )}
                         </div>
                     ) : (
-                        <button
-                            type="button"
-                            className="mt-2 text-[11px] font-bold text-[#8B3A00] hover:underline flex items-center gap-1"
-                            onClick={() => inputRef.current?.click()}
-                        >
-                            <span className="material-symbols-outlined text-xs">upload</span>
-                            Upload Document
-                        </button>
+                        !isReadOnly && (
+                            <button
+                                type="button"
+                                className="mt-2 text-[11px] font-bold text-[#8B3A00] hover:underline flex items-center gap-1 cursor-pointer"
+                                onClick={() => inputRef.current?.click()}
+                            >
+                                <span className="material-symbols-outlined text-xs">upload</span>
+                                Upload Document
+                            </button>
+                        )
                     )}
                 </div>
             </div>
@@ -121,14 +157,16 @@ export function ResignationRequestForm({ onSave, onCancel, initialData, isReadOn
             label: 'Resignation Letter', 
             icon: 'description', 
             mandatory: true, 
-            file: initialData?.documents?.resignationLetter ? new File([], initialData.documents.resignationLetter) : null 
+            file: null,
+            existingName: initialData?.documents?.resignationLetter
         },
         { 
             key: 'handoverChecklist', 
             label: 'Handover Checklist', 
             icon: 'checklist', 
             mandatory: false, 
-            file: initialData?.documents?.handoverChecklist ? new File([], initialData.documents.handoverChecklist) : null 
+            file: null,
+            existingName: initialData?.documents?.handoverChecklist
         }
     ]);
 
@@ -223,22 +261,22 @@ export function ResignationRequestForm({ onSave, onCancel, initialData, isReadOn
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase">Employee Name *</label>
-                                <Input {...register('employeeName')} placeholder="e.g. Kasun Perera" readOnly={isReadOnly} disabled={isReadOnly} />
+                                <Input {...register('employeeName')} placeholder="e.g. Kasun Perera" readOnly={isReadOnly} disabled={isReadOnly} className="text-slate-900 font-bold dark:text-white disabled:opacity-100 disabled:text-slate-900 dark:disabled:text-white" />
                                 {errors.employeeName && <p className="text-xs text-red-500">{errors.employeeName.message}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase">EPF Number *</label>
-                                <Input {...register('epfNumber')} placeholder="e.g. 12345" readOnly={isReadOnly} disabled={isReadOnly} />
+                                <Input {...register('epfNumber')} placeholder="e.g. 12345" readOnly={isReadOnly} disabled={isReadOnly} className="text-slate-900 font-bold dark:text-white disabled:opacity-100 disabled:text-slate-900 dark:disabled:text-white" />
                                 {errors.epfNumber && <p className="text-xs text-red-500">{errors.epfNumber.message}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase">Designation *</label>
-                                <Input {...register('designation')} placeholder="e.g. Software Engineer" readOnly={isReadOnly} disabled={isReadOnly} />
+                                <Input {...register('designation')} placeholder="e.g. Software Engineer" readOnly={isReadOnly} disabled={isReadOnly} className="text-slate-900 font-bold dark:text-white disabled:opacity-100 disabled:text-slate-900 dark:disabled:text-white" />
                                 {errors.designation && <p className="text-xs text-red-500">{errors.designation.message}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase">Branch *</label>
-                                <Input {...register('branch')} placeholder="e.g. Colombo HQ" readOnly={isReadOnly} disabled={isReadOnly} />
+                                <Input {...register('branch')} placeholder="e.g. Colombo HQ" readOnly={isReadOnly} disabled={isReadOnly} className="text-slate-900 font-bold dark:text-white disabled:opacity-100 disabled:text-slate-900 dark:disabled:text-white" />
                                 {errors.branch && <p className="text-xs text-red-500">{errors.branch.message}</p>}
                             </div>
                         </div>
@@ -250,12 +288,12 @@ export function ResignationRequestForm({ onSave, onCancel, initialData, isReadOn
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase">Resignation Date *</label>
-                                <Input type="date" {...register('resignationDate')} readOnly={isReadOnly} disabled={isReadOnly} />
+                                <Input type="date" {...register('resignationDate')} readOnly={isReadOnly} disabled={isReadOnly} className="text-slate-900 font-bold dark:text-white disabled:opacity-100 disabled:text-slate-900 dark:disabled:text-white" />
                                 {errors.resignationDate && <p className="text-xs text-red-500">{errors.resignationDate.message}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase">Last Working Date *</label>
-                                <Input type="date" {...register('lastWorkingDate')} readOnly={isReadOnly} disabled={isReadOnly} />
+                                <Input type="date" {...register('lastWorkingDate')} readOnly={isReadOnly} disabled={isReadOnly} className="text-slate-900 font-bold dark:text-white disabled:opacity-100 disabled:text-slate-900 dark:disabled:text-white" />
                                 {errors.lastWorkingDate && <p className="text-xs text-red-500">{errors.lastWorkingDate.message}</p>}
                             </div>
                             <div className="space-y-2 md:col-span-2">
@@ -265,7 +303,7 @@ export function ResignationRequestForm({ onSave, onCancel, initialData, isReadOn
                                     rows={3}
                                     readOnly={isReadOnly} 
                                     disabled={isReadOnly}
-                                    className="w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-800 disabled:opacity-50"
+                                    className="w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-900 font-bold dark:bg-slate-950 dark:text-white dark:border-slate-800 disabled:opacity-100 disabled:text-slate-900 dark:disabled:text-white"
                                     placeholder="Brief reason for leaving..."
                                 />
                                 {errors.reason && <p className="text-xs text-red-500">{errors.reason.message}</p>}
@@ -277,7 +315,7 @@ export function ResignationRequestForm({ onSave, onCancel, initialData, isReadOn
                                     rows={2}
                                     readOnly={isReadOnly} 
                                     disabled={isReadOnly}
-                                    className="w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:border-slate-800 disabled:opacity-50"
+                                    className="w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-900 font-bold dark:bg-slate-950 dark:text-white dark:border-slate-800 disabled:opacity-100 disabled:text-slate-900 dark:disabled:text-white"
                                     placeholder="Any additional details..."
                                 />
                             </div>
@@ -302,6 +340,7 @@ export function ResignationRequestForm({ onSave, onCancel, initialData, isReadOn
                                     slot={slot}
                                     onUpload={handleDocUpload}
                                     onRemove={handleDocRemove}
+                                    isReadOnly={isReadOnly}
                                 />
                             ))}
                         </div>

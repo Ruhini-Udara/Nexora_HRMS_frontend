@@ -348,7 +348,7 @@ export default function AdminTransfersPage() {
 
                         {/* Print Header (Visible mostly in Print) */}
                         <div className="hidden print:block text-center mb-10 border-b-2 border-slate-800 pb-6">
-                            <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Nexora HRMS</h1>
+                            <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">HR MATE</h1>
                             <h2 className="text-xl font-bold text-slate-700 mb-1">Transfer Request Board Approvals List</h2>
                             <p className="text-sm text-slate-600 font-medium">
                                 Batch Meeting Date: {filterDate !== "All" ? filterDate : "All Dates"}
@@ -387,7 +387,7 @@ export default function AdminTransfersPage() {
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400 print:py-3 print:text-black">{req.currentBranch}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400 print:py-3 print:text-black">{req.targetBranch}</td>
                                                 <td className="py-4 px-6 font-semibold text-blue-700 dark:text-blue-400 print:py-3 print:text-black">
-                                                    {req.hrRemark?.replace("Board Meeting: ", "") || "N/A"}
+                                                    {req.boardMeetingDate || "N/A"}
                                                 </td>
                                                 <td className="py-4 px-6 print:py-3 print:table-cell hidden text-center align-middle">
                                                     <div className="w-full h-8 border border-slate-300 bg-slate-50"></div>

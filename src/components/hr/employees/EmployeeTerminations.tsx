@@ -263,6 +263,7 @@ export default function EmployeeTerminations() {
     };
 
     const verifiedCount = requests.filter(r => r.status === 'VERIFIED_BY_HR').length;
+    const printRequests = requests.filter(r => r.status === 'VERIFIED_BY_HR');
 
     return (
         <div className="flex-1 bg-slate-50 dark:bg-slate-900 flex flex-col">
@@ -376,14 +377,23 @@ export default function EmployeeTerminations() {
                                 New Request
                             </button>
                         ) : (
-                            <button
-                                onClick={() => setShowConfirmDialog(true)}
-                                disabled={verifiedCount === 0}
-                                className="px-6 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">send</span>
-                                Submit for Admin Approvals
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => window.print()}
+                                    className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-all cursor-pointer whitespace-nowrap"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">print</span>
+                                    Print List
+                                </button>
+                                <button
+                                    onClick={() => setShowConfirmDialog(true)}
+                                    disabled={verifiedCount === 0}
+                                    className="px-6 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">send</span>
+                                    Submit for Admin Approvals
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -632,6 +642,88 @@ export default function EmployeeTerminations() {
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* Printable Document (Hidden on Screen, Visible on Print) */}
+            <style type="text/css" media="print">
+                {`
+                    body * {
+                        visibility: hidden;
+                    }
+                    #termination-print-section, #termination-print-section * {
+                        visibility: visible;
+                    }
+                    #termination-print-section {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                    }
+                `}
+            </style>
+            <div id="termination-print-section" className="hidden print:block w-full text-black bg-white min-h-screen text-left print:p-8">
+                <div className="text-center mb-10 border-b-2 border-slate-800 pb-6">
+                    <h1 className="text-3xl font-bold uppercase tracking-widest text-slate-900 mb-2">HR MATE</h1>
+                    <h2 className="text-xl font-semibold mb-1">Admin Approval Request</h2>
+                    <h3 className="text-lg font-medium text-slate-700">Employee Termination Requests</h3>
+                    <p className="text-sm mt-3 text-slate-500 font-bold">List Generated: {new Date().toLocaleDateString()}</p>
+                </div>
+
+                <div className="bg-white overflow-hidden print:shadow-none print:border-none print:rounded-none">
+                    <div className="overflow-x-auto print:overflow-visible">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-800 text-xs uppercase tracking-wider font-bold text-slate-800 bg-white">
+                                    <th className="py-2 px-4">Req ID</th>
+                                    <th className="py-2 px-4">Employee Name</th>
+                                    <th className="py-2 px-4">EPF</th>
+                                    <th className="py-2 px-4">Branch</th>
+                                    <th className="py-2 px-4">Initiation Date</th>
+                                    <th className="py-2 px-4 text-center w-32 border-l border-slate-300">Board Decision</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-xs">
+                                {printRequests.map((req) => (
+                                    <tr key={req.id} className="border-b border-slate-400 hover:bg-slate-50 transition-colors">
+                                        <td className="py-3 px-4 font-semibold text-black">{req.id}</td>
+                                        <td className="py-3 px-4 text-black">{req.employeeName}</td>
+                                        <td className="py-3 px-4 text-black">{req.epfNumber || '—'}</td>
+                                        <td className="py-3 px-4 text-black">{req.branch || '—'}</td>
+                                        <td className="py-3 px-4 text-black">{formatDate(req.initiationDate)}</td>
+                                        <td className="py-3 px-4 text-center align-middle border-l border-slate-300">
+                                            <div className="w-20 border-b border-black mx-auto"></div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {printRequests.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="py-8 text-center text-slate-500 italic">
+                                            No termination requests found for this board queue.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="hidden print:flex justify-between items-end mt-32 px-12">
+                    <div className="text-center">
+                        <div className="border-b border-black w-48 mx-auto mb-2"></div>
+                        <p className="font-bold text-slate-800 text-sm">Prepared By (HR)</p>
+                        <p className="text-xs text-slate-500 mt-1 uppercase font-semibold">Signature & Date</p>
+                    </div>
+                    <div className="text-center">
+                        <div className="border-b border-black w-48 mx-auto mb-2"></div>
+                        <p className="font-bold text-slate-800 text-sm">Reviewed By (Director)</p>
+                        <p className="text-xs text-slate-500 mt-1 uppercase font-semibold">Signature & Date</p>
+                    </div>
+                    <div className="text-center">
+                        <div className="border-b border-black w-48 mx-auto mb-2"></div>
+                        <p className="font-bold text-slate-800 text-sm">Admin Approval</p>
+                        <p className="text-xs text-slate-500 mt-1 uppercase font-semibold">Signature & Date</p>
+                    </div>
+                </div>
             </div>
         </div>
     );

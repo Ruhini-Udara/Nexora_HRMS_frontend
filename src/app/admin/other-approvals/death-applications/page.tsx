@@ -349,7 +349,7 @@ export default function AdminDeathApplicationsPage() {
 
                         {/* Print Header */}
                         <div className="hidden print:block text-center mb-10 border-b-2 border-slate-800 pb-6">
-                            <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Nexora HRMS</h1>
+                            <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">HR MATE</h1>
                             <h2 className="text-xl font-bold text-slate-700 mb-1">Death Benefit Board Approvals List</h2>
                             <p className="text-sm text-slate-600 font-medium">
                                 Batch Meeting Date: {filterDate !== "All" ? filterDate : "All Dates"}

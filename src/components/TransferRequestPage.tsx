@@ -373,18 +373,22 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
         .some((s) => s.file === null && s.existingName === undefined);
 
     // ── Build payload helper ────────────────────────────────────────
-    const buildPayload = (data: TransferFormData, status: TransferStatus): Partial<TransferRequest> => {
+    const buildPayload = async (data: TransferFormData, status: TransferStatus): Promise<Partial<TransferRequest>> => {
         const docs = [];
-        const justificationFileName = docSlots.find((s) => s.key === 'justification_letter')?.file?.name
-            || docSlots.find((s) => s.key === 'justification_letter')?.existingName;
-        if (justificationFileName) {
-            docs.push({ key: 'justification', label: 'Transfer Justification Letter', filename: justificationFileName });
-        }
+        
+        for (const slot of docSlots) {
+            let key: string = slot.key;
+            if (slot.key === 'justification_letter') key = 'justification';
+            if (slot.key === 'proof_documents') key = 'proof';
 
-        const proofFileName = docSlots.find((s) => s.key === 'proof_documents')?.file?.name
-            || docSlots.find((s) => s.key === 'proof_documents')?.existingName;
-        if (proofFileName) {
-            docs.push({ key: 'proof', label: 'Proof Document', filename: proofFileName });
+            if (slot.file) {
+                const path = await uploadHrmsDocument(slot.file, 'transfer');
+                if (path) {
+                    docs.push({ key, label: slot.label, filename: path });
+                }
+            } else if (slot.existingName) {
+                docs.push({ key, label: slot.label, filename: slot.existingName });
+            }
         }
 
         return {
@@ -425,7 +429,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
 
     const onFormValid = async (data: TransferFormData) => {
         if (pendingAction === 'draft') {
-            const payload = buildPayload(data, 'NEW');
+            const payload = await buildPayload(data, 'NEW');
             try {
                 if (editingDraft) {
                     const updated = await updateTransferRequest(editingDraft.id, payload);
@@ -492,10 +496,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
 
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1 space-y-8">
-                    {/* List active submitted requests here if needed, but they are in the table below in page.tsx */}
-                    {submittedRequests.map(req => (
-                        <ActiveRequestBanner key={req.id} request={req} />
-                    ))}
+                    {/* Active submitted requests hidden per user request */}
 
                     <form onSubmit={handleSubmit(onFormValid)}>
                         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">

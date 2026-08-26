@@ -5,7 +5,8 @@ import api from '@/lib/axiosInstance';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DeathRequest } from '@/lib/api/deathRequests';
+import { DeathRequest } from "@/lib/api/deathRequests";
+import { uploadHrmsDocument, getHrmsSignedUrl } from "@/lib/supabaseClient";
 
 interface DocumentSlot {
     key: 'deathCertificate' | 'nomineeId' | 'requestLetter';
@@ -78,6 +79,26 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
         if (file) onUpload(slot.key, file);
     };
 
+    const handleDownload = async () => {
+        if (slot.existingName) {
+            try {
+                const url = await getHrmsSignedUrl(slot.existingName);
+                if (url) {
+                    window.open(url, '_blank');
+                } else {
+                    alert('Failed to fetch document.');
+                }
+            } catch (err) {
+                console.error("Error fetching doc:", err);
+                alert("Could not load the file.");
+            }
+        } else if (slot.file) {
+            // For just uploaded local file preview
+            const objectUrl = URL.createObjectURL(slot.file);
+            window.open(objectUrl, '_blank');
+        }
+    };
+
     return (
         <div className={`p-4 rounded-xl border transition-all ${hasFile ? 'border-emerald-200 bg-emerald-50/30 dark:border-emerald-800 dark:bg-emerald-900/10' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50'}`}>
             <div className="flex items-center justify-between gap-3">
@@ -93,7 +114,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                     </div>
                 </div>
                 {hasFile && (
-                    <button type="button" onClick={() => {/* For now just logs, in real app would trigger download */ console.log('Downloading', fileName)}} className="text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors shrink-0 cursor-pointer mr-2">
+                    <button type="button" onClick={handleDownload} className="text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors shrink-0 cursor-pointer mr-2">
                         <span className="material-symbols-outlined text-[20px]">download</span>
                     </button>
                 )}
@@ -109,7 +130,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                     )
                 )}
             </div>
-            <input type="file" ref={inputRef} onChange={handleChange} className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
+            <input type="file" ref={inputRef} onChange={handleChange} className="hidden text-slate-900 font-bold dark:text-white" accept=".pdf,.jpg,.jpeg,.png" />
         </div>
     );
 };
@@ -304,16 +325,25 @@ export function DeathRequestForm({
         setShowAckPopup(true);
     };
 
-    const buildDocumentsPayload = () => {
-        return docSlots.reduce((acc, slot) => {
-            acc[slot.key] = slot.file?.name || slot.existingName || '';
-            return acc;
-        }, {} as Record<string, string>);
+    const buildDocumentsPayload = async () => {
+        const payload: Record<string, string> = {};
+        for (const slot of docSlots) {
+            if (slot.file) {
+                // Ensure uploadHrmsDocument is imported at the top of this file
+                const path = await uploadHrmsDocument(slot.file, 'death');
+                payload[slot.key] = path || slot.file.name;
+            } else if (slot.existingName) {
+                payload[slot.key] = slot.existingName;
+            } else {
+                payload[slot.key] = '';
+            }
+        }
+        return payload;
     };
 
-    const confirmSubmit = () => {
+    const confirmSubmit = async () => {
         const formData = getValues();
-        const documents = buildDocumentsPayload();
+        const documents = await buildDocumentsPayload();
         onSave({ 
             ...formData, 
             specialRemark: formData.specialRemark || '',
@@ -325,9 +355,9 @@ export function DeathRequestForm({
         setShowAckPopup(false);
     };
 
-    const handleSaveAsDraft = () => {
+    const handleSaveAsDraft = async () => {
         const formData = getValues();
-        const documents = buildDocumentsPayload();
+        const documents = await buildDocumentsPayload();
         onSave({ 
             ...formData, 
             specialRemark: formData.specialRemark || '',
@@ -466,7 +496,7 @@ export function DeathRequestForm({
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Nature of Death *</label>
-                                <select {...register('natureOfDeath')} disabled={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all cursor-pointer">
+                                <select {...register('natureOfDeath')} disabled={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all cursor-pointer text-slate-900 font-bold dark:text-white">
                                     <option value="Natural">Natural</option>
                                     <option value="Accident">Accident</option>
                                     <option value="Sickness">Sickness</option>
@@ -582,11 +612,11 @@ export function DeathRequestForm({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Nominee Name</label>
-                                <input {...register('nomineeName')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeName')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Relationship</label>
-                                <input {...register('nomineeRelationship')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" placeholder="e.g. Spouse, Son, Daughter" />
+                                <input {...register('nomineeRelationship')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" placeholder="e.g. Spouse, Son, Daughter" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">NIC Number</label>
@@ -600,19 +630,19 @@ export function DeathRequestForm({
                             </div>
                             <div className="space-y-1.5 md:col-span-2">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Address</label>
-                                <input {...register('nomineeAddress')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeAddress')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Bank Name</label>
-                                <input {...register('nomineeBank')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeBank')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Branch Name</label>
-                                <input {...register('nomineeBranch')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeBranch')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Account Number</label>
-                                <input {...register('nomineeAccount')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeAccount')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                         </div>
                     </div>
@@ -643,7 +673,7 @@ export function DeathRequestForm({
 
                     <div className="space-y-2">
                         <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Special Remark</label>
-                        <textarea {...register('specialRemark')} readOnly={isReadOnly} rows={3} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all resize-none" placeholder="Enter any additional information..." />
+                        <textarea {...register('specialRemark')} readOnly={isReadOnly} rows={3} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all resize-none text-slate-900 font-bold dark:text-white" placeholder="Enter any additional information..." />
                     </div>
 
                     {isReadOnly && initialData?.hrRemark && (

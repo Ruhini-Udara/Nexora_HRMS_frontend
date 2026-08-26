@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, X, Eye, Send } from 'lucide-react';
+import { Check, X, Eye, Send, MonitorPlay } from 'lucide-react';
 import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 import { getAllTransferRequests, updateTransferStatus, TransferRequest } from '@/lib/api/transferRequests';
 export default function TransferTable() {
@@ -10,6 +10,34 @@ export default function TransferTable() {
     const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
     
     // Filters
+    const getTodayStr = () => new Date().toISOString().split('T')[0];
+
+const ReadOnlyField = ({ label, value }: { label: string; value: string }) => (
+    <div className="space-y-2">
+        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            {label}
+        </label>
+        <input
+            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm  text-slate-900 font-bold dark:text-white"
+            readOnly
+            value={value || ""}
+        />
+    </div>
+);
+
+const ReadOnlyTextarea = ({ label, value, rows = 3 }: { label: string; value: string; rows?: number }) => (
+    <div className="space-y-2">
+        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            {label}
+        </label>
+        <textarea
+            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm  resize-none text-slate-900 font-bold dark:text-white"
+            readOnly
+            rows={rows}
+            value={value || ""}
+        />
+    </div>
+);
     const todayStr = new Date().toISOString().split('T')[0];
     const [selectedDate, setSelectedDate] = useState(todayStr);
     const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year'>('year');
@@ -250,7 +278,7 @@ const getDropdownOptions = () => {
                 <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm mr-2 mb-2 sm:mb-0">
                     <label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">Meeting Date:</label>
                     <select 
-                        className="bg-transparent text-sm font-medium text-gray-900 dark:text-slate-200 focus:outline-none cursor-pointer"
+                        className="bg-transparent text-sm  focus:outline-none cursor-pointer text-slate-900 font-bold dark:text-white"
                         value={selectedDate}
                         onChange={e => setSelectedDate(e.target.value)}
                     >
@@ -373,27 +401,77 @@ const getDropdownOptions = () => {
 
             {/* View Details Modal */}
             {viewingRequest && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transition-colors">
-                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Transfer Request Details</h3>
-                                <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{viewingRequest.id}</p>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-full transition-colors relative">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-primary text-2xl">swap_horiz</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">View Transfer Request</h3>
+                                    <p className="text-sm text-slate-500">Request ID: {viewingRequest.id} · {viewingRequest.employeeName}</p>
+                                </div>
                             </div>
-                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"><X className="w-5 h-5" /></button>
+                            <button onClick={() => setViewingRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors cursor-pointer">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
                         </div>
-                        <div className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.employeeName}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">EPF Number</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.epfNumber}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">From</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.currentBranch}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">To</p><p className="font-semibold text-blue-600 dark:text-blue-400">{viewingRequest.targetBranch}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Request Date</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.requestDate}</p></div>
-                                <div className="p-3 bg-gray-50 dark:bg-slate-800/60 rounded-lg"><p className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-1">Board Meeting Date</p><p className="font-semibold text-primary">{viewingRequest.boardMeetingDate}</p></div>
+                        <div className="p-8 overflow-y-auto flex-1 space-y-8">
+                            <div className="grid grid-cols-2 gap-6">
+                                <ReadOnlyField label="Current Designation" value={viewingRequest.designation || ""} />
+                                <ReadOnlyField label="Current Location" value={viewingRequest.currentBranch} />
+                                <ReadOnlyField label="Target Location" value={viewingRequest.targetBranch} />
+                                <ReadOnlyField label="Expected Date" value={viewingRequest.expectedDate || ""} />
                             </div>
-                        </div>
-                        <div className="p-6 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex justify-end gap-3 transition-colors">
-                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white cursor-pointer">Close</button>
+
+                            <ReadOnlyTextarea label="Reason for Transfer" value={viewingRequest.reason} />
+
+                            {/* Document Cards */}
+                            {viewingRequest.documents && viewingRequest.documents.length > 0 && (
+                                <div className="space-y-4">
+                                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                        Required Documents
+                                    </label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {viewingRequest.documents.map((doc, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10 p-5 transition-all"
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-100 dark:bg-green-900/30">
+                                                        <span className="material-symbols-outlined text-lg text-green-600 dark:text-green-400">check_circle</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{doc.label || doc.filename}</p>
+                                                            <span className="text-[9px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded uppercase">Uploaded</span>
+                                                        </div>
+                                                        <div className="mt-2 flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                                <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
+                                                                <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{doc.filename}</p>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleDownload(doc.filename)}
+                                                                className="text-slate-400 hover:text-primary transition-colors cursor-pointer"
+                                                                title="Download Document"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[18px]">download</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {viewingRequest.hrRemark && (
+                                <ReadOnlyTextarea label="HR Remarks" value={viewingRequest.hrRemark} />
+                            )}
                         </div>
                     </div>
                 </div>

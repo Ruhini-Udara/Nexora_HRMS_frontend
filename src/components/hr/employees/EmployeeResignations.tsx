@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from "next/link";
 import { Search, Filter, Calendar, CheckCircle2, XCircle, Clock, MoreVertical, Eye, Download, Printer, User, Building2, MapPin, Briefcase, FileText, ChevronRight, LayoutGrid, List as ListIcon, ShieldCheck, Mail, Phone, CalendarDays, History } from 'lucide-react';
 import { getAllResignationRequests, updateResignationStatus, ResignationRequest } from '@/lib/api/resignationRequests';
+import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 
 // ── Status badge config ─────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; classes: string }> = {
@@ -77,6 +78,20 @@ export default function EmployeeResignations() {
     const [rejectReasonError, setRejectReasonError] = useState(false);
 
     // ── Handlers ─────────────────────────────────────────────────────
+    const handleDownload = async (path: string | undefined) => {
+        if (!path) return;
+        if (!path.includes('/')) {
+            alert('File not available (legacy format)');
+            return;
+        }
+        const url = await getHrmsSignedUrl(path);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('Failed to get download URL');
+        }
+    };
+
     const handleView = (req: ResignationRequest) => {
         setSelectedRequest(req);
     };
@@ -529,7 +544,10 @@ export default function EmployeeResignations() {
                                                                 <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
                                                                 <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{selectedRequest.documents.resignationLetter}</p>
                                                             </div>
-                                                            <button className="text-slate-400 hover:text-primary transition-colors cursor-pointer">
+                                                            <button 
+                                                                onClick={() => handleDownload(selectedRequest.documents.resignationLetter)}
+                                                                className="text-slate-400 hover:text-primary transition-colors cursor-pointer"
+                                                            >
                                                                 <span className="material-symbols-outlined text-[18px]">download</span>
                                                             </button>
                                                         </div>
@@ -553,7 +571,10 @@ export default function EmployeeResignations() {
                                                                 <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
                                                                 <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{selectedRequest.documents.clearanceLetter}</p>
                                                             </div>
-                                                            <button className="text-slate-400 hover:text-primary transition-colors cursor-pointer">
+                                                            <button 
+                                                                onClick={() => handleDownload(selectedRequest.documents.clearanceLetter)}
+                                                                className="text-slate-400 hover:text-primary transition-colors cursor-pointer"
+                                                            >
                                                                 <span className="material-symbols-outlined text-[18px]">download</span>
                                                             </button>
                                                         </div>
@@ -577,7 +598,10 @@ export default function EmployeeResignations() {
                                                                 <span className="material-symbols-outlined text-red-500 text-sm">picture_as_pdf</span>
                                                                 <p className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{selectedRequest.documents.handoverChecklist}</p>
                                                             </div>
-                                                            <button className="text-slate-400 hover:text-primary transition-colors cursor-pointer">
+                                                            <button 
+                                                                onClick={() => handleDownload(selectedRequest.documents.handoverChecklist)}
+                                                                className="text-slate-400 hover:text-primary transition-colors cursor-pointer"
+                                                            >
                                                                 <span className="material-symbols-outlined text-[18px]">download</span>
                                                             </button>
                                                         </div>

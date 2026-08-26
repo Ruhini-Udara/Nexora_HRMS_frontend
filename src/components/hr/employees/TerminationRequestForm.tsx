@@ -5,7 +5,7 @@ import api from '@/lib/axiosInstance';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { uploadHrmsDocument } from '@/lib/supabaseClient';
+import { uploadHrmsDocument, getHrmsSignedUrl } from '@/lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
 import { TerminationRequest } from './EmployeeTerminations';
 
@@ -45,12 +45,31 @@ interface DocUploadCardProps {
 
 const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove, isReadOnly }) => {
     const inputRef = useRef<HTMLInputElement>(null);
-    const hasFile = slot.file !== null;
-    const fileName = slot.file?.name || '';
+    const hasFile = !!slot.file || !!slot.existingName;
+    const fileName = slot.file?.name || slot.existingName || '';
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) onUpload(slot.key, file);
+    };
+
+    const handleDownload = async () => {
+        if (slot.existingName) {
+            try {
+                const url = await getHrmsSignedUrl(slot.existingName);
+                if (url) {
+                    window.open(url, '_blank');
+                } else {
+                    alert('Failed to fetch document.');
+                }
+            } catch (err) {
+                console.error("Error fetching doc:", err);
+                alert("Could not load the file.");
+            }
+        } else if (slot.file) {
+            const objectUrl = URL.createObjectURL(slot.file);
+            window.open(objectUrl, '_blank');
+        }
     };
 
     return (
@@ -59,34 +78,32 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                 <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${hasFile ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-slate-200 dark:bg-slate-800'}`}>
                         <span className={`material-symbols-outlined text-[20px] ${hasFile ? 'text-emerald-600' : 'text-slate-500'}`}>
-                            {slot.icon}
+                            {hasFile ? 'check_circle' : slot.icon}
                         </span>
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{slot.label} {slot.mandatory && <span className="text-red-500">*</span>}</p>
-                        <p className="text-[10px] text-slate-500 truncate max-w-[150px]">{hasFile ? fileName : 'No file selected'}</p>
+                        <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{hasFile ? fileName : 'No file selected'}</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    {hasFile && (
-                        <button type="button" onClick={() => console.log('Downloading', fileName)} className="text-primary hover:text-primary/80 transition-colors">
-                            <span className="material-symbols-outlined text-[20px]">download</span>
+                {hasFile && (
+                    <button type="button" onClick={handleDownload} className="text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors shrink-0 cursor-pointer mr-2">
+                        <span className="material-symbols-outlined text-[20px]">download</span>
+                    </button>
+                )}
+                {!isReadOnly && (
+                    hasFile ? (
+                        <button type="button" onClick={() => onRemove(slot.key)} className="text-slate-400 hover:text-red-500 transition-colors shrink-0">
+                            <span className="material-symbols-outlined text-[20px]">delete</span>
                         </button>
-                    )}
-                    {!isReadOnly && (
-                        hasFile ? (
-                            <button type="button" onClick={() => onRemove(slot.key)} className="text-slate-400 hover:text-red-500 transition-colors">
-                                <span className="material-symbols-outlined text-[20px]">delete</span>
-                            </button>
-                        ) : (
-                            <button type="button" onClick={() => inputRef.current?.click()} className="text-primary hover:text-primary/80 transition-colors">
-                                <span className="material-symbols-outlined text-[20px]">upload</span>
-                            </button>
-                        )
-                    )}
-                </div>
+                    ) : (
+                        <button type="button" onClick={() => inputRef.current?.click()} className="text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors shrink-0 cursor-pointer">
+                            <span className="material-symbols-outlined text-[20px]">upload</span>
+                        </button>
+                    )
+                )}
             </div>
-            <input type="file" ref={inputRef} onChange={handleChange} className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
+            <input type="file" ref={inputRef} onChange={handleChange} className="hidden text-slate-900 font-bold dark:text-white" accept=".pdf,.jpg,.jpeg,.png" />
         </div>
     );
 };
@@ -188,9 +205,9 @@ export function TerminationRequestForm({
     }, []);
 
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
-        { key: 'request_for_termination', label: 'Termination Request', icon: 'description', mandatory: true, file: null },
-        { key: 'loan_clearance_letter', label: 'Loan Clearance', icon: 'account_balance', mandatory: true, file: null },
-        { key: 'other_document', label: 'Other Supportings', icon: 'attach_file', mandatory: false, file: null },
+        { key: 'request_for_termination', label: 'Termination Request', icon: 'description', mandatory: true, file: null, existingName: initialData?.documents?.request_for_termination },
+        { key: 'loan_clearance_letter', label: 'Loan Clearance', icon: 'account_balance', mandatory: true, file: null, existingName: initialData?.documents?.loan_clearance_letter },
+        { key: 'other_document', label: 'Other Supportings', icon: 'attach_file', mandatory: false, file: null, existingName: initialData?.documents?.other_document },
     ]);
 
     const { register, handleSubmit, formState: { errors }, getValues, setValue } = useForm<TerminationFormData>({
@@ -375,16 +392,16 @@ export function TerminationRequestForm({
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">EPF Number *</label>
-                                <input {...register('epfNumber')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                                <input {...register('epfNumber')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 font-bold dark:text-white" />
                                 {errors.epfNumber && <p className="text-[10px] text-red-500 mt-1">{errors.epfNumber.message}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Branch / Department *</label>
-                                <input {...register('branch')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                                <input {...register('branch')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Termination Type *</label>
-                                <select {...register('type')} disabled={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer">
+                                <select {...register('type')} disabled={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer text-slate-900 font-bold dark:text-white">
                                     <option value="Voluntary (Resignation)">Voluntary (Resignation)</option>
                                     <option value="Involuntary (Dismissal)">Involuntary (Dismissal)</option>
                                     <option value="Retirement">Retirement</option>
@@ -399,12 +416,12 @@ export function TerminationRequestForm({
                         <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest border-b border-primary/10 pb-2">Separation Details</h4>
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Reason for Termination *</label>
-                            <textarea {...register('reason')} readOnly={isReadOnly} rows={3} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none" />
+                            <textarea {...register('reason')} readOnly={isReadOnly} rows={3} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none text-slate-900 font-bold dark:text-white" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Initiation Date *</label>
-                                <input type="date" {...register('initiationDate')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                                <input type="date" {...register('initiationDate')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Effective Date *</label>
@@ -413,14 +430,14 @@ export function TerminationRequestForm({
                                     {...register('effectiveDate')} 
                                     min={new Date().toISOString().split('T')[0]}
                                     readOnly={isReadOnly} 
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all" 
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-900 font-bold dark:text-white" 
                                 />
                                 {errors.effectiveDate && <p className="text-[10px] text-red-500 mt-1">{errors.effectiveDate.message}</p>}
                             </div>
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Special Remarks</label>
-                            <textarea {...register('specialRemark')} readOnly={isReadOnly} rows={2} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none" placeholder="Any additional comments or notes..." />
+                            <textarea {...register('specialRemark')} readOnly={isReadOnly} rows={2} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none text-slate-900 font-bold dark:text-white" placeholder="Any additional comments or notes..." />
                         </div>
                     </div>
 
