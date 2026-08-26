@@ -189,7 +189,7 @@ export default function TerminationTable() {
         const updated = requests.map(r => r.id === id ? { ...r, status: 'APPROVED' } : r);
         setRequests(updated);
         saveToLocalStorage(updated);
-        showToast(`application approved successfully !`);
+        showToast(`successfully approved and email sent!`);
     };
 
     const handleConfirmReject = () => {
@@ -473,9 +473,11 @@ export default function TerminationTable() {
 
             {/* Toast Notification */}
             {toastMessage && (
-                <div className="fixed bottom-6 right-6 z-[70] bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg font-medium text-sm flex items-center gap-2">
-                    <Send className="w-4 h-4 text-green-400" />
-                    {toastMessage}
+                <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 z-50">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <Check className="w-5 h-5 text-green-400" />
+                    </div>
+                    <p className="font-medium">{toastMessage}</p>
                 </div>
             )}
         </div>

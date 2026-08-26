@@ -39,7 +39,7 @@ export default function WelfareTable() {
 
     const handleApprove = (id: number) => {
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
-        showToast(`application approved successfully !`);
+        showToast(`successfully approved and email sent!`);
     };
 
     const openRejectModal = (id: number) => { setRequestToReject(id); setRejectReason(''); setRejectModalOpen(true); };
@@ -276,11 +276,7 @@ export default function WelfareTable() {
                 </div>
             )}
 
-            {toastMessage && (
-                <div className="fixed bottom-6 right-6 z-[70] bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg font-medium text-sm flex items-center gap-2">
-                    <Send className="w-4 h-4 text-green-400" />{toastMessage}
-                </div>
-            )}
+            {/* The redundant second toast notification was removed here. */}
         </div>
     );
 }

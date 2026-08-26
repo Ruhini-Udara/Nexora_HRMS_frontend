@@ -212,7 +212,7 @@ export default function ResignationTable() {
         try {
             await updateResignationStatus(id, "Board Approved");
             await fetchRequests();
-            showToast(`application approved successfully !`);
+            showToast(`successfully approved and email sent!`);
         } catch (error) {
             console.error("Failed to approve:", error);
         }
@@ -556,9 +556,11 @@ export default function ResignationTable() {
 
             {/* ── Toast ───────────────────────────────────────────────────── */}
             {toast && (
-                <div className="fixed bottom-6 right-6 z-50 bg-slate-900 dark:bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl font-medium text-sm flex items-center gap-2 max-w-sm border border-slate-700">
-                    <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                    {toast}
+                <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 z-50">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <Check className="w-5 h-5 text-green-400" />
+                    </div>
+                    <p className="font-medium">{toast}</p>
                 </div>
             )}
 
