@@ -93,7 +93,7 @@ export default function LeaveModules() {
             </Link>
 
             {/* Carry-Forward & Auditing Card */}
-            <Link href="/hr/leave/auditing" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
+            <Link href="/hr/carry-forward" className="group bg-surface-light dark:bg-surface-dark p-8 rounded-xl border border-border-light dark:border-border-dark card-shadow hover:border-primary transition-all cursor-pointer flex flex-col h-full">
                 <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary/5 transition-colors">
                     <span className="material-symbols-outlined text-primary text-4xl">
                         policy

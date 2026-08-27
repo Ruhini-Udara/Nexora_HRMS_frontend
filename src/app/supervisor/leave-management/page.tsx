@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 type LeaveStatus = "Pending" | "Approved" | "Rejected" | "Closed";
-type LeaveType = "Annual Leave" | "Sick Leave" | "Casual Leave";
+type LeaveType = "Annual Leave" | "Medical Leave" | "Casual Leave";
 
 interface LeaveRequest {
     id: string;
@@ -29,7 +29,7 @@ interface LeaveRequest {
     reason: string;
     isFullTime?: boolean;
     annualLeaveRemaining: number;
-    sickLeaveRemaining: number;
+    medicalLeaveRemaining: number;
     isActiveShift?: boolean;
 }
 
@@ -61,7 +61,7 @@ const STATUS_BADGE: Record<LeaveStatus, string> = {
 
 const LEAVE_TYPE_COLOR: Record<LeaveType, string> = {
     "Annual Leave": "text-[#9e3f00] dark:text-orange-400",
-    "Sick Leave": "text-blue-600 dark:text-blue-400",
+    "Medical Leave": "text-blue-600 dark:text-blue-400",
     "Casual Leave": "text-purple-600 dark:text-purple-400",
 };
 
@@ -79,7 +79,7 @@ function mapBackendStatus(raw: string): LeaveStatus {
 function normaliseLeaveType(raw: string): LeaveType {
     const lower = (raw || "").toLowerCase();
     if (lower.includes("annual"))  return "Annual Leave";
-    if (lower.includes("sick") || lower.includes("medical")) return "Sick Leave";
+    if (lower.includes("sick") || lower.includes("medical")) return "Medical Leave";
     if (lower.includes("casual"))  return "Casual Leave";
     return "Annual Leave";
 }
@@ -136,7 +136,7 @@ export default function LeaveManagementPage() {
                     toDate: d.endDate || "",
                     reason: d.reason || "",
                     annualLeaveRemaining: d.annualLeaveRemaining ?? 0,
-                    sickLeaveRemaining: d.sickLeaveRemaining ?? 0,
+                    medicalLeaveRemaining: d.medicalLeaveRemaining ?? 0,
                     }));
                     
                     setRequests(mapped);
@@ -303,7 +303,7 @@ export default function LeaveManagementPage() {
                         >
                             <option className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">All Types</option>
                             <option className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Annual Leave</option>
-                            <option className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Sick Leave</option>
+                            <option className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Medical Leave</option>
                             <option className="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">Casual Leave</option>
                         </select>
                         <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
@@ -421,10 +421,10 @@ export default function LeaveManagementPage() {
                                     </div>
                                     <div>
                                         <p className="text-3xl font-black text-[#9e3f00] dark:text-orange-400 leading-none tracking-tight">
-                                            {String(sel.sickLeaveRemaining).padStart(2, "0")}
+                                            {String(sel.medicalLeaveRemaining).padStart(2, "0")}
                                             <span className="text-xs font-medium text-gray-400 dark:text-slate-500 ml-1">Days</span>
                                         </p>
-                                        <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-1">Sick Leave Remaining</p>
+                                        <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-1">Medical Leave Remaining</p>
                                     </div>
                                 </div>
                             </div>

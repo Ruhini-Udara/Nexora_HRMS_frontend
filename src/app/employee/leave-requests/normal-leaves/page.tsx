@@ -20,8 +20,15 @@ const normalLeaveSchema = z.object({
     startDate: z.string().min(1, "Start Date is required"),
     endDate: z.string().min(1, "End Date is required"),
     reason: z.string().min(1, "Reason is required"),
-    branch: z.string().min(1, "Branch is required"),
-    contactNumber: z.string().min(10, "Contact Number must be valid"),
+}).refine((data) => {
+    if (!data.startDate) return true;
+    const today = new Date();
+    const offset = today.getTimezoneOffset() * 60000;
+    const todayStr = new Date(today.getTime() - offset).toISOString().split('T')[0];
+    return data.startDate >= todayStr;
+}, {
+    message: "Start Date cannot be in the past.",
+    path: ["startDate"]
 }).refine((data) => {
     if (!data.startDate || !data.endDate) return true;
     const start = new Date(data.startDate);
@@ -70,10 +77,14 @@ export default function NormalLeaveRequestPage() {
         register,
         handleSubmit,
         control,
+        watch,
         formState: { errors }
     } = useForm<NormalLeaveValues>({
         resolver: zodResolver(normalLeaveSchema),
     });
+
+    const selectedStartDate = watch("startDate");
+    const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
     const totalDays = useLeaveDays(control, "startDate", "endDate");
 
@@ -120,8 +131,6 @@ export default function NormalLeaveRequestPage() {
                 endDate: data.endDate,
                 totalDays: Number(totalDays),
                 reason: data.reason,
-                branch: data.branch,
-                contactNumber: data.contactNumber,
             };
 
             const response = await api.post("/api/v1/leaves/normal", payload);
@@ -212,6 +221,7 @@ export default function NormalLeaveRequestPage() {
                                             {...register("startDate")}
                                             className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none ${errors.startDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                                             type="date"
+                                            min={todayStr}
                                             disabled={isDisabled}
                                         />
                                         {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message}</p>}
@@ -224,6 +234,7 @@ export default function NormalLeaveRequestPage() {
                                             {...register("endDate")}
                                             className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none ${errors.endDate ? 'border-red-500 focus:ring-red-500' : ''}`}
                                             type="date"
+                                            min={selectedStartDate || todayStr}
                                             disabled={isDisabled}
                                         />
                                         {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message}</p>}
@@ -231,30 +242,7 @@ export default function NormalLeaveRequestPage() {
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Branch</label>
-                                    <input
-                                        {...register("branch")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none ${errors.branch ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        type="text"
-                                        placeholder="e.g. Colombo HQ"
-                                        disabled={isDisabled}
-                                    />
-                                    {errors.branch && <p className="text-red-500 text-xs mt-1">{errors.branch.message}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Contact Number</label>
-                                    <input
-                                        {...register("contactNumber")}
-                                        className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-2.5 outline-none ${errors.contactNumber ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                        type="text"
-                                        placeholder="+94 77 123 4567"
-                                        disabled={isDisabled}
-                                    />
-                                    {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber.message}</p>}
-                                </div>
-                            </div>
+
                             
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Total Days</label>

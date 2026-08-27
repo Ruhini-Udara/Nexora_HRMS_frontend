@@ -33,7 +33,7 @@ type ResignationFormData = z.infer<typeof resignationSchema>;
 // ── Mock Leave Balance Data ─────────────────────────────────────────
 const leaveBalances = [
     { type: 'Annual Leave', total: 14, used: 6, remaining: 8, color: '#8B3A00', bg: '#FEF3EB' },
-    { type: 'Sick Leave', total: 7, used: 2, remaining: 5, color: '#0D9488', bg: '#F0FDFA' },
+    { type: 'Medical Leave', total: 7, used: 2, remaining: 5, color: '#0D9488', bg: '#F0FDFA' },
     { type: 'Casual Leave', total: 7, used: 4, remaining: 3, color: '#6366F1', bg: '#EEF2FF' },
 ];
 

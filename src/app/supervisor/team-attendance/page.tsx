@@ -36,6 +36,7 @@ type AttendanceStatus = "Present" | "On Leave" | "Absent" | "Unknown";
 
 interface AttendanceRow {
     id: number;
+    recordId?: number;
     name: string;
     role: string;
     department: string;
@@ -76,6 +77,8 @@ export default function TeamAttendancePage() {
     const [isClient, setIsClient] = useState(false);
     const [toast, setToast] = useState({ msg: "", on: false, type: "success" as "success" | "error" });
     const [selectedDetail, setSelectedDetail] = useState<AttendanceRow | null>(null);
+    const [selectedForApproval, setSelectedForApproval] = useState<number[]>([]);
+    const [isApproving, setIsApproving] = useState(false);
     const user = useAuthStore(s => s.user);
 
     useEffect(() => { setIsClient(true); }, []);
@@ -112,10 +115,29 @@ export default function TeamAttendancePage() {
                 console.error("Failed to load team attendance data", err);
             } finally {
                 setLoading(false);
+                setSelectedForApproval([]); // Reset selections on data reload
             }
         };
         loadData();
     }, [selectedDate, user?.id]);
+
+    const handleApproveSelected = async () => {
+        if (selectedForApproval.length === 0) return;
+        setIsApproving(true);
+        try {
+            await api.post('/api/attendance/manual/supervisor/approve-multiple', selectedForApproval);
+            pop("Selected requests approved successfully!");
+            // Refresh data
+            setSelectedForApproval([]);
+            const attRes = await api.get(`/api/attendance/manual?date=${selectedDate}`);
+            setAttendanceLog(attRes.data);
+        } catch (err) {
+            console.error("Failed to approve", err);
+            pop("Failed to approve selected requests", "error");
+        } finally {
+            setIsApproving(false);
+        }
+    };
 
     const rows: AttendanceRow[] = employees.map(emp => {
         const code = emp.employeeCode || `EMP-${emp.id}`;
@@ -191,6 +213,7 @@ export default function TeamAttendancePage() {
 
         return {
             id: emp.id,
+            recordId: record?.id,
             name: emp.fullName,
             role: emp.designation?.designationName || "—",
             department: emp.department || "—",
@@ -369,6 +392,16 @@ export default function TeamAttendancePage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
+                        {selectedForApproval.length > 0 && (
+                            <button 
+                                onClick={handleApproveSelected} 
+                                disabled={isApproving}
+                                className="flex items-center gap-2 h-10 px-5 bg-green-600 hover:bg-green-700 text-white font-bold text-[13px] rounded-xl transition-colors shadow-sm disabled:opacity-50"
+                            >
+                                {isApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                Approve ({selectedForApproval.length})
+                            </button>
+                        )}
                         <button onClick={exportToPDF} className="flex items-center gap-2 h-10 px-5 bg-[#9e3f00] dark:bg-orange-600 hover:bg-[#7a3000] dark:hover:bg-orange-700 text-white font-bold text-[13px] rounded-xl transition-colors shadow-sm cursor-pointer">
                             <Download className="w-4 h-4" />
                             Export PDF
@@ -391,6 +424,7 @@ export default function TeamAttendancePage() {
                             <table className="w-full text-left">
                                 <thead className="bg-[#fcfcfd] dark:bg-zinc-800/50 border-b border-slate-100 dark:border-zinc-800">
                                     <tr>
+                                        <th className="px-4 py-4 w-10"></th>
                                         <th className="px-8 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Employee</th>
                                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Department</th>
                                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
@@ -406,6 +440,22 @@ export default function TeamAttendancePage() {
                                         </tr>
                                     ) : filtered.map((row) => (
                                         <tr key={row.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/40 transition-colors group">
+                                            <td className="px-4 py-5 text-center">
+                                                {row.approvalStatus === 'PENDING' && row.recordId && (
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500 cursor-pointer"
+                                                        checked={selectedForApproval.includes(row.recordId)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedForApproval(prev => [...prev, row.recordId!]);
+                                                            } else {
+                                                                setSelectedForApproval(prev => prev.filter(id => id !== row.recordId));
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                            </td>
                                             <td className="px-8 py-5">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-[#9e3f00] dark:text-orange-400 font-black text-xs border border-orange-200 dark:border-orange-900/30">

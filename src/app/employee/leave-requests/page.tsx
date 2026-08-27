@@ -79,7 +79,7 @@ export default function LeaveRequestsDashboard() {
     const leaveTypes = [
         {
             title: "Normal Leaves",
-            description: "Apply for annual, sick, or casual leaves.",
+            description: "Apply for annual, medical, or casual leaves.",
             icon: "event",
             href: "/employee/leave-requests/normal-leaves",
             bgColor: "bg-gray-50 dark:bg-gray-800 group-hover:bg-primary/5 transition-colors",
