@@ -47,7 +47,9 @@ export async function getSignedUrl(filePath: string, expiresIn = 3600): Promise<
         .createSignedUrl(filePath, expiresIn);
 
     if (error) {
-        console.error("Signed URL error:", error.message);
+        if (!error.message.includes("Object not found")) {
+            console.error("Signed URL error:", error.message);
+        }
         return null;
     }
 

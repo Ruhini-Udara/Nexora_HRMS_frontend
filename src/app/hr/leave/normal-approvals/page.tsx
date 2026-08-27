@@ -2,18 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { getSignedUrl } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/axiosInstance";
-import { WorkflowTrackerStepper } from "@/components/WorkflowTrackerStepper";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-interface LeaveDocument {
-    id: number;
-    documentType: string;
-    filePathUrl: string;
-    description: string;
-}
 
 interface NormalLeave {
     id: number;
@@ -31,52 +23,6 @@ interface NormalLeave {
     branch: string;
     contactNumber: string;
     email: string;
-}
-
-interface LeaveImpactData {
-    riskLevel: 'Low Risk' | 'Medium Risk' | 'High Risk';
-    departmentEmployees: number;
-    alreadyOnLeave: number;
-    availableAfterApproval: number;
-    availabilityPercentage: number;
-}
-
-// ─── Document viewer helper ───────────────────────────────────────────────────
-function DocumentCard({ label, path }: { label: string; path: string }) {
-    const [loading, setLoading] = useState(false);
-
-    const handleView = async () => {
-        if (!path) return;
-        setLoading(true);
-        const url = await getSignedUrl(path, 3600);
-        setLoading(false);
-        if (url) {
-            window.open(url, "_blank");
-        } else {
-            alert("Could not generate a secure link for this document. Please try again.");
-        }
-    };
-
-    if (!path) return null;
-
-    return (
-        <div
-            onClick={handleView}
-            className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 group hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer"
-        >
-            <div className="w-8 h-8 rounded bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                {loading
-                    ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                    : <span className="material-symbols-outlined text-[18px]">description</span>
-                }
-            </div>
-            <div className="overflow-hidden flex-1">
-                <div className="text-xs font-bold text-slate-700 dark:text-slate-200 capitalize">{label}</div>
-                <div className="text-[10px] text-primary group-hover:underline">Click to view (1-hr secure link)</div>
-            </div>
-            <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-primary">open_in_new</span>
-        </div>
-    );
 }
 
 // ─── Status badge helper ──────────────────────────────────────────────────────
@@ -105,31 +51,11 @@ export default function NormalApprovalsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [selectedRequest, setSelectedRequest] = useState<NormalLeave | null>(null);
-    const [documents, setDocuments] = useState<LeaveDocument[]>([]);
-    const [docsLoading, setDocsLoading] = useState(false);
     const [hrRemark, setHrRemark] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("PENDING_HR_APPROVAL");
     const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
-    const [impactData, setImpactData] = useState<LeaveImpactData | null>(null);
-    const [impactLoading, setImpactLoading] = useState(false);
-
-    const getWorkflowSteps = (req: NormalLeave) => {
-        const createdDate = req.createdAt ? new Date(req.createdAt) : new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); 
-        const isDelayed = (Date.now() - createdDate.getTime()) > 2 * 24 * 60 * 60 * 1000;
-        
-        return [
-            { label: 'Request Submitted', status: 'completed' as const },
-            { 
-                label: 'HR Final Review', 
-                status: req.status === 'PENDING_HR_APPROVAL' ? 'current' as const : 
-                        req.status === 'APPROVED' ? 'completed' as const : 'pending' as const,
-                isDelayed: req.status === 'PENDING_HR_APPROVAL' && isDelayed,
-                timeSpent: req.status === 'PENDING_HR_APPROVAL' && isDelayed ? '> 2 Days' : undefined
-            }
-        ];
-    };
 
     // ── Fetch leaves from backend ──────────────────────────────────────────
     const fetchLeaves = useCallback(async () => {
@@ -148,32 +74,10 @@ export default function NormalApprovalsPage() {
 
     useEffect(() => { fetchLeaves(); }, [fetchLeaves]);
 
-    // ── Open modal and load documents ─────────────────────────────────────
+    // ── Open modal ────────────────────────────────────────────────────────
     const handleOpenReview = async (req: NormalLeave) => {
         setSelectedRequest(req);
         setHrRemark("");
-        setDocuments([]);
-        setImpactData(null);
-        setDocsLoading(true);
-        setImpactLoading(true);
-        
-        try {
-            const res = await api.get(`/api/v1/documents?refId=${req.id}&refType=NORMAL_LEAVE`);
-            setDocuments(res.data);
-        } catch {
-            // non-critical
-        } finally {
-            setDocsLoading(false);
-        }
-
-        try {
-            const res = await api.get(`/api/v1/leaves/normal/${req.id}/impact`);
-            setImpactData(res.data);
-        } catch {
-            // non-critical
-        } finally {
-            setImpactLoading(false);
-        }
     };
 
     // ── Approve / Reject ───────────────────────────────────────────────────
@@ -335,7 +239,7 @@ export default function NormalApprovalsPage() {
                                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors"
                                                 >
                                                     <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                    Review
+                                                    View
                                                 </button>
                                             </td>
                                         </tr>
@@ -357,181 +261,104 @@ export default function NormalApprovalsPage() {
 
             {/* ── Review Modal ───────────────────────────────────────────────── */}
             {selectedRequest && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
-
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Verify Normal Leave Request</h3>
-                                <p className="text-sm text-slate-500 mt-1">Request ID: #{selectedRequest.id}</p>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+                        {/* Panel Header */}
+                        <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-slate-800 flex-shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-lg shrink-0">
+                                    {selectedRequest.employeeName.charAt(0)}
+                                </div>
+                                <div>
+                                    <p className="font-bold text-gray-900 dark:text-white text-[15px]">{selectedRequest.employeeName}</p>
+                                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{selectedRequest.employeeCode} · {selectedRequest.department}</p>
+                                    <span className="inline-block mt-1.5 text-[10px] font-bold text-primary dark:text-primary-light bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-full tracking-wide uppercase">
+                                        ID: #{selectedRequest.id}
+                                    </span>
+                                </div>
                             </div>
-                            <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+                            <button onClick={() => setSelectedRequest(null)} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors">
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
 
-                        {/* Modal Body */}
-                        <div className="p-6 overflow-y-auto space-y-8 flex-1">
-
-                            {/* Details Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="flex flex-col gap-5 px-6 py-5 flex-1 overflow-y-auto">
+                            {/* Leave Type & Duration */}
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wider">Employee Info</h4>
-                                    <div className="mb-4">
-                                        <div className="font-bold text-slate-900 dark:text-white text-lg">
-                                            {selectedRequest.employeeName}
-                                        </div>
-                                        <div className="text-sm text-slate-500">
-                                            {selectedRequest.employeeCode} • {selectedRequest.department}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Branch:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.branch || "N/A"}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Contact:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.contactNumber || "N/A"}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Email:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
-                                    </div>
+                                    <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Leave Type</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{selectedRequest.leaveTypeName}</p>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Leave Details</h4>
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between"><span className="text-slate-500">Status:</span> <StatusBadge status={selectedRequest.status} /></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Leave Type:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.leaveTypeName}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Dates:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.fromDate} → {selectedRequest.endDate}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Total Days:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.totalDays}</span></div>
-                                        <div className="mt-2"><span className="text-slate-500 block mb-1">Reason:</span><p className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded text-slate-700 dark:text-slate-300">{selectedRequest.reason}</p></div>
+                                    <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Duration</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedRequest.totalDays} Day{selectedRequest.totalDays > 1 ? 's' : ''}</p>
+                                </div>
+                            </div>
+
+                            {/* Date Range */}
+                            <div>
+                                <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Date Range</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2.5">
+                                        <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">From</p>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedRequest.fromDate}</p>
+                                    </div>
+                                    <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2.5">
+                                        <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">To</p>
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedRequest.endDate}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <WorkflowTrackerStepper steps={getWorkflowSteps(selectedRequest)} />
-
-                            {/* Documents */}
+                            {/* Reason */}
                             <div>
-                                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
-                                    Uploaded Documents
-                                    <span className="ml-2 text-xs font-normal text-slate-500">(Secure links expire in 1 hour)</span>
-                                </h4>
-                                {docsLoading ? (
-                                    <div className="flex items-center gap-2 text-slate-500 text-sm">
-                                        <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-                                        Loading documents...
-                                    </div>
-                                ) : documents.length === 0 ? (
-                                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-[14px]">warning</span>
-                                        No documents were uploaded with this request.
-                                    </p>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                        {documents.map(doc => (
-                                            <DocumentCard
-                                                key={doc.id}
-                                                label={doc.description || doc.documentType}
-                                                path={doc.filePathUrl}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Leave Impact Analysis */}
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">Leave Impact Analysis</h4>
-                                {impactLoading ? (
-                                    <div className="flex items-center gap-2 text-slate-500 text-sm">
-                                        <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-                                        Calculating impact...
-                                    </div>
-                                ) : impactData ? (
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
-                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5">
-                                            <div>
-                                                <h5 className="font-bold text-slate-900 dark:text-white">Department Availability</h5>
-                                                <p className="text-xs text-slate-500 mt-0.5">Projected availability if this leave is approved.</p>
-                                            </div>
-                                            <div className={`px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 ${
-                                                impactData.riskLevel === 'Low Risk' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
-                                                impactData.riskLevel === 'Medium Risk' ? 'bg-amber-100 text-amber-700 border border-amber-200' :
-                                                'bg-red-100 text-red-700 border border-red-200'
-                                            }`}>
-                                                <span className="material-symbols-outlined text-[18px]">
-                                                    {impactData.riskLevel === 'Low Risk' ? 'check_circle' : impactData.riskLevel === 'Medium Risk' ? 'warning' : 'error'}
-                                                </span>
-                                                {impactData.riskLevel}
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 text-center">
-                                                <div className="text-2xl font-black text-slate-900 dark:text-white">{impactData.departmentEmployees}</div>
-                                                <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">Total in Dept</div>
-                                            </div>
-                                            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 text-center">
-                                                <div className="text-2xl font-black text-amber-600 dark:text-amber-500">{impactData.alreadyOnLeave}</div>
-                                                <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">Already On Leave</div>
-                                            </div>
-                                            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 text-center">
-                                                <div className="text-2xl font-black text-blue-600 dark:text-blue-500">{impactData.availableAfterApproval}</div>
-                                                <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">Available After</div>
-                                            </div>
-                                            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 text-center">
-                                                <div className={`text-2xl font-black ${
-                                                    impactData.riskLevel === 'Low Risk' ? 'text-emerald-600' :
-                                                    impactData.riskLevel === 'Medium Risk' ? 'text-amber-600' :
-                                                    'text-red-600'
-                                                }`}>
-                                                    {impactData.availabilityPercentage.toFixed(0)}%
-                                                </div>
-                                                <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">Availability</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-xs text-slate-500">Failed to load impact analysis.</p>
-                                )}
+                                <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-2">Reason from Employee</p>
+                                <div className="bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-lg px-4 py-3">
+                                    <p className="text-sm text-gray-700 dark:text-slate-300 italic leading-relaxed">&ldquo;{selectedRequest.reason}&rdquo;</p>
+                                </div>
                             </div>
 
                             {/* HR Remarks */}
                             <div>
-                                <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">HR Remarks</h4>
+                                <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">HR Remarks</p>
                                 <textarea
                                     value={hrRemark}
                                     onChange={e => setHrRemark(e.target.value)}
                                     disabled={selectedRequest.status !== "PENDING_HR_APPROVAL"}
-                                    placeholder="Add verification notes or rejection reason..."
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-sm text-slate-700 dark:text-slate-300 outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-60"
                                     rows={3}
+                                    placeholder="Enter verification notes or rejection reason..."
+                                    className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/60 placeholder-gray-400 dark:placeholder-slate-500 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-colors disabled:opacity-60"
                                 />
                             </div>
                         </div>
 
-                        {/* Modal Footer */}
-                        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex items-center justify-end gap-3 rounded-b-2xl">
+                        {/* Action Buttons */}
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex items-center justify-between gap-3 rounded-b-2xl">
                             {selectedRequest.status === "PENDING_HR_APPROVAL" ? (
                                 <>
                                     <button
                                         onClick={() => handleDecision("REJECT")}
                                         disabled={submitting}
-                                        className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-bold text-sm transition-colors disabled:opacity-50"
+                                        className="flex-1 py-2.5 text-sm font-semibold text-red-600 bg-white dark:bg-slate-800 border-2 border-red-200 dark:border-red-900/40 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer disabled:opacity-50"
                                     >
                                         Reject Request
                                     </button>
                                     <button
                                         onClick={() => handleDecision("APPROVE")}
                                         disabled={submitting}
-                                        className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+                                        className="flex-1 py-2.5 text-sm font-bold text-white bg-primary rounded-xl hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50 flex justify-center items-center gap-2"
                                     >
                                         {submitting
                                             ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                                             : <span className="material-symbols-outlined text-[18px]">verified</span>
                                         }
-                                        &quot;Approve Final&quot;
+                                        Approve Final
                                     </button>
                                 </>
                             ) : (
                                 <button
                                     onClick={() => setSelectedRequest(null)}
-                                    className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg font-bold text-sm transition-colors"
+                                    className="w-full py-2.5 text-sm font-bold text-center rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors cursor-pointer"
                                 >
                                     Close
                                 </button>

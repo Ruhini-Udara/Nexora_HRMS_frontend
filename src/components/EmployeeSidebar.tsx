@@ -13,6 +13,7 @@ import {
     Heart,
     GraduationCap,
     Calendar,
+    Clock,
 } from 'lucide-react';
 
 const EmployeeSidebar = () => {
@@ -54,6 +55,7 @@ const EmployeeSidebar = () => {
         { label: "Welfare Requests", href: "/employee/welfare-request", icon: Heart },
         { label: "Training Requests", href: "/employee/training-request", icon: GraduationCap },
         { label: "Leave Requests", href: "/employee/leave-requests", icon: Calendar },
+        { label: "My Attendance", href: "/employee/attendance", icon: Clock },
         { label: "Calendar", href: "/employee/calendar", icon: Calendar },
     ];
 
