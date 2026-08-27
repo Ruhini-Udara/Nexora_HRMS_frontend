@@ -63,7 +63,7 @@ export default function ManualAttendanceApprovalsPage() {
                 }
             });
             
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             let mapped: EmployeeAttendance[] = res.data.map((item: any) => ({
                 id: item.id,
                 employeeId: item.employeeId,
@@ -348,7 +348,7 @@ export default function ManualAttendanceApprovalsPage() {
                                                 <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-2">
                                                     <CheckCircle className="w-8 h-8 text-slate-300" />
                                                 </div>
-                                                <span className="text-slate-500 font-bold text-lg">You're all caught up!</span>
+                                                <span className="text-slate-500 font-bold text-lg">You&apos;re all caught up!</span>
                                                 <span className="text-slate-400 text-sm">No pending attendance requests right now.</span>
                                             </div>
                                         </td>
@@ -363,7 +363,9 @@ export default function ManualAttendanceApprovalsPage() {
                                                         checked={emp.id ? selectedIds.includes(emp.id) : false}
                                                         onChange={(e) => {
                                                             e.stopPropagation();
-                                                            emp.id && toggleSelect(emp.id);
+                                                            if (emp.id) {
+                                                                toggleSelect(emp.id);
+                                                            }
                                                         }}
                                                         disabled={emp.approvalStatus !== 'PENDING' && emp.status !== 'Pending Approval'}
                                                         className="w-4 h-4 text-[#9e3f00] rounded-sm border-gray-300 focus:ring-[#9e3f00] cursor-pointer transition-transform duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"

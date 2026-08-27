@@ -30,7 +30,7 @@ const normalizeStatus = (status: string): RequestStatus => {
     return 'NEW';
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mapDtoToFrontend = (dto: any): WelfareRequest => {
     return {
         id: `WLF-${dto.id}`,

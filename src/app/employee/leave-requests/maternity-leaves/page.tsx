@@ -104,6 +104,7 @@ export default function MaternityLeaveRequestPage() {
         }
     }, [employeeData, setValue, status, user]);
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const watchStartDate = watch("startDate");
     const watchLevel = watch("level");
 

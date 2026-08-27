@@ -38,10 +38,7 @@ const resignationSchema = z.object({
 
 type ResignationFormData = z.infer<typeof resignationSchema>;
 
-<<<<<<< HEAD
 // ── Mock Leave Balance Data ─────────────────────────────────────────
-=======
->>>>>>> origin/main
 const defaultLeaveBalances = [
     { type: 'Annual Leave', total: 14, used: 0, remaining: 14, color: '#8B3A00', bg: '#FEF3EB' },
     { type: 'Sick Leave', total: 7, used: 0, remaining: 7, color: '#0D9488', bg: '#F0FDFA' },

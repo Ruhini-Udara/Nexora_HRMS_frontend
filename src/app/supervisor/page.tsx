@@ -173,7 +173,7 @@ export default function SupervisorDashboard() {
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Supervisor Dashboard</h1>
                     <p className="text-gray-500 dark:text-slate-400 mt-1">
-                        Manage your team's attendance and leave requests efficiently.
+                        Manage your team&apos;s attendance and leave requests efficiently.
                     </p>
                 </div>
 

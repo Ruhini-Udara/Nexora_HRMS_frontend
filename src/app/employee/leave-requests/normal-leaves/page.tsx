@@ -106,6 +106,7 @@ export default function NormalLeaveRequestPage() {
         resolver: zodResolver(normalLeaveSchema),
     });
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const selectedStartDate = watch("startDate");
     const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 

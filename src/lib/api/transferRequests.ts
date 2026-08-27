@@ -29,7 +29,7 @@ export interface TransferRequest {
 }
 
 // Internal mapping function to map DTO from backend to frontend interface
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mapDtoToFrontend = (dto: any): TransferRequest => {
     const docs: TransferDocument[] = [];
     if (dto.justificationDocumentPath) {
