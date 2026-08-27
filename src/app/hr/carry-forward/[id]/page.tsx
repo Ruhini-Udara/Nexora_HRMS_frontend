@@ -175,7 +175,7 @@ export default function CarryForwardBatchDetails() {
 
       {/* Location Groups */}
       <div className="space-y-8">
-        {batch.locations.map((loc, idx) => (
+        {batch.locations.map((loc: any, idx: number) => (
           <div key={idx} className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="bg-slate-50 dark:bg-slate-800/50 p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <h2 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
@@ -198,7 +198,7 @@ export default function CarryForwardBatchDetails() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {loc.entries.map((entry, eIdx) => (
+                  {loc.entries.map((entry: any, eIdx: number) => (
                     <tr key={eIdx} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
                       <td className="p-4 font-mono text-sm text-slate-600 dark:text-slate-400">{entry.empId}</td>
                       <td className="p-4 font-medium text-slate-900 dark:text-white text-sm">{entry.name}</td>
