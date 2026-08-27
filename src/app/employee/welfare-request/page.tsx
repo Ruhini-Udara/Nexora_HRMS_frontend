@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import api from '@/lib/axiosInstance';
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { WelfareRequest, getAllWelfareRequests, getWelfareRequestsByEmployee, createWelfareRequest, updateWelfareRequest, RequestStatus } from "@/lib/api/welfareRequests";
 import { useAuthStore } from "@/store/useAuthStore";
+import { uploadHrmsDocument } from '@/lib/supabaseClient';
 
 interface DocumentSlot {
     key: 'supporting_document';
@@ -33,6 +35,10 @@ const StatusBadge = ({ status }: { status: RequestStatus }) => {
         'NEW': 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300',
         'SUBMITTED': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400',
         'APPROVED': 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+        'VERIFIED_BY_HR': 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+        'PENDING_ADMIN': 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+        'PENDING_BOARD_APPROVAL': 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400',
+        'SUBMITTED_TO_DIRECTOR': 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
         'REJECTED': 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
     };
     return (
@@ -206,13 +212,38 @@ export default function WelfareRequestPage() {
     const [pendingAction, setPendingAction] = useState<'draft' | 'submit' | null>(null);
     const { user } = useAuthStore();
 
-    const employeeProfile = {
-        epfNumber: user?.epfNumber || "N/A",
-        employeeName: user?.name || "N/A",
-        designation: user?.designation || "N/A",
-        dateJoined: "N/A", // Not in auth store
-        branch: user?.department || "N/A"
-    };
+    const [employeeProfile, setEmployeeProfile] = useState({
+        epfNumber: user?.epfNumber || "—",
+        employeeName: user?.name || "—",
+        designation: user?.designation || "—",
+        dateJoined: "—",
+        branch: user?.department || "—"
+    });
+
+    useEffect(() => {
+        const fetchEmployeeProfile = async () => {
+            if (!user?.id && !user?.email) return;
+            try {
+                const queryParam = user?.id ? `employeeId=${user.id}` : `email=${encodeURIComponent(user?.email || '')}`;
+                const res = await fetch(`/api/employee-profile?${queryParam}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        setEmployeeProfile({
+                            epfNumber: data.epfNumber || '—',
+                            employeeName: data.employeeName || user?.name || '—',
+                            designation: data.designation || user?.designation || '—',
+                            dateJoined: data.dateJoined || '—',
+                            branch: data.branch || user?.department || '—'
+                        });
+                    }
+                }
+            } catch (err) {
+                // Silently fallback to current state
+            }
+        };
+        fetchEmployeeProfile();
+    }, [user?.id, user?.email, user?.name, user?.designation, user?.department, user?.epfNumber]);
 
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
         { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null },
@@ -305,9 +336,18 @@ export default function WelfareRequestPage() {
         .filter((s) => s.mandatory)
         .some((s) => s.file === null && s.existingName === undefined);
 
-    const buildPayload = (data: WelfareFormData, status: RequestStatus): Partial<WelfareRequest> => {
+    const buildPayload = async (data: WelfareFormData, status: RequestStatus): Promise<Partial<WelfareRequest>> => {
         const supportingDoc = docSlots.find(s => s.key === 'supporting_document');
-        const docName = supportingDoc?.file?.name || supportingDoc?.existingName;
+        let docName = supportingDoc?.existingName;
+
+        if (supportingDoc?.file) {
+            const path = await uploadHrmsDocument(supportingDoc.file, 'welfare');
+            if (path) {
+                docName = path;
+            } else {
+                throw new Error('Failed to upload document');
+            }
+        }
 
         return {
             status,
@@ -315,6 +355,10 @@ export default function WelfareRequestPage() {
             employeeType: data.employeeType,
             amount: parseFloat(data.amount) || 0,
             employeeRemarks: data.specialRemark || '',
+            epfNumber: employeeProfile.epfNumber !== '—' ? employeeProfile.epfNumber : undefined,
+            designation: employeeProfile.designation !== '—' ? employeeProfile.designation : undefined,
+            branch: employeeProfile.branch !== '—' ? employeeProfile.branch : undefined,
+            employeeName: employeeProfile.employeeName !== '—' ? employeeProfile.employeeName : undefined,
             documents: docName ? [{ key: 'support', label: 'Supporting Document', filename: docName }] : []
         };
     };
@@ -330,14 +374,21 @@ export default function WelfareRequestPage() {
     // Called when form validation passes (for both draft save and submit)
     const onFormValid = async (data: WelfareFormData) => {
         if (pendingAction === 'draft') {
-            const payload = buildPayload(data, 'NEW');
+            const payload = await buildPayload(data, 'NEW');
             try {
                 if (editingDraft) {
                     const updated = await updateWelfareRequest(editingDraft.id, payload);
                     setRequests(prev => prev.map(r => r.id === editingDraft.id ? updated : r));
                     showSuccess(`Draft ${updated.id} updated successfully`);
                 } else {
-                    const userDetails = user ? { id: user.id, name: user.name, email: user.email } : undefined;
+                    const userDetails = user ? {
+                        id: user.id,
+                        name: employeeProfile.employeeName !== '—' ? employeeProfile.employeeName : user.name,
+                        email: user.email,
+                        epfNumber: employeeProfile.epfNumber !== '—' ? employeeProfile.epfNumber : user.epfNumber,
+                        designation: employeeProfile.designation !== '—' ? employeeProfile.designation : user.designation,
+                        branch: employeeProfile.branch !== '—' ? employeeProfile.branch : user.department,
+                    } : undefined;
                     const savedReq = await createWelfareRequest(payload, userDetails);
                     setRequests(prev => [...prev, savedReq]);
                     showSuccess(`Draft ${savedReq.id} saved successfully`);
@@ -358,14 +409,21 @@ export default function WelfareRequestPage() {
 
     const handleConfirmSubmit = async () => {
         const values = getValues();
-        const payload = buildPayload(values, 'SUBMITTED');
         try {
+            const payload = await buildPayload(values, 'SUBMITTED');
             if (editingDraft) {
                 const updated = await updateWelfareRequest(editingDraft.id, payload);
                 setRequests(prev => prev.map(r => r.id === editingDraft.id ? updated : r));
                 showSuccess(`Request ${updated.id} submitted for certification`);
             } else {
-                const userDetails = user ? { id: user.id, name: user.name, email: user.email } : undefined;
+                const userDetails = user ? {
+                    id: user.id,
+                    name: employeeProfile.employeeName !== '—' ? employeeProfile.employeeName : user.name,
+                    email: user.email,
+                    epfNumber: employeeProfile.epfNumber !== '—' ? employeeProfile.epfNumber : user.epfNumber,
+                    designation: employeeProfile.designation !== '—' ? employeeProfile.designation : user.designation,
+                    branch: employeeProfile.branch !== '—' ? employeeProfile.branch : user.department,
+                } : undefined;
                 const savedReq = await createWelfareRequest(payload, userDetails);
                 setRequests(prev => [...prev, savedReq]);
                 showSuccess(`Request ${savedReq.id} submitted for certification`);
@@ -390,20 +448,26 @@ export default function WelfareRequestPage() {
     const draftCount = requests.filter(r => r.status === 'NEW').length;
 
     return (
-        <div className="max-w-[1400px] w-full mx-auto grid grid-cols-12 gap-8">
-            <div className="col-span-12 lg:col-span-9 space-y-8">
-                <h1 className="text-2xl font-bold text-primary dark:text-white">Welfare Request Management</h1>
+        <div className="max-w-[1400px] w-full mx-auto space-y-8">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h1 className="text-2xl font-bold text-primary dark:text-white">Welfare Request Management</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Submit and track your formal welfare requests</p>
+                </div>
+            </div>
 
-                {/* Success Toast */}
-                {successMessage && (
-                    <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
-                        <span className="material-symbols-outlined text-green-600">check_circle</span>
-                        <p className="text-sm font-semibold text-green-700">{successMessage}</p>
-                    </div>
-                )}
+            {/* Success Toast */}
+            {successMessage && (
+                <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                    <span className="material-symbols-outlined text-green-600">check_circle</span>
+                    <p className="text-sm font-semibold text-green-700">{successMessage}</p>
+                </div>
+            )}
 
-                {/* Create/Edit Request Form */}
-                <div key={formKey} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mb-8 transition-colors">
+            <div className="flex flex-col lg:flex-row gap-8">
+                <div className="flex-1 space-y-8">
+                    {/* Create/Edit Request Form */}
+                    <div key={formKey} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mb-8 transition-colors">
                     <form onSubmit={handleSubmit(onFormValid)}>
                         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -581,92 +645,10 @@ export default function WelfareRequestPage() {
                         </div>
                     </form>
                 </div>
-
-                {/* Status Table */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <h2 className="font-bold text-slate-800 dark:text-white uppercase tracking-tight text-sm">Welfare Request Status</h2>
-                            {draftCount > 0 && (
-                                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-full flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-xs">edit_note</span>
-                                    {draftCount} draft{draftCount > 1 ? 's' : ''}
-                                </span>
-                            )}
-                        </div>
-                        <div className="relative w-64">
-                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100 outline-none focus:ring-1 focus:ring-primary"
-                                placeholder="Search request ID or type..."
-                            />
-                        </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                                <tr>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Request ID</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Welfare Type</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Request Date</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase text-center">Status</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {filteredRequests.length > 0 ? (
-                                    filteredRequests.map((req) => (
-                                        <tr key={req.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors ${req.status === 'NEW' ? 'bg-amber-50/30 dark:bg-amber-900/10' : ''}`}>
-                                            <td className="px-6 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">{req.id}</td>
-                                            <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-400">{req.welfareType}</td>
-                                            <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-400">{req.dateOfRequest || '—'}</td>
-                                            <td className="px-6 py-4 text-center">
-                                                <StatusBadge status={req.status as RequestStatus} />
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    {req.status === 'NEW' && (
-                                                        <button
-                                                            onClick={() => handleEditDraft(req)}
-                                                            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${editingDraft?.id === req.id
-                                                                    ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-                                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white dark:hover:bg-primary'
-                                                                }`}
-                                                        >
-                                                            <span className="material-symbols-outlined text-[16px]">
-                                                                {editingDraft?.id === req.id ? 'edit_document' : 'edit'}
-                                                            </span>
-                                                            {editingDraft?.id === req.id ? 'Editing...' : 'Edit & Submit'}
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => setViewRequest(req)}
-                                                        className="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                                                    >
-                                                        <span className="material-symbols-outlined text-[20px]">visibility</span>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-500">
-                                            No requests found.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
 
             {/* Right Sidebar / Policies */}
-            <div className="col-span-12 lg:col-span-3 space-y-6">
+            <div className="w-full lg:w-80 shrink-0 space-y-6">
                 <div className="bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900/30 rounded-full px-4 py-2 flex items-center gap-2 transition-colors">
                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
                     <span className="text-[11px] font-bold text-green-700 dark:text-green-400">Eligibility: Eligible for Welfare Benefits</span>
@@ -712,6 +694,89 @@ export default function WelfareRequestPage() {
                             <span className="material-symbols-outlined text-sm">expand_more</span>
                         </button>
                     </div>
+                </div>
+            </div>
+            </div>
+
+            {/* Status Table */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <h2 className="font-bold text-slate-800 dark:text-white uppercase tracking-tight text-sm">Welfare Request Status</h2>
+                        {draftCount > 0 && (
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-full flex items-center gap-1">
+                                <span className="material-symbols-outlined text-xs">edit_note</span>
+                                {draftCount} draft{draftCount > 1 ? 's' : ''}
+                            </span>
+                        )}
+                    </div>
+                    <div className="relative w-64">
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100 outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Search request ID or type..."
+                        />
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                            <tr>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Request ID</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Welfare Type</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Request Date</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase text-center">Status</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {filteredRequests.length > 0 ? (
+                                filteredRequests.map((req) => (
+                                    <tr key={req.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors ${req.status === 'NEW' ? 'bg-amber-50/30 dark:bg-amber-900/10' : ''}`}>
+                                        <td className="px-6 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">{req.id}</td>
+                                        <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-400">{req.welfareType}</td>
+                                        <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-400">{req.dateOfRequest || '—'}</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <StatusBadge status={req.status as RequestStatus} />
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {req.status === 'NEW' && (
+                                                    <button
+                                                        onClick={() => handleEditDraft(req)}
+                                                        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${editingDraft?.id === req.id
+                                                                ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white dark:hover:bg-primary'
+                                                            }`}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">
+                                                            {editingDraft?.id === req.id ? 'edit_document' : 'edit'}
+                                                        </span>
+                                                        {editingDraft?.id === req.id ? 'Editing...' : 'Edit & Submit'}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => setViewRequest(req)}
+                                                    className="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                                                >
+                                                    <span className="material-symbols-outlined text-[20px]">visibility</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-500">
+                                        No requests found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -779,12 +844,7 @@ export default function WelfareRequestPage() {
                                                 <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{doc.label}</p>
                                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{doc.filename}</p>
                                             </div>
-                                            <button
-                                                onClick={() => console.log('Downloading', doc.filename)}
-                                                className="text-slate-300 dark:text-slate-500 hover:text-primary transition-colors cursor-pointer"
-                                            >
-                                                <span className="material-symbols-outlined text-lg">download</span>
-                                            </button>
+
                                         </div>
                                     ))}
                                 </div>

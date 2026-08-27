@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import api from '@/lib/axiosInstance';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DeathRequest } from '@/lib/api/deathRequests';
+import { DeathRequest } from "@/lib/api/deathRequests";
+import { uploadHrmsDocument, getHrmsSignedUrl } from "@/lib/supabaseClient";
 
 interface DocumentSlot {
     key: 'deathCertificate' | 'nomineeId' | 'requestLetter';
@@ -15,25 +17,37 @@ interface DocumentSlot {
     existingName?: string;
 }
 
+const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+const phoneRegex = /^[0-9]{10}$/;
+
 const deathSchema = z.object({
     employeeId: z.string().min(1, 'Employee ID is required'),
     employeeName: z.string().min(1, 'Employee name is required'),
     epfNumber: z.string().min(1, 'EPF number is required'),
-    dateOfDeath: z.string().min(1, 'Date of death is required'),
+    dateOfDeath: z.string().min(1, 'Date of death is required').refine((val) => {
+        const today = new Date().toISOString().split('T')[0];
+        return val <= today;
+    }, {
+        message: 'Date of death cannot be in the future',
+    }),
     natureOfDeath: z.string().min(1, 'Nature of death is required'),
     requesterName: z.string().min(1, 'Requester name is required'),
+    requesterNic: z.string().min(1, 'Requester NIC is required').regex(nicRegex, "NIC must be either 12 digits or 9 digits followed by 'V'"),
     requesterBranch: z.string().min(1, 'Branch/Department is required'),
     requesterDesignation: z.string().min(1, 'Requester designation is required'),
     requesterEmpId: z.string().min(1, 'Requester Emp ID is required'),
-    address: z.string().min(1, 'Address is required'),
-    contactNumber: z.string().min(1, 'Contact number is required'),
+    contactNumber: z.string().min(1, 'Contact number is required').regex(phoneRegex, 'Contact number must contain exactly 10 digits'),
     specialRemark: z.string().optional(),
     
     // Nominee fields
     nomineeName: z.string().optional(),
     nomineeRelationship: z.string().optional(),
-    nomineeNic: z.string().optional(),
-    nomineePhone: z.string().optional(),
+    nomineeNic: z.string().optional().refine((val) => !val || nicRegex.test(val), {
+        message: "NIC must be either 12 digits or 9 digits followed by 'V'",
+    }),
+    nomineePhone: z.string().optional().refine((val) => !val || phoneRegex.test(val), {
+        message: 'Contact number must contain exactly 10 digits',
+    }),
     nomineeAddress: z.string().optional(),
     nomineeBank: z.string().optional(),
     nomineeBranch: z.string().optional(),
@@ -65,6 +79,26 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
         if (file) onUpload(slot.key, file);
     };
 
+    const handleDownload = async () => {
+        if (slot.existingName) {
+            try {
+                const url = await getHrmsSignedUrl(slot.existingName);
+                if (url) {
+                    window.open(url, '_blank');
+                } else {
+                    alert('Failed to fetch document.');
+                }
+            } catch (err) {
+                console.error("Error fetching doc:", err);
+                alert("Could not load the file.");
+            }
+        } else if (slot.file) {
+            // For just uploaded local file preview
+            const objectUrl = URL.createObjectURL(slot.file);
+            window.open(objectUrl, '_blank');
+        }
+    };
+
     return (
         <div className={`p-4 rounded-xl border transition-all ${hasFile ? 'border-emerald-200 bg-emerald-50/30 dark:border-emerald-800 dark:bg-emerald-900/10' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50'}`}>
             <div className="flex items-center justify-between gap-3">
@@ -80,7 +114,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                     </div>
                 </div>
                 {hasFile && (
-                    <button type="button" onClick={() => {/* For now just logs, in real app would trigger download */ console.log('Downloading', fileName)}} className="text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors shrink-0 cursor-pointer mr-2">
+                    <button type="button" onClick={handleDownload} className="text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors shrink-0 cursor-pointer mr-2">
                         <span className="material-symbols-outlined text-[20px]">download</span>
                     </button>
                 )}
@@ -96,7 +130,7 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
                     )
                 )}
             </div>
-            <input type="file" ref={inputRef} onChange={handleChange} className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
+            <input type="file" ref={inputRef} onChange={handleChange} className="hidden text-slate-900 font-bold dark:text-white" accept=".pdf,.jpg,.jpeg,.png" />
         </div>
     );
 };
@@ -128,7 +162,111 @@ export function DeathRequestForm({
         { key: 'requestLetter', label: 'Request Letter', icon: 'mail', mandatory: true, file: null },
     ]);
 
-    const { register, handleSubmit, formState: { errors }, getValues, reset, watch } = useForm<DeathFormData>({
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isRequesterSearchOpen, setIsRequesterSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const searchRef = useRef<HTMLDivElement>(null);
+    const searchRequesterRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const fetchEmployees = async () => {
+            try {
+                const res = await api.get('/api/employees');
+                if (Array.isArray(res.data)) {
+                    setEmployees(res.data);
+                } else if (res.data?.success && Array.isArray(res.data.data)) {
+                    setEmployees(res.data.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch employees:", error);
+            }
+        };
+        fetchEmployees();
+    }, []);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setIsSearchOpen(false);
+            }
+
+            if (searchRequesterRef.current && !searchRequesterRef.current.contains(event.target as Node)) {
+                setIsRequesterSearchOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const filteredEmployees = employees.filter(emp => {
+        if (!searchQuery.trim()) return true;
+        const query = searchQuery.toLowerCase();
+        return (
+            (emp.fullName && emp.fullName.toLowerCase().includes(query)) ||
+            (emp.employeeCode && emp.employeeCode.toLowerCase().includes(query)) ||
+            (emp.epfNumber && emp.epfNumber.toLowerCase().includes(query)) ||
+            (emp.workEmail && emp.workEmail.toLowerCase().includes(query)) ||
+            (emp.email && emp.email.toLowerCase().includes(query)) ||
+            (emp.department && emp.department.toLowerCase().includes(query))
+        );
+    });
+
+    const handleSelectEmployee = (emp: any) => {
+        setValue('employeeName', emp.fullName || '');
+        setValue('employeeId', emp.employeeCode || '');
+        setValue('epfNumber', emp.epfNumber || emp.epfNo || '');
+        setIsSearchOpen(false);
+        setSearchQuery("");
+    };
+
+    const handleSelectRequester = (emp: any) => {
+        const currentDeadEmpId = getValues('employeeId');
+        if (currentDeadEmpId && emp.employeeCode === currentDeadEmpId) {
+            alert("Error: The deceased employee cannot be their own requester.");
+            return;
+        }
+
+        // Compare designations if both are available
+        const currentDeadEmp = employees.find(e => e.employeeCode === currentDeadEmpId);
+        if (currentDeadEmp) {
+            const designationHierarchy: Record<string, number> = {
+                'Director': 100,
+                'System Administrator': 90,
+                'Operations Manager': 80,
+                'HR Manager': 80,
+                'Product Manager': 80,
+                'Senior Engineer': 70,
+                'Engineer': 60,
+                'Software Engineer': 60,
+                'HR Executive': 50,
+                'Sales Executive': 50,
+                'Driver': 30,
+                'Support Staff': 20
+            };
+
+            const reqRank = designationHierarchy[emp.designation?.designationName] || 10;
+            const deadRank = designationHierarchy[currentDeadEmp.designation?.designationName] || 10;
+
+            if (reqRank <= deadRank) {
+                alert("Error: The requester must be in a higher position (designation) than the deceased employee.");
+                return;
+            }
+        }
+
+        setValue('requesterName', emp.fullName || '');
+        setValue('requesterEmpId', emp.employeeCode || '');
+        if (emp.nicNumber || emp.nic) setValue('requesterNic', emp.nicNumber || emp.nic);
+        if (emp.department) setValue('requesterBranch', emp.department);
+        if (emp.designation?.designationName) setValue('requesterDesignation', emp.designation.designationName);
+        if (emp.phoneNo || emp.phoneNumber || emp.mobile) setValue('contactNumber', (emp.phoneNo || emp.phoneNumber || emp.mobile).replace(/[^0-9]/g, '').slice(0, 10));
+        setIsRequesterSearchOpen(false);
+        setSearchQuery("");
+    };
+
+    const { register, handleSubmit, formState: { errors }, getValues, reset, watch, setValue } = useForm<DeathFormData>({
         resolver: zodResolver(deathSchema),
         defaultValues: {
             employeeId: '',
@@ -137,12 +275,20 @@ export function DeathRequestForm({
             dateOfDeath: '',
             natureOfDeath: 'Natural',
             requesterName: '',
+            requesterNic: '',
             requesterBranch: '',
             requesterDesignation: '',
             requesterEmpId: '',
-            address: '',
             contactNumber: '',
             specialRemark: '',
+            nomineeName: '',
+            nomineeRelationship: '',
+            nomineeNic: '',
+            nomineePhone: '',
+            nomineeAddress: '',
+            nomineeBank: '',
+            nomineeBranch: '',
+            nomineeAccount: '',
         }
     });
 
@@ -179,19 +325,29 @@ export function DeathRequestForm({
         setShowAckPopup(true);
     };
 
-    const buildDocumentsPayload = () => {
-        return docSlots.reduce((acc, slot) => {
-            acc[slot.key] = slot.file?.name || slot.existingName || '';
-            return acc;
-        }, {} as Record<string, string>);
+    const buildDocumentsPayload = async () => {
+        const payload: Record<string, string> = {};
+        for (const slot of docSlots) {
+            if (slot.file) {
+                // Ensure uploadHrmsDocument is imported at the top of this file
+                const path = await uploadHrmsDocument(slot.file, 'death');
+                payload[slot.key] = path || slot.file.name;
+            } else if (slot.existingName) {
+                payload[slot.key] = slot.existingName;
+            } else {
+                payload[slot.key] = '';
+            }
+        }
+        return payload;
     };
 
-    const confirmSubmit = () => {
+    const confirmSubmit = async () => {
         const formData = getValues();
-        const documents = buildDocumentsPayload();
+        const documents = await buildDocumentsPayload();
         onSave({ 
             ...formData, 
             specialRemark: formData.specialRemark || '',
+            address: '',
             id: initialData?.id || `DTH-${Date.now()}`, 
             status: 'SUBMITTED', 
             documents: documents as DeathDocuments
@@ -199,12 +355,13 @@ export function DeathRequestForm({
         setShowAckPopup(false);
     };
 
-    const handleSaveAsDraft = () => {
+    const handleSaveAsDraft = async () => {
         const formData = getValues();
-        const documents = buildDocumentsPayload();
+        const documents = await buildDocumentsPayload();
         onSave({ 
             ...formData, 
             specialRemark: formData.specialRemark || '',
+            address: '',
             id: initialData?.id || `DTH-${Date.now()}`, 
             status: 'NEW', 
             documents: documents as DeathDocuments
@@ -242,14 +399,77 @@ export function DeathRequestForm({
                         <h4 className="text-[11px] font-bold text-[#8B3A00] uppercase tracking-widest border-b border-[#8B3A00]/10 pb-2">Employee Information (Deceased)</h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-1.5">
-                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Employee ID *</label>
-                                <input {...register('employeeId')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.employeeId ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} placeholder="e.g. EMP-001" />
-                                {errors.employeeId && <p className="text-[10px] text-red-500 mt-1">{errors.employeeId.message}</p>}
+                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Employee Name *</label>
+                                <div className="relative" ref={searchRef}>
+                                    <input 
+                                        type="text"
+                                        {...register('employeeName')}
+                                        onClick={() => !isReadOnly && setIsSearchOpen(true)}
+                                        onChange={(e) => {
+                                            register('employeeName').onChange(e);
+                                            setSearchQuery(e.target.value);
+                                            setIsSearchOpen(true);
+                                        }}
+                                        readOnly={isReadOnly}
+                                        placeholder="Select Employee..."
+                                        className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.employeeName ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all cursor-text`}
+                                        autoComplete="off"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none">arrow_drop_down</span>
+                                    
+                                    {isSearchOpen && !isReadOnly && (
+                                        <div className="absolute left-0 top-full mt-2 w-full min-w-[300px] z-[60] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-2 overflow-hidden flex flex-col">
+                                            <div className="px-2 pb-2 mb-2 border-b border-slate-100 dark:border-slate-700/50 relative">
+                                                <input
+                                                    type="text"
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    placeholder="Search by name, EPF, or email..."
+                                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-slate-800 dark:text-slate-200"
+                                                    autoFocus
+                                                />
+                                                {searchQuery && (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setSearchQuery("")}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">close</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="max-h-60 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                {filteredEmployees.length > 0 ? (
+                                                    filteredEmployees.map((emp: any, idx: number) => (
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => handleSelectEmployee(emp)}
+                                                            className="w-full text-left p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg flex items-center gap-3 transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-600"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-full bg-[#8B3A00]/10 text-[#8B3A00] border border-[#8B3A00]/20 flex items-center justify-center font-bold text-xs shrink-0">
+                                                                {emp.fullName ? emp.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'EE'}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">{emp.fullName}</p>
+                                                                <p className="text-[10px] text-slate-500 truncate leading-none mt-1">{emp.department || 'No Dept'} • EPF: {emp.epfNumber || 'No EPF'}{emp.employeeCode ? ` (${emp.employeeCode})` : ''}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="text-center py-4 text-xs text-slate-500 font-medium">
+                                                        No matching employees found
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                {errors.employeeName && <p className="text-[10px] text-red-500 mt-1">{errors.employeeName.message}</p>}
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Employee Name *</label>
-                                <input {...register('employeeName')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.employeeName ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
-                                {errors.employeeName && <p className="text-[10px] text-red-500 mt-1">{errors.employeeName.message}</p>}
+                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Employee ID *</label>
+                                <input {...register('employeeId')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.employeeId ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
+                                {errors.employeeId && <p className="text-[10px] text-red-500 mt-1">{errors.employeeId.message}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">EPF Number *</label>
@@ -265,12 +485,18 @@ export function DeathRequestForm({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Date of Death *</label>
-                                <input type="date" {...register('dateOfDeath')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.dateOfDeath ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all cursor-pointer`} />
+                                <input 
+                                    type="date" 
+                                    {...register('dateOfDeath')} 
+                                    max={new Date().toISOString().split('T')[0]}
+                                    readOnly={isReadOnly} 
+                                    className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.dateOfDeath ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all cursor-pointer`} 
+                                />
                                 {errors.dateOfDeath && <p className="text-[10px] text-red-500 mt-1">{errors.dateOfDeath.message}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Nature of Death *</label>
-                                <select {...register('natureOfDeath')} disabled={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all cursor-pointer">
+                                <select {...register('natureOfDeath')} disabled={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all cursor-pointer text-slate-900 font-bold dark:text-white">
                                     <option value="Natural">Natural</option>
                                     <option value="Accident">Accident</option>
                                     <option value="Sickness">Sickness</option>
@@ -286,13 +512,81 @@ export function DeathRequestForm({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Requester Name *</label>
-                                <input {...register('requesterName')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.requesterName ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
+                                <div className="relative" ref={searchRequesterRef}>
+                                    <input 
+                                        type="text"
+                                        {...register('requesterName')}
+                                        onClick={() => !isReadOnly && setIsRequesterSearchOpen(true)}
+                                        onChange={(e) => {
+                                            register('requesterName').onChange(e);
+                                            setSearchQuery(e.target.value);
+                                            setIsRequesterSearchOpen(true);
+                                        }}
+                                        readOnly={isReadOnly}
+                                        placeholder="Select Requester..."
+                                        className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.requesterName ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all cursor-text`}
+                                        autoComplete="off"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none">arrow_drop_down</span>
+                                    
+                                    {isRequesterSearchOpen && !isReadOnly && (
+                                        <div className="absolute left-0 top-full mt-2 w-full min-w-[300px] z-[60] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-2 overflow-hidden flex flex-col">
+                                            <div className="px-2 pb-2 mb-2 border-b border-slate-100 dark:border-slate-700/50 relative">
+                                                <input
+                                                    type="text"
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    placeholder="Search by name, EPF, or email..."
+                                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pl-3 pr-8 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-slate-800 dark:text-slate-200"
+                                                    autoFocus
+                                                />
+                                                {searchQuery && (
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setSearchQuery("")}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[16px]">close</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="max-h-60 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                                                {filteredEmployees.length > 0 ? (
+                                                    filteredEmployees.map((emp: any, idx: number) => (
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => handleSelectRequester(emp)}
+                                                            className="w-full text-left p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg flex items-center gap-3 transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-600"
+                                                        >
+                                                            <div className="w-8 h-8 rounded-full bg-[#8B3A00]/10 text-[#8B3A00] border border-[#8B3A00]/20 flex items-center justify-center font-bold text-xs shrink-0">
+                                                                {emp.fullName ? emp.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'EE'}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">{emp.fullName}</p>
+                                                                <p className="text-[10px] text-slate-500 truncate leading-none mt-1">{emp.department || 'No Dept'} • EPF: {emp.epfNumber || 'No EPF'}{emp.employeeCode ? ` (${emp.employeeCode})` : ''}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="text-center py-4 text-xs text-slate-500 font-medium">
+                                                        No matching employees found
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                                 {errors.requesterName && <p className="text-[10px] text-red-500 mt-1">{errors.requesterName.message}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Requester Emp ID *</label>
                                 <input {...register('requesterEmpId')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.requesterEmpId ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
                                 {errors.requesterEmpId && <p className="text-[10px] text-red-500 mt-1">{errors.requesterEmpId.message}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Requester NIC *</label>
+                                <input {...register('requesterNic')} readOnly={isReadOnly} placeholder="e.g. 199012345678 or 901234567V" className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.requesterNic ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
+                                {errors.requesterNic && <p className="text-[10px] text-red-500 mt-1">{errors.requesterNic.message}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Requester Designation *</label>
@@ -306,13 +600,8 @@ export function DeathRequestForm({
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Contact Number *</label>
-                                <input {...register('contactNumber')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.contactNumber ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
+                                <input {...register('contactNumber')} readOnly={isReadOnly} placeholder="e.g. 0771234567" className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.contactNumber ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
                                 {errors.contactNumber && <p className="text-[10px] text-red-500 mt-1">{errors.contactNumber.message}</p>}
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Official Address *</label>
-                                <input {...register('address')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.address ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
-                                {errors.address && <p className="text-[10px] text-red-500 mt-1">{errors.address.message}</p>}
                             </div>
                         </div>
                     </div>
@@ -323,35 +612,37 @@ export function DeathRequestForm({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Nominee Name</label>
-                                <input {...register('nomineeName')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeName')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Relationship</label>
-                                <input {...register('nomineeRelationship')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" placeholder="e.g. Spouse, Son, Daughter" />
+                                <input {...register('nomineeRelationship')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" placeholder="e.g. Spouse, Son, Daughter" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">NIC Number</label>
-                                <input {...register('nomineeNic')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeNic')} readOnly={isReadOnly} placeholder="e.g. 199012345678 or 901234567V" className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.nomineeNic ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
+                                {errors.nomineeNic && <p className="text-[10px] text-red-500 mt-1">{errors.nomineeNic.message}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Contact Number</label>
-                                <input {...register('nomineePhone')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineePhone')} readOnly={isReadOnly} placeholder="e.g. 0771234567" className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.nomineePhone ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
+                                {errors.nomineePhone && <p className="text-[10px] text-red-500 mt-1">{errors.nomineePhone.message}</p>}
                             </div>
                             <div className="space-y-1.5 md:col-span-2">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Address</label>
-                                <input {...register('nomineeAddress')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeAddress')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Bank Name</label>
-                                <input {...register('nomineeBank')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeBank')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Branch Name</label>
-                                <input {...register('nomineeBranch')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeBranch')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Account Number</label>
-                                <input {...register('nomineeAccount')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all" />
+                                <input {...register('nomineeAccount')} readOnly={isReadOnly} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all text-slate-900 font-bold dark:text-white" />
                             </div>
                         </div>
                     </div>
@@ -382,7 +673,7 @@ export function DeathRequestForm({
 
                     <div className="space-y-2">
                         <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Special Remark</label>
-                        <textarea {...register('specialRemark')} readOnly={isReadOnly} rows={3} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all resize-none" placeholder="Enter any additional information..." />
+                        <textarea {...register('specialRemark')} readOnly={isReadOnly} rows={3} className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all resize-none text-slate-900 font-bold dark:text-white" placeholder="Enter any additional information..." />
                     </div>
 
                     {isReadOnly && initialData?.hrRemark && (

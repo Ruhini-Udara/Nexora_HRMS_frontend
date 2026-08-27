@@ -447,6 +447,7 @@ export default function OverseasLeaveApprovals() {
                                     {activeTab === "board" && <th className="py-4 px-4 w-12"><input type="checkbox" className="w-4 h-4 rounded" onChange={e => setSelectedIds(e.target.checked ? filteredBoard.map(r => r.id) : [])} checked={selectedIds.length === filteredBoard.length && filteredBoard.length > 0} /></th>}
                                     <th className="py-4 px-6">ID</th>
                                     <th className="py-4 px-6">Employee</th>
+                                    <th className="py-4 px-6">Requested Date</th>
                                     <th className="py-4 px-6">Date Range</th>
                                     <th className="py-4 px-6">Status</th>
                                     <th className="py-4 px-6 text-right">Actions</th>
@@ -461,6 +462,9 @@ export default function OverseasLeaveApprovals() {
                                             <div className="font-semibold text-slate-800 dark:text-slate-200">{req.employeeName}</div>
                                             <div className="text-xs text-slate-500 dark:text-slate-400">{req.employeeCode} • {req.department}</div>
                                         </td>
+                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-350 font-medium">
+                                            {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'N/A'}
+                                        </td>
                                         <td className="py-4 px-6 text-slate-600 dark:text-slate-350">
                                             {req.fromDate} → {req.endDate}<br />
                                             <span className="text-xs text-slate-400 dark:text-slate-500">({req.totalDays} days)</span>
@@ -474,7 +478,7 @@ export default function OverseasLeaveApprovals() {
                                     </tr>
                                 ))}
                                 {(activeRows).length === 0 && (
-                                    <tr><td colSpan={6} className="py-12 text-center text-slate-500 dark:text-slate-400">
+                                    <tr><td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400">
                                         <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-700 block mb-2">inbox</span>
                                         No requests found.
                                     </td></tr>

@@ -31,6 +31,7 @@ interface OverseasLeave {
     employeeName: string;
     employeeCode: string;
     department: string;
+    createdAt?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -211,6 +212,7 @@ const LeaveRequestsTable = () => {
                         <tr>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Type</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Requested Date</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Dates</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Days</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
@@ -243,6 +245,11 @@ const LeaveRequestsTable = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-sm text-gray-600 dark:text-slate-400 font-bold uppercase text-[10px]">{(request as { refType?: string }).refType === 'MATERNITY_LEAVE' ? 'Maternity Leave' : 'Overseas Leave'}</p>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <p className="text-sm text-gray-600 dark:text-slate-400 font-medium">
+                                            {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}
+                                        </p>
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-sm text-gray-600 dark:text-slate-400 font-medium">

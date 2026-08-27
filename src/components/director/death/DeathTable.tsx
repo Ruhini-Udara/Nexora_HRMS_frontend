@@ -29,18 +29,16 @@ export default function DeathTable() {
     const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
 
     const handleApprove = (id: number) => {
-        const app = applications.find(a => a.id === id);
         setApplications(prev => prev.map(a => a.id === id ? { ...a, status: 'Approved' } : a));
-        showToast(`Approval email sent to ${app?.employee} (${app?.email})`);
+        showToast(`successfully approved and email sent!`);
     };
 
     const openRejectModal = (id: number) => { setAppToReject(id); setRejectReason(''); setRejectModalOpen(true); };
 
     const handleRejectSubmit = () => {
         if (!rejectReason.trim() || appToReject === null) return;
-        const app = applications.find(a => a.id === appToReject);
         setApplications(prev => prev.map(a => a.id === appToReject ? { ...a, status: 'Rejected' } : a));
-        showToast(`Rejection email sent to ${app?.employee} (${app?.email})`);
+        showToast(`application rejected !`);
         setRejectModalOpen(false); setAppToReject(null);
     };
 
@@ -131,8 +129,11 @@ export default function DeathTable() {
             )}
 
             {toastMessage && (
-                <div className="fixed bottom-6 right-6 z-[70] bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg font-medium text-sm flex items-center gap-2">
-                    <Send className="w-4 h-4 text-green-400" />{toastMessage}
+                <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 z-50">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <Check className="w-5 h-5 text-green-400" />
+                    </div>
+                    <p className="font-medium">{toastMessage}</p>
                 </div>
             )}
         </div>

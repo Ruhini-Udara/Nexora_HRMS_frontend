@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart2, Calendar, Clock, Users, GraduationCap, CalendarDays, ClipboardCheck, LogOut, Moon, Sun } from "lucide-react";
+import { LayoutDashboard, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays, ClipboardCheck, LogOut, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
@@ -8,7 +8,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useState, useEffect } from "react";
 
 const menuItems = [
-  { label: "Dashboard", icon: <BarChart2 size={18} />, view: "dashboard" as const, href: "/admin" },
+  { label: "Dashboard", icon: <LayoutDashboard size={18} />, view: "dashboard" as const, href: "/admin" },
   { label: "Employee Master", icon: <Users size={18} />, view: "employeeMaster" as const, href: "/admin" },
   { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const, href: "/admin" },
   { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const, href: "/admin" },

@@ -37,6 +37,7 @@ export default function OverseasLeaveRequestPage() {
     const { user } = useAuthStore();
     const { register, handleSubmit, control, getValues, reset, setValue, formState: { errors } } = useForm<OverseasFormValues>({
         resolver: zodResolver(overseasSchema),
+        mode: "onChange",
         defaultValues: {
             dateOfRequest: new Date().toISOString().split("T")[0],
         }
@@ -102,6 +103,7 @@ export default function OverseasLeaveRequestPage() {
                 setValue("designation", employeeData.designation?.designationName || user?.designation || "");
                 setValue("branch", employeeData.branch || user?.branch || "");
                 setValue("epfNumber", employeeData.epfNumber || user?.epfNumber || "");
+                setValue("contactNumber", employeeData.contactNumber || employeeData.phoneNumber || "");
             }
         }
     }, [employeeData, setValue, status, user]);
@@ -214,8 +216,8 @@ export default function OverseasLeaveRequestPage() {
     });
 
     const onSubmit = (data: OverseasFormValues) => {
-        if (!files.passportCopy || !files.visaCopy || !files.confirmationLetter || !files.flightTickets) {
-            setFileError("Flight Tickets, Passport Copy, Visa Copy, and Confirmation Letter are mandatory for submission.");
+        if (!files.passportCopy || !files.visaCopy || !files.flightTickets) {
+            setFileError("Flight Tickets, Passport Copy, and Visa Copy are mandatory for submission.");
             return;
         }
         submitMutation.mutate(data);
@@ -383,6 +385,10 @@ export default function OverseasLeaveRequestPage() {
                                             </div>
                                         </div>
 
+                                        <h2 className="text-lg font-bold text-slate-800 dark:text-white mt-8 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+                                            Optional Documents
+                                        </h2>
+
                                         {/* Confirmation Letter */}
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                                             <div className="flex gap-4 items-center">
@@ -391,7 +397,7 @@ export default function OverseasLeaveRequestPage() {
                                                 </div>
                                                 <div>
                                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                        Overseas Org. Confirmation <span className="text-red-500">*</span>
+                                                        Overseas Org. Confirmation
                                                     </h4>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Letter from the overseas organization.</p>
                                                 </div>

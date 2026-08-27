@@ -10,8 +10,9 @@ describe("Leave Request Validations", () => {
             employeeType: "PERMANENT",
             designation: "Software Engineer",
             leaveReason: "Maternity",
-            startDate: "2026-05-01",
-            endDate: "2026-08-01",
+            level: "Level 1",
+            startDate: "2028-05-01",
+            endDate: "2028-08-01",
             childNumber: "1",
             contactNumber: "0771234567",
             email: "jane@example.com",
@@ -46,8 +47,8 @@ describe("Leave Request Validations", () => {
         it("should fail if End Date is before Start Date", () => {
             const result = maternitySchema.safeParse({ 
                 ...validMaternityData, 
-                startDate: "2024-05-10", 
-                endDate: "2024-05-05" 
+                startDate: "2028-05-10", 
+                endDate: "2028-05-05" 
             });
             expect(result.success).toBe(false);
         });
@@ -61,10 +62,11 @@ describe("Leave Request Validations", () => {
             employeeName: "John Doe",
             designation: "Manager",
             leaveReason: "Vacation",
-            startDate: "2026-06-01",
-            endDate: "2026-06-15",
+            level: "Manager",
+            startDate: "2028-06-01",
+            endDate: "2028-06-15",
             passportNumber: "N1234567",
-            passportExpDate: "2027-01-01",
+            passportExpDate: "2029-01-01",
             contactNumber: "0711234567",
             email: "john@example.com",
             acknowledgement: true
@@ -76,13 +78,13 @@ describe("Leave Request Validations", () => {
         });
 
         it("should fail if passport expiry is less than 6 months from travel end date", () => {
-            // End Date: 2026-06-15
-            // 6 months from then: 2026-12-15
-            // Exp Date: 2026-11-01 (Only 4.5 months)
+            // End Date: 2028-06-15
+            // 6 months from then: 2028-12-15
+            // Exp Date: 2028-11-01 (Only 4.5 months)
             const result = overseasSchema.safeParse({ 
                 ...validOverseasData, 
-                endDate: "2026-06-15",
-                passportExpDate: "2026-11-01"
+                endDate: "2028-06-15",
+                passportExpDate: "2028-11-01"
             });
             expect(result.success).toBe(false);
             if (!result.success) {
@@ -93,8 +95,8 @@ describe("Leave Request Validations", () => {
         it("should pass if passport expiry is exactly 6 months from travel end date", () => {
             const result = overseasSchema.safeParse({ 
                 ...validOverseasData, 
-                endDate: "2026-06-15",
-                passportExpDate: "2026-12-15"
+                endDate: "2028-06-15",
+                passportExpDate: "2028-12-15"
             });
             expect(result.success).toBe(true);
         });

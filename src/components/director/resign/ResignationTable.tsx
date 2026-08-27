@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { User, Calendar, MapPin, Briefcase, FileText, CheckCircle2, XCircle, Search, Clock, ArrowRight, Printer, Eye, Mail, Phone, ExternalLink, Check, X, Send } from "lucide-react";
-import ResignationStats from "./ResignationStats";
+import { User, Calendar, MapPin, Briefcase, FileText, CheckCircle2, XCircle, Search, Clock, ArrowRight, Printer, Eye, Mail, Phone, ExternalLink, Check, X, Send, MonitorPlay } from "lucide-react";
+import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 import { getAllResignationRequests, updateResignationStatus, ResignationRequest } from "@/lib/api/resignationRequests";
+import { ResignationRequestForm } from '@/app/hr/employees/resignations/components/ResignationRequestForm';
 
 type RequestStatus = ResignationRequest['status'];
 
@@ -75,14 +76,16 @@ export default function ResignationTable() {
     const [activeTab, setActiveTab] = useState<'current' | 'upcoming' | 'past'>('current');
     const todayStr = new Date().toISOString().split("T")[0];
     const [selectedDate, setSelectedDate] = useState(todayStr);
+    const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year'>('year');
+    const [statusFilter, setStatusFilter] = useState('All');
 
     const isActionable = (dateString?: string) => {
-        if (!dateString) return false;
+        if (!dateString) return true;
         try {
             const dateStr = new Date(dateString).toISOString().split('T')[0];
-            return dateStr === todayStr;
+            return dateStr <= todayStr;
         } catch (e) {
-            return false;
+            return true;
         }
     };
 
@@ -108,22 +111,87 @@ export default function ResignationTable() {
         setTimeout(() => setToast(null), 4000);
     }, []);
 
-    // ── Stats derived from state ──────────────────────────────────────
-    const total = requests.length;
-    const pending = requests.filter((r) => r.status === "PENDING_ADMIN").length;
-    const approved = requests.filter((r) => r.status === "Board Approved").length;
-    const rejected = requests.filter((r) => r.status === "Board Rejected").length;
+    const handleDownload = async (path: string) => {
+        if (!path || !path.includes('/')) {
+            alert('File not available (legacy format)');
+            return;
+        }
+        const url = await getHrmsSignedUrl(path);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('Failed to get download URL');
+        }
+    };
 
-    const normalizeDate = (d?: string) => {
+    const normalizeDate = useCallback((d?: string) => {
         if (!d) return "";
         try {
-            const dateObj = new Date(d);
+            const dateObj = new Date(d as string);
             if (isNaN(dateObj.getTime())) return d;
             return dateObj.toISOString().split('T')[0];
         } catch(e) {
             return d;
         }
-    };
+    }, []);
+
+    // ── Filtered list ─────────────────────────────────────────────────
+    const timeFilteredRequests = React.useMemo(() => {
+        return requests.filter(req => {
+            const pivotDate = todayStr;
+            const reqDate = normalizeDate(req.boardMeetingDate);
+            if (!reqDate) return false;
+            if (String(req.status).toUpperCase() === 'SUBMITTED' || String(req.status).toUpperCase() === 'DRAFT' || String(req.status).toUpperCase() === 'NEW') return false;
+
+            let matchesTab = true;
+            if (activeTab === 'current') matchesTab = reqDate === selectedDate;
+            else if (activeTab === 'upcoming') {
+                if (selectedDate === 'All') matchesTab = reqDate > pivotDate;
+                else matchesTab = reqDate === selectedDate;
+            }
+            else if (activeTab === 'past') {
+                if (selectedDate === 'All') matchesTab = reqDate < pivotDate;
+                else matchesTab = reqDate === selectedDate;
+            }
+            if (!matchesTab) return false;
+
+            let matchesTime = true;
+            if (req.resignationDate || req.createdAt) {
+                const dateStr = req.resignationDate || req.createdAt;
+                const reqCreationDate = new Date(dateStr as string);
+                if (!isNaN(reqCreationDate.getTime())) {
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const reqDay = new Date(reqCreationDate.getFullYear(), reqCreationDate.getMonth(), reqCreationDate.getDate());
+                    
+                    if (timeFilter === 'today') {
+                        matchesTime = reqDay.getTime() === today.getTime();
+                    } else if (timeFilter === 'week') {
+                        const lastWeek = new Date(today);
+                        lastWeek.setDate(lastWeek.getDate() - 6);
+                        matchesTime = reqDay >= lastWeek && reqDay <= today;
+                    } else if (timeFilter === 'month') {
+                        matchesTime = reqDay.getMonth() === today.getMonth() && reqDay.getFullYear() === today.getFullYear();
+                    } else if (timeFilter === 'year') {
+                        matchesTime = reqDay.getFullYear() === today.getFullYear();
+                    }
+                }
+            }
+            return matchesTime;
+        });
+    }, [requests, activeTab, selectedDate, todayStr, timeFilter]);
+
+    const filteredRequests = React.useMemo(() => {
+        return timeFilteredRequests.filter(req => {
+            if (statusFilter !== 'All' && String(req.status) !== statusFilter) return false;
+            return true;
+        });
+    }, [timeFilteredRequests, statusFilter]);
+
+    // ── Stats derived from state ──────────────────────────────────────
+    // Stats are mapped directly inside JSX below
+
+
 
     const getDropdownOptions = () => {
         if (activeTab === 'current') return [todayStr];
@@ -137,28 +205,14 @@ export default function ResignationTable() {
         setSelectedDate(tab === 'current' ? todayStr : 'All');
     };
 
-    // ── Filtered list ─────────────────────────────────────────────────
-    const filteredRequests = requests.filter((req) => {
-        const pivotDate = todayStr;
-        const reqDate = normalizeDate(req.boardMeetingDate);
-        if (activeTab === 'current') return reqDate === selectedDate;
-        if (activeTab === 'upcoming') {
-            if (selectedDate === 'All') return reqDate > pivotDate;
-            return reqDate === selectedDate;
-        }
-        if (activeTab === 'past') {
-            if (selectedDate === 'All') return reqDate < pivotDate;
-            return reqDate === selectedDate;
-        }
-        return true;
-    });
+
 
     // ── Handlers ─────────────────────────────────────────────────────
     const handleApprove = async (id: string) => {
         try {
             await updateResignationStatus(id, "Board Approved");
             await fetchRequests();
-            showToast(`✅ Approved — SMS & Email notification sent`);
+            showToast(`successfully approved and email sent!`);
         } catch (error) {
             console.error("Failed to approve:", error);
         }
@@ -175,7 +229,7 @@ export default function ResignationTable() {
         try {
             await updateResignationStatus(rejectId, "Board Rejected", rejectReason);
             await fetchRequests();
-            showToast(`❌ Rejected — SMS & Email notification sent`);
+            showToast(`application rejected !`);
             setRejectId(null);
         } catch (error) {
             console.error("Failed to reject:", error);
@@ -184,8 +238,44 @@ export default function ResignationTable() {
 
     return (
         <div className="space-y-6">
+            {/* Time Filter Dropdown */}
+            <div className="flex justify-end mb-4">
+                <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value as any)}
+                    className="px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm text-sm font-bold"
+                >
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+            </div>
+
             {/* Live Stats */}
-            <ResignationStats total={total} pending={pending} approved={approved} rejected={rejected} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {[
+                    { label: "Total Requests", status: "All", icon: "description", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
+                    { label: "Pending", status: "Pending Director", icon: "schedule", color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-900/20", ring: "ring-yellow-500" },
+                    { label: "Approved", status: "Board Approved", icon: "check_circle", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20", ring: "ring-green-500" },
+                    { label: "Rejected", status: "Board Rejected", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
+                ].map(({ label, status, icon, color, bg, ring }) => {
+                    const statCount = timeFilteredRequests.filter(r => status === 'All' || String(r.status) === status).length;
+                    return (
+                        <div
+                            key={status}
+                            onClick={() => setStatusFilter(statusFilter === status ? 'All' : status)}
+                            className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-zinc-700 flex items-center justify-between shadow-sm cursor-pointer transition-all hover:scale-[1.02] ${statusFilter === status ? `ring-2 ${ring}` : ''}`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
+                                <span className="text-gray-600 dark:text-zinc-300 font-bold text-sm">{label}</span>
+                            </div>
+                            <span className={`text-2xl font-black ${color}`}>{statCount}</span>
+                        </div>
+                    );
+                })}
+            </div>
 
             {/* Tabs & Filters */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-slate-800 pb-2">
@@ -380,26 +470,29 @@ export default function ResignationTable() {
 
             {/* ── View Details Modal ───────────────────────────────────────── */}
             {viewingRequest && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-zinc-700">
-                        <div className="p-6 border-b border-gray-100 dark:border-zinc-700 flex justify-between items-center">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Resignation Details</h3>
-                                <p className="text-sm text-gray-500 mt-0.5">{viewingRequest.id} · {viewingRequest.employeeName}</p>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-full transition-colors relative">
+                        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                                    <span className="material-symbols-outlined text-2xl">person_remove</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Resignation Request Details</h3>
+                                    <p className="text-sm text-slate-500">Request ID: {viewingRequest.id}</p>
+                                </div>
                             </div>
-                            <button onClick={() => setViewingRequest(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
+                            <button onClick={() => setViewingRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors cursor-pointer">
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
-                        <div className="p-6 grid grid-cols-2 gap-4 text-sm">
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Employee</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.employeeName}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Designation</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.designation}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Branch</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.branch}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Reason</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.reason}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Effective Date</p><p className="font-semibold text-gray-900 dark:text-white">{fmt(viewingRequest.lastWorkingDate)}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg"><p className="text-xs font-bold text-gray-500 uppercase mb-1">Board Date</p><p className="font-semibold text-primary">{fmt(viewingRequest.boardMeetingDate)}</p></div>
-                            <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg col-span-2"><p className="text-xs font-bold text-gray-500 uppercase mb-1">HR Remark</p><p className="font-semibold text-gray-900 dark:text-white">{viewingRequest.hrRemark || '—'}</p></div>
-                        </div>
-                        <div className="p-6 bg-gray-50 dark:bg-zinc-800/50 border-t border-gray-100 dark:border-zinc-700 flex justify-end">
-                            <button onClick={() => setViewingRequest(null)} className="px-5 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 cursor-pointer">Close</button>
+                        <div className="p-2 overflow-y-auto flex-1">
+                            <ResignationRequestForm 
+                                initialData={viewingRequest as any}
+                                isReadOnly={true}
+                                onSave={() => {}}
+                                onCancel={() => setViewingRequest(null)}
+                            />
                         </div>
                     </div>
                 </div>
@@ -463,9 +556,11 @@ export default function ResignationTable() {
 
             {/* ── Toast ───────────────────────────────────────────────────── */}
             {toast && (
-                <div className="fixed bottom-6 right-6 z-50 bg-gray-900 dark:bg-zinc-800 text-white px-6 py-3 rounded-xl shadow-2xl font-medium text-sm flex items-center gap-2 max-w-sm">
-                    <Send className="w-4 h-4 text-primary flex-shrink-0" />
-                    {toast}
+                <div className="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 z-50">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <Check className="w-5 h-5 text-green-400" />
+                    </div>
+                    <p className="font-medium">{toast}</p>
                 </div>
             )}
 
@@ -534,7 +629,7 @@ export default function ResignationTable() {
 
                                 {/* Letterhead */}
                                 <div className="text-center pb-5 border-b border-gray-300 mb-6">
-                                    <p className="text-xl font-bold tracking-wide text-gray-900">NEXORA HRMS</p>
+                                    <p className="text-xl font-bold tracking-wide text-gray-900">HR MATE</p>
                                     <p className="text-xs text-gray-500 mt-0.5">Human Resources Management System</p>
                                 </div>
 
@@ -603,7 +698,7 @@ export default function ResignationTable() {
                                 <div className="pt-10">
                                     <div className="w-36 border-t border-gray-500 mb-2" />
                                     <p className="font-semibold">Director — Human Resources</p>
-                                    <p className="text-gray-500 text-[12px]">Nexora HRMS</p>
+                                    <p className="text-gray-500 text-[12px]">HR MATE</p>
                                 </div>
                             </div>
 

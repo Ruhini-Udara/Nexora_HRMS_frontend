@@ -138,8 +138,8 @@ export default function AdminTerminationsPage() {
     const isAllSelected = preparationList.length > 0 && selectedIds.length === preparationList.length;
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
-            <div className="flex-1 p-8 pb-16 max-w-7xl mx-auto w-full">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col print:min-h-0 print:bg-white print:p-0 print:m-0 print:block">
+            <div className="flex-1 p-8 pb-16 max-w-7xl mx-auto w-full print:p-0 print:m-0 print:max-w-none print:w-full print:block">
                 {/* Header */}
                 <div className="mb-8 flex items-center justify-between print:hidden">
                     <div>
@@ -209,6 +209,7 @@ export default function AdminTerminationsPage() {
                                     <input
                                         type="date"
                                         value={boardDate}
+                                        min={new Date().toISOString().split('T')[0]}
                                         onChange={(e) => setBoardDate(e.target.value)}
                                         className="w-full pl-10 pr-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#8B3A00]/50 focus:border-[#8B3A00]"
                                     />
@@ -337,7 +338,7 @@ export default function AdminTerminationsPage() {
 
                         {/* Print Header */}
                         <div className="hidden print:block text-center mb-10 border-b-2 border-slate-800 pb-6">
-                            <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Nexora HRMS</h1>
+                            <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">HR MATE</h1>
                             <h2 className="text-xl font-bold text-slate-700 mb-1">Termination Board Approvals List</h2>
                             <p className="text-sm text-slate-600 font-medium">
                                 Batch Meeting Date: {filterDate !== "All" ? filterDate : "All Dates"}

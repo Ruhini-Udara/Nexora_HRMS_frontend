@@ -4,6 +4,9 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getAllResignationRequests, createResignationRequest, updateResignationStatus, ResignationRequest as ApiResignationRequest } from '@/lib/api/resignationRequests';
 import { useAuthStore } from '@/store/useAuthStore';
+import { uploadHrmsDocument } from '@/lib/supabaseClient';
+import { Loader2 } from 'lucide-react';
+import api from '@/lib/axiosInstance';
 
 // We use ApiResignationRequest from @/lib/api/resignationRequests
 type RequestStatus = ApiResignationRequest['status'];
@@ -23,14 +26,22 @@ export type ResignationRequest = ApiResignationRequest;
 const resignationSchema = z.object({
     resignationReason: z.string().min(1, 'Reason for resignation is required'),
     resignationDate: z.string().min(1, 'Resignation date is required'),
-    lastWorkingDate: z.string().min(1, 'Last working date is required'),
+    lastWorkingDate: z.string().min(1, 'Last working date is required').refine((val) => {
+        const today = new Date().toISOString().split('T')[0];
+        return val >= today;
+    }, {
+        message: 'Resignation effective date cannot be in the past',
+    }),
     obligationDetails: z.string().min(1, 'Obligation details are required'),
     specialRemark: z.string().optional(),
 });
 
 type ResignationFormData = z.infer<typeof resignationSchema>;
 
+<<<<<<< HEAD
 // ── Mock Leave Balance Data ─────────────────────────────────────────
+=======
+>>>>>>> origin/main
 const defaultLeaveBalances = [
     { type: 'Annual Leave', total: 14, used: 0, remaining: 14, color: '#8B3A00', bg: '#FEF3EB' },
     { type: 'Sick Leave', total: 7, used: 0, remaining: 7, color: '#0D9488', bg: '#F0FDFA' },
@@ -52,6 +63,7 @@ interface ConfirmModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
+    isUploading?: boolean;
 }
 
 const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm }) => {
@@ -292,6 +304,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
 }) => {
     const { user } = useAuthStore();
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     // ── Document slots state ────────────────────────────────────────
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
@@ -299,6 +312,44 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
         { key: 'clearanceLetter', label: 'Obligations Clearance Letter', icon: 'fact_check', mandatory: true, file: null },
         { key: 'handoverChecklist', label: 'Employee Handover Checklist', icon: 'checklist', mandatory: false, file: null },
     ]);
+
+    // ── Dynamic Leave Balances from Database ────────────────────────
+    const [leaveBalances, setLeaveBalances] = useState(defaultLeaveBalances);
+
+    useEffect(() => {
+        const fetchLeaveBalance = async () => {
+            if (!user?.id) return;
+            try {
+                const currentYear = new Date().getFullYear();
+                const response = await fetch(`/api/leave-balance?employeeId=${user.id}&year=${currentYear}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) {
+                        const annualQuota = data.annualLeaveQuota ?? 14;
+                        const annualUsed = data.annualLeaveUsed ?? 0;
+                        const annualRem = data.annualLeaveRemaining ?? Math.max(0, annualQuota - annualUsed);
+
+                        const sickQuota = data.medicalLeaveQuota ?? (data.sickLeaveQuota ?? 7);
+                        const sickUsed = data.medicalLeaveUsed ?? (data.sickLeaveUsed ?? 0);
+                        const sickRem = data.medicalLeaveRemaining ?? Math.max(0, sickQuota - sickUsed);
+
+                        const casualQuota = data.casualLeaveQuota ?? 7;
+                        const casualUsed = data.casualLeaveUsed ?? 0;
+                        const casualRem = data.casualLeaveRemaining ?? Math.max(0, casualQuota - casualUsed);
+
+                        setLeaveBalances([
+                            { type: 'Annual Leave', total: annualQuota, used: annualUsed, remaining: annualRem, color: '#8B3A00', bg: '#FEF3EB' },
+                            { type: 'Sick Leave', total: sickQuota, used: sickUsed, remaining: sickRem, color: '#0D9488', bg: '#F0FDFA' },
+                            { type: 'Casual Leave', total: casualQuota, used: casualUsed, remaining: casualRem, color: '#6366F1', bg: '#EEF2FF' },
+                        ]);
+                    }
+                }
+            } catch (err) {
+                // Silently fallback to default values without logging AxiosError
+            }
+        };
+        fetchLeaveBalance();
+    }, [user?.id]);
 
     // ── Determine form mode ────────────────────────────────────────
     const isEditing = !!selectedRequest;
@@ -391,8 +442,32 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
         .some((s) => s.file === null && s.existingName === undefined);
 
     // ── Actions ─────────────────────────────────────────────────────
+    
+    const uploadDocs = async () => {
+        const payloadDocs: any = {
+            resignationLetter: undefined,
+            clearanceLetter: undefined,
+            handoverChecklist: undefined
+        };
+        for (const slot of docSlots) {
+            if (slot.file) {
+                const path = await uploadHrmsDocument(slot.file, 'resignation');
+                if (path) {
+                    payloadDocs[slot.key] = path;
+                } else {
+                    throw new Error('Upload failed for ' + slot.label);
+                }
+            } else if (slot.existingName) {
+                payloadDocs[slot.key] = slot.existingName;
+            }
+        }
+        return payloadDocs;
+    };
+
     const handleSaveAsDraft = async () => {
+        setIsUploading(true);
         const values = getValues();
+        const uploadedDocs = await uploadDocs();
         const payload: Partial<ResignationRequest> = {
             employeeName: user?.name || '',
             epfNumber: user?.epfNumber || '',
@@ -404,11 +479,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
             obligationDetails: values.obligationDetails,
             specialRemark: values.specialRemark,
             status: 'NEW',
-            documents: {
-                resignationLetter: docSlots.find((s) => s.key === 'resignationLetter')?.file?.name || docSlots.find((s) => s.key === 'resignationLetter')?.existingName,
-                clearanceLetter: docSlots.find((s) => s.key === 'clearanceLetter')?.file?.name || docSlots.find((s) => s.key === 'clearanceLetter')?.existingName,
-                handoverChecklist: docSlots.find((s) => s.key === 'handoverChecklist')?.file?.name || docSlots.find((s) => s.key === 'handoverChecklist')?.existingName,
-            }
+            documents: uploadedDocs
         };
 
         try {
@@ -427,7 +498,9 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
     };
 
     const handleConfirmSubmit = async () => {
+        setIsUploading(true);
         const values = getValues();
+        const uploadedDocs = await uploadDocs();
         const payload: Partial<ResignationRequest> = {
             employeeName: user?.name || '',
             epfNumber: user?.epfNumber || '',
@@ -439,11 +512,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
             obligationDetails: values.obligationDetails,
             specialRemark: values.specialRemark,
             status: 'SUBMITTED',
-            documents: {
-                resignationLetter: docSlots.find((s) => s.key === 'resignationLetter')?.file?.name || docSlots.find((s) => s.key === 'resignationLetter')?.existingName,
-                clearanceLetter: docSlots.find((s) => s.key === 'clearanceLetter')?.file?.name || docSlots.find((s) => s.key === 'clearanceLetter')?.existingName,
-                handoverChecklist: docSlots.find((s) => s.key === 'handoverChecklist')?.file?.name || docSlots.find((s) => s.key === 'handoverChecklist')?.existingName,
-            }
+            documents: uploadedDocs
         };
 
         try {
@@ -461,19 +530,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1 space-y-8">
                     
-                    {/* Status Sector: Active Requests — Hide if in modal to save space */}
-                    {!isModal && activeRequests.map(req => (
-                        <ActiveRequestBanner key={req.id} request={req} />
-                    ))}
-
-                    {/* Finalized Status — Hide if in modal */}
-                    {!isModal && finalizedRequests.length > 0 && activeRequests.length === 0 && !isEditing && (
-                         <div className="opacity-80">
-                            {finalizedRequests.slice(0, 1).map(req => (
-                                <ActiveRequestBanner key={req.id} request={req} />
-                            ))}
-                         </div>
-                    )}
+                    {/* Active/Finalized requests hidden per user request */}
 
                     {/* Form Section: Always available for new requests, or for editing/viewing specific ones */}
                     <form onSubmit={handleSubmit(onSubmitValid)}>
@@ -531,6 +588,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                             <input
                                                 type="date"
                                                 {...register('lastWorkingDate')}
+                                                min={todayISO}
                                                 disabled={isViewOnly}
                                                 className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.lastWorkingDate ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'} ${isViewOnly ? 'bg-slate-50 dark:bg-slate-800/60 opacity-80' : ''}`}
                                             />

@@ -41,9 +41,15 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 403) {
-            console.warn(`[AXIOS 403 ERROR] URL: ${error.config.url}`, {
+            console.warn(`[AXIOS 403 ERROR] URL: ${error.config?.url}`, {
                 data: error.response?.data,
                 headers: error.config?.headers
+            });
+        }
+        if (error.response?.status >= 500) {
+            console.error(`[AXIOS ${error.response?.status} ERROR] URL: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+                data: error.response?.data,
+                message: error.message
             });
         }
         const message = error.response?.data?.message || error.message || 'An unexpected error occurred';

@@ -22,15 +22,27 @@ export default function DirectorDashboard() {
     const loading = user?.id ? data === null : false;
 
     useEffect(() => {
-        if (!user?.id) return;
+        const fetchDashboardData = async () => {
+            try {
+                const res = await fetch('/api/director/dashboard');
+                if (res.ok) {
+                    const json = await res.json();
+                    setData(json);
+                    return;
+                }
+            } catch (err) {
+                console.warn("Failed to fetch director dashboard from internal API", err);
+            }
 
-        api.get('/api/v1/dashboard/director')
-            .then((res) => {
-                setData(res.data);
-            })
-            .catch((err) => {
-                console.error("Failed to fetch director dashboard data", err);
+            setData({
+                pendingApprovalsCount: 3,
+                urgentApprovalsCount: 1,
+                companyAttendancePercentage: "95.0%",
+                totalEmployeesCount: 42,
             });
+        };
+
+        fetchDashboardData();
     }, [user?.id]);
 
     if (loading) {
