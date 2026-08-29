@@ -25,40 +25,67 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [registeredFingerprintUserId, setRegisteredFingerprintUserId] = useState<number | null>(null);
 
+  const generateBusinessEmail = () => {
+    if (!formData.fullName) return "";
+    const nameParts = formData.fullName.trim().split(/\s+/);
+    const firstName = nameParts[0].toLowerCase();
+
+    let lastName = "";
+    if (formData.surname) {
+      lastName = formData.surname.trim().toLowerCase();
+    } else if (nameParts.length > 1) {
+      lastName = nameParts[nameParts.length - 1].toLowerCase();
+    }
+
+    // Sanitize to alphanumeric characters only
+    const cleanFirst = firstName.replace(/[^a-z0-9]/g, '');
+    const cleanLast = lastName.replace(/[^a-z0-9]/g, '');
+
+    let emailPrefix = cleanLast ? `${cleanFirst}.${cleanLast}` : cleanFirst;
+
+    if (formData.nicNumber) {
+      const cleanNic = formData.nicNumber.trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      const nicSuffix = cleanNic.slice(-4);
+      if (nicSuffix) {
+        emailPrefix = `${emailPrefix}.${nicSuffix}`;
+      }
+    }
+
+    return `${emailPrefix}@nexora.com`;
+  };
+
   // Initialize specific fields from formData or defaults
   useEffect(() => {
     if (!formData.password) {
       generateRandomPassword();
     }
-    // Default account email based on name and NIC if empty
-    if (!formData.accountEmail && formData.fullName) {
-      const nameParts = formData.fullName.trim().split(/\s+/);
-      const firstName = nameParts[0].toLowerCase();
-
-      let lastName = "";
-      if (formData.surname) {
-        lastName = formData.surname.trim().toLowerCase();
-      } else if (nameParts.length > 1) {
-        lastName = nameParts[nameParts.length - 1].toLowerCase();
+    // If role is Normal Employee, show the personal email from Step 1
+    if (formData.roleName === "Employee") {
+      if (!formData.accountEmail || formData.accountEmail.endsWith("@nexora.com")) {
+        updateFormData({ accountEmail: formData.email || "" });
       }
-
-      // Sanitize to alphanumeric characters only
-      const cleanFirst = firstName.replace(/[^a-z0-9]/g, '');
-      const cleanLast = lastName.replace(/[^a-z0-9]/g, '');
-
-      let emailPrefix = cleanLast ? `${cleanFirst}.${cleanLast}` : cleanFirst;
-
-      if (formData.nicNumber) {
-        const cleanNic = formData.nicNumber.trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-        const nicSuffix = cleanNic.slice(-4);
-        if (nicSuffix) {
-          emailPrefix = `${emailPrefix}.${nicSuffix}`;
-        }
+    } else {
+      // For higher roles, auto-generate business email if empty or equal to personal email
+      if (!formData.accountEmail || formData.accountEmail === formData.email) {
+        updateFormData({ accountEmail: generateBusinessEmail() });
       }
-
-      updateFormData({ accountEmail: `${emailPrefix}@nexora.com` });
     }
   }, []);
+
+  const handleRoleChange = (newRole: string) => {
+    if (newRole === "Employee") {
+      updateFormData({
+        roleName: newRole,
+        accountEmail: formData.email || "",
+      });
+    } else {
+      const isPersonalOrEmpty = !formData.accountEmail || formData.accountEmail === formData.email;
+      updateFormData({
+        roleName: newRole,
+        accountEmail: isPersonalOrEmpty ? generateBusinessEmail() : formData.accountEmail,
+      });
+    }
+  };
 
   const generateRandomPassword = () => {
     const length = 10;
@@ -160,25 +187,46 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
 
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Role-Based Email */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">
-                  Official Business Email (Role-Based)
-                </label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
-                  <input
-                    type="email"
-                    value={formData.accountEmail}
-                    onChange={(e) => updateFormData({ accountEmail: e.target.value })}
-                    className="w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 transition-all"
-                    placeholder="e.g. director@nexora.com"
-                  />
+              {/* Official Business Email / Account Email */}
+              {formData.roleName === "Employee" ? (
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                    Employee Email
+                  </label>
+                  <div className="relative group">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => updateFormData({ email: e.target.value, accountEmail: e.target.value })}
+                      className="w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 transition-all"
+                      placeholder="e.g. employee@example.com"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                    Using the personal email provided in Step 1 for employee login.
+                  </p>
                 </div>
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-                  This will be their login for administrative/managerial tasks.
-                </p>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                    Official Business Email
+                  </label>
+                  <div className="relative group">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
+                    <input
+                      type="email"
+                      value={formData.accountEmail}
+                      onChange={(e) => updateFormData({ accountEmail: e.target.value })}
+                      className="w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 transition-all"
+                      placeholder="e.g. director@nexora.com"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                    This will be their login for administrative/managerial tasks.
+                  </p>
+                </div>
+              )}
 
               {/* User Role */}
               <div className="space-y-2">
@@ -189,7 +237,7 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
                   <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-amber-500 transition-colors pointer-events-none" />
                   <select
                     value={formData.roleName}
-                    onChange={(e) => updateFormData({ roleName: e.target.value })}
+                    onChange={(e) => handleRoleChange(e.target.value)}
                     className="w-full pl-11 pr-10 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm text-gray-900 dark:text-white cursor-pointer transition-all"
                   >
                     <option value="Employee">Normal Employee</option>
@@ -200,6 +248,30 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
                 </div>
               </div>
             </div>
+
+            {/* Additional Employee Email input for roles other than Normal Employee */}
+            {formData.roleName !== "Employee" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300">
+                    Employee Email
+                  </label>
+                  <div className="relative group">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => updateFormData({ email: e.target.value })}
+                      className="w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 transition-all"
+                      placeholder="e.g. personal@example.com"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                    Personal email from Step 1 for their personal employee account.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Temporary Password */}
             <div className="space-y-2">
