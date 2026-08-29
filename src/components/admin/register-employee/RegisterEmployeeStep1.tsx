@@ -37,7 +37,9 @@ export default function RegisterEmployeeStep1({
   const [error, setError] = useState<string | null>(null);
   const [nicExists, setNicExists] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
+  const [phoneExists, setPhoneExists] = useState(false);
   const [dobError, setDobError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
   const djCalendarRef = useRef<HTMLDivElement>(null);
@@ -101,6 +103,41 @@ export default function RegisterEmployeeStep1({
     return true;
   };
 
+  const validatePhone = (phoneStr: string): string | null => {
+    const trimmed = phoneStr.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (trimmed.startsWith("0")) {
+      return "Phone number cannot start with 0. Must start with +94 (e.g. +94771234567)";
+    }
+
+    if (!trimmed.startsWith("+94")) {
+      return "Phone number must start with +94 (e.g. +94771234567)";
+    }
+
+    const afterPlus = trimmed.slice(1);
+    if (!/^\d+$/.test(afterPlus)) {
+      return "Phone number can only contain digits after +";
+    }
+
+    if (trimmed.length > 12) {
+      return "Phone number cannot exceed 9 digits after +94";
+    }
+
+    if (trimmed.length < 12) {
+      const digitsCount = trimmed.slice(3).length;
+      return `Phone number must be 9 digits after +94 (${digitsCount}/9 digits entered)`;
+    }
+
+    if (!/^\+94\d{9}$/.test(trimmed)) {
+      return "Please enter a valid phone number (e.g. +94771234567)";
+    }
+
+    return null;
+  };
+
   const shouldClearError = (fieldName: string, currentError: string | null): boolean => {
     if (!currentError) return false;
     if (fieldName === "nicNumber") {
@@ -117,6 +154,9 @@ export default function RegisterEmployeeStep1({
     }
     if (fieldName === "email") {
       return currentError.includes("Email") || currentError.includes("gmail");
+    }
+    if (fieldName === "phoneNumber") {
+      return currentError.includes("Phone") || currentError.includes("phone");
     }
     if (fieldName === "dateOfBirth") {
       return (
@@ -200,6 +240,38 @@ export default function RegisterEmployeeStep1({
     };
   }, [formData.email]);
 
+  useEffect(() => {
+    const trimmed = formData.phoneNumber?.trim() ?? "";
+    const phoneRegex = /^\+94\d{9}$/;
+
+    if (!phoneRegex.test(trimmed)) {
+      setPhoneExists(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await api.get<boolean>(`/api/employees/exists-phone`, {
+          params: { phoneNumber: trimmed }
+        });
+        if (!cancelled) {
+          setPhoneExists(response.data === true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Error checking phone uniqueness:", err);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [formData.phoneNumber]);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -210,6 +282,10 @@ export default function RegisterEmployeeStep1({
     }
     if (name === "email") {
       setEmailExists(false);
+    }
+    if (name === "phoneNumber") {
+      setPhoneExists(false);
+      setPhoneError(validatePhone(value));
     }
     if (name === "dateOfBirth") {
       setDobError(null);
@@ -376,6 +452,22 @@ export default function RegisterEmployeeStep1({
       return;
     }
 
+    // Phone number validation - must start with +94 followed by 9 digits (total 12 characters)
+    if (formData.phoneNumber && formData.phoneNumber.trim()) {
+      const trimmedPhone = formData.phoneNumber.trim();
+      const pError = validatePhone(trimmedPhone);
+      if (pError || !/^\+94\d{9}$/.test(trimmedPhone)) {
+        const errorMsg = pError || "Phone Number must start with +94 followed by 9 digits (e.g., +94771234567).";
+        setError(errorMsg);
+        setPhoneError(errorMsg);
+        return;
+      }
+      if (phoneExists) {
+        setError("Phone number already registered");
+        return;
+      }
+    }
+
     // Date of Birth validation
     if (!validateAge(formData.dateOfBirth)) {
       return;
@@ -530,8 +622,8 @@ export default function RegisterEmployeeStep1({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-  Date of Birth <span className="text-red-500">*</span>
-</Label>
+                  Date of Birth <span className="text-red-500">*</span>
+                </Label>
 
                 <div className="relative" ref={dobCalendarRef}>
                   <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none z-10" />
@@ -1002,6 +1094,16 @@ export default function RegisterEmployeeStep1({
                     className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                   />
                 </div>
+                {phoneError && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {phoneError}
+                  </p>
+                )}
+                {!phoneError && phoneExists && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    Phone number already registered
+                  </p>
+                )}
               </div>
             </div>
 
