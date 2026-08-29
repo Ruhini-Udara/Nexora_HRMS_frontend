@@ -10,11 +10,18 @@ import {
     CheckCircle,
     XCircle,
     Loader2,
+    ClipboardList,
+    Waves,
+    Clock,
+    CalendarCheck,
+    UserCheck,
+    CalendarPlus
 } from "lucide-react";
 import SupervisorHeader from "@/components/SupervisorHeader";
 import SummaryCard from "@/components/dashboard/SummaryCard";
 import ModuleCard from "@/components/dashboard/ModuleCard";
 import api from "@/lib/axiosInstance";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface Employee {
     id: number;
@@ -56,20 +63,45 @@ function formatDate(dateStr: string) {
 }
 
 export default function SupervisorDashboard() {
+    const { user } = useAuthStore();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
+    const [dailyAttendance, setDailyAttendance] = useState<any[]>([]);
+    const [shifts, setShifts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!user?.id) return;
             try {
-                const [empRes, leaveRes] = await Promise.allSettled([
-                    api.get("/api/employees"),
-                    api.get("/api/v1/leaves/overseas"),
+                const today = new Date().toISOString().slice(0, 10);
+                const [empRes, leaveRes, attRes, shiftRes] = await Promise.allSettled([
+                    api.get(`/api/employees?supervisorId=${user?.employeeId || user?.id}`),
+                    api.get("/api/v1/leaves/normal"),
+                    api.get(`/api/attendance/manual?date=${today}&supervisorId=${user?.employeeId || user?.id}`),
+                    api.get("/api/shifts"),
                 ]);
 
-                if (empRes.status === "fulfilled") setEmployees(empRes.value.data);
-                if (leaveRes.status === "fulfilled") setLeaves(leaveRes.value.data);
+                let teamEmps: Employee[] = [];
+                if (empRes.status === "fulfilled") {
+                    teamEmps = empRes.value.data;
+                    // Fallback for demo
+                    if (teamEmps.length === 0) {
+                        const allEmpRes = await api.get("/api/employees");
+                        teamEmps = allEmpRes.data;
+                    }
+                    setEmployees(teamEmps);
+                }
+                
+                if (leaveRes.status === "fulfilled") {
+                    const teamIds = teamEmps.map(e => Number(e.id));
+                    // Filter leaves for only this supervisor's team
+                    const teamLeaves = leaveRes.value.data.filter((l: LeaveRequest) => teamIds.includes(Number(l.employeeId)));
+                    setLeaves(teamLeaves);
+                }
+                
+                if (attRes.status === "fulfilled") setDailyAttendance(attRes.value.data);
+                if (shiftRes.status === "fulfilled") setShifts(shiftRes.value.data);
             } catch (err) {
                 console.error("Failed to load dashboard data", err);
             } finally {
@@ -77,13 +109,53 @@ export default function SupervisorDashboard() {
             }
         };
         fetchData();
-    }, []);
+    }, [user?.id]);
+
+    const handleApprove = async (id: number) => {
+        try {
+            await api.post("/api/v1/approvals", {
+                refId: id,
+                refType: "NORMAL_LEAVE",
+                decision: "APPROVED",
+                remark: "Approved by supervisor from dashboard",
+                approvedBy: { id: user?.id }
+            });
+            setLeaves(prev => prev.map(l => l.id === id ? { ...l, status: "Approved" } : l));
+        } catch (err) {
+            console.error("Failed to approve request", err);
+            alert("Failed to approve request.");
+        }
+    };
+
+    const handleReject = async (id: number) => {
+        try {
+            await api.post("/api/v1/approvals", {
+                refId: id,
+                refType: "NORMAL_LEAVE",
+                decision: "REJECTED",
+                remark: "Rejected by supervisor from dashboard",
+                approvedBy: { id: user?.id }
+            });
+            setLeaves(prev => prev.map(l => l.id === id ? { ...l, status: "Rejected" } : l));
+        } catch (err) {
+            console.error("Failed to reject request", err);
+            alert("Failed to reject request.");
+        }
+    };
 
     const pendingLeaves = leaves.filter(l =>
-        l.status?.toUpperCase() === "PENDING" || l.status === "PENDING_HR_APPROVAL"
+        l.status?.toUpperCase() === "PENDING" || l.status === "PENDING_HR_APPROVAL" || l.status === "PENDING_SUPERVISOR_APPROVAL"
     );
 
     const recentLeaves = leaves.slice(0, 5);
+    const presentCount = dailyAttendance.filter(a => a.status === "PRESENT").length;
+    const totalEmployees = employees.length || 1; // avoid division by zero
+    const presencePercentage = Math.round((presentCount / totalEmployees) * 100);
+
+    const activeShiftsCount = shifts.length;
+    const shiftNames = activeShiftsCount > 0 
+        ? shifts.slice(0, 2).map(s => s.shiftName).join(" & ") + (activeShiftsCount > 2 ? "..." : " shifts")
+        : "No active shifts";
 
     if (loading) {
         return (
@@ -101,67 +173,73 @@ export default function SupervisorDashboard() {
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Supervisor Dashboard</h1>
                     <p className="text-gray-500 dark:text-slate-400 mt-1">
-                        Overview of your team&apos;s attendance and leave requests
+                        Manage your team&apos;s attendance and leave requests efficiently.
                     </p>
                 </div>
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                     <SummaryCard
-                        title="Total Employees"
-                        value={String(employees.length)}
+                        title="Team Presence"
+                        value={`${presentCount}/${employees.length}`}
                         subContent={
                             <div className="text-green-600 dark:text-green-400 flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3" />
-                                <span>Active team members</span>
+                                <CheckCircle className="w-3 h-3" />
+                                <span>{presencePercentage}% present today</span>
                             </div>
                         }
                         icon={<Users className="w-6 h-6" />}
                         iconBgColor="bg-orange-50 dark:bg-orange-950/40"
-                        iconColor="text-orange-500"
+                        iconColor="text-orange-600 dark:text-orange-400"
                     />
                     <SummaryCard
                         title="Pending Leave Requests"
                         value={String(pendingLeaves.length)}
                         subContent={
-                            <div className="text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                            <div className="text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
                                 <AlertCircle className="w-3 h-3" />
                                 <span>Requires your action</span>
                             </div>
                         }
-                        icon={<Calendar className="w-6 h-6" />}
+                        icon={<ClipboardList className="w-6 h-6" />}
                         iconBgColor="bg-yellow-50 dark:bg-yellow-950/40"
-                        iconColor="text-yellow-500"
+                        iconColor="text-yellow-600 dark:text-yellow-400"
                     />
                     <SummaryCard
-                        title="Total Leave Requests"
-                        value={String(leaves.length)}
+                        title="Active Shifts"
+                        value={String(activeShiftsCount)}
                         subContent={
                             <div className="text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                                <AlignJustify className="w-3 h-3" />
-                                <span>All submitted requests</span>
+                                <Clock className="w-3 h-3" />
+                                <span className="truncate max-w-[140px]">{shiftNames}</span>
                             </div>
                         }
-                        icon={<AlignJustify className="w-6 h-6" />}
+                        icon={<Waves className="w-6 h-6" />}
                         iconBgColor="bg-blue-50 dark:bg-blue-950/40"
-                        iconColor="text-blue-500"
+                        iconColor="text-blue-600 dark:text-blue-400"
                     />
                 </div>
 
                 {/* Management Modules */}
                 <section className="mb-10">
                     <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-6">Management Modules</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <ModuleCard
-                            title="Manual Attendance Entry"
-                            description="Directly log, adjust, or sync supervisor-level attendance data directly into the system database."
-                            icon={<AlignJustify className="w-5 h-5" />}
+                            title="Manual Attendance"
+                            description="Log or adjust daily attendance and clock-in/out times for your team."
+                            icon={<CalendarPlus className="w-5 h-5" />}
                             href="/supervisor/manual-attendance"
                         />
                         <ModuleCard
-                            title="Team Attendance Log"
-                            description="View complete logs of team schedules, clock-ins/outs, and real-time attendance tracking summaries."
-                            icon={<Users className="w-5 h-5" />}
+                            title="Leave Management"
+                            description="Review, approve, or reject leave requests from your direct reports."
+                            icon={<CalendarCheck className="w-5 h-5" />}
+                            href="/supervisor/leave-management"
+                        />
+                        <ModuleCard
+                            title="Team Attendance"
+                            description="Monitor team-wide attendance patterns and generate daily reports."
+                            icon={<UserCheck className="w-5 h-5" />}
                             href="/supervisor/team-attendance"
                         />
                     </div>
@@ -228,10 +306,18 @@ export default function SupervisorDashboard() {
                                                 <td className="py-4 px-4 text-center">
                                                     {req.status?.toUpperCase().includes("PENDING") ? (
                                                         <div className="flex items-center justify-center gap-2">
-                                                            <button title="Approve" className="text-green-500 hover:text-green-700 transition-colors cursor-pointer">
+                                                            <button 
+                                                                title="Approve" 
+                                                                onClick={() => handleApprove(req.id)}
+                                                                className="text-green-500 hover:text-green-700 transition-colors cursor-pointer"
+                                                            >
                                                                 <CheckCircle className="w-5 h-5" />
                                                             </button>
-                                                            <button title="Reject" className="text-red-400 hover:text-red-600 transition-colors cursor-pointer">
+                                                            <button 
+                                                                title="Reject" 
+                                                                onClick={() => handleReject(req.id)}
+                                                                className="text-red-400 hover:text-red-600 transition-colors cursor-pointer"
+                                                            >
                                                                 <XCircle className="w-5 h-5" />
                                                             </button>
                                                         </div>

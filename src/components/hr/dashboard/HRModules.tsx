@@ -58,7 +58,7 @@ export default function HRModules() {
                         <span className="material-icons-round text-primary text-3xl">event_note</span>
                     </div>
                     <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Leave Management</h4>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Process holiday requests, sick leaves, and manage the team calendar.</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">Process holiday requests, medical leaves, and manage the team calendar.</p>
                     <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
                     </span>
