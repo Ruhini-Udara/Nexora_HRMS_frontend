@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, AlertCircle } from "lucide-react";
+import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, AlertCircle, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EmployeeFormData } from "./RegisterEmployee";
 import api from "@/lib/axiosInstance";
@@ -36,6 +36,7 @@ export default function RegisterEmployeeStep1({
   const [viewDJ, setViewDJ] = useState<'days' | 'years'>('days');
   const [error, setError] = useState<string | null>(null);
   const [nicExists, setNicExists] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
   const [dobError, setDobError] = useState<string | null>(null);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
@@ -115,7 +116,7 @@ export default function RegisterEmployeeStep1({
       return currentError.includes("Sex");
     }
     if (fieldName === "email") {
-      return currentError.includes("Email");
+      return currentError.includes("Email") || currentError.includes("gmail");
     }
     if (fieldName === "dateOfBirth") {
       return (
@@ -169,6 +170,36 @@ export default function RegisterEmployeeStep1({
     };
   }, [formData.nicNumber]);
 
+  useEffect(() => {
+    const trimmed = formData.email?.trim() ?? "";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(trimmed)) {
+      setEmailExists(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await api.get<boolean>(`/api/employees/exists-email/${trimmed}`);
+        if (!cancelled) {
+          setEmailExists(response.data === true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Error checking email uniqueness:", err);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [formData.email]);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -176,6 +207,9 @@ export default function RegisterEmployeeStep1({
     updateFormData({ [name]: value });
     if (name === "nicNumber") {
       setNicExists(false);
+    }
+    if (name === "email") {
+      setEmailExists(false);
     }
     if (name === "dateOfBirth") {
       setDobError(null);
@@ -334,6 +368,11 @@ export default function RegisterEmployeeStep1({
 
     if (nicExists) {
       setError("NIC Number already registered");
+      return;
+    }
+
+    if (emailExists) {
+      setError("gmail already registered");
       return;
     }
 
@@ -894,6 +933,11 @@ export default function RegisterEmployeeStep1({
                   className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                 />
               </div>
+              {emailExists && (
+                <p className="text-xs text-red-600 font-semibold mt-1">
+                  gmail already registered
+                </p>
+              )}
             </div>
 
             {/* Home Address */}
@@ -915,29 +959,49 @@ export default function RegisterEmployeeStep1({
               </div>
             </div>
 
-            {/* Marital Status */}
-            <div className="space-y-2">
-              <Label htmlFor="maritalStatus" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                Marital Status
-              </Label>
-              <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10 pointer-events-none" />
-                <Select
-                  value={formData.maritalStatus}
-                  onValueChange={(value) =>
-                    handleSelectChange("maritalStatus", value)
-                  }
-                >
-                  <SelectTrigger className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Single">Single</SelectItem>
-                    <SelectItem value="Married">Married</SelectItem>
-                    <SelectItem value="Divorced">Divorced</SelectItem>
-                    <SelectItem value="Widowed">Widowed</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Marital Status and Phone Number */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="maritalStatus" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                  Marital Status
+                </Label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10 pointer-events-none" />
+                  <Select
+                    value={formData.maritalStatus}
+                    onValueChange={(value) =>
+                      handleSelectChange("maritalStatus", value)
+                    }
+                  >
+                    <SelectTrigger className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Single">Single</SelectItem>
+                      <SelectItem value="Married">Married</SelectItem>
+                      <SelectItem value="Divorced">Divorced</SelectItem>
+                      <SelectItem value="Widowed">Widowed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                  Phone Number
+                </Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    type="tel"
+                    placeholder="e.g. +94771234567"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
+                  />
+                </div>
               </div>
             </div>
 

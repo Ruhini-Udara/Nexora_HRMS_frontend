@@ -34,20 +34,20 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
     if (!formData.accountEmail && formData.fullName) {
       const nameParts = formData.fullName.trim().split(/\s+/);
       const firstName = nameParts[0].toLowerCase();
-      
+
       let lastName = "";
       if (formData.surname) {
         lastName = formData.surname.trim().toLowerCase();
       } else if (nameParts.length > 1) {
         lastName = nameParts[nameParts.length - 1].toLowerCase();
       }
-      
+
       // Sanitize to alphanumeric characters only
       const cleanFirst = firstName.replace(/[^a-z0-9]/g, '');
       const cleanLast = lastName.replace(/[^a-z0-9]/g, '');
-      
+
       let emailPrefix = cleanLast ? `${cleanFirst}.${cleanLast}` : cleanFirst;
-      
+
       if (formData.nicNumber) {
         const cleanNic = formData.nicNumber.trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const nicSuffix = cleanNic.slice(-4);
@@ -55,7 +55,7 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
           emailPrefix = `${emailPrefix}.${nicSuffix}`;
         }
       }
-      
+
       updateFormData({ accountEmail: `${emailPrefix}@nexora.com` });
     }
   }, []);
@@ -85,7 +85,7 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
       const response = await api.post<RegisteredEmployeeResponse>("/api/employees", formData);
       setRegisteredFingerprintUserId(response.data.fingerprintUserId ?? null);
       setSubmitSuccess(true);
-      
+
       // Navigate back to master list after success
       setTimeout(() => {
         setActiveView("employeeMaster");
@@ -247,14 +247,12 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
                 <button
                   type="button"
                   onClick={() => updateFormData({ enableSystemAccess: !formData.enableSystemAccess })}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                    formData.enableSystemAccess ? "bg-amber-500" : "bg-gray-300 dark:bg-slate-700"
-                  }`}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${formData.enableSystemAccess ? "bg-amber-500" : "bg-gray-300 dark:bg-slate-700"
+                    }`}
                 >
                   <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                      formData.enableSystemAccess ? "translate-x-6" : "translate-x-1"
-                    }`}
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${formData.enableSystemAccess ? "translate-x-6" : "translate-x-1"
+                      }`}
                   />
                 </button>
               </div>
@@ -288,8 +286,8 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
                 </div>
               </div>
               <p className="text-sm text-blue-800 dark:text-blue-300 leading-relaxed">
-                <strong>Dual Identity Policy:</strong> If you assign a high-level role, the system will automatically create 
-                two accounts. One for their personal employee tasks (using their personal email) and one for their role-based 
+                <strong>Dual Identity Policy:</strong> If you assign a high-level role, the system will automatically create
+                two accounts. One for their personal employee tasks (using their personal email) and one for their role-based
                 dashboard (using the business email above).
               </p>
             </div>
@@ -318,11 +316,10 @@ export default function RegisterEmployeeStep3({ formData, updateFormData, onPrev
             type="button"
             onClick={handleComplete}
             disabled={isSubmitting || submitSuccess}
-            className={`flex items-center gap-3 px-10 h-12 font-semibold rounded-lg shadow-md transition-all active:scale-95 text-white ${
-              submitSuccess
+            className={`flex items-center gap-3 px-10 h-12 font-semibold rounded-lg shadow-md transition-all active:scale-95 text-white ${submitSuccess
                 ? "bg-green-600"
                 : "bg-amber-500 hover:bg-amber-600"
-            } disabled:opacity-70 disabled:cursor-not-allowed`}
+              } disabled:opacity-70 disabled:cursor-not-allowed`}
           >
             {isSubmitting ? (
               <>

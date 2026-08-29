@@ -16,10 +16,12 @@ export interface EmployeeFormData {
   email: string;
   homeAddress: string;
   maritalStatus: string;
+  phoneNumber: string;
   // Step 2: Employment Info
   designationId: number | null;
   employeeType: string;
   department: string;
+  branch: string;
   epfNumber: string;
   etfNumber: string;
   // Step 3: System Access
@@ -41,9 +43,11 @@ export default function RegisterEmployee() {
     email: "",
     homeAddress: "",
     maritalStatus: "Single",
+    phoneNumber: "",
     designationId: null,
     employeeType: "",
     department: "",
+    branch: "",
     epfNumber: "",
     etfNumber: "",
     accountEmail: "",
