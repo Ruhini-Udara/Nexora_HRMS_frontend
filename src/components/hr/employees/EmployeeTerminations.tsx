@@ -3,8 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { TerminationRequestForm } from "./TerminationRequestForm";
-
-// ── Types ───────────────────────────────────────────────────────────
+import { getAllTerminationRequests, updateTerminationStatus, updateTerminationRequest, createTerminationRequest } from "@/lib/api/terminationRequests";
 export type TerminationStatus = 'NEW' | 'SUBMITTED' | 'VERIFIED_BY_HR' | 'PENDING_ADMIN' | 'REJECTED' | 'PENDING_BOARD_APPROVAL' | 'SUBMITTED_TO_DIRECTOR' | 'APPROVED';
 
 export interface TerminationRequest {
@@ -26,9 +25,6 @@ export interface TerminationRequest {
     hrRemark?: string;
 }
 
-// ── Mock Data (Removed per user request) ───────────────────────────
-const MOCK_REQUESTS: TerminationRequest[] = [];
-
 // ── Status badge config ─────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; classes: string }> = {
     NEW: { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400" },
@@ -41,74 +37,26 @@ const statusConfig: Record<string, { label: string; classes: string }> = {
 };
 
 // ── Main Component ──────────────────────────────────────────────────
-const loadLocalTerminations = (): TerminationRequest[] => {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem("termination_requests");
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch (e) {
-            console.error(e);
-        }
-    }
-    const defaultData: TerminationRequest[] = [
-        {
-            id: "TRM-2024-001",
-            employeeName: "Jagath Kumara",
-            epfNumber: "EPF-1001",
-            branch: "Colombo HQ",
-            status: "PENDING_ADMIN",
-            type: "Involuntary",
-            reason: "Performance issues",
-            initiationDate: "2024-10-15",
-            effectiveDate: "2024-11-15",
-            specialRemark: "",
-            documents: {},
-        },
-        {
-            id: "TRM-2024-002",
-            employeeName: "Sunil Perera",
-            epfNumber: "EPF-1002",
-            branch: "Kandy Branch",
-            status: "PENDING_ADMIN",
-            type: "Voluntary",
-            reason: "Personal reasons",
-            initiationDate: "2024-10-18",
-            effectiveDate: "2024-11-18",
-            specialRemark: "",
-            documents: {},
-        },
-        {
-            id: "TRM-2024-003",
-            employeeName: "Amara Siriwardena",
-            epfNumber: "EPF-1003",
-            branch: "Galle Branch",
-            status: "VERIFIED_BY_HR",
-            type: "Involuntary",
-            reason: "Policy violation",
-            initiationDate: "2024-10-16",
-            effectiveDate: "2024-11-16",
-            specialRemark: "",
-            documents: {},
-        }
-    ];
-    localStorage.setItem("termination_requests", JSON.stringify(defaultData));
-    return defaultData;
-};
-
 export default function EmployeeTerminations() {
     const [requests, setRequests] = useState<TerminationRequest[]>([]);
 
     React.useEffect(() => {
-        const data = loadLocalTerminations();
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        
-        const recentData = data.filter(r => {
-            const reqDate = new Date(r.initiationDate || '');
-            return isNaN(reqDate.getTime()) || reqDate >= oneYearAgo;
-        });
-        setRequests(recentData);
+        const fetchRequests = async () => {
+            try {
+                const data = await getAllTerminationRequests();
+                const oneYearAgo = new Date();
+                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                
+                const recentData = data.filter(r => {
+                    const reqDate = new Date(r.initiationDate || '');
+                    return isNaN(reqDate.getTime()) || reqDate >= oneYearAgo;
+                });
+                setRequests(recentData as unknown as TerminationRequest[]);
+            } catch (error) {
+                console.error('Failed to fetch terminations:', error);
+            }
+        };
+        fetchRequests();
     }, []);
 
     const [activeTab, setActiveTab] = useState<'pending' | 'board'>('pending');
@@ -140,36 +88,34 @@ export default function EmployeeTerminations() {
         setIsModalOpen(true);
     };
 
-    const handleSaveRequest = (newReq: TerminationRequest, closeAfterSave = true) => {
-        const adaptedReq: TerminationRequest = {
-            ...newReq,
-        };
-        setRequests(prev => {
-            const exists = prev.find(r => r.id === adaptedReq.id);
-            let updated;
+    const handleSaveRequest = async (newReq: TerminationRequest, closeAfterSave = true) => {
+        try {
+            const exists = requests.find(r => r.id === newReq.id);
+            let updatedReq: any;
             if (exists) {
-                updated = prev.map(r => r.id === adaptedReq.id ? adaptedReq : r);
+                updatedReq = await updateTerminationRequest(newReq.id, newReq as any);
+                setRequests(prev => prev.map(r => r.id === updatedReq.id ? updatedReq as unknown as TerminationRequest : r));
             } else {
-                updated = [...prev, adaptedReq];
-                setSelectedRequest(adaptedReq);
+                updatedReq = await createTerminationRequest(newReq as any);
+                setRequests(prev => [updatedReq as unknown as TerminationRequest, ...prev]);
+                setSelectedRequest(updatedReq);
             }
-            localStorage.setItem("termination_requests", JSON.stringify(updated));
-            return updated;
-        });
-        if (closeAfterSave) setIsModalOpen(false);
+            if (closeAfterSave) setIsModalOpen(false);
+        } catch (error) {
+            console.error('Failed to save request:', error);
+        }
     };
 
 
-    const handleVerify = () => {
+    const handleVerify = async () => {
         if (!selectedRequest) return;
-        setRequests(prev => {
-            const updated = prev.map(r => 
-                r.id === selectedRequest.id ? { ...r, status: 'VERIFIED_BY_HR' as TerminationStatus } : r
-            );
-            localStorage.setItem("termination_requests", JSON.stringify(updated));
-            return updated;
-        });
-        setIsModalOpen(false);
+        try {
+            const updatedReq = await updateTerminationStatus(selectedRequest.id, "VERIFIED_BY_HR");
+            setRequests(prev => prev.map(r => r.id === selectedRequest.id ? updatedReq as unknown as TerminationRequest : r));
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error('Failed to verify:', error);
+        }
     };
 
     const handleOpenRejectDialog = () => setShowRejectDialog(true);
@@ -179,41 +125,33 @@ export default function EmployeeTerminations() {
         setRejectReasonError(false);
     };
 
-    const handleConfirmReject = () => {
+    const handleConfirmReject = async () => {
         if (!rejectReason.trim()) {
             setRejectReasonError(true);
             return;
         }
         if (!selectedRequest) return;
-        setRequests((prev) => {
-            const updated = prev.map((req) =>
-                req.id === selectedRequest.id
-                    ? { ...req, status: "REJECTED" as TerminationStatus, hrRemark: rejectReason }
-                    : req
-            );
-            localStorage.setItem("termination_requests", JSON.stringify(updated));
-            return updated;
-        });
-        handleCloseRejectDialog();
-        setIsModalOpen(false);
+        try {
+            const updatedReq = await updateTerminationStatus(selectedRequest.id, "REJECTED", rejectReason);
+            setRequests(prev => prev.map(req => req.id === selectedRequest.id ? updatedReq as unknown as TerminationRequest : req));
+            handleCloseRejectDialog();
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error('Failed to reject:', error);
+        }
     };
 
-    const handleConfirmSubmitToAdmin = () => {
-        const verifiedIds = requests
-            .filter((r) => r.status === "VERIFIED_BY_HR")
-            .map((r) => r.id);
-
-        setRequests((prev) => {
-            const updated = prev.map((req) =>
-                verifiedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_ADMIN" as TerminationStatus }
-                    : req
-            );
-            localStorage.setItem("termination_requests", JSON.stringify(updated));
-            return updated;
-        });
-        setShowConfirmDialog(false);
-        setActiveTab('pending');
+    const handleConfirmSubmitToAdmin = async () => {
+        const verifiedRequests = requests.filter((r) => r.status === "VERIFIED_BY_HR");
+        try {
+            await Promise.all(verifiedRequests.map(r => updateTerminationStatus(r.id, "PENDING_ADMIN")));
+            const data = await getAllTerminationRequests();
+            setRequests(data as unknown as TerminationRequest[]);
+            setShowConfirmDialog(false);
+            setActiveTab('pending');
+        } catch (error) {
+            console.error('Failed to submit batch:', error);
+        }
     };
 
     // ── Filtered list ─────────────────────────────────────────────────
