@@ -1,67 +1,23 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-
-type TerminationStatus = "SUBMITTED_FOR_ADMIN_APPROVAL" | "PENDING_BOARD_APPROVAL" | "APPROVED" | "REJECTED" | "SUBMITTED_TO_DIRECTOR" | "PENDING_ADMIN";
-
-interface TerminationApplication {
-    id: string;
-    employeeName: string;
-    type: string;
-    branch: string;
-    initiationDate: string;
-    effectiveDate: string;
-    status: TerminationStatus;
-    boardMeetingDate?: string;
-}
-
-const loadLocalTerminations = (): TerminationApplication[] => {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem("termination_requests");
-    if (stored) {
-        try {
-            return JSON.parse(stored);
-        } catch (e) {
-            console.error(e);
-        }
-    }
-    const defaultData: TerminationApplication[] = [
-        {
-            id: "TRM-2024-001",
-            employeeName: "Jagath Kumara",
-            type: "Involuntary",
-            branch: "Colombo HQ",
-            initiationDate: "2024-10-15",
-            effectiveDate: "2024-11-15",
-            status: "PENDING_ADMIN",
-        },
-        {
-            id: "TRM-2024-002",
-            employeeName: "Sunil Perera",
-            type: "Voluntary",
-            branch: "Kandy Branch",
-            initiationDate: "2024-10-18",
-            effectiveDate: "2024-11-18",
-            status: "PENDING_ADMIN",
-        },
-        {
-            id: "TRM-2024-003",
-            employeeName: "Amara Siriwardena",
-            type: "Involuntary",
-            branch: "Galle Branch",
-            initiationDate: "2024-10-16",
-            effectiveDate: "2024-11-16",
-            status: "PENDING_BOARD_APPROVAL",
-            boardMeetingDate: "2024-11-01",
-        }
-    ];
-    localStorage.setItem("termination_requests", JSON.stringify(defaultData));
-    return defaultData;
-};
+import { getAllTerminationRequests, updateTerminationStatus, TerminationRequest } from "@/lib/api/terminationRequests";
 
 export default function AdminTerminationsPage() {
-    const [requests, setRequests] = useState<TerminationApplication[]>(() => loadLocalTerminations());
+    const [requests, setRequests] = useState<TerminationRequest[]>([]);
+    
+    useEffect(() => {
+        const fetchRequests = async () => {
+            try {
+                const data = await getAllTerminationRequests();
+                setRequests(data);
+            } catch (error) {
+                console.error("Failed to fetch terminations:", error);
+            }
+        };
+        fetchRequests();
+    }, []);
     const [activeTab, setActiveTab] = useState<"preparation" | "management">("preparation");
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [boardDate, setBoardDate] = useState<string>("");
@@ -83,7 +39,7 @@ export default function AdminTerminationsPage() {
         }
     };
 
-    const handlePrepareList = () => {
+    const handlePrepareList = async () => {
         if (!boardDate) {
             alert("Please select a Board Gathering Date first.");
             return;
@@ -93,37 +49,38 @@ export default function AdminTerminationsPage() {
             return;
         }
 
-        setRequests((prev) => {
-            const updated = prev.map((req) =>
-                selectedIds.includes(req.id)
-                    ? { ...req, status: "PENDING_BOARD_APPROVAL" as TerminationStatus, boardMeetingDate: boardDate }
-                    : req
-            );
-            localStorage.setItem("termination_requests", JSON.stringify(updated));
-            return updated;
-        });
-
-        setSelectedIds([]);
-        setFilterDate(boardDate);
-        setBoardDate("");
-        setActiveTab("management");
+        try {
+            await Promise.all(selectedIds.map(id => updateTerminationStatus(id, "PENDING_BOARD_APPROVAL", undefined, boardDate)));
+            const data = await getAllTerminationRequests();
+            setRequests(data);
+            setSelectedIds([]);
+            setFilterDate(boardDate);
+            setBoardDate("");
+            setActiveTab("management");
+        } catch (error) {
+            console.error("Failed to prepare list:", error);
+        }
     };
 
     const handlePrintList = () => {
         window.print();
     };
 
-    const handleConfirmSubmitToDirector = () => {
-        setRequests((prev) => {
-            const updated = prev.map((req) => {
-                if (req.status !== "PENDING_BOARD_APPROVAL") return req;
-                if (filterDate !== "All" && req.boardMeetingDate !== filterDate) return req;
-                return { ...req, status: "SUBMITTED_TO_DIRECTOR" as TerminationStatus };
-            });
-            localStorage.setItem("termination_requests", JSON.stringify(updated));
-            return updated;
+    const handleConfirmSubmitToDirector = async () => {
+        const toSubmit = requests.filter(r => {
+            if (r.status !== "PENDING_BOARD_APPROVAL") return false;
+            if (filterDate !== "All" && r.boardMeetingDate !== filterDate) return false;
+            return true;
         });
-        setShowConfirmModal(false);
+        
+        try {
+            await Promise.all(toSubmit.map(req => updateTerminationStatus(req.id, "SUBMITTED_TO_DIRECTOR")));
+            const data = await getAllTerminationRequests();
+            setRequests(data);
+            setShowConfirmModal(false);
+        } catch (error) {
+            console.error("Failed to submit to director:", error);
+        }
     };
 
     const preparationList = requests.filter(r => r.status === "PENDING_ADMIN");

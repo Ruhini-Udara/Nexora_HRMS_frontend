@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Check, X, Eye, MonitorPlay, Mails, Send } from 'lucide-react';
 import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 import { TerminationRequestForm } from '@/components/hr/employees/TerminationRequestForm';
+import { getAllTerminationRequests, updateTerminationStatus } from '@/lib/api/terminationRequests';
 
 export type DirTermRequest = {
     id: string;
@@ -29,31 +30,6 @@ export type DirTermRequest = {
 
 const getTodayStr = () => new Date().toISOString().split('T')[0];
 
-const loadDirectorTerminations = (): DirTermRequest[] => {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem("termination_requests");
-    if (stored) {
-        try {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) {
-                return parsed.filter((r: any) => 
-                    r.status === 'SUBMITTED_TO_DIRECTOR' || 
-                    r.status === 'PENDING_BOARD_APPROVAL' || 
-                    r.status === 'BOARD_ASSIGNED' ||
-                    r.status === 'APPROVED' || 
-                    r.status === 'REJECTED'
-                ).map((r: any) => ({
-                    ...r,
-                    boardMeetingDate: r.boardMeetingDate || getTodayStr(),
-                    email: r.email || `${r.employeeName ? r.employeeName.toLowerCase().replace(/\s+/g, '.') : 'employee'}@example.com`
-                }));
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    }
-    return [];
-};
 
 export default function TerminationTable() {
     const todayStr = getTodayStr();
@@ -79,7 +55,26 @@ export default function TerminationTable() {
     const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
 
     useEffect(() => {
-        setRequests(loadDirectorTerminations());
+        const fetchRequests = async () => {
+            try {
+                const data = await getAllTerminationRequests();
+                const mappedData = data.filter((r: any) => 
+                    r.status === 'SUBMITTED_TO_DIRECTOR' || 
+                    r.status === 'PENDING_BOARD_APPROVAL' || 
+                    r.status === 'BOARD_ASSIGNED' ||
+                    r.status === 'APPROVED' || 
+                    r.status === 'REJECTED'
+                ).map((r: any) => ({
+                    ...r,
+                    boardMeetingDate: r.boardMeetingDate || getTodayStr(),
+                    email: `${r.employeeName ? r.employeeName.toLowerCase().replace(/\s+/g, '.') : 'employee'}@example.com`
+                }));
+                setRequests(mappedData);
+            } catch (error) {
+                console.error("Failed to fetch terminations", error);
+            }
+        };
+        fetchRequests();
     }, []);
 
     const handleDownload = async (path: string) => {
@@ -167,40 +162,31 @@ export default function TerminationTable() {
 
     const isCurrentListFullyDecided = filteredRequests.length > 0 && filteredRequests.every(r => !isPending(r.status));
 
-    const saveToLocalStorage = (updatedRequests: DirTermRequest[]) => {
-        if (typeof window === "undefined") return;
-        const stored = localStorage.getItem("termination_requests");
-        if (stored) {
-            try {
-                const all = JSON.parse(stored);
-                const updatedAll = all.map((item: any) => {
-                    const found = updatedRequests.find(u => u.id === item.id);
-                    return found ? { ...item, ...found } : item;
-                });
-                localStorage.setItem("termination_requests", JSON.stringify(updatedAll));
-            } catch (e) {
-                console.error(e);
-            }
+    
+    const handleApprove = async (id: string) => {
+        try {
+            const updatedReq = await updateTerminationStatus(id, "APPROVED");
+            const updated = requests.map(r => r.id === id ? { ...r, ...updatedReq } : r);
+            setRequests(updated);
+            showToast(`successfully approved and email sent!`);
+        } catch (error) {
+            console.error('Failed to approve:', error);
         }
     };
 
-    const handleApprove = (id: string) => {
-        const req = requests.find(r => r.id === id);
-        const updated = requests.map(r => r.id === id ? { ...r, status: 'APPROVED' } : r);
-        setRequests(updated);
-        saveToLocalStorage(updated);
-        showToast(`successfully approved and email sent!`);
-    };
-
-    const handleConfirmReject = () => {
+    const handleConfirmReject = async () => {
         if (!rejectingRequest || !rejectReason.trim()) return;
-        const id = rejectingRequest.id;
-        const updated = requests.map(r => r.id === id ? { ...r, status: 'REJECTED', rejectReason, hrRemark: rejectReason } : r);
-        setRequests(updated);
-        saveToLocalStorage(updated);
-        showToast(`application rejected !`);
-        setRejectingRequest(null);
-        setRejectReason('');
+        try {
+            const id = rejectingRequest.id;
+            const updatedReq = await updateTerminationStatus(id, "REJECTED", rejectReason);
+            const updated = requests.map(r => r.id === id ? { ...r, ...updatedReq, rejectReason } : r);
+            setRequests(updated);
+            showToast(`application rejected !`);
+            setRejectingRequest(null);
+            setRejectReason('');
+        } catch (error) {
+            console.error('Failed to reject:', error);
+        }
     };
 
     const StatusBadge = ({ status }: { status: string }) => {
