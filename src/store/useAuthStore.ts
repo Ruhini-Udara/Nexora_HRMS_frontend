@@ -12,6 +12,11 @@ interface User {
     branch?: string;
     employeeId?: number;
     profilePicturePath?: string;
+    employeeType?: string;
+    isActive?: boolean;
+    gender?: string;
+    phoneNumber?: string;
+    personalEmail?: string;
 }
 
 interface AuthState {
