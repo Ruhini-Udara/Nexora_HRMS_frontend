@@ -40,9 +40,30 @@ export default function RegisterEmployeeStep1({
   const [phoneExists, setPhoneExists] = useState(false);
   const [dobError, setDobError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [dateJoinedError, setDateJoinedError] = useState<string | null>(null);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
   const djCalendarRef = useRef<HTMLDivElement>(null);
+
+  const parseDate = (dateStr: string): Date | null => {
+    const trimmed = dateStr?.trim();
+    if (!trimmed) return null;
+    const parts = trimmed.split('/');
+    if (parts.length !== 3) return null;
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    if (isNaN(month) || isNaN(day) || isNaN(year)) return null;
+    const date = new Date(year, month - 1, day);
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+    return date;
+  };
 
   const validateAge = (dobStr: string): boolean => {
     const trimmed = dobStr.trim();
@@ -100,6 +121,43 @@ export default function RegisterEmployeeStep1({
 
     setDobError(null);
     setError(null);
+    return true;
+  };
+
+  const validateDateJoined = (djStr: string, dobStr: string): boolean => {
+    const trimmedDJ = djStr?.trim();
+    if (!trimmedDJ) {
+      setDateJoinedError(null);
+      return true;
+    }
+
+    const djDate = parseDate(trimmedDJ);
+    if (!djDate) {
+      const errorMsg = "Please enter a valid Date Joined in MM/DD/YYYY format.";
+      setDateJoinedError(errorMsg);
+      return false;
+    }
+
+    const trimmedDOB = dobStr?.trim();
+    if (!trimmedDOB) {
+      setDateJoinedError(null);
+      return true;
+    }
+
+    const dobDate = parseDate(trimmedDOB);
+    if (!dobDate) {
+      setDateJoinedError(null);
+      return true;
+    }
+
+    const minJoinDate = new Date(dobDate.getFullYear() + 18, dobDate.getMonth(), dobDate.getDate());
+    if (djDate < minJoinDate) {
+      const errorMsg = "Birthday and joined date in mismatch. Date joined must be after birthday + 18 years.";
+      setDateJoinedError(errorMsg);
+      return false;
+    }
+
+    setDateJoinedError(null);
     return true;
   };
 
@@ -162,6 +220,12 @@ export default function RegisterEmployeeStep1({
       return (
         currentError.includes("Date of Birth") ||
         currentError.includes("18 years old")
+      );
+    }
+    if (fieldName === "dateJoined") {
+      return (
+        currentError.includes("Date Joined") ||
+        currentError.includes("mismatch")
       );
     }
     return true;
@@ -289,6 +353,13 @@ export default function RegisterEmployeeStep1({
     }
     if (name === "dateOfBirth") {
       setDobError(null);
+      if (formData.dateJoined) {
+        validateDateJoined(formData.dateJoined, value);
+      }
+    }
+    if (name === "dateJoined") {
+      setDateJoinedError(null);
+      validateDateJoined(value, formData.dateOfBirth);
     }
     if (error && shouldClearError(name, error)) {
       setError(null);
@@ -357,8 +428,12 @@ export default function RegisterEmployeeStep1({
     if (field === 'dateOfBirth') {
       setShowDateOfBirthCalendar(false);
       validateAge(formatted);
+      if (formData.dateJoined) {
+        validateDateJoined(formData.dateJoined, formatted);
+      }
     } else {
       setShowDateJoinedCalendar(false);
+      validateDateJoined(formatted, formData.dateOfBirth);
     }
   };
 
@@ -470,6 +545,12 @@ export default function RegisterEmployeeStep1({
 
     // Date of Birth validation
     if (!validateAge(formData.dateOfBirth)) {
+      return;
+    }
+
+    // Date Joined validation
+    if (formData.dateJoined && !validateDateJoined(formData.dateJoined, formData.dateOfBirth)) {
+      setError("Birthday and joined date in mismatch. Date joined must be after birthday + 18 years.");
       return;
     }
 
@@ -837,6 +918,16 @@ export default function RegisterEmployeeStep1({
                       setShowDateJoinedCalendar(true);
                       setViewDJ('days');
                     }}
+                    onBlur={(e) => {
+                      if (
+                        djCalendarRef.current &&
+                        e.relatedTarget &&
+                        djCalendarRef.current.contains(e.relatedTarget as Node)
+                      ) {
+                        return;
+                      }
+                      validateDateJoined(e.target.value, formData.dateOfBirth);
+                    }}
                     placeholder="mm/dd/yyyy"
                     name="dateJoined"
                     className="w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
@@ -1005,6 +1096,11 @@ export default function RegisterEmployeeStep1({
                     </div>
                   )}
                 </div>
+                {dateJoinedError && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {dateJoinedError}
+                  </p>
+                )}
               </div>
             </div>
 
