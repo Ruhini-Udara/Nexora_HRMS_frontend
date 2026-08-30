@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Mail, Phone, Camera, Briefcase, Hash, Calendar, Building, Loader2, X } from "lucide-react";
+import { Mail, Phone, Camera, Briefcase, Hash, Calendar, Building, Loader2, X, Clock, User, Activity } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { uploadDocument, getSignedUrl } from "@/lib/supabaseClient";
 import api from "@/lib/axiosInstance";
@@ -100,9 +100,24 @@ export default function ProfileView() {
                     <p className="text-slate-500 dark:text-slate-400 mb-6">{user.designation}</p>
                     
                     <div className="w-full mt-4 pt-6 border-t border-slate-100 dark:border-slate-800 text-left space-y-4">
-                        <div className="flex items-center gap-3 text-sm">
-                            <Mail className="w-5 h-5 text-slate-400" />
-                            <span className="text-slate-600 dark:text-slate-300 font-medium truncate">{user.email}</span>
+                        <div className="flex flex-col gap-3">
+                            <div className="flex items-center gap-3 text-sm" title="Work Email">
+                                <Mail className="w-5 h-5 text-slate-400" />
+                                <div className="flex flex-col">
+                                    <span className="text-slate-600 dark:text-slate-300 font-medium truncate">{user.email}</span>
+                                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Work Email</span>
+                                </div>
+                            </div>
+                            
+                            {user.personalEmail && ["ROLE_HR", "ROLE_ADMIN", "ROLE_DIRECTOR", "ROLE_SUPERVISOR"].includes(user.role) && (
+                                <div className="flex items-center gap-3 text-sm" title="Personal Email">
+                                    <Mail className="w-5 h-5 text-slate-400" />
+                                    <div className="flex flex-col">
+                                        <span className="text-slate-600 dark:text-slate-300 font-medium truncate">{user.personalEmail}</span>
+                                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Personal Email</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -140,6 +155,26 @@ export default function ProfileView() {
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Building className="w-3.5 h-3.5"/> Branch</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.branch || "N/A"}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Employee Type</label>
+                            <p className="text-slate-800 dark:text-slate-200 font-medium">{user.employeeType || "N/A"}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><User className="w-3.5 h-3.5"/> Gender</label>
+                            <p className="text-slate-800 dark:text-slate-200 font-medium">{user.gender || "N/A"}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5"/> Phone Number</label>
+                            <p className="text-slate-800 dark:text-slate-200 font-medium">{user.phoneNumber || "N/A"}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5"/> Status</label>
+                            <p className="text-slate-800 dark:text-slate-200 font-medium">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${user.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                    {user.isActive ? "Active" : "Inactive"}
+                                </span>
+                            </p>
                         </div>
                     </div>
                 </div>
