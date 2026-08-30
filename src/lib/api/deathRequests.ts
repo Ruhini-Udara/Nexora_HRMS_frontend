@@ -148,7 +148,7 @@ export const updateDeathRequest = async (idStr: string, request: Partial<DeathRe
 
 export const verifyDeathRequest = async (idStr: string): Promise<DeathRequest> => {
     const numericId = parseInt(idStr.replace('DTH-', ''), 10);
-    const response = await api.post(`/api/death-requests/${numericId}/verify`);
+    const response = await api.post(`/api/death-requests/${numericId}/verify`, {});
     return mapDtoToFrontend(response.data);
 };
 
@@ -167,7 +167,7 @@ export const deleteDeathRequest = async (idStr: string): Promise<void> => {
 
 export const submitDeathRequestToAdmin = async (idStr: string): Promise<DeathRequest> => {
     const numericId = parseInt(idStr.replace('DTH-', ''), 10);
-    const response = await api.post(`/api/death-requests/${numericId}/submit-admin`);
+    const response = await api.post(`/api/death-requests/${numericId}/submit-admin`, {});
     return mapDtoToFrontend(response.data);
 };
 
