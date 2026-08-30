@@ -41,6 +41,7 @@ export default function RegisterEmployeeStep1({
   const [dobError, setDobError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [dateJoinedError, setDateJoinedError] = useState<string | null>(null);
+  const [nicError, setNicError] = useState<string | null>(null);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
   const djCalendarRef = useRef<HTMLDivElement>(null);
@@ -161,6 +162,60 @@ export default function RegisterEmployeeStep1({
     return true;
   };
 
+  const validateNic = (nicStr: string): string | null => {
+    const trimmed = nicStr.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (!/^[0-9vVxX]+$/.test(trimmed)) {
+      return "NIC can only contain numbers and 'V' or 'X'";
+    }
+
+    if (/[vVxX]/.test(trimmed.slice(0, -1))) {
+      return "Letter (V/X) can only appear at the end of the NIC number";
+    }
+
+    if (trimmed.length > 12) {
+      return "NIC number cannot exceed 12 characters";
+    }
+
+    if (trimmed.length < 10) {
+      return `NIC must be 10 characters (old format: 9 digits + V/X) or 12 digits (${trimmed.length} entered)`;
+    }
+
+    if (trimmed.length === 10) {
+      if (/^[0-9]{9}[vVxX]$/.test(trimmed)) {
+        return null; // Valid old NIC format
+      }
+      if (/^[0-9]{10}$/.test(trimmed)) {
+        return "Old NIC format requires 9 digits followed by V or X, or enter a 12-digit new NIC (10/12 entered)";
+      }
+      return "Old NIC format must have 9 digits followed by V or X (e.g. 941234567V)";
+    }
+
+    if (trimmed.length === 11) {
+      if (/[vVxX]/.test(trimmed)) {
+        return "12-digit new NIC format must contain only numbers (no letters allowed)";
+      }
+      return "New NIC format must be 12 digits (11/12 digits entered)";
+    }
+
+    if (trimmed.length === 12) {
+      if (/^[0-9]{12}$/.test(trimmed)) {
+        return null; // Valid new NIC format
+      }
+      return "12-digit new NIC format must contain only numbers (no letters allowed)";
+    }
+
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (!nicRegex.test(trimmed)) {
+      return "Please enter a valid Sri Lankan NIC number (e.g. 941234567V or 199412345678)";
+    }
+
+    return null;
+  };
+
   const validatePhone = (phoneStr: string): string | null => {
     const trimmed = phoneStr.trim();
     if (!trimmed) {
@@ -250,6 +305,7 @@ export default function RegisterEmployeeStep1({
     const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
 
     if (!nicRegex.test(trimmed)) {
+      setNicExists(false);
       return;
     }
 
@@ -343,6 +399,7 @@ export default function RegisterEmployeeStep1({
     updateFormData({ [name]: value });
     if (name === "nicNumber") {
       setNicExists(false);
+      setNicError(validateNic(value));
     }
     if (name === "email") {
       setEmailExists(false);
@@ -509,11 +566,16 @@ export default function RegisterEmployeeStep1({
     }
 
     // Sri Lankan NIC Format Validation
-    // Old Format: 9 digits followed by V/v/X/x
-    // New Format: 12 digits
-    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
-    if (!nicRegex.test(formData.nicNumber.trim())) {
-      setError("Please enter a valid Sri Lankan NIC number (e.g., 941234567V or 199412345678).");
+    if (!formData.nicNumber.trim()) {
+      setError("NIC Number is required.");
+      setNicError("NIC Number is required.");
+      return;
+    }
+
+    const nError = validateNic(formData.nicNumber.trim());
+    if (nError) {
+      setError(nError);
+      setNicError(nError);
       return;
     }
 
@@ -632,7 +694,12 @@ export default function RegisterEmployeeStep1({
                     className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                   />
                 </div>
-                {nicExists && (
+                {nicError && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {nicError}
+                  </p>
+                )}
+                {!nicError && nicExists && (
                   <p className="text-xs text-red-600 font-semibold mt-1">
                     NIC Number already registered
                   </p>
