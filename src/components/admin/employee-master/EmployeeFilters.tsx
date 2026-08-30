@@ -6,8 +6,8 @@ import { FilterX } from "lucide-react";
 export enum EmployeeType {
   FULL_TIME = "Full-time",
   PART_TIME = "Part-time",
-  CONTRACT = "Contract",
-  INTERN = "Intern"
+  PROBATIONARY = "Probationary",
+  TEMPORARY = "Temporary"
 }
 
 export enum Department {

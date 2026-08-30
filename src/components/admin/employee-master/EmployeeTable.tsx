@@ -469,8 +469,8 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                 >
                   <option value="Full-time">Full-time</option>
                   <option value="Part-time">Part-time</option>
-                  <option value="Contract">Contract</option>
-                  <option value="Intern">Intern</option>
+                  <option value="Probationary">Probationary</option>
+                  <option value="Temporary">Temporary</option>
                 </select>
               </div>
             </div>
