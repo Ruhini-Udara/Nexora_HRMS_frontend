@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays, ClipboardCheck, LogOut, Moon, Sun } from "lucide-react";
+import { LayoutDashboard, Calendar, Clock, FileText, Users, GraduationCap, CalendarDays, ClipboardCheck, LogOut, Moon, Sun, UserCog } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAdminNavigation } from "./admin/AdminNavigationContext";
@@ -13,6 +13,7 @@ const menuItems = [
   { label: "Office Calendar", icon: <Calendar size={18} />, view: "officeCalendar" as const, href: "/admin" },
   { label: "Shift Management", icon: <Clock size={18} />, view: "shifts" as const, href: "/admin" },
   { label: "Other Approvals", icon: <ClipboardCheck size={18} />, view: "otherApprovals" as const, href: "/admin/other-approvals" },
+  { label: "Employee Actions", icon: <UserCog size={18} />, view: "employeeActions" as const, href: "/admin/employee-actions" },
   { label: "Training & Development", icon: <GraduationCap size={18} />, view: "training" as const, href: "/admin/training" },
   { label: "Leave Management", icon: <CalendarDays size={18} />, view: "leaveManagement" as const, href: "/admin/leave-requests" },
 ];
@@ -65,15 +66,17 @@ export default function AdminSidebar() {
         <nav className="mt-4">
           {menuItems.map((item) => {
             const isActive =
-              item.view === "leaveManagement"
-                ? pathname.startsWith("/admin/leave-requests")
-                : item.view === "otherApprovals"
-                  ? pathname.startsWith("/admin/other-approvals")
-                  : item.view === "training"
-                    ? pathname.startsWith("/admin/training")
-                    : activeView === item.view && pathname === "/admin";
+                item.view === "leaveManagement"
+                  ? pathname.startsWith("/admin/leave-requests")
+                  : item.view === "otherApprovals"
+                    ? pathname.startsWith("/admin/other-approvals")
+                    : item.view === "employeeActions"
+                      ? pathname.startsWith("/admin/employee-actions")
+                      : item.view === "training"
+                        ? pathname.startsWith("/admin/training")
+                        : activeView === item.view && pathname === "/admin";
 
-            return item.view === "leaveManagement" || item.view === "otherApprovals" || item.view === "training" ? (
+            return item.view === "leaveManagement" || item.view === "otherApprovals" || item.view === "employeeActions" || item.view === "training" ? (
               <Link
                 key={item.label}
                 href={item.href}

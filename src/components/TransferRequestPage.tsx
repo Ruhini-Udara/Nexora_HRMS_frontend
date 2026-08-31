@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { createTransferRequest, updateTransferRequest, TransferRequest, TransferStatus } from '@/lib/api/transferRequests';
+import { getDistinctBranches } from '@/lib/api/employeeApi';
 import { useAuthStore } from '@/store/useAuthStore';
 import { uploadHrmsDocument } from '@/lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
@@ -261,6 +262,19 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const [editingDraft, setEditingDraft] = useState<TransferRequest | null>(null);
+    const [availableBranches, setAvailableBranches] = useState<string[]>([]);
+
+    React.useEffect(() => {
+        const fetchBranches = async () => {
+            try {
+                const branches = await getDistinctBranches();
+                setAvailableBranches(branches);
+            } catch (error) {
+                console.error("Failed to fetch branches:", error);
+            }
+        };
+        fetchBranches();
+    }, []);
 
     useImperativeHandle(ref, () => ({
         setEditingDraft: (req: TransferRequest) => {
@@ -310,7 +324,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     } = useForm<TransferFormData>({
         resolver: zodResolver(transferSchema),
         defaultValues: {
-            currentLocation: '',
+            currentLocation: user?.branch || '',
             targetLocation: '',
             expectedDate: '',
             validReason: '',
@@ -321,7 +335,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     React.useEffect(() => {
         if (editingDraft) {
             reset({
-                currentLocation: editingDraft.currentBranch || '',
+                currentLocation: editingDraft.currentBranch || user?.branch || '',
                 targetLocation: editingDraft.targetBranch || '',
                 expectedDate: editingDraft.expectedDate || '',
                 validReason: editingDraft.reason || '',
@@ -336,7 +350,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
             })));
         } else {
             reset({
-                currentLocation: '',
+                currentLocation: user?.branch || '',
                 targetLocation: '',
                 expectedDate: '',
                 validReason: '',
@@ -346,7 +360,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                 { key: 'proof_documents', label: 'Proof Documents', icon: 'folder_open', mandatory: false, file: null },
             ]);
         }
-    }, [editingDraft, reset]);
+    }, [editingDraft, reset, user]);
 
 
 
@@ -408,7 +422,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
         setEditingDraft(null);
         setFormKey(prev => prev + 1);
         reset({
-            currentLocation: '',
+            currentLocation: user?.branch || '',
             targetLocation: '',
             expectedDate: '',
             validReason: '',
@@ -537,7 +551,8 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                         </label>
                                         <input
                                             {...register('currentLocation')}
-                                            className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.currentLocation ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
+                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-700 dark:text-slate-200"
+                                            readOnly
                                             placeholder="e.g. Colombo Branch"
                                         />
                                         {errors.currentLocation && (
@@ -548,11 +563,17 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                             Target Location <span className="text-red-500">*</span>
                                         </label>
-                                        <input
+                                        <select
                                             {...register('targetLocation')}
                                             className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.targetLocation ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
-                                            placeholder="e.g. Kandy Branch"
-                                        />
+                                        >
+                                            <option value="">Select a branch...</option>
+                                            {availableBranches.map((branch, index) => (
+                                                <option key={index} value={branch}>
+                                                    {branch}
+                                                </option>
+                                            ))}
+                                        </select>
                                         {errors.targetLocation && (
                                             <p className="text-xs text-red-500 mt-1">{errors.targetLocation.message}</p>
                                         )}

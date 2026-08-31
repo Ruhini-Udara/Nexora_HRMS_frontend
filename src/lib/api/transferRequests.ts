@@ -100,6 +100,12 @@ export const updateTransferStatus = async (idStr: string, status: string, remark
     return mapDtoToFrontend(response.data);
 };
 
+export const executeTransfer = async (idStr: string): Promise<TransferRequest> => {
+    const numericId = parseInt(idStr.replace('TRF-', ''), 10);
+    const response = await api.post(`/api/transfer-requests/${numericId}/execute`);
+    return mapDtoToFrontend(response.data);
+};
+
 export const updateTransferRequest = async (idStr: string, request: Partial<TransferRequest>): Promise<TransferRequest> => {
     const numericId = parseInt(idStr.replace('TRF-', ''), 10);
     const payload = {
