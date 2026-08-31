@@ -290,7 +290,7 @@ export default function NewCarryForwardBatch() {
                 Consolidated Batch Calculation
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Eligible days from each checked leave category are capped per policy and summed into each employee's carry-forward balance. The itemized breakdown will be preserved and visible on both the verification tables and the audit console.
+                Eligible days from each checked leave category are capped per policy and summed into each employee&apos;s carry-forward balance. The itemized breakdown will be preserved and visible on both the verification tables and the audit console.
               </p>
             </div>
           </div>
