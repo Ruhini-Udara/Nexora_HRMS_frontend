@@ -21,6 +21,7 @@ interface ShiftMapping {
   role: string;
   department: string;
   assignedShift: string;
+  assignedShiftId?: number | null;
   timeRange: string;
   avatar: string;
 }
@@ -37,6 +38,7 @@ interface DesignationApiResponse {
   designationId: number;
   designationName: string;
   shift?: {
+    id: number;
     name: string;
     startTime: string;
     endTime: string;
@@ -122,6 +124,7 @@ export default function ShiftManagement() {
           role: d.designationName,
           department: department,
           assignedShift: d.shift ? d.shift.name : "Unassigned",
+          assignedShiftId: d.shift ? d.shift.id : null,
           timeRange: d.shift ? `${d.shift.startTime.substring(0, 5)} - ${d.shift.endTime.substring(0, 5)}` : "-",
           avatar
         };
@@ -173,18 +176,21 @@ export default function ShiftManagement() {
 
   const handleEdit = (mapping: ShiftMapping) => {
     setEditingMapping(mapping);
-    setEditForm({ ...mapping });
+    const matchedShift = shifts.find(s => s.name.toLowerCase() === mapping.assignedShift.toLowerCase() || s.id === mapping.assignedShiftId);
+    setEditForm({
+      ...mapping,
+      assignedShiftId: mapping.assignedShiftId ?? (matchedShift ? matchedShift.id : null),
+    });
   };
 
   const handleSave = async () => {
     if (editForm) {
       try {
-        await api.put(`/api/designations/${editForm.id}`, {
-          designationName: editForm.role,
-          department: editForm.department,
-          assignedShift: editForm.assignedShift,
-          timeRange: editForm.timeRange
-        });
+        if (editForm.assignedShiftId) {
+          await api.put(`/api/designations/${editForm.id}/shift/${editForm.assignedShiftId}`);
+        } else {
+          await api.put(`/api/designations/${editForm.id}/shift`);
+        }
         await loadData();
         setEditingMapping(null);
         setEditForm(null);
@@ -572,8 +578,8 @@ export default function ShiftManagement() {
                 <input
                   type="text"
                   value={editForm.role}
-                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 rounded-lg cursor-not-allowed"
                 />
               </div>
               <div>
@@ -583,35 +589,56 @@ export default function ShiftManagement() {
                 <input
                   type="text"
                   value={editForm.department}
-                  onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 rounded-lg cursor-not-allowed"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                  Assigned Shift
+                  Assigned Shift <span className="text-orange-500">*</span>
                 </label>
                 <select
-                  value={editForm.assignedShift}
-                  onChange={(e) => setEditForm({ ...editForm, assignedShift: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  value={editForm.assignedShiftId ?? ""}
+                  onChange={(e) => {
+                    const selectedVal = e.target.value;
+                    if (!selectedVal) {
+                      setEditForm({
+                        ...editForm,
+                        assignedShiftId: null,
+                        assignedShift: "Unassigned",
+                        timeRange: "-",
+                      });
+                    } else {
+                      const shiftId = Number(selectedVal);
+                      const chosenShift = shifts.find((s) => s.id === shiftId);
+                      setEditForm({
+                        ...editForm,
+                        assignedShiftId: shiftId,
+                        assignedShift: chosenShift ? chosenShift.name : "Unassigned",
+                        timeRange: chosenShift ? `${chosenShift.startTime} - ${chosenShift.endTime}` : "-",
+                      });
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 >
-                  <option value="">Select Shift</option>
-                  <option value="Normal Shift">Normal Shift</option>
-                  <option value="Temporary Shift">Temporary Shift</option>
-                  <option value="Drivers Shift">Drivers Shift</option>
+                  <option value="">Unassigned (No Shift)</option>
+                  {shifts.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.startTime} - {s.endTime})
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                  Time Range
+                  Shift Timing Range
                 </label>
                 <input
                   type="text"
                   value={editForm.timeRange}
-                  onChange={(e) => setEditForm({ ...editForm, timeRange: e.target.value })}
+                  disabled
                   placeholder="08:30 - 16:30"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 rounded-lg cursor-not-allowed"
                 />
               </div>
 
