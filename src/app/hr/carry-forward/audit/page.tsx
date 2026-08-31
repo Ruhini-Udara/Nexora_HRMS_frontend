@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import axiosInstance from "@/lib/axiosInstance";
 
-export default function CarryForwardAuditPage() {
+function CarryForwardAuditContent() {
   const searchParams = useSearchParams();
   const initialBatchId = searchParams.get("batchId");
 
@@ -517,5 +517,20 @@ export default function CarryForwardAuditPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CarryForwardAuditPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-16 text-center text-slate-500">
+          <span className="material-symbols-outlined animate-spin text-3xl text-primary mb-2 block">sync</span>
+          Loading audit console...
+        </div>
+      }
+    >
+      <CarryForwardAuditContent />
+    </Suspense>
   );
 }
