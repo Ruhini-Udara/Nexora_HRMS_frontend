@@ -23,6 +23,7 @@ const phoneRegex = /^[0-9]{10}$/;
 const deathSchema = z.object({
     employeeId: z.string().min(1, 'Employee ID is required'),
     employeeName: z.string().min(1, 'Employee name is required'),
+    employeePhone: z.string().optional(),
     epfNumber: z.string().min(1, 'EPF number is required'),
     dateOfDeath: z.string().min(1, 'Date of death is required').refine((val) => {
         const today = new Date().toISOString().split('T')[0];
@@ -217,6 +218,7 @@ export function DeathRequestForm({
     const handleSelectEmployee = (emp: any) => {
         setValue('employeeName', emp.fullName || '');
         setValue('employeeId', emp.employeeCode || '');
+        setValue('employeePhone', emp.phoneNumber || '');
         setValue('epfNumber', emp.epfNumber || emp.epfNo || '');
         setIsSearchOpen(false);
         setSearchQuery("");
@@ -271,6 +273,7 @@ export function DeathRequestForm({
         defaultValues: {
             employeeId: '',
             employeeName: '',
+            employeePhone: '',
             epfNumber: '',
             dateOfDeath: '',
             natureOfDeath: 'Natural',
@@ -470,6 +473,10 @@ export function DeathRequestForm({
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Employee ID *</label>
                                 <input {...register('employeeId')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border ${errors.employeeId ? 'border-red-500' : 'border-slate-200'} dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
                                 {errors.employeeId && <p className="text-[10px] text-red-500 mt-1">{errors.employeeId.message}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Employee Phone</label>
+                                <input {...register('employeePhone')} readOnly={isReadOnly} className={`w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#8B3A00]/20 transition-all`} />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">EPF Number *</label>
