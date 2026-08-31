@@ -42,6 +42,7 @@ export default function RegisterEmployeeStep1({
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [dateJoinedError, setDateJoinedError] = useState<string | null>(null);
   const [nicError, setNicError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
   const djCalendarRef = useRef<HTMLDivElement>(null);
@@ -216,6 +217,103 @@ export default function RegisterEmployeeStep1({
     return null;
   };
 
+  const validateEmail = (emailStr: string): string | null => {
+    const trimmed = emailStr.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (trimmed.length > 254) {
+      return "Email address cannot exceed 254 characters";
+    }
+
+    if (/\s/.test(trimmed)) {
+      return "Email address cannot contain spaces";
+    }
+
+    if (!trimmed.includes("@")) {
+      return "Email address must include '@' (e.g. user@example.com)";
+    }
+
+    const parts = trimmed.split("@");
+    if (parts.length > 2) {
+      return "Email address can only contain one '@'";
+    }
+
+    const [username, domain] = parts;
+
+    if (!username) {
+      return "Username before '@' cannot be empty";
+    }
+
+    if (username.length > 64) {
+      return "Username before '@' cannot exceed 64 characters";
+    }
+
+    if (username.startsWith(".")) {
+      return "Username before '@' cannot start with a dot";
+    }
+
+    if (username.endsWith(".")) {
+      return "Username before '@' cannot end with a dot";
+    }
+
+    if (username.includes("..")) {
+      return "Username before '@' cannot contain consecutive dots";
+    }
+
+    if (!/^[a-zA-Z0-9_+&*-]+(?:\.[a-zA-Z0-9_+&*-]+)*$/.test(username)) {
+      return "Username contains invalid characters (only letters, numbers, and . _ + & * - are allowed)";
+    }
+
+    if (!domain) {
+      return "Domain name after '@' cannot be empty (e.g. gmail.com)";
+    }
+
+    if (domain.startsWith(".")) {
+      return "Domain name cannot start with a dot";
+    }
+
+    if (domain.endsWith(".")) {
+      return "Domain name cannot end with a dot";
+    }
+
+    if (domain.includes("..")) {
+      return "Domain name cannot contain consecutive dots";
+    }
+
+    if (!domain.includes(".")) {
+      return "Domain name must contain a dot (e.g. example.com)";
+    }
+
+    const domainLabels = domain.split(".");
+    for (const label of domainLabels) {
+      if (!label) {
+        return "Domain parts cannot be empty";
+      }
+      if (label.startsWith("-")) {
+        return "Domain name cannot start with a hyphen (e.g. -example.com)";
+      }
+      if (label.endsWith("-")) {
+        return "Domain name cannot end with a hyphen (e.g. example-.com)";
+      }
+      if (!/^[a-zA-Z0-9-]+$/.test(label)) {
+        return "Domain name can only contain letters, numbers, and hyphens";
+      }
+    }
+
+    const tld = domainLabels[domainLabels.length - 1];
+    if (tld.length < 2) {
+      return "Top-level domain (e.g. .com) must be at least 2 letters";
+    }
+
+    if (!/^[a-zA-Z]+$/.test(tld)) {
+      return "Top-level domain (e.g. .com) must contain only letters";
+    }
+
+    return null;
+  };
+
   const validatePhone = (phoneStr: string): string | null => {
     const trimmed = phoneStr.trim();
     if (!trimmed) {
@@ -332,9 +430,8 @@ export default function RegisterEmployeeStep1({
 
   useEffect(() => {
     const trimmed = formData.email?.trim() ?? "";
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!emailRegex.test(trimmed)) {
+    if (!trimmed || validateEmail(trimmed) !== null) {
       setEmailExists(false);
       return;
     }
@@ -403,6 +500,7 @@ export default function RegisterEmployeeStep1({
     }
     if (name === "email") {
       setEmailExists(false);
+      setEmailError(validateEmail(value));
     }
     if (name === "phoneNumber") {
       setPhoneExists(false);
@@ -553,15 +651,17 @@ export default function RegisterEmployeeStep1({
       setError("Sex is required.");
       return;
     }
+    // Email format validation
     if (!formData.email.trim()) {
       setError("Email Address is required.");
+      setEmailError("Email Address is required.");
       return;
     }
 
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      setError("Please enter a valid email address.");
+    const eError = validateEmail(formData.email.trim());
+    if (eError) {
+      setError(eError);
+      setEmailError(eError);
       return;
     }
 
@@ -1188,9 +1288,14 @@ export default function RegisterEmployeeStep1({
                   className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                 />
               </div>
-              {emailExists && (
+              {emailError && (
                 <p className="text-xs text-red-600 font-semibold mt-1">
-                  gmail already registered
+                  {emailError}
+                </p>
+              )}
+              {!emailError && emailExists && (
+                <p className="text-xs text-red-600 font-semibold mt-1">
+                  Email address already registered
                 </p>
               )}
             </div>
