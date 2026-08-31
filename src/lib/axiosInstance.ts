@@ -11,9 +11,13 @@ const api = axios.create({
     },
 });
 
-// Request interceptor to add JWT token
+// Request interceptor to add JWT token and handle multipart
 api.interceptors.request.use(
     (config) => {
+        if (config.data instanceof FormData) {
+            delete config.headers['Content-Type'];
+        }
+
         const storage = typeof window !== 'undefined' ? localStorage.getItem('nexora-auth-storage') : null;
         let token = null;
         if (storage) {
