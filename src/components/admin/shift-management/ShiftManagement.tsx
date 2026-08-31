@@ -629,18 +629,6 @@ export default function ShiftManagement() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                  Shift Timing Range
-                </label>
-                <input
-                  type="text"
-                  value={editForm.timeRange}
-                  disabled
-                  placeholder="08:30 - 16:30"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 bg-gray-100 dark:bg-slate-800/60 text-slate-700 dark:text-slate-400 rounded-lg cursor-not-allowed"
-                />
-              </div>
 
             </div>
             
