@@ -310,7 +310,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     } = useForm<TransferFormData>({
         resolver: zodResolver(transferSchema),
         defaultValues: {
-            currentLocation: '',
+            currentLocation: user?.branch || '',
             targetLocation: '',
             expectedDate: '',
             validReason: '',
@@ -321,7 +321,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     React.useEffect(() => {
         if (editingDraft) {
             reset({
-                currentLocation: editingDraft.currentBranch || '',
+                currentLocation: editingDraft.currentBranch || user?.branch || '',
                 targetLocation: editingDraft.targetBranch || '',
                 expectedDate: editingDraft.expectedDate || '',
                 validReason: editingDraft.reason || '',
@@ -336,7 +336,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
             })));
         } else {
             reset({
-                currentLocation: '',
+                currentLocation: user?.branch || '',
                 targetLocation: '',
                 expectedDate: '',
                 validReason: '',
@@ -346,7 +346,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                 { key: 'proof_documents', label: 'Proof Documents', icon: 'folder_open', mandatory: false, file: null },
             ]);
         }
-    }, [editingDraft, reset]);
+    }, [editingDraft, reset, user]);
 
 
 
@@ -408,7 +408,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
         setEditingDraft(null);
         setFormKey(prev => prev + 1);
         reset({
-            currentLocation: '',
+            currentLocation: user?.branch || '',
             targetLocation: '',
             expectedDate: '',
             validReason: '',
@@ -537,7 +537,8 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                         </label>
                                         <input
                                             {...register('currentLocation')}
-                                            className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.currentLocation ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
+                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-sm text-slate-700 dark:text-slate-200"
+                                            readOnly
                                             placeholder="e.g. Colombo Branch"
                                         />
                                         {errors.currentLocation && (
