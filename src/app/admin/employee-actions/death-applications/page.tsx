@@ -13,12 +13,18 @@ export default function DeathApplicationsExecutionPage() {
     const [executing, setExecuting] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
+    const isApprovedStatus = (status: string | undefined | null) => {
+        if (!status) return false;
+        const s = String(status).trim().toUpperCase();
+        return s === "APPROVED" || s === "BOARD APPROVED";
+    };
+
     const fetchRequests = async () => {
         try {
             setLoading(true);
             const data = await getAllDeathRequests();
-            // Filter only APPROVED requests
-            const approved = data.filter((req) => req.status === "APPROVED");
+            // Filter both APPROVED and Board Approved requests
+            const approved = data.filter((req) => isApprovedStatus(req.status));
             setRequests(approved);
         } catch (error) {
             setToast({
@@ -60,14 +66,14 @@ export default function DeathApplicationsExecutionPage() {
 
     const filteredRequests = requests.filter((req) => {
         const todayStr = getTodayDateStr();
-        const expectedDate = req.dateOfDeath || todayStr; // fallback if missing
+        const rawDate = req.dateOfDeath ? req.dateOfDeath.split('T')[0] : todayStr;
         
         if (activeTab === "today") {
             // Effective date is today or earlier
-            return expectedDate <= todayStr;
+            return rawDate <= todayStr;
         } else {
             // Effective date is in the future
-            return expectedDate > todayStr;
+            return rawDate > todayStr;
         }
     });
 
