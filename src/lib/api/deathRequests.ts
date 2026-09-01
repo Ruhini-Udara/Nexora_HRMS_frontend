@@ -177,8 +177,13 @@ export const submitDeathRequestToAdmin = async (idStr: string): Promise<DeathReq
 
 export const updateDeathStatus = async (idStr: string, status: string, boardMeetingDate?: string): Promise<DeathRequest> => {
     const numericId = parseInt(idStr.replace('DTH-', ''), 10);
-    const response = await api.put(`/api/death-requests/${numericId}/status`, null, {
-        params: { status, boardMeetingDate }
-    });
+    const payload: any = { status };
+    if (boardMeetingDate) payload.boardMeetingDate = boardMeetingDate;
+    const response = await api.put(`/api/death-requests/${numericId}/status`, payload);
     return mapDtoToFrontend(response.data);
+};
+
+export const executeDeathRequest = async (idStr: string): Promise<void> => {
+    const numericId = parseInt(idStr.replace('DTH-', ''), 10);
+    await api.post(`/api/death-requests/${numericId}/execute`);
 };

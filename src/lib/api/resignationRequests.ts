@@ -15,7 +15,9 @@ export type ResignationStatus =
     | 'SUBMITTED_FOR_ADMIN_APPROVAL'
     | 'Pending Director'
     | 'Board Approved'
-    | 'Board Rejected';
+    | 'Board Rejected'
+    | 'APPROVED'
+    | 'EXECUTED';
 
 export interface ResignationRequest {
     id: string;
@@ -122,4 +124,9 @@ export const updateResignationRequest = async (idStr: string, request: Partial<R
     };
     const response = await api.put(`/api/resignations/${numericId}`, payload);
     return mapDtoToFrontend(response.data);
+};
+
+export const executeResignationRequest = async (idStr: string): Promise<void> => {
+    const numericId = parseInt(idStr.replace('RES-', ''), 10);
+    await api.post(`/api/resignations/${numericId}/execute`);
 };

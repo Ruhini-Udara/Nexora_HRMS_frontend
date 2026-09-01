@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { getAllTransferRequests, executeTransfer, TransferRequest } from "@/lib/api/transferRequests";
 import { Toast } from "@/components/ui/Toast";
+import Link from "next/link";
 import { format } from "date-fns";
 
 export default function TransfersExecutionPage() {
@@ -12,12 +13,18 @@ export default function TransfersExecutionPage() {
     const [executing, setExecuting] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
+    const isApprovedStatus = (status: string | undefined | null) => {
+        if (!status) return false;
+        const s = String(status).trim().toUpperCase();
+        return s === "APPROVED" || s === "BOARD APPROVED";
+    };
+
     const fetchRequests = async () => {
         try {
             setLoading(true);
             const data = await getAllTransferRequests();
-            // Filter only APPROVED requests
-            const approved = data.filter((req) => req.status === "APPROVED");
+            // Filter both APPROVED and Board Approved requests
+            const approved = data.filter((req) => isApprovedStatus(req.status));
             setRequests(approved);
         } catch (error) {
             setToast({
@@ -59,25 +66,32 @@ export default function TransfersExecutionPage() {
 
     const filteredRequests = requests.filter((req) => {
         const todayStr = getTodayDateStr();
-        const expectedDate = req.expectedDate || todayStr; // fallback if missing
+        const rawDate = req.expectedDate ? req.expectedDate.split('T')[0] : todayStr;
         
         if (activeTab === "today") {
             // Effective date is today or earlier
-            return expectedDate <= todayStr;
+            return rawDate <= todayStr;
         } else {
             // Effective date is in the future
-            return expectedDate > todayStr;
+            return rawDate > todayStr;
         }
     });
 
     return (
         <div className="p-8 max-w-7xl mx-auto w-full flex-1">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Transfer Executions
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
-                View approved transfers and execute branch updates.
-            </p>
+            <div className="mb-8">
+                <div className="flex items-center gap-3 mb-2">
+                    <Link href="/admin/employee-actions" className="text-slate-400 hover:text-[#8B3A00] transition-colors cursor-pointer flex items-center">
+                        <span className="material-symbols-outlined text-[28px]">arrow_back</span>
+                    </Link>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                        Transfer Executions
+                    </h2>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 ml-10">
+                    View approved transfers and execute branch updates.
+                </p>
+            </div>
 
             <div className="flex space-x-1 border-b border-gray-200 dark:border-slate-800 mb-6">
                 <button
