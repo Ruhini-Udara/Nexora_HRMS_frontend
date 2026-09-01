@@ -8,6 +8,7 @@ import { format } from "date-fns";
 
 export default function DeathApplicationsExecutionPage() {
     const [requests, setRequests] = useState<DeathRequest[]>([]);
+    const [sortBy, setSortBy] = useState<"latest" | "oldest">("latest");
     const [loading, setLoading] = useState(true);
     const [executing, setExecuting] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -58,20 +59,51 @@ export default function DeathApplicationsExecutionPage() {
         }
     };
 
+    const sortedRequests = [...requests].sort((a, b) => {
+        const parseDate = (req: DeathRequest) => {
+            if (req.dateOfDeath) return new Date(req.dateOfDeath).getTime();
+            if (req.createdAt) return new Date(req.createdAt).getTime();
+            const numId = parseInt(req.id.replace(/\D/g, ''), 10);
+            return isNaN(numId) ? 0 : numId;
+        };
+
+        const dateA = parseDate(a);
+        const dateB = parseDate(b);
+
+        return sortBy === "latest" ? dateB - dateA : dateA - dateB;
+    });
+
     return (
         <div className="p-8 max-w-7xl mx-auto w-full flex-1">
-            <div className="mb-8">
-                <div className="flex items-center gap-3 mb-2">
-                    <Link href="/admin/employee-actions" className="text-slate-400 hover:text-[#8B3A00] transition-colors cursor-pointer flex items-center">
-                        <span className="material-symbols-outlined text-[28px]">arrow_back</span>
-                    </Link>
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        Death Application Executions
-                    </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <Link href="/admin/employee-actions" className="text-slate-400 hover:text-[#8B3A00] transition-colors cursor-pointer flex items-center">
+                            <span className="material-symbols-outlined text-[28px]">arrow_back</span>
+                        </Link>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                            Death Application Executions
+                        </h2>
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-400 ml-10">
+                        View approved death applications and execute offboarding updates.
+                    </p>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 ml-10">
-                    View approved death applications and execute offboarding updates.
-                </p>
+
+                {/* Sort dropdown */}
+                <div className="flex items-center gap-2.5 self-start sm:self-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg px-3.5 py-2 shadow-sm">
+                    <span className="material-symbols-outlined text-gray-400 dark:text-slate-400 text-[20px]">sort</span>
+                    <label htmlFor="sortFilter" className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Sort by:</label>
+                    <select
+                        id="sortFilter"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as "latest" | "oldest")}
+                        className="bg-transparent text-sm font-medium text-gray-800 dark:text-gray-100 outline-none cursor-pointer pr-1"
+                    >
+                        <option value="latest" className="dark:bg-slate-900">Latest to Oldest</option>
+                        <option value="oldest" className="dark:bg-slate-900">Oldest to Latest</option>
+                    </select>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -96,14 +128,14 @@ export default function DeathApplicationsExecutionPage() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : requests.length === 0 ? (
+                            ) : sortedRequests.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
                                         No approved death applications pending execution.
                                     </td>
                                 </tr>
                             ) : (
-                                requests.map((req) => (
+                                sortedRequests.map((req) => (
                                     <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/20 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
