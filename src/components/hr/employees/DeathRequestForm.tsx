@@ -298,7 +298,7 @@ export function DeathRequestForm({
     useEffect(() => {
         if (initialData) {
             reset(initialData);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setDocSlots(prev => prev.map(slot => ({
                 ...slot,
                 file: null,

@@ -279,7 +279,7 @@ export default function WelfareRequestPage() {
     }, [user]);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         loadRequests();
     }, [loadRequests]);
 
@@ -293,7 +293,7 @@ export default function WelfareRequestPage() {
                 specialRemark: editingDraft.employeeRemarks || '',
             });
             // Also populate docSlots with existing document name
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setDocSlots(prev => prev.map(slot => ({
                 ...slot,
                 file: null,

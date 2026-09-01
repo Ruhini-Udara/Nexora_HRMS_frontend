@@ -35,7 +35,7 @@ export interface DeathRequest {
     createdAt?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mapDtoToFrontend = (dto: any): DeathRequest => {
     return {
         id: `DTH-${dto.id}`,

@@ -115,7 +115,7 @@ export default function DirectorDashboard() {
                     />
                     <ModuleCard
                         title="Leave Requests"
-                        description="Review and approve annual leave, sick leave, and other time-off applications."
+                        description="Review and approve annual leave, medical leave, and other time-off applications."
                         icon={<Calendar className="w-5 h-5" />}
                         href="/director/leave"
                     />

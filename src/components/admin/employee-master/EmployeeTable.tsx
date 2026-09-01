@@ -68,7 +68,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     setPrevFilters({ department, jobTitle, status, searchQuery });
     setCurrentPage(1);
   }
-  
+
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
       try {
         const res = await api.get("/api/employees");
         const data = res.data;
-        
+
         if (!Array.isArray(data)) {
           console.error("Expected array of employees but received:", data);
           setEmployees([]);
@@ -87,7 +87,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
           id: emp.employeeCode || "",
           name: emp.fullName || "",
           email: emp.email || "",
-          avatar: "", 
+          avatar: "",
           department: emp.department || "",
           designation: emp.designation?.designationName || "",
           joiningDate: emp.dateJoined || "",
@@ -119,8 +119,8 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     const matchesDepartment = !department || employee.department?.toLowerCase() === department.toLowerCase();
     const matchesJobTitle = !jobTitle || employee.designation?.toLowerCase() === jobTitle.toLowerCase();
     const matchesStatus = !status || employee.employmentStatus?.toLowerCase() === status.toLowerCase();
-    
-    const matchesSearch = !searchQuery || 
+
+    const matchesSearch = !searchQuery ||
       employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       employee.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -172,12 +172,12 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
       setEmployees(employees.map((emp) =>
         emp.id === employee.id
           ? {
-              ...emp,
-              fingerprintUserId: updated.fingerprintUserId ?? emp.fingerprintUserId,
-              fingerprintEnrolled: Boolean(updated.fingerprintEnrolled),
-              fingerprintEnrolledAt: updated.fingerprintEnrolledAt ?? null,
-              lastFingerprintSyncAt: updated.lastFingerprintSyncAt ?? null,
-            }
+            ...emp,
+            fingerprintUserId: updated.fingerprintUserId ?? emp.fingerprintUserId,
+            fingerprintEnrolled: Boolean(updated.fingerprintEnrolled),
+            fingerprintEnrolledAt: updated.fingerprintEnrolledAt ?? null,
+            lastFingerprintSyncAt: updated.lastFingerprintSyncAt ?? null,
+          }
           : emp
       ));
     } catch (error) {
@@ -321,10 +321,10 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                     </label>
                   </div>
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${viewingEmployee.employmentStatus === 'Full-time'
-                      ? 'bg-green-100 text-green-800'
-                      : viewingEmployee.employmentStatus === 'Contract'
-                        ? 'bg-orange-100 text-orange-800'
-                        : 'bg-blue-100 text-blue-800'
+                    ? 'bg-green-100 text-green-800'
+                    : viewingEmployee.employmentStatus === 'Contract'
+                      ? 'bg-orange-100 text-orange-800'
+                      : 'bg-blue-100 text-blue-800'
                     }`}>
                     {viewingEmployee.employmentStatus}
                   </span>
@@ -347,11 +347,10 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                       Fingerprint Enrollment
                     </label>
                   </div>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                    viewingEmployee.fingerprintEnrolled
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${viewingEmployee.fingerprintEnrolled
                       ? "bg-emerald-100 text-emerald-800"
                       : "bg-slate-100 text-slate-700"
-                  }`}>
+                    }`}>
                     {viewingEmployee.fingerprintEnrolled ? "Enrolled" : "Not enrolled"}
                   </span>
                 </div>
@@ -469,8 +468,8 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                 >
                   <option value="Full-time">Full-time</option>
                   <option value="Part-time">Part-time</option>
-                  <option value="Contract">Contract</option>
-                  <option value="Intern">Intern</option>
+                  <option value="Probationary">Probationary</option>
+                  <option value="Temporary">Temporary</option>
                 </select>
               </div>
             </div>
@@ -540,7 +539,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                 <td className="px-6 py-5">
                   <div className="flex items-center gap-3">
                     {employee.avatar ? (
-                       
+
                       <img
                         alt={employee.name}
                         className="w-10 h-10 rounded-full"
@@ -571,21 +570,19 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                     <button
                       onClick={() => handleToggleFingerprintEnrollment(employee)}
                       disabled={fingerprintUpdatingCode === employee.id}
-                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors disabled:opacity-60 ${
-                        employee.fingerprintEnrolled
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors disabled:opacity-60 ${employee.fingerprintEnrolled
                           ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/40"
                           : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                      }`}
+                        }`}
                     >
                       <Fingerprint size={14} />
                       {employee.fingerprintEnrolled ? "Enrolled" : "Not Enrolled"}
                     </button>
                   ) : (
-                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ${
-                      employee.fingerprintEnrolled
+                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ${employee.fingerprintEnrolled
                         ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-400"
                         : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-                    }`}>
+                      }`}>
                       <Fingerprint size={14} />
                       {employee.fingerprintEnrolled ? "Enrolled" : "Not Enrolled"}
                     </span>
@@ -635,11 +632,10 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`w-10 h-10 rounded-lg font-medium ${
-                  currentPage === page
+                className={`w-10 h-10 rounded-lg font-medium ${currentPage === page
                     ? "bg-amber-900 text-white shadow-sm shadow-amber-900/20"
                     : "border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-slate-300 dark:text-slate-300"
-                }`}
+                  }`}
               >
                 {page}
               </button>

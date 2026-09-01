@@ -11,13 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Briefcase, Hash, Info, Building2, UserCog, ChevronLeft, AlertCircle } from "lucide-react";
+import { Briefcase, Hash, Info, Building2, UserCog, ChevronLeft, AlertCircle, Calendar, HeartPulse, Loader2 } from "lucide-react";
 import type { EmployeeFormData } from "./RegisterEmployee";
 import api from "@/lib/axiosInstance";
 
 interface DesignationOption {
   designationId: number;
   designationName: string;
+}
+
+interface LeavePolicyQuota {
+  annualLeave: number;
+  casualLeave: number;
+  medicalLeave: number;
+  total: number;
 }
 
 interface RegisterEmployeeStep2Props {
@@ -34,12 +41,41 @@ export default function RegisterEmployeeStep2({
   onPrevious,
 }: RegisterEmployeeStep2Props) {
   const [designations, setDesignations] = useState<DesignationOption[]>([]);
+  const [leaveQuota, setLeaveQuota] = useState<LeavePolicyQuota | null>(null);
+  const [isLoadingLeaveQuota, setIsLoadingLeaveQuota] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchLeaveQuota = async (empType: string) => {
+    if (!empType) {
+      setLeaveQuota(null);
+      return;
+    }
+    setIsLoadingLeaveQuota(true);
+    try {
+      const res = await api.get(`/api/v1/leave-policies/${empType}`);
+      setLeaveQuota(res.data);
+    } catch (err) {
+      console.error("Failed to fetch leave policies for employee type", err);
+      // Fallback based on type
+      const lower = empType.toLowerCase();
+      if (lower.includes("part") || lower.includes("temp")) {
+        setLeaveQuota({ annualLeave: 7, casualLeave: 4, medicalLeave: 7, total: 18 });
+      } else {
+        setLeaveQuota({ annualLeave: 14, casualLeave: 7, medicalLeave: 14, total: 35 });
+      }
+    } finally {
+      setIsLoadingLeaveQuota(false);
+    }
+  };
 
   useEffect(() => {
     api.get("/api/designations")
       .then((res) => setDesignations(res.data))
       .catch((err) => console.error("Failed to fetch designations", err));
+
+    if (formData.employeeType) {
+      fetchLeaveQuota(formData.employeeType);
+    }
   }, []);
 
   const handleInputChange = (
@@ -53,6 +89,9 @@ export default function RegisterEmployeeStep2({
   const handleSelectChange = (name: string, value: string) => {
     updateFormData({ [name]: value });
     if (error) setError(null);
+    if (name === "employeeType") {
+      fetchLeaveQuota(value);
+    }
   };
 
   const handleNextStep = () => {
@@ -201,8 +240,7 @@ export default function RegisterEmployeeStep2({
                     <SelectContent>
                       <SelectItem value="full-time">Full-Time</SelectItem>
                       <SelectItem value="part-time">Part-Time</SelectItem>
-                      <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="intern">Intern</SelectItem>
+                      <SelectItem value="probationary">Probationary</SelectItem>
                       <SelectItem value="temporary">Temporary</SelectItem>
                     </SelectContent>
                   </Select>
@@ -210,28 +248,109 @@ export default function RegisterEmployeeStep2({
               </div>
             </div>
 
-            {/* Department */}
-            <div className="space-y-2">
-              <Label htmlFor="department" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                Department <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10 pointer-events-none" />
-                <Select
-                  value={formData.department}
-                  onValueChange={(value) => handleSelectChange("department", value)}
-                >
-                  <SelectTrigger className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
-                    <SelectValue placeholder="Select Department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Engineering">Engineering</SelectItem>
-                    <SelectItem value="Human Resources">Human Resources</SelectItem>
-                    <SelectItem value="Sales & Marketing">Sales & Marketing</SelectItem>
-                    <SelectItem value="Product Development">Product Development</SelectItem>
-                    <SelectItem value="Operations">Operations</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Leave Policy Entitlements Preview */}
+            {formData.employeeType && (
+              <div className="p-5 bg-gradient-to-r from-amber-50/80 via-orange-50/50 to-amber-50/80 dark:from-slate-800/80 dark:via-slate-800/60 dark:to-slate-800/80 border border-amber-200/80 dark:border-slate-700 rounded-xl transition-all duration-300 shadow-sm animate-fadeIn">
+                <div className="flex items-center justify-between mb-3.5">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                    Leave Entitlements ({formData.employeeType.replace("-", " ").toUpperCase()})
+                  </h3>
+                  {isLoadingLeaveQuota ? (
+                    <div className="flex items-center gap-1.5 text-xs text-[#8B3A00] dark:text-amber-400 font-medium">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Loading policy...</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300/60 dark:border-amber-800/60">
+                      Total: {leaveQuota?.total ?? 0} Days / Year
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  {/* Casual Leave */}
+                  <div className="bg-white dark:bg-slate-900/90 p-3.5 rounded-lg border border-gray-200/80 dark:border-slate-700/80 shadow-xs flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 block">Casual Leave</span>
+                      <span className="text-base font-bold text-gray-900 dark:text-white">
+                        {isLoadingLeaveQuota ? "..." : `${leaveQuota?.casualLeave ?? 0} Days`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Medical Leave */}
+                  <div className="bg-white dark:bg-slate-900/90 p-3.5 rounded-lg border border-gray-200/80 dark:border-slate-700/80 shadow-xs flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                      <HeartPulse className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 block">Medical Leave</span>
+                      <span className="text-base font-bold text-gray-900 dark:text-white">
+                        {isLoadingLeaveQuota ? "..." : `${leaveQuota?.medicalLeave ?? 0} Days`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Annual Leave */}
+                  <div className="bg-white dark:bg-slate-900/90 p-3.5 rounded-lg border border-gray-200/80 dark:border-slate-700/80 shadow-xs flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <Briefcase className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 block">Annual Leave</span>
+                      <span className="text-base font-bold text-gray-900 dark:text-white">
+                        {isLoadingLeaveQuota ? "..." : `${leaveQuota?.annualLeave ?? 0} Days`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Department and Branch */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="department" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                  Department <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10 pointer-events-none" />
+                  <Select
+                    value={formData.department}
+                    onValueChange={(value) => handleSelectChange("department", value)}
+                  >
+                    <SelectTrigger className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Engineering">Engineering</SelectItem>
+                      <SelectItem value="Human Resources">Human Resources</SelectItem>
+                      <SelectItem value="Sales & Marketing">Sales & Marketing</SelectItem>
+                      <SelectItem value="Product Development">Product Development</SelectItem>
+                      <SelectItem value="Operations">Operations</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="branch" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                  Branch
+                </Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                  <Input
+                    id="branch"
+                    name="branch"
+                    placeholder="e.g. Head Office"
+                    value={formData.branch}
+                    onChange={handleInputChange}
+                    className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
+                  />
+                </div>
               </div>
             </div>
 

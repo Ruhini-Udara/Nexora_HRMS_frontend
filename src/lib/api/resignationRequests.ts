@@ -43,7 +43,7 @@ export interface ResignationRequest {
 }
 
 // Internal mapping function to map DTO from backend to frontend interface
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mapDtoToFrontend = (dto: any): ResignationRequest => {
     return {
         id: `RES-${dto.id}`,

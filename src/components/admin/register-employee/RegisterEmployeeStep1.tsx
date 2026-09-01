@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, AlertCircle } from "lucide-react";
+import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, AlertCircle, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EmployeeFormData } from "./RegisterEmployee";
 import api from "@/lib/axiosInstance";
@@ -36,10 +36,36 @@ export default function RegisterEmployeeStep1({
   const [viewDJ, setViewDJ] = useState<'days' | 'years'>('days');
   const [error, setError] = useState<string | null>(null);
   const [nicExists, setNicExists] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
+  const [phoneExists, setPhoneExists] = useState(false);
   const [dobError, setDobError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [dateJoinedError, setDateJoinedError] = useState<string | null>(null);
+  const [nicError, setNicError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const dobCalendarRef = useRef<HTMLDivElement>(null);
   const djCalendarRef = useRef<HTMLDivElement>(null);
+
+  const parseDate = (dateStr: string): Date | null => {
+    const trimmed = dateStr?.trim();
+    if (!trimmed) return null;
+    const parts = trimmed.split('/');
+    if (parts.length !== 3) return null;
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    if (isNaN(month) || isNaN(day) || isNaN(year)) return null;
+    const date = new Date(year, month - 1, day);
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+    return date;
+  };
 
   const validateAge = (dobStr: string): boolean => {
     const trimmed = dobStr.trim();
@@ -100,6 +126,229 @@ export default function RegisterEmployeeStep1({
     return true;
   };
 
+  const validateDateJoined = (djStr: string, dobStr: string): boolean => {
+    const trimmedDJ = djStr?.trim();
+    if (!trimmedDJ) {
+      setDateJoinedError(null);
+      return true;
+    }
+
+    const djDate = parseDate(trimmedDJ);
+    if (!djDate) {
+      const errorMsg = "Please enter a valid Date Joined in MM/DD/YYYY format.";
+      setDateJoinedError(errorMsg);
+      return false;
+    }
+
+    const trimmedDOB = dobStr?.trim();
+    if (!trimmedDOB) {
+      setDateJoinedError(null);
+      return true;
+    }
+
+    const dobDate = parseDate(trimmedDOB);
+    if (!dobDate) {
+      setDateJoinedError(null);
+      return true;
+    }
+
+    const minJoinDate = new Date(dobDate.getFullYear() + 18, dobDate.getMonth(), dobDate.getDate());
+    if (djDate < minJoinDate) {
+      const errorMsg = "Birthday and joined date in mismatch. Date joined must be after birthday + 18 years.";
+      setDateJoinedError(errorMsg);
+      return false;
+    }
+
+    setDateJoinedError(null);
+    return true;
+  };
+
+  const validateNic = (nicStr: string): string | null => {
+    const trimmed = nicStr.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (!/^[0-9vVxX]+$/.test(trimmed)) {
+      return "NIC can only contain numbers and 'V' or 'X'";
+    }
+
+    if (/[vVxX]/.test(trimmed.slice(0, -1))) {
+      return "Letter (V/X) can only appear at the end of the NIC number";
+    }
+
+    if (trimmed.length > 12) {
+      return "NIC number cannot exceed 12 characters";
+    }
+
+    if (trimmed.length < 10) {
+      return `NIC must be 10 characters (old format: 9 digits + V/X) or 12 digits (${trimmed.length} entered)`;
+    }
+
+    if (trimmed.length === 10) {
+      if (/^[0-9]{9}[vVxX]$/.test(trimmed)) {
+        return null; // Valid old NIC format
+      }
+      if (/^[0-9]{10}$/.test(trimmed)) {
+        return "Old NIC format requires 9 digits followed by V or X, or enter a 12-digit new NIC (10/12 entered)";
+      }
+      return "Old NIC format must have 9 digits followed by V or X (e.g. 941234567V)";
+    }
+
+    if (trimmed.length === 11) {
+      if (/[vVxX]/.test(trimmed)) {
+        return "12-digit new NIC format must contain only numbers (no letters allowed)";
+      }
+      return "New NIC format must be 12 digits (11/12 digits entered)";
+    }
+
+    if (trimmed.length === 12) {
+      if (/^[0-9]{12}$/.test(trimmed)) {
+        return null; // Valid new NIC format
+      }
+      return "12-digit new NIC format must contain only numbers (no letters allowed)";
+    }
+
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (!nicRegex.test(trimmed)) {
+      return "Please enter a valid Sri Lankan NIC number (e.g. 941234567V or 199412345678)";
+    }
+
+    return null;
+  };
+
+  const validateEmail = (emailStr: string): string | null => {
+    const trimmed = emailStr.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (trimmed.length > 254) {
+      return "Email address cannot exceed 254 characters";
+    }
+
+    if (/\s/.test(trimmed)) {
+      return "Email address cannot contain spaces";
+    }
+
+    if (!trimmed.includes("@")) {
+      return "Email address must include '@' (e.g. user@example.com)";
+    }
+
+    const parts = trimmed.split("@");
+    if (parts.length > 2) {
+      return "Email address can only contain one '@'";
+    }
+
+    const [username, domain] = parts;
+
+    if (!username) {
+      return "Username before '@' cannot be empty";
+    }
+
+    if (username.length > 64) {
+      return "Username before '@' cannot exceed 64 characters";
+    }
+
+    if (username.startsWith(".")) {
+      return "Username before '@' cannot start with a dot";
+    }
+
+    if (username.endsWith(".")) {
+      return "Username before '@' cannot end with a dot";
+    }
+
+    if (username.includes("..")) {
+      return "Username before '@' cannot contain consecutive dots";
+    }
+
+    if (!/^[a-zA-Z0-9_+&*-]+(?:\.[a-zA-Z0-9_+&*-]+)*$/.test(username)) {
+      return "Username contains invalid characters (only letters, numbers, and . _ + & * - are allowed)";
+    }
+
+    if (!domain) {
+      return "Domain name after '@' cannot be empty (e.g. gmail.com)";
+    }
+
+    if (domain.startsWith(".")) {
+      return "Domain name cannot start with a dot";
+    }
+
+    if (domain.endsWith(".")) {
+      return "Domain name cannot end with a dot";
+    }
+
+    if (domain.includes("..")) {
+      return "Domain name cannot contain consecutive dots";
+    }
+
+    if (!domain.includes(".")) {
+      return "Domain name must contain a dot (e.g. example.com)";
+    }
+
+    const domainLabels = domain.split(".");
+    for (const label of domainLabels) {
+      if (!label) {
+        return "Domain parts cannot be empty";
+      }
+      if (label.startsWith("-")) {
+        return "Domain name cannot start with a hyphen (e.g. -example.com)";
+      }
+      if (label.endsWith("-")) {
+        return "Domain name cannot end with a hyphen (e.g. example-.com)";
+      }
+      if (!/^[a-zA-Z0-9-]+$/.test(label)) {
+        return "Domain name can only contain letters, numbers, and hyphens";
+      }
+    }
+
+    const tld = domainLabels[domainLabels.length - 1];
+    if (tld.length < 2) {
+      return "Top-level domain (e.g. .com) must be at least 2 letters";
+    }
+
+    if (!/^[a-zA-Z]+$/.test(tld)) {
+      return "Top-level domain (e.g. .com) must contain only letters";
+    }
+
+    return null;
+  };
+
+  const validatePhone = (phoneStr: string): string | null => {
+    const trimmed = phoneStr.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (trimmed.startsWith("0")) {
+      return "Phone number cannot start with 0. Must start with +94 (e.g. +94771234567)";
+    }
+
+    if (!trimmed.startsWith("+94")) {
+      return "Phone number must start with +94 (e.g. +94771234567)";
+    }
+
+    const afterPlus = trimmed.slice(1);
+    if (!/^\d+$/.test(afterPlus)) {
+      return "Phone number can only contain digits after +";
+    }
+
+    if (trimmed.length > 12) {
+      return "Phone number cannot exceed 9 digits after +94";
+    }
+
+    if (trimmed.length < 12) {
+      const digitsCount = trimmed.slice(3).length;
+      return `Phone number must be 9 digits after +94 (${digitsCount}/9 digits entered)`;
+    }
+
+    if (!/^\+94\d{9}$/.test(trimmed)) {
+      return "Please enter a valid phone number (e.g. +94771234567)";
+    }
+
+    return null;
+  };
+
   const shouldClearError = (fieldName: string, currentError: string | null): boolean => {
     if (!currentError) return false;
     if (fieldName === "nicNumber") {
@@ -115,12 +364,21 @@ export default function RegisterEmployeeStep1({
       return currentError.includes("Sex");
     }
     if (fieldName === "email") {
-      return currentError.includes("Email");
+      return currentError.includes("Email") || currentError.includes("gmail");
+    }
+    if (fieldName === "phoneNumber") {
+      return currentError.includes("Phone") || currentError.includes("phone");
     }
     if (fieldName === "dateOfBirth") {
       return (
         currentError.includes("Date of Birth") ||
         currentError.includes("18 years old")
+      );
+    }
+    if (fieldName === "dateJoined") {
+      return (
+        currentError.includes("Date Joined") ||
+        currentError.includes("mismatch")
       );
     }
     return true;
@@ -145,6 +403,7 @@ export default function RegisterEmployeeStep1({
     const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
 
     if (!nicRegex.test(trimmed)) {
+      setNicExists(false);
       return;
     }
 
@@ -169,6 +428,67 @@ export default function RegisterEmployeeStep1({
     };
   }, [formData.nicNumber]);
 
+  useEffect(() => {
+    const trimmed = formData.email?.trim() ?? "";
+
+    if (!trimmed || validateEmail(trimmed) !== null) {
+      setEmailExists(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await api.get<boolean>(`/api/employees/exists-email/${trimmed}`);
+        if (!cancelled) {
+          setEmailExists(response.data === true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Error checking email uniqueness:", err);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [formData.email]);
+
+  useEffect(() => {
+    const trimmed = formData.phoneNumber?.trim() ?? "";
+    const phoneRegex = /^\+94\d{9}$/;
+
+    if (!phoneRegex.test(trimmed)) {
+      setPhoneExists(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await api.get<boolean>(`/api/employees/exists-phone`, {
+          params: { phoneNumber: trimmed }
+        });
+        if (!cancelled) {
+          setPhoneExists(response.data === true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Error checking phone uniqueness:", err);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [formData.phoneNumber]);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -176,9 +496,25 @@ export default function RegisterEmployeeStep1({
     updateFormData({ [name]: value });
     if (name === "nicNumber") {
       setNicExists(false);
+      setNicError(validateNic(value));
+    }
+    if (name === "email") {
+      setEmailExists(false);
+      setEmailError(validateEmail(value));
+    }
+    if (name === "phoneNumber") {
+      setPhoneExists(false);
+      setPhoneError(validatePhone(value));
     }
     if (name === "dateOfBirth") {
       setDobError(null);
+      if (formData.dateJoined) {
+        validateDateJoined(formData.dateJoined, value);
+      }
+    }
+    if (name === "dateJoined") {
+      setDateJoinedError(null);
+      validateDateJoined(value, formData.dateOfBirth);
     }
     if (error && shouldClearError(name, error)) {
       setError(null);
@@ -247,8 +583,12 @@ export default function RegisterEmployeeStep1({
     if (field === 'dateOfBirth') {
       setShowDateOfBirthCalendar(false);
       validateAge(formatted);
+      if (formData.dateJoined) {
+        validateDateJoined(formData.dateJoined, formatted);
+      }
     } else {
       setShowDateJoinedCalendar(false);
+      validateDateJoined(formatted, formData.dateOfBirth);
     }
   };
 
@@ -311,24 +651,31 @@ export default function RegisterEmployeeStep1({
       setError("Sex is required.");
       return;
     }
+    // Email format validation
     if (!formData.email.trim()) {
       setError("Email Address is required.");
+      setEmailError("Email Address is required.");
       return;
     }
 
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      setError("Please enter a valid email address.");
+    const eError = validateEmail(formData.email.trim());
+    if (eError) {
+      setError(eError);
+      setEmailError(eError);
       return;
     }
 
     // Sri Lankan NIC Format Validation
-    // Old Format: 9 digits followed by V/v/X/x
-    // New Format: 12 digits
-    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
-    if (!nicRegex.test(formData.nicNumber.trim())) {
-      setError("Please enter a valid Sri Lankan NIC number (e.g., 941234567V or 199412345678).");
+    if (!formData.nicNumber.trim()) {
+      setError("NIC Number is required.");
+      setNicError("NIC Number is required.");
+      return;
+    }
+
+    const nError = validateNic(formData.nicNumber.trim());
+    if (nError) {
+      setError(nError);
+      setNicError(nError);
       return;
     }
 
@@ -337,8 +684,35 @@ export default function RegisterEmployeeStep1({
       return;
     }
 
+    if (emailExists) {
+      setError("gmail already registered");
+      return;
+    }
+
+    // Phone number validation - must start with +94 followed by 9 digits (total 12 characters)
+    if (formData.phoneNumber && formData.phoneNumber.trim()) {
+      const trimmedPhone = formData.phoneNumber.trim();
+      const pError = validatePhone(trimmedPhone);
+      if (pError || !/^\+94\d{9}$/.test(trimmedPhone)) {
+        const errorMsg = pError || "Phone Number must start with +94 followed by 9 digits (e.g., +94771234567).";
+        setError(errorMsg);
+        setPhoneError(errorMsg);
+        return;
+      }
+      if (phoneExists) {
+        setError("Phone number already registered");
+        return;
+      }
+    }
+
     // Date of Birth validation
     if (!validateAge(formData.dateOfBirth)) {
+      return;
+    }
+
+    // Date Joined validation
+    if (formData.dateJoined && !validateDateJoined(formData.dateJoined, formData.dateOfBirth)) {
+      setError("Birthday and joined date in mismatch. Date joined must be after birthday + 18 years.");
       return;
     }
 
@@ -420,7 +794,12 @@ export default function RegisterEmployeeStep1({
                     className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                   />
                 </div>
-                {nicExists && (
+                {nicError && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {nicError}
+                  </p>
+                )}
+                {!nicError && nicExists && (
                   <p className="text-xs text-red-600 font-semibold mt-1">
                     NIC Number already registered
                   </p>
@@ -491,8 +870,8 @@ export default function RegisterEmployeeStep1({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-  Date of Birth <span className="text-red-500">*</span>
-</Label>
+                  Date of Birth <span className="text-red-500">*</span>
+                </Label>
 
                 <div className="relative" ref={dobCalendarRef}>
                   <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none z-10" />
@@ -706,6 +1085,16 @@ export default function RegisterEmployeeStep1({
                       setShowDateJoinedCalendar(true);
                       setViewDJ('days');
                     }}
+                    onBlur={(e) => {
+                      if (
+                        djCalendarRef.current &&
+                        e.relatedTarget &&
+                        djCalendarRef.current.contains(e.relatedTarget as Node)
+                      ) {
+                        return;
+                      }
+                      validateDateJoined(e.target.value, formData.dateOfBirth);
+                    }}
                     placeholder="mm/dd/yyyy"
                     name="dateJoined"
                     className="w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
@@ -874,6 +1263,11 @@ export default function RegisterEmployeeStep1({
                     </div>
                   )}
                 </div>
+                {dateJoinedError && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {dateJoinedError}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -894,6 +1288,16 @@ export default function RegisterEmployeeStep1({
                   className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
                 />
               </div>
+              {emailError && (
+                <p className="text-xs text-red-600 font-semibold mt-1">
+                  {emailError}
+                </p>
+              )}
+              {!emailError && emailExists && (
+                <p className="text-xs text-red-600 font-semibold mt-1">
+                  Email address already registered
+                </p>
+              )}
             </div>
 
             {/* Home Address */}
@@ -915,29 +1319,59 @@ export default function RegisterEmployeeStep1({
               </div>
             </div>
 
-            {/* Marital Status */}
-            <div className="space-y-2">
-              <Label htmlFor="maritalStatus" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                Marital Status
-              </Label>
-              <div className="relative">
-                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10 pointer-events-none" />
-                <Select
-                  value={formData.maritalStatus}
-                  onValueChange={(value) =>
-                    handleSelectChange("maritalStatus", value)
-                  }
-                >
-                  <SelectTrigger className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Single">Single</SelectItem>
-                    <SelectItem value="Married">Married</SelectItem>
-                    <SelectItem value="Divorced">Divorced</SelectItem>
-                    <SelectItem value="Widowed">Widowed</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Marital Status and Phone Number */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="maritalStatus" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                  Marital Status
+                </Label>
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10 pointer-events-none" />
+                  <Select
+                    value={formData.maritalStatus}
+                    onValueChange={(value) =>
+                      handleSelectChange("maritalStatus", value)
+                    }
+                  >
+                    <SelectTrigger className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Single">Single</SelectItem>
+                      <SelectItem value="Married">Married</SelectItem>
+                      <SelectItem value="Divorced">Divorced</SelectItem>
+                      <SelectItem value="Widowed">Widowed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                  Phone Number
+                </Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    type="tel"
+                    placeholder="e.g. +94771234567"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
+                  />
+                </div>
+                {phoneError && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {phoneError}
+                  </p>
+                )}
+                {!phoneError && phoneExists && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    Phone number already registered
+                  </p>
+                )}
               </div>
             </div>
 
