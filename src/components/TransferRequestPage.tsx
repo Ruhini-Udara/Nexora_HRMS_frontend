@@ -298,7 +298,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
 
     // Filter requests to find if there is a NEW draft (legacy check, but we now support multiple drafts)
     const isEditing = !!editingDraft;
-    const submittedRequests = requests.filter(r => r.status !== 'NEW');
+    const submittedRequests = requests.filter(r => r.status !== 'NEW' && r.status !== 'DRAFT');
 
 
 
@@ -513,6 +513,28 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                     {/* Active submitted requests hidden per user request */}
 
                     <form onSubmit={handleSubmit(onFormValid)}>
+                        {editingDraft && (
+                            <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/40 rounded-xl flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-[#8B3A00] dark:text-orange-400 text-2xl">edit_note</span>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            Editing Draft <span className="text-[#8B3A00] dark:text-orange-400 font-extrabold">{editingDraft.id}</span>
+                                        </p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Modify the details below and click &quot;Submit Request&quot; or update the draft.
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={resetForm}
+                                    className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors cursor-pointer"
+                                >
+                                    Cancel Edit
+                                </button>
+                            </div>
+                        )}
                         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
                             <div className="p-8 space-y-10">
 
@@ -524,8 +546,8 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Provide your transfer details and upload required documents.</p>
                                         </div>
                                         {isEditing && (
-                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded uppercase tracking-wider">
-                                                Draft
+                                            <span className="text-[10px] font-bold text-[#8B3A00] dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/40 px-3 py-1 rounded uppercase tracking-wider">
+                                                Editing Draft
                                             </span>
                                         )}
                                     </div>
