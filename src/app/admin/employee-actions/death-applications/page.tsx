@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { getAllDeathRequests, executeDeathRequest, DeathRequest } from "@/lib/api/deathRequests";
 import { Toast } from "@/components/ui/Toast";
+import Link from "next/link";
 import { format } from "date-fns";
 
 export default function DeathApplicationsExecutionPage() {
@@ -72,12 +73,19 @@ export default function DeathApplicationsExecutionPage() {
 
     return (
         <div className="p-8 max-w-7xl mx-auto w-full flex-1">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Death Application Executions
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
-                View approved death applications and execute offboarding updates.
-            </p>
+            <div className="mb-8">
+                <div className="flex items-center gap-3 mb-2">
+                    <Link href="/admin/employee-actions" className="text-slate-400 hover:text-[#8B3A00] transition-colors cursor-pointer flex items-center">
+                        <span className="material-symbols-outlined text-[28px]">arrow_back</span>
+                    </Link>
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                        Death Application Executions
+                    </h2>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 ml-10">
+                    View approved death applications and execute offboarding updates.
+                </p>
+            </div>
 
             <div className="flex space-x-1 border-b border-gray-200 dark:border-slate-800 mb-6">
                 <button
