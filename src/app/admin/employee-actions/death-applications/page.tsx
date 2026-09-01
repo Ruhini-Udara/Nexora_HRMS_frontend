@@ -7,7 +7,6 @@ import Link from "next/link";
 import { format } from "date-fns";
 
 export default function DeathApplicationsExecutionPage() {
-    const [activeTab, setActiveTab] = useState<"today" | "upcoming">("today");
     const [requests, setRequests] = useState<DeathRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [executing, setExecuting] = useState<string | null>(null);
@@ -59,24 +58,6 @@ export default function DeathApplicationsExecutionPage() {
         }
     };
 
-    const getTodayDateStr = () => {
-        const today = new Date();
-        return format(today, "yyyy-MM-dd");
-    };
-
-    const filteredRequests = requests.filter((req) => {
-        const todayStr = getTodayDateStr();
-        const rawDate = req.dateOfDeath ? req.dateOfDeath.split('T')[0] : todayStr;
-        
-        if (activeTab === "today") {
-            // Effective date is today or earlier
-            return rawDate <= todayStr;
-        } else {
-            // Effective date is in the future
-            return rawDate > todayStr;
-        }
-    });
-
     return (
         <div className="p-8 max-w-7xl mx-auto w-full flex-1">
             <div className="mb-8">
@@ -91,35 +72,6 @@ export default function DeathApplicationsExecutionPage() {
                 <p className="text-gray-600 dark:text-gray-400 ml-10">
                     View approved death applications and execute offboarding updates.
                 </p>
-            </div>
-
-            <div className="flex space-x-1 border-b border-gray-200 dark:border-slate-800 mb-6">
-                <button
-                    onClick={() => setActiveTab("today")}
-                    className={`px-6 py-3 font-medium text-sm transition-colors relative ${
-                        activeTab === "today"
-                            ? "text-[#8B3A00] dark:text-[#E85C0D]"
-                            : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
-                    }`}
-                >
-                    Today
-                    {activeTab === "today" && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B3A00] dark:bg-[#E85C0D]" />
-                    )}
-                </button>
-                <button
-                    onClick={() => setActiveTab("upcoming")}
-                    className={`px-6 py-3 font-medium text-sm transition-colors relative ${
-                        activeTab === "upcoming"
-                            ? "text-[#8B3A00] dark:text-[#E85C0D]"
-                            : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
-                    }`}
-                >
-                    Upcoming
-                    {activeTab === "upcoming" && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B3A00] dark:bg-[#E85C0D]" />
-                    )}
-                </button>
             </div>
 
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -144,14 +96,14 @@ export default function DeathApplicationsExecutionPage() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : filteredRequests.length === 0 ? (
+                            ) : requests.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
-                                        No requests available for this selection.
+                                        No approved death applications pending execution.
                                     </td>
                                 </tr>
                             ) : (
-                                filteredRequests.map((req) => (
+                                requests.map((req) => (
                                     <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/20 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -177,27 +129,23 @@ export default function DeathApplicationsExecutionPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {activeTab === "today" ? (
-                                                <button
-                                                    onClick={() => handleExecute(req.id)}
-                                                    disabled={executing === req.id}
-                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    {executing === req.id ? (
-                                                        <>
-                                                            <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
-                                                            Executing...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <span className="material-symbols-outlined text-[18px]">person_off</span>
-                                                            Execute Action
-                                                        </>
-                                                    )}
-                                                </button>
-                                            ) : (
-                                                <span className="text-xs text-slate-400 italic">Execution blocked until {req.dateOfDeath}</span>
-                                            )}
+                                            <button
+                                                onClick={() => handleExecute(req.id)}
+                                                disabled={executing === req.id}
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                            >
+                                                {executing === req.id ? (
+                                                    <>
+                                                        <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+                                                        Executing...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="material-symbols-outlined text-[18px]">person_off</span>
+                                                        Execute Action
+                                                    </>
+                                                )}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
