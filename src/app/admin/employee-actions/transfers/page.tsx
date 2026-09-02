@@ -12,6 +12,8 @@ export default function TransfersExecutionPage() {
     const [loading, setLoading] = useState(true);
     const [executing, setExecuting] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const isApprovedStatus = (status: string | undefined | null) => {
         if (!status) return false;
@@ -39,6 +41,11 @@ export default function TransfersExecutionPage() {
     useEffect(() => {
         fetchRequests();
     }, []);
+
+    const handleTabChange = (tab: "today" | "upcoming" | "previous") => {
+        setActiveTab(tab);
+        setCurrentPage(1);
+    };
 
     const handleExecute = async (id: string) => {
         try {
@@ -81,6 +88,9 @@ export default function TransfersExecutionPage() {
         return true;
     });
 
+    const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+    const paginatedRequests = filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
         <div className="p-8 max-w-7xl mx-auto w-full flex-1">
             <div className="mb-8">
@@ -99,7 +109,7 @@ export default function TransfersExecutionPage() {
 
             <div className="flex space-x-1 border-b border-gray-200 dark:border-slate-800 mb-6">
                 <button
-                    onClick={() => setActiveTab("today")}
+                    onClick={() => handleTabChange("today")}
                     className={`px-6 py-3 font-medium text-sm transition-colors relative cursor-pointer ${
                         activeTab === "today"
                             ? "text-[#8B3A00] dark:text-[#E85C0D]"
@@ -112,7 +122,7 @@ export default function TransfersExecutionPage() {
                     )}
                 </button>
                 <button
-                    onClick={() => setActiveTab("upcoming")}
+                    onClick={() => handleTabChange("upcoming")}
                     className={`px-6 py-3 font-medium text-sm transition-colors relative cursor-pointer ${
                         activeTab === "upcoming"
                             ? "text-[#8B3A00] dark:text-[#E85C0D]"
@@ -125,7 +135,7 @@ export default function TransfersExecutionPage() {
                     )}
                 </button>
                 <button
-                    onClick={() => setActiveTab("previous")}
+                    onClick={() => handleTabChange("previous")}
                     className={`px-6 py-3 font-medium text-sm transition-colors relative cursor-pointer ${
                         activeTab === "previous"
                             ? "text-[#8B3A00] dark:text-[#E85C0D]"
@@ -161,14 +171,14 @@ export default function TransfersExecutionPage() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : filteredRequests.length === 0 ? (
+                            ) : paginatedRequests.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
                                         No requests available for this selection.
                                     </td>
                                 </tr>
                             ) : (
-                                filteredRequests.map((req) => (
+                                paginatedRequests.map((req) => (
                                     <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/20 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -225,6 +235,44 @@ export default function TransfersExecutionPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 flex items-center justify-between">
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRequests.length)} of {filteredRequests.length} requests
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                            </button>
+                            {[...Array(totalPages)].map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                        currentPage === i + 1
+                                            ? 'bg-[#8B3A00] text-white shadow-md shadow-[#8B3A00]/20'
+                                            : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                    }`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {toast && (
