@@ -142,14 +142,14 @@ export default function OverseasLeaveRequestPage() {
             // This significantly improves user experience by reducing wait time compared to sequential uploads.
             const [leaveLetterUrl, passportCopyUrl, visaCopyUrl, confirmationLetterUrl, flightTicketsUrl] = await Promise.all([
                 files.leaveLetter ? uploadDocument(files.leaveLetter, "overseas-leave") : Promise.resolve(null),
-                uploadDocument(files.passportCopy!, "overseas-leave"),
-                uploadDocument(files.visaCopy!, "overseas-leave"),
-                uploadDocument(files.confirmationLetter!, "overseas-leave"),
-                uploadDocument(files.flightTickets!, "overseas-leave"),
+                files.passportCopy ? uploadDocument(files.passportCopy, "overseas-leave") : Promise.resolve(null),
+                files.visaCopy ? uploadDocument(files.visaCopy, "overseas-leave") : Promise.resolve(null),
+                files.confirmationLetter ? uploadDocument(files.confirmationLetter, "overseas-leave") : Promise.resolve(null),
+                files.flightTickets ? uploadDocument(files.flightTickets, "overseas-leave") : Promise.resolve(null),
             ]);
 
-            if (!passportCopyUrl || !visaCopyUrl || !confirmationLetterUrl || !flightTicketsUrl) {
-                throw new Error("One or more files failed to upload. Please check your internet connection and try again.");
+            if (!passportCopyUrl || !visaCopyUrl || !flightTicketsUrl) {
+                throw new Error("One or more mandatory files failed to upload. Please check your internet connection and try again.");
             }
 
             setFileError("Documents uploaded! Submitting your request...");

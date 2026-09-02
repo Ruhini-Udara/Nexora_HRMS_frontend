@@ -34,7 +34,7 @@ export default function LeaveModules() {
                     </span>
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                    Overseas Leave Verification & Board Flow
+                    Overseas Leave Approvals
                 </h4>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed flex-grow">
                     Manage verification and board approval workflows for international
@@ -56,7 +56,7 @@ export default function LeaveModules() {
                     </span>
                 </div>
                 <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                    Maternity Leave Workflow
+                    Maternity Leave Approvals
                 </h4>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 leading-relaxed flex-grow">
                     Coordinate multi-stage processing for maternity, paternity, and

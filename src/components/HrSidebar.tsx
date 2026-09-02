@@ -54,7 +54,7 @@ const HrSidebar = () => {
         { label: "Leave Management", href: "/hr/leave", icon: Calendar },
        
         { label: "Welfare Management", href: "/hr/welfare", icon: Heart },
-        { label: "Attendance & Leave Analytics", href: "/hr/analytics", icon: BarChart3 },
+        { label: "Special Leave Analytics", href: "/hr/analytics", icon: BarChart3 },
         { label: "Calendar", href: "/hr/calendar", icon: Calendar },
     ];
 
