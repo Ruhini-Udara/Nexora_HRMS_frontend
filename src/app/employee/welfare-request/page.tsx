@@ -56,9 +56,12 @@ const welfareTypes = [
 ];
 
 const employeeTypes = [
-    'Permanent',
+    'Full-time',
+    'Part-time',
+    'Contract',
+    'Probationary',
     'Temporary',
-    'Casual'
+    'Intern'
 ];
 
 // employeeProfile is now handled dynamically inside the component
