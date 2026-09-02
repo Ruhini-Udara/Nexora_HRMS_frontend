@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { getSignedUrl } from "@/lib/supabaseClient";
+import { getProfilePictureSignedUrl } from "@/lib/supabaseClient";
 
 interface UserAvatarProps {
   user: { name?: string; profilePicturePath?: string } | null;
@@ -15,7 +15,7 @@ export default function UserAvatar({ user, size = "md" }: UserAvatarProps) {
         let isMounted = true;
         const loadProfilePic = async () => {
             if (user?.profilePicturePath) {
-                const url = await getSignedUrl(user.profilePicturePath, 3600);
+                const url = await getProfilePictureSignedUrl(user.profilePicturePath, 3600);
                 if (isMounted && url) {
                     setProfilePicUrl(url);
                 }

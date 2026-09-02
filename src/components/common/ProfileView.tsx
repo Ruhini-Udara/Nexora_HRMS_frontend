@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Mail, Phone, Camera, Briefcase, Hash, Calendar, Building, Loader2, X, Clock, User, Activity } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { uploadDocument, getSignedUrl } from "@/lib/supabaseClient";
+import { uploadHrmsDocument, getProfilePictureSignedUrl } from "@/lib/supabaseClient";
 import api from "@/lib/axiosInstance";
 import { format } from "date-fns";
 
@@ -17,7 +17,7 @@ export default function ProfileView() {
     useEffect(() => {
         const loadProfilePic = async () => {
             if (user?.profilePicturePath) {
-                const url = await getSignedUrl(user.profilePicturePath, 3600);
+                const url = await getProfilePictureSignedUrl(user.profilePicturePath, 3600);
                 if (url) {
                     setProfilePicUrl(url);
                 }
@@ -32,8 +32,8 @@ export default function ProfileView() {
         
         setIsUploading(true);
         try {
-            // Upload to supabase in 'profile-pictures' folder
-            const filePath = await uploadDocument(file, "profile-pictures");
+            // Upload to supabase in 'profile-pictures' folder within hrms-documents bucket
+            const filePath = await uploadHrmsDocument(file, "profile-pictures");
             if (!filePath) {
                 alert("Failed to upload profile picture.");
                 setIsUploading(false);

@@ -79,7 +79,7 @@ export default function HRModules() {
                     <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-primary/5 transition-colors">
                         <span className="material-icons-round text-primary text-3xl">dashboard</span>
                     </div>
-                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Analytics</h4>
+                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Attendance & Leave Analytics</h4>
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 leading-relaxed">View real-time HR analytics, delayed approvals, and department impact.</p>
                     <span className="text-primary font-semibold text-sm flex items-center group-hover:gap-2 transition-all">
                         Open Module <span className="material-icons-round text-sm ml-1">arrow_forward</span>
