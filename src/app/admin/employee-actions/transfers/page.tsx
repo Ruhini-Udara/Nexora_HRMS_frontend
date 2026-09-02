@@ -7,7 +7,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 
 export default function TransfersExecutionPage() {
-    const [activeTab, setActiveTab] = useState<"today" | "upcoming">("today");
+    const [activeTab, setActiveTab] = useState<"today" | "upcoming" | "previous">("today");
     const [requests, setRequests] = useState<TransferRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [executing, setExecuting] = useState<string | null>(null);
@@ -69,12 +69,16 @@ export default function TransfersExecutionPage() {
         const rawDate = req.expectedDate ? req.expectedDate.split('T')[0] : todayStr;
         
         if (activeTab === "today") {
-            // Effective date is today or earlier
-            return rawDate <= todayStr;
-        } else {
+            // Effective date is exactly today
+            return rawDate === todayStr;
+        } else if (activeTab === "upcoming") {
             // Effective date is in the future
             return rawDate > todayStr;
+        } else if (activeTab === "previous") {
+            // Effective date is older than today
+            return rawDate < todayStr;
         }
+        return true;
     });
 
     return (
@@ -96,7 +100,7 @@ export default function TransfersExecutionPage() {
             <div className="flex space-x-1 border-b border-gray-200 dark:border-slate-800 mb-6">
                 <button
                     onClick={() => setActiveTab("today")}
-                    className={`px-6 py-3 font-medium text-sm transition-colors relative ${
+                    className={`px-6 py-3 font-medium text-sm transition-colors relative cursor-pointer ${
                         activeTab === "today"
                             ? "text-[#8B3A00] dark:text-[#E85C0D]"
                             : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
@@ -109,7 +113,7 @@ export default function TransfersExecutionPage() {
                 </button>
                 <button
                     onClick={() => setActiveTab("upcoming")}
-                    className={`px-6 py-3 font-medium text-sm transition-colors relative ${
+                    className={`px-6 py-3 font-medium text-sm transition-colors relative cursor-pointer ${
                         activeTab === "upcoming"
                             ? "text-[#8B3A00] dark:text-[#E85C0D]"
                             : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
@@ -117,6 +121,19 @@ export default function TransfersExecutionPage() {
                 >
                     Upcoming
                     {activeTab === "upcoming" && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B3A00] dark:bg-[#E85C0D]" />
+                    )}
+                </button>
+                <button
+                    onClick={() => setActiveTab("previous")}
+                    className={`px-6 py-3 font-medium text-sm transition-colors relative cursor-pointer ${
+                        activeTab === "previous"
+                            ? "text-[#8B3A00] dark:text-[#E85C0D]"
+                            : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+                    }`}
+                >
+                    Previous
+                    {activeTab === "previous" && (
                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B3A00] dark:bg-[#E85C0D]" />
                     )}
                 </button>
@@ -180,11 +197,13 @@ export default function TransfersExecutionPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {activeTab === "today" ? (
+                                            {activeTab === "upcoming" ? (
+                                                <span className="text-xs text-slate-400 italic">Execution blocked until {req.expectedDate}</span>
+                                            ) : (
                                                 <button
                                                     onClick={() => handleExecute(req.id)}
                                                     disabled={executing === req.id}
-                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                 >
                                                     {executing === req.id ? (
                                                         <>
@@ -198,8 +217,6 @@ export default function TransfersExecutionPage() {
                                                         </>
                                                     )}
                                                 </button>
-                                            ) : (
-                                                <span className="text-xs text-slate-400 italic">Execution blocked until {req.expectedDate}</span>
                                             )}
                                         </td>
                                     </tr>
