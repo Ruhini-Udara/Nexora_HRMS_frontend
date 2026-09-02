@@ -224,6 +224,27 @@ export default function WelfareRequestPage() {
         employeeType: "—"
     });
 
+    const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
+        { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null },
+    ]);
+
+    const {
+        register,
+        handleSubmit,
+        getValues,
+        setValue,
+        reset,
+        formState: { errors },
+    } = useForm<WelfareFormData>({
+        resolver: zodResolver(welfareSchema),
+        defaultValues: {
+            welfareType: '',
+            employeeType: '',
+            amount: '',
+            specialRemark: '',
+        },
+    });
+
     useEffect(() => {
         const fetchEmployeeProfile = async () => {
             if (!user?.id && !user?.email && !user?.epfNumber) return;
@@ -254,28 +275,7 @@ export default function WelfareRequestPage() {
             }
         };
         fetchEmployeeProfile();
-    }, [user?.id, user?.email, user?.name, user?.designation, user?.department, user?.epfNumber]);
-
-    const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
-        { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null },
-    ]);
-
-    const {
-        register,
-        handleSubmit,
-        getValues,
-        setValue,
-        reset,
-        formState: { errors },
-    } = useForm<WelfareFormData>({
-        resolver: zodResolver(welfareSchema),
-        defaultValues: {
-            welfareType: '',
-            employeeType: '',
-            amount: '',
-            specialRemark: '',
-        },
-    });
+    }, [user?.id, user?.email, user?.name, user?.designation, user?.department, user?.epfNumber, setValue]);
 
     const loadRequests = useCallback(async () => {
         if (!user?.id) return; // Prevent calling with id 0 or null during load
