@@ -57,7 +57,7 @@ function StatusBadge({ status }: { status: string }) {
         PENDING_DIRECTOR_REVIEW: "Sent to Director",
         APPROVED: "Approved", REJECTED: "Rejected",
     };
-    return <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${map[status] ?? "bg-slate-100 text-slate-600"}`}>{label[status] ?? status}</span>;
+    return <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold ${map[status] ?? "bg-slate-100 text-slate-600"}`}>{label[status] ?? status}</span>;
 }
 
 function DocumentCard({ label, path, onError }: { label: string; path: string; onError: (msg: string) => void }) {
@@ -76,8 +76,8 @@ function DocumentCard({ label, path, onError }: { label: string; path: string; o
                     : <span className="material-symbols-outlined text-[18px]">description</span>}
             </div>
             <div className="overflow-hidden flex-1">
-                <div className="text-xs font-bold text-slate-700">{label}</div>
-                <div className="text-[10px] text-primary group-hover:underline">Click to view (1-hr secure link)</div>
+                <div className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{label}</div>
+                <div className="text-xs font-semibold text-primary mt-1">Open Securely</div>
             </div>
             <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-primary">open_in_new</span>
         </div>
@@ -140,10 +140,10 @@ export default function OverseasLeaveApprovals() {
         try {
             // Fetch pending actions
             const res = await api.get(`/api/v1/leaves/overseas/status/${statusFilter}`);
-            setRequests(res.data);
+            setRequests(res.data.sort((a: any, b: any) => b.id - a.id));
             // Always fetch board agenda items (ADMIN_APPROVED status)
             const boardRes = await api.get(`/api/v1/leaves/overseas/status/ADMIN_APPROVED`);
-            setBoardItems(boardRes.data);
+            setBoardItems(boardRes.data.sort((a: any, b: any) => b.id - a.id));
         } catch (err) {
             const error = err as { response?: { data?: { message?: string } } };
             setError(error.response?.data?.message || "Could not connect to the backend. Make sure the server is running.");

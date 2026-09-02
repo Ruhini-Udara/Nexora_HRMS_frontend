@@ -111,47 +111,42 @@ export default function HrAnalyticsPage() {
     return (
         <div className="p-8 max-w-7xl mx-auto w-full">
             <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Attendance & Leave Analytics</h2>
-                <p className="text-gray-600 dark:text-gray-400">Real-time HR attendance & special leave analytics</p>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Special Leave Analytics</h2>
+                <p className="text-gray-600 dark:text-gray-400">Real-time HR special leave analytics & impact</p>
             </div>
 
             {/* Top Metrics Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {/* Attendance (Dummy for now) */}
+                {/* Pending Overseas */}
                 <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
                     <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Present Today</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.presentToday}</h3>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Overseas</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.pendingOverseas}</h3>
                     </div>
                     <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
-                        <span className="material-icons-round text-primary">people</span>
+                        <span className="material-icons-round text-primary">flight</span>
                     </div>
                 </div>
 
-                {/* Late */}
+                {/* Pending Maternity */}
                 <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
                     <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Late Today</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.lateToday}</h3>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Maternity</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.pendingMaternity}</h3>
                     </div>
                     <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
-                        <span className="material-icons-round text-primary">schedule</span>
+                        <span className="material-icons-round text-primary">pregnant_woman</span>
                     </div>
                 </div>
 
-                {/* Pending Leaves */}
+                {/* Passport Expiries */}
                 <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
                     <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Leaves</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.pendingOverseas + data.pendingMaternity}</h3>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Passport Expiries</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.passportExpiryAlerts?.length || 0}</h3>
                     </div>
-                    <div className="flex gap-1">
-                        <div className="w-8 h-12 bg-primary/10 flex items-center justify-center rounded-l-lg">
-                            <span className="material-icons-round text-primary text-sm">flight</span>
-                        </div>
-                        <div className="w-8 h-12 bg-primary/10 flex items-center justify-center rounded-r-lg">
-                            <span className="material-icons-round text-primary text-sm">pregnant_woman</span>
-                        </div>
+                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
+                        <span className="material-icons-round text-primary">badge</span>
                     </div>
                 </div>
 

@@ -16,6 +16,7 @@ const LeaveStatsHR = ({ type }: { type: 'OVERSEAS' | 'MATERNITY' }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!user) return;
         const fetchStats = async () => {
             try {
                 const endpointPrefix = `/api/v1/leaves/${type.toLowerCase()}/status`;
