@@ -680,9 +680,6 @@ export default function WelfareRequestPage() {
                             </div>
                         </div>
                     </div>
-                    <button className="w-full mt-6 text-[10px] font-bold text-primary border-t border-slate-50 dark:border-slate-800 pt-4 flex items-center justify-center gap-1 hover:underline cursor-pointer">
-                        Read Full Policy Documents <span className="material-symbols-outlined text-xs">open_in_new</span>
-                    </button>
                 </div>
             </div>
             </div>
