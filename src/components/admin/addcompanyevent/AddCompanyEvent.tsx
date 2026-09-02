@@ -195,7 +195,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                 }
               }}
               placeholder="e.g., Team Building Workshop"
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all ${
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
                 errors.eventName ? "border-red-500" : "border-slate-300"
               }`}
             />
@@ -228,7 +228,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                   }}
                   onFocus={() => setShowCalendar(true)}
                   placeholder="mm/dd/yyyy"
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all ${
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
                     errors.eventDate ? "border-red-500" : "border-slate-300"
                   }`}
                 />
@@ -285,7 +285,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                               ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
                               ${isPast && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
                               ${isToday(dayObj.date) && !isPast ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                              ${isSelectedDate(dayObj.date) ? "bg-amber-400 text-white font-semibold" : ""}
+                              ${isSelectedDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold" : ""}
                               ${dayObj.isCurrentMonth && !isPast && !isToday(dayObj.date) && !isSelectedDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
                             `}
                           >
@@ -322,7 +322,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                       setErrors({ ...errors, eventTime: false });
                     }
                   }}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all ${
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
                     errors.eventTime ? "border-red-500" : "border-slate-300"
                   }`}
                 />
@@ -343,7 +343,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
             <select
               value={eventType}
               onChange={(e) => setEventType(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all bg-white"
             >
               <option value="Internal Event">Internal Event</option>
               <option value="Admin Deadline">Admin Deadline</option>
@@ -365,7 +365,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Provide details about the event, agenda, or specific instructions for attendees..."
               rows={4}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all resize-none"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all resize-none"
             />
           </div>
         </div>
@@ -382,7 +382,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-amber-400 hover:bg-amber-500 disabled:bg-amber-200 text-slate-900 font-medium rounded-lg transition-colors"
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#8B3A00] hover:bg-[#722F00] disabled:bg-[#8B3A00]/50 text-white font-medium rounded-lg transition-colors cursor-pointer"
               >
                 <Save size={18} />
                 {isSaving ? "Saving..." : "Save Event"}
@@ -396,7 +396,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
               </button>
             </div>
             <p className="text-sm text-slate-500">
-              <span className="text-amber-600">●</span> Required fields are marked automatically
+              <span className="text-[#8B3A00]">●</span> Required fields are marked automatically
             </p>
           </div>
         </div>

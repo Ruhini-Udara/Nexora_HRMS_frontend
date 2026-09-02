@@ -247,7 +247,7 @@ export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: (
               <select
                 value={selectedDesignation}
                 onChange={(e) => setSelectedDesignation(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all appearance-none bg-slate-50 text-slate-700"
+                className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all appearance-none bg-slate-50 text-slate-700"
               >
                 <option value="">Select Designation</option>
                 {designations.map((designation) => (
@@ -287,7 +287,7 @@ export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: (
               <select
                 value={selectedShiftType}
                 onChange={(e) => setSelectedShiftType(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all appearance-none bg-slate-50 text-slate-700"
+                className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all appearance-none bg-slate-50 text-slate-700"
               >
                 <option value="">Select Shift Type</option>
                 {shiftTypes.map((shift) => (
@@ -361,7 +361,7 @@ export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: (
                 onChange={(e) => setEffectiveDate(e.target.value)}
                 onFocus={() => setShowCalendar(true)}
                 placeholder="mm/dd/yyyy"
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all"
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all"
               />
               
               {/* Calendar Dropdown */}
@@ -416,7 +416,7 @@ export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: (
                             ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
                             ${isPast && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
                             ${isToday(dayObj.date) && !isPast ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                            ${isSelectedDate(dayObj.date) ? "bg-amber-400 text-white font-semibold" : ""}
+                            ${isSelectedDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold" : ""}
                             ${dayObj.isCurrentMonth && !isPast && !isToday(dayObj.date) && !isSelectedDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
                           `}
                         >
@@ -440,7 +440,7 @@ export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: (
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any additional context for this mapping..."
               rows={4}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all resize-none bg-slate-50"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all resize-none bg-slate-50"
             />
           </div>
         </div>
@@ -455,7 +455,7 @@ export default function AddNewShiftMapping({ onClose, onSuccess }: { onClose?: (
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center gap-2"
+            className="px-6 py-2.5 bg-[#8B3A00] hover:bg-[#722F00] text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer shadow-sm"
           >
             <Save size={18} />
             Save Mapping
