@@ -71,7 +71,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
             .catch(err => console.error("Failed to fetch events", err));
     }, []);
 
-    // Pre-fill user details
+    // Pre-fill user details and calculate age from profile
     useEffect(() => {
         if (user) {
             setEmployeeName(user.name || "");
@@ -79,6 +79,30 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
             setDesignation(user.designation || "");
             setEpfNumber(user.epfNumber || "");
             setDepartment(user.department || "");
+
+            // Fetch employee profile to obtain dateOfBirth for age calculation
+            const empId = user.employeeId || user.id;
+            if (empId) {
+                api.get(`/api/employees/${empId}`)
+                    .then(res => {
+                        const dob = res.data?.dateOfBirth;
+                        if (dob) {
+                            const birthDate = new Date(dob);
+                            if (!isNaN(birthDate.getTime())) {
+                                const today = new Date();
+                                let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+                                const m = today.getMonth() - birthDate.getMonth();
+                                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                                    calculatedAge--;
+                                }
+                                setAge(calculatedAge.toString());
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Failed to fetch employee profile for age calculation", err);
+                    });
+            }
         }
     }, [user]);
 
@@ -127,6 +151,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                 employeeId: user.id,
                 employeeName,
                 epfNumber,
+                age: age ? parseInt(age, 10) : null,
                 department,
                 designation,
                 workEmail,
@@ -251,16 +276,12 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                             />
                         </div>
                         <div>
-                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Age <span className="text-red-500">*</span></label>
+                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-2">Age</label>
                             <input
-                                type="number"
-                                value={age}
-                                onChange={(e) => setAge(e.target.value)}
-                                placeholder="e.g. 28"
-                                required
-                                min="18"
-                                max="100"
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-[13px] text-slate-700 dark:text-slate-300 font-medium px-4 py-3 outline-none transition-colors border"
+                                type="text"
+                                value={age ? `${age} years` : "N/A"}
+                                className="w-full bg-slate-100/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-[13px] text-slate-500 dark:text-slate-400 font-medium px-4 py-3 outline-none border cursor-not-allowed"
+                                readOnly
                             />
                         </div>
                         <div>

@@ -21,11 +21,36 @@ export default function CreateTrainingPlanForm() {
     const [instructor, setInstructor] = useState('');
     const [isTitleConflict, setIsTitleConflict] = useState(false);
     const [isCodeConflict, setIsCodeConflict] = useState(false);
+    const [dateTimeConflict, setDateTimeConflict] = useState<string | null>(null);
+    const [locationConflict, setLocationConflict] = useState<string | null>(null);
+    const [instructorConflict, setInstructorConflict] = useState<string | null>(null);
+    const [existingEvents, setExistingEvents] = useState<Array<{
+        id: number;
+        title: string;
+        proposedStartDate?: string;
+        time?: string;
+        location?: string;
+        instructor?: string;
+        status?: string;
+    }>>([]);
     const [status, setStatus] = useState('Published');
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const editId = searchParams.get('editId');
+
+    // Fetch all events for clash detection
+    useEffect(() => {
+        api.get('/api/training/events')
+            .then(res => {
+                if (Array.isArray(res.data)) {
+                    setExistingEvents(res.data);
+                }
+            })
+            .catch(err => {
+                console.error("Failed to load existing events for clash detection:", err);
+            });
+    }, []);
 
     // Real-time duplicate check
     useEffect(() => {
@@ -91,6 +116,63 @@ export default function CreateTrainingPlanForm() {
         };
     }, [trainingCode, editId]);
 
+    // Real-time date/time, location & instructor clash detection
+    useEffect(() => {
+        const trimmedDate = date?.trim();
+        const trimmedTime = time?.trim();
+        const currentId = editId ? Number(editId) : null;
+
+        const candidateEvents = existingEvents.filter(e => {
+            if (currentId && e.id === currentId) return false;
+            if (e.status === 'Cancelled' || e.status === 'Rejected') return false;
+            return true;
+        });
+
+        // Date & Time slot clash check (Strict Option: only 1 event allowed per date & time)
+        if (trimmedDate && trimmedTime) {
+            const conflict = candidateEvents.find(e => {
+                const eDate = e.proposedStartDate?.trim();
+                const eTime = e.time?.trim();
+                return eDate === trimmedDate && eTime === trimmedTime;
+            });
+            setDateTimeConflict(conflict ? conflict.title : null);
+        } else {
+            setDateTimeConflict(null);
+        }
+
+        // Location clash check
+        const trimmedLoc = location?.trim().toLowerCase();
+        const isIgnoredLoc = !trimmedLoc || ['tba', 'tbd', 'online', 'remote', 'n/a'].includes(trimmedLoc);
+
+        if (trimmedDate && trimmedTime && !isIgnoredLoc) {
+            const conflict = candidateEvents.find(e => {
+                const eDate = e.proposedStartDate?.trim();
+                const eTime = e.time?.trim();
+                const eLoc = e.location?.trim().toLowerCase();
+                return eDate === trimmedDate && eTime === trimmedTime && eLoc === trimmedLoc;
+            });
+            setLocationConflict(conflict ? conflict.title : null);
+        } else {
+            setLocationConflict(null);
+        }
+
+        // Instructor clash check
+        const trimmedInst = instructor?.trim().toLowerCase();
+        const isIgnoredInst = !trimmedInst || ['tba', 'tbd', 'n/a'].includes(trimmedInst);
+
+        if (trimmedDate && trimmedTime && !isIgnoredInst) {
+            const conflict = candidateEvents.find(e => {
+                const eDate = e.proposedStartDate?.trim();
+                const eTime = e.time?.trim();
+                const eInst = e.instructor?.trim().toLowerCase();
+                return eDate === trimmedDate && eTime === trimmedTime && eInst === trimmedInst;
+            });
+            setInstructorConflict(conflict ? conflict.title : null);
+        } else {
+            setInstructorConflict(null);
+        }
+    }, [date, time, location, instructor, existingEvents, editId]);
+
     // form validation logic
     const participantsNum = parseInt(participants);
     const budgetNum = parseFloat(budget);
@@ -108,7 +190,10 @@ export default function CreateTrainingPlanForm() {
         applyBefore !== '' &&
         isDateLogicValid &&
         !isTitleConflict &&
-        !isCodeConflict;
+        !isCodeConflict &&
+        !dateTimeConflict &&
+        !locationConflict &&
+        !instructorConflict;
 
     // Fetch existing data if editing
     useEffect(() => {
@@ -251,7 +336,7 @@ export default function CreateTrainingPlanForm() {
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proposed Start Date <span className="text-red-500">*</span></label>
                                 <input
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${dateTimeConflict ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                                     type="date"
                                     min={new Date().toISOString().split('T')[0]}  // disable past dates
                                     value={date}
@@ -261,11 +346,17 @@ export default function CreateTrainingPlanForm() {
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proposed Time</label>
                                 <input
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${dateTimeConflict ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                                     type="time"
                                     value={time}
                                     onChange={(e) => setTime(e.target.value)}
                                 />
+                                {dateTimeConflict && (
+                                    <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[14px]">warning</span>
+                                        Time slot conflict: &quot;{dateTimeConflict}&quot; is already scheduled at this date and time.
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Apply Before (Date) <span className="text-red-500">*</span></label>
@@ -283,12 +374,18 @@ export default function CreateTrainingPlanForm() {
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location</label>
                                 <input
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${locationConflict ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                                     placeholder="Enter location..."
                                     type="text"
                                     value={location}
                                     onChange={(e) => setLocation(e.target.value)}
                                 />
+                                {locationConflict && (
+                                    <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[14px]">warning</span>
+                                        Venue conflict: Already booked for &quot;{locationConflict}&quot; at this date &amp; time.
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </section>
@@ -321,12 +418,18 @@ export default function CreateTrainingPlanForm() {
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Lead Instructor/Coach</label>
                                 <input
-                                    className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
+                                    className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${instructorConflict ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                                     placeholder="External consultant or Dept Head"
                                     type="text"
                                     value={instructor}
                                     onChange={(e) => setInstructor(e.target.value)}
                                 />
+                                {instructorConflict && (
+                                    <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[14px]">warning</span>
+                                        Instructor conflict: Already scheduled for &quot;{instructorConflict}&quot; at this date &amp; time.
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </section>
