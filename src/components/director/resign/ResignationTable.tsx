@@ -515,7 +515,7 @@ export default function ResignationTable() {
                         </div>
                         <div className="p-6 space-y-3">
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Provide a mandatory reason. The employee will be notified via SMS & Email.
+                                Provide a mandatory reason. The employee will be notified via Email.
                             </p>
                             <textarea
                                 value={rejectReason}
