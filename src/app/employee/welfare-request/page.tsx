@@ -226,16 +226,20 @@ export default function WelfareRequestPage() {
 
     useEffect(() => {
         const fetchEmployeeProfile = async () => {
-            if (!user?.id && !user?.email) return;
+            if (!user?.id && !user?.email && !user?.epfNumber) return;
             try {
-                const queryParam = user?.id ? `employeeId=${user.id}` : `email=${encodeURIComponent(user?.email || '')}`;
-                const res = await fetch(`/api/employee-profile?${queryParam}`);
+                const params = new URLSearchParams();
+                if (user?.id) params.append('employeeId', String(user.id));
+                else if (user?.epfNumber) params.append('employeeId', String(user.epfNumber));
+                if (user?.email) params.append('email', user.email);
+
+                const res = await fetch(`/api/employee-profile?${params.toString()}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data) {
                         const empType = data.employeeType || 'Full-time';
                         setEmployeeProfile({
-                            epfNumber: data.epfNumber || '—',
+                            epfNumber: data.epfNumber || user?.epfNumber || '—',
                             employeeName: data.employeeName || user?.name || '—',
                             designation: data.designation || user?.designation || '—',
                             dateJoined: data.dateJoined || '—',
