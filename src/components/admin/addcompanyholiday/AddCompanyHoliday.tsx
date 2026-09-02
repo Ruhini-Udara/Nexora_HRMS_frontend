@@ -217,7 +217,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                 }
               }}
               placeholder="e.g., Annual Foundation Day"
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all ${
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
                 errors.holidayName ? "border-red-500" : "border-slate-300"
               }`}
             />
@@ -250,7 +250,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                   }}
                   onFocus={() => setShowStartCalendar(true)}
                   placeholder="mm/dd/yyyy"
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all ${
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
                     errors.startDate ? "border-red-500" : "border-slate-300"
                   }`}
                 />
@@ -307,7 +307,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                               ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
                               ${isPast && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
                               ${isToday(dayObj.date) && !isPast ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                              ${isSelectedStartDate(dayObj.date) ? "bg-amber-400 text-white font-semibold" : ""}
+                              ${isSelectedStartDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold" : ""}
                               ${dayObj.isCurrentMonth && !isPast && !isToday(dayObj.date) && !isSelectedStartDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
                             `}
                           >
@@ -345,7 +345,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                   }}
                   onFocus={() => setShowEndCalendar(true)}
                   placeholder="mm/dd/yyyy"
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all ${
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
                     errors.endDate ? "border-red-500" : "border-slate-300"
                   }`}
                 />
@@ -402,7 +402,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                               ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
                               ${isPast && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
                               ${isToday(dayObj.date) && !isPast ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                              ${isSelectedEndDate(dayObj.date) ? "bg-amber-400 text-white font-semibold" : ""}
+                              ${isSelectedEndDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold" : ""}
                               ${dayObj.isCurrentMonth && !isPast && !isToday(dayObj.date) && !isSelectedEndDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
                             `}
                           >
@@ -430,7 +430,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
             <select
               value={holidayType}
               onChange={(e) => setHolidayType(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all bg-white"
             >
               <option value="Public Holiday">Public Holiday</option>
               <option value="Company Holiday">Company Holiday</option>
@@ -450,7 +450,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Provide details about the holiday observances or specific instructions for employees..."
               rows={4}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all resize-none"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all resize-none"
             />
           </div>
         </div>
@@ -467,7 +467,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-amber-400 hover:bg-amber-500 disabled:bg-amber-200 text-slate-900 font-medium rounded-lg transition-colors"
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#8B3A00] hover:bg-[#722F00] disabled:bg-[#8B3A00]/50 text-white font-medium rounded-lg transition-colors cursor-pointer"
               >
                 <Save size={18} />
                 {isSaving ? "Saving..." : "Save Holiday"}
@@ -481,7 +481,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
               </button>
             </div>
             <p className="text-sm text-slate-500">
-              <span className="text-amber-600">●</span> Required fields are marked automatically
+              <span className="text-[#8B3A00]">●</span> Required fields are marked automatically
             </p>
           </div>
         </div>

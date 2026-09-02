@@ -116,14 +116,14 @@ export default function OfficeCalendar() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setShowAddEvent(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-[#8B3A00] hover:bg-[#722F00] text-white font-medium rounded-lg transition-colors cursor-pointer shadow-sm"
           >
             <Plus size={18} />
             Add Event
           </button>
           <button 
             onClick={() => setShowAddHoliday(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 font-medium rounded-lg transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-[#8B3A00] hover:bg-[#722F00] text-white font-medium rounded-lg transition-colors cursor-pointer shadow-sm"
           >
             <Plus size={18} />
             Add Holiday
