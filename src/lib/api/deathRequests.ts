@@ -4,6 +4,7 @@ export interface DeathRequest {
     id: string;
     employeeId: string;
     employeeName: string;
+    employeePhone?: string;
     epfNumber: string;
     dateOfDeath: string;
     natureOfDeath: string;
@@ -40,6 +41,7 @@ const mapDtoToFrontend = (dto: any): DeathRequest => {
         id: `DTH-${dto.id}`,
         employeeId: dto.employeeIdString || '',
         employeeName: dto.employeeName || '',
+        employeePhone: dto.employeePhone || '',
         epfNumber: dto.epfNumber || '',
         dateOfDeath: dto.dateOfDeath || '',
         natureOfDeath: dto.natureOfDeath || '',
@@ -81,6 +83,7 @@ export const createDeathRequest = async (request: Partial<DeathRequest>, userDet
         employeeId: userDetails?.id || 1, 
         employeeIdString: request.employeeId,
         employeeName: request.employeeName,
+        employeePhone: request.employeePhone,
         epfNumber: request.epfNumber,
         dateOfDeath: request.dateOfDeath,
         natureOfDeath: request.natureOfDeath,
@@ -116,6 +119,7 @@ export const updateDeathRequest = async (idStr: string, request: Partial<DeathRe
         employeeId: userDetails?.id || 1, 
         employeeIdString: request.employeeId,
         employeeName: request.employeeName,
+        employeePhone: request.employeePhone,
         epfNumber: request.epfNumber,
         dateOfDeath: request.dateOfDeath,
         natureOfDeath: request.natureOfDeath,
@@ -173,8 +177,13 @@ export const submitDeathRequestToAdmin = async (idStr: string): Promise<DeathReq
 
 export const updateDeathStatus = async (idStr: string, status: string, boardMeetingDate?: string): Promise<DeathRequest> => {
     const numericId = parseInt(idStr.replace('DTH-', ''), 10);
-    const response = await api.put(`/api/death-requests/${numericId}/status`, null, {
-        params: { status, boardMeetingDate }
-    });
+    const payload: any = { status };
+    if (boardMeetingDate) payload.boardMeetingDate = boardMeetingDate;
+    const response = await api.put(`/api/death-requests/${numericId}/status`, payload);
     return mapDtoToFrontend(response.data);
+};
+
+export const executeDeathRequest = async (idStr: string): Promise<void> => {
+    const numericId = parseInt(idStr.replace('DTH-', ''), 10);
+    await api.post(`/api/death-requests/${numericId}/execute`);
 };

@@ -7,11 +7,17 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 const statusStyles: Record<string, { label: string; classes: string }> = {
     NEW: { label: 'Draft', classes: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300' },
+    DRAFT: { label: 'Draft', classes: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300' },
     SUBMITTED: { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' },
-    APPROVED: { label: 'Approved', classes: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' },
-    REJECTED: { label: 'Rejected', classes: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' },
-    VERIFIED_BY_HR: { label: 'Verified by HR', classes: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
+    PENDING: { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' },
+    VERIFIED_BY_HR: { label: 'Verified', classes: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
     PENDING_ADMIN: { label: 'Pending Admin', classes: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' },
+    SUBMITTED_TO_DIRECTOR: { label: 'Pending Board', classes: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' },
+    APPROVED: { label: 'Approved', classes: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' },
+    "Board Approved": { label: 'Approved', classes: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' },
+    REJECTED: { label: 'Rejected', classes: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' },
+    "Board Rejected": { label: 'Rejected', classes: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400' },
+    EXECUTED: { label: 'Executed', classes: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' },
 };
 
 export default function Page() {
@@ -136,10 +142,10 @@ export default function Page() {
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        {req.status === 'NEW' && (
+                                                        {(req.status === 'NEW' || req.status === 'DRAFT') && (
                                                             <button
                                                                 onClick={() => handleEditDraft(req)}
-                                                                className="flex items-center gap-1 text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/40 px-3 py-1.5 rounded-lg transition-colors border border-orange-100 dark:border-orange-900/40"
+                                                                className="flex items-center gap-1 text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/40 px-3 py-1.5 rounded-lg transition-colors border border-orange-100 dark:border-orange-900/40 cursor-pointer"
                                                             >
                                                                 <span className="material-symbols-outlined text-sm">edit</span>
                                                                 Edit & Submit
@@ -147,7 +153,7 @@ export default function Page() {
                                                         )}
                                                         <button
                                                             onClick={() => setViewRequest(req)}
-                                                            className="p-2 text-slate-400 hover:text-[#8B3A00] dark:hover:text-orange-400 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                                                            className="p-2 text-slate-400 hover:text-[#8B3A00] dark:hover:text-orange-400 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                                                         >
                                                             <span className="material-symbols-outlined text-[20px]">visibility</span>
                                                         </button>

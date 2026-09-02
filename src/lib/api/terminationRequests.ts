@@ -83,7 +83,7 @@ export const updateTerminationStatus = async (idStr: string, status: string, rem
     if (remarks) payload.remarks = remarks;
     if (boardMeetingDate) payload.boardMeetingDate = boardMeetingDate;
     
-    const response = await api.patch(`/api/terminations/${idStr}/status`, payload);
+    const response = await api.put(`/api/terminations/${idStr}/status`, payload);
     return mapDtoToFrontend(response.data);
 };
 
@@ -104,4 +104,8 @@ export const updateTerminationRequest = async (idStr: string, data: Partial<Term
     
     const response = await api.put(`/api/terminations/${idStr}`, payload);
     return mapDtoToFrontend(response.data);
+};
+
+export const executeTermination = async (idStr: string): Promise<void> => {
+    await api.post(`/api/terminations/${idStr}/execute`);
 };

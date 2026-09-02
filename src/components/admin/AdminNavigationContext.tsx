@@ -11,7 +11,8 @@ export type ActiveView =
   | "reports"
   | "otherApprovals"
   | "training"
-  | "leaveManagement";
+  | "leaveManagement"
+  | "employeeActions";
 
 interface AdminNavigationContextType {
   activeView: ActiveView;

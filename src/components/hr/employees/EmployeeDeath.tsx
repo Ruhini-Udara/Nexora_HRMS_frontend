@@ -14,14 +14,30 @@ import {
 } from '@/lib/api/deathRequests';
 import { useAuthStore } from '@/store/useAuthStore';
 
+// ── Status badge config ─────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; classes: string }> = {
-    NEW: { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400" },
     SUBMITTED: { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
     VERIFIED_BY_HR: { label: "Verified", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
     PENDING_ADMIN: { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
     SUBMITTED_TO_DIRECTOR: { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
-    APPROVED: { label: "Approved", classes: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+    "Board Approved": { label: "Board Approved", classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
+    EXECUTED: { label: "Executed", classes: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400" },
     REJECTED: { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
+};
+
+const getStatusBadge = (status: string | undefined | null) => {
+    if (!status) return { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" };
+    const s = String(status).trim();
+    const upper = s.toUpperCase();
+    if (upper === "NEW" || upper === "DRAFT") return { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" };
+    if (upper === "SUBMITTED" || upper === "PENDING") return { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" };
+    if (upper === "VERIFIED_BY_HR" || upper === "VERIFIED") return { label: "Verified", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" };
+    if (upper === "PENDING_ADMIN") return { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
+    if (upper === "SUBMITTED_TO_DIRECTOR" || upper === "PENDING_BOARD_APPROVAL") return { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" };
+    if (upper === "BOARD APPROVED" || upper === "APPROVED") return { label: "Board Approved", classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" };
+    if (upper === "BOARD REJECTED" || upper === "REJECTED") return { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" };
+    if (upper === "EXECUTED") return { label: "Executed", classes: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400" };
+    return { label: s, classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" };
 };
 
 export default function EmployeeDeath() {
@@ -442,10 +458,7 @@ export default function EmployeeDeath() {
                             </thead>
                             <tbody className="text-sm">
                                 {paginatedRequests.map((req) => {
-                                    const st = statusConfig[req.status] || { 
-                                        label: req.status, 
-                                        classes: "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400" 
-                                    };
+                                    const st = getStatusBadge(req.status);
                                     return (
                                         <tr
                                             key={req.id}
@@ -470,7 +483,7 @@ export default function EmployeeDeath() {
                                             </td>
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300">{req.requesterBranch}</td>
                                             <td className="py-4 px-6 text-center">
-                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${st.classes}`}>
+                                                <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-semibold ${st.classes}`}>
                                                     {st.label}
                                                 </span>
                                             </td>

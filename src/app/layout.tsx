@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
 import { SuppressHydrationWarning } from "@/components/SuppressHydrationWarning";
@@ -34,7 +35,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
         {/* Theme Initialization Script */}
-        <script
+        <Script
+          id="theme-script"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               try {

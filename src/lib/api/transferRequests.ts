@@ -6,7 +6,7 @@ export interface TransferDocument {
     filename: string;
 }
 
-export type TransferStatus = "SUBMITTED" | "VERIFIED_BY_HR" | "PENDING_BOARD_APPROVAL" | "PENDING_ADMIN" | "SUBMITTED_TO_DIRECTOR" | "APPROVED" | "REJECTED" | "NEW";
+export type TransferStatus = "SUBMITTED" | "VERIFIED_BY_HR" | "PENDING_BOARD_APPROVAL" | "PENDING_ADMIN" | "SUBMITTED_TO_DIRECTOR" | "APPROVED" | "REJECTED" | "NEW" | "DRAFT" | "Board Approved" | "Board Rejected" | "EXECUTED";
 
 export interface TransferRequest {
     id: string;
@@ -97,6 +97,12 @@ export const updateTransferStatus = async (idStr: string, status: string, remark
     const response = await api.put(`/api/transfer-requests/${numericId}/status`, null, {
         params: { status, remarks, boardMeetingDate }
     });
+    return mapDtoToFrontend(response.data);
+};
+
+export const executeTransfer = async (idStr: string): Promise<TransferRequest> => {
+    const numericId = parseInt(idStr.replace('TRF-', ''), 10);
+    const response = await api.post(`/api/transfer-requests/${numericId}/execute`);
     return mapDtoToFrontend(response.data);
 };
 
