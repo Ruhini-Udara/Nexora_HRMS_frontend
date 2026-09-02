@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, User, X, Mail, Building2, Briefcase, BadgeCheck, Fingerprint } from "lucide-react";
+import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, User, X, Mail, Building2, Briefcase, BadgeCheck, Fingerprint, Phone, MapPin } from "lucide-react";
 import api from "@/lib/axiosInstance";
+import { getDistinctBranches } from "@/lib/api/employeeApi";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAdminNavigation } from "../AdminNavigationContext";
 
@@ -8,6 +9,8 @@ interface Employee {
   id: string;
   name: string;
   email: string;
+  phoneNumber?: string;
+  branch?: string;
   avatar?: string;
   department: string;
   designation: string;
@@ -23,6 +26,8 @@ interface ApiEmployee {
   employeeCode?: string;
   fullName?: string;
   email?: string;
+  phoneNumber?: string;
+  branch?: string;
   department?: string;
   designation?: { designationName?: string };
   dateJoined?: string;
@@ -51,6 +56,7 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
+  const [branches, setBranches] = useState<string[]>([]);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [editForm, setEditForm] = useState<Employee | null>(null);
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
@@ -87,6 +93,8 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
           id: emp.employeeCode || "",
           name: emp.fullName || "",
           email: emp.email || "",
+          phoneNumber: emp.phoneNumber || "",
+          branch: emp.branch || "",
           avatar: "",
           department: emp.department || "",
           designation: emp.designation?.designationName || "",
@@ -108,10 +116,13 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
 
     fetchEmployees();
 
-    fetch("http://localhost:8080/api/designations")
-      .then(res => res.json())
-      .then(data => setDesignations(data))
+    api.get("/api/designations")
+      .then(res => setDesignations(res.data))
       .catch(err => console.error("Error fetching designations:", err));
+
+    getDistinctBranches()
+      .then(data => setBranches(data || []))
+      .catch(err => console.error("Error fetching branches:", err));
   }, []);
 
   // Filter employees based on selected filters and search query
@@ -123,7 +134,9 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
     const matchesSearch = !searchQuery ||
       employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       employee.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchQuery.toLowerCase());
+      employee.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (employee.phoneNumber && employee.phoneNumber.includes(searchQuery)) ||
+      (employee.branch && employee.branch.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return matchesDepartment && matchesJobTitle && matchesStatus && matchesSearch;
   });
@@ -197,23 +210,18 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
         const updateData = {
           fullName: editForm.name,
           email: editForm.email,
+          phoneNumber: editForm.phoneNumber,
+          branch: editForm.branch,
           department: editForm.department,
           employeeType: editForm.employmentStatus,
           designationId: designationId
         };
 
-        const response = await fetch(`http://localhost:8080/api/employees/${editForm.id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify(updateData)
-        });
+        const res = await api.put(`/api/employees/${editForm.id}`, updateData);
 
-        if (response.ok) {
+        if (res.status === 200 || res.status === 204) {
           setEmployees(employees.map((emp) =>
-            emp.id === editForm.id ? editForm : emp
+            emp.id === editForm.id ? { ...editForm } : emp
           ));
           setEditingEmployee(null);
           setEditForm(null);
@@ -291,6 +299,26 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                     </label>
                   </div>
                   <p className="text-base text-gray-900">{viewingEmployee.email}</p>
+                </div>
+
+                <div className="bg-sky-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Phone className="text-sky-600" size={18} />
+                    <label className="block text-sm font-medium text-sky-900">
+                      Phone Number
+                    </label>
+                  </div>
+                  <p className="text-base text-gray-900">{viewingEmployee.phoneNumber || "N/A"}</p>
+                </div>
+
+                <div className="bg-amber-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="text-amber-600" size={18} />
+                    <label className="block text-sm font-medium text-amber-900">
+                      Branch
+                    </label>
+                  </div>
+                  <p className="text-base text-gray-900">{viewingEmployee.branch || "N/A"}</p>
                 </div>
 
                 <div className="bg-purple-50 p-4 rounded-lg">
@@ -422,6 +450,35 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  placeholder="e.g. 0771234567"
+                  value={editForm.phoneNumber || ""}
+                  onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Branch
+                </label>
+                <select
+                  value={editForm.branch || ""}
+                  onChange={(e) => setEditForm({ ...editForm, branch: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                >
+                  <option value="">Select Branch</option>
+                  {branches.map((b, idx) => (
+                    <option key={idx} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
