@@ -100,3 +100,31 @@ The frontend communicates with a backend REST API to:
 
 The system follows a modular structure to ensure scalability and maintainability.
 
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Node.js** (v18 or v20+ recommended)
+- **npm** or **yarn**
+
+### Installation & Running Locally
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd Nexora_HRMS_frontend
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+   
+   The application will start on `http://localhost:3000`.
