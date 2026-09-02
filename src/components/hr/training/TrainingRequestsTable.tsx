@@ -532,18 +532,9 @@ export default function TrainingRequestsTable() {
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        {request.avatar ? (
-                                                            <img alt={request.employeeName} className="size-10 rounded-full object-cover" src={request.avatar} />
-                                                        ) : (
-                                                            <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-                                                                {request.initials}
-                                                            </div>
-                                                        )}
-                                                        <div>
-                                                            <p className="text-sm font-semibold">{request.employeeName}</p>
-                                                            <p className="text-xs text-slate-500">{request.department}</p>
-                                                        </div>
+                                                    <div>
+                                                        <p className="text-sm font-semibold">{request.employeeName}</p>
+                                                        <p className="text-xs text-slate-500">{request.department}</p>
                                                     </div>
                                                 </td>
 
