@@ -19,7 +19,7 @@ export default function AllRequestsPage() {
         setLoading(true);
         api.get(`/api/v1/dashboard/employee/${employeeId}/requests`)
             .then((res) => {
-                setRequests(res.data);
+                setRequests(res.data.sort((a: any, b: any) => b.id - a.id));
             })
             .catch((err) => {
                 console.error("Failed to fetch all requests", err);

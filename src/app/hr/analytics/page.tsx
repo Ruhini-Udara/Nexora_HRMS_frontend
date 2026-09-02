@@ -111,47 +111,42 @@ export default function HrAnalyticsPage() {
     return (
         <div className="p-8 max-w-7xl mx-auto w-full">
             <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Analytics</h2>
-                <p className="text-gray-600 dark:text-gray-400">Real-time HR analytics and pending task impact.</p>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Special Leave Analytics</h2>
+                <p className="text-gray-600 dark:text-gray-400">Real-time HR special leave analytics & impact</p>
             </div>
 
             {/* Top Metrics Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {/* Attendance (Dummy for now) */}
+                {/* Pending Overseas */}
                 <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
                     <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Present Today</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.presentToday}</h3>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Overseas</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.pendingOverseas}</h3>
                     </div>
                     <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
-                        <span className="material-icons-round text-primary">people</span>
+                        <span className="material-icons-round text-primary">flight</span>
                     </div>
                 </div>
 
-                {/* Late */}
+                {/* Pending Maternity */}
                 <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
                     <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Late Today</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.lateToday}</h3>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Maternity</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.pendingMaternity}</h3>
                     </div>
                     <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
-                        <span className="material-icons-round text-primary">schedule</span>
+                        <span className="material-icons-round text-primary">pregnant_woman</span>
                     </div>
                 </div>
 
-                {/* Pending Leaves */}
+                {/* Passport Expiries */}
                 <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
                     <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Leaves</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.pendingOverseas + data.pendingMaternity}</h3>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Passport Expiries</p>
+                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.passportExpiryAlerts?.length || 0}</h3>
                     </div>
-                    <div className="flex gap-1">
-                        <div className="w-8 h-12 bg-primary/10 flex items-center justify-center rounded-l-lg">
-                            <span className="material-icons-round text-primary text-sm">flight</span>
-                        </div>
-                        <div className="w-8 h-12 bg-primary/10 flex items-center justify-center rounded-r-lg">
-                            <span className="material-icons-round text-primary text-sm">pregnant_woman</span>
-                        </div>
+                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
+                        <span className="material-icons-round text-primary">badge</span>
                     </div>
                 </div>
 
@@ -291,49 +286,6 @@ export default function HrAnalyticsPage() {
                     </div>
                 </div>
 
-            </div>
-
-            {/* Payroll Export Section */}
-            <div className="mt-8 bg-surface-light dark:bg-surface-dark rounded-xl card-shadow border border-border-light dark:border-border-dark p-6">
-                <div className="flex items-center gap-3 mb-6 border-b border-border-light dark:border-border-dark pb-4">
-                    <span className="material-icons-round text-primary text-2xl">request_quote</span>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Payroll & Finance Export</h3>
-                </div>
-                <div className="flex flex-col sm:flex-row items-end gap-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-border-light dark:border-border-dark">
-                    <div className="w-full sm:w-1/3">
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Month</label>
-                        <select 
-                            value={exportMonth}
-                            onChange={(e) => setExportMonth(Number(e.target.value))}
-                            className="w-full bg-white dark:bg-slate-900 border border-border-light dark:border-border-dark rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
-                        >
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                                <option key={m} value={m}>{new Date(0, m - 1).toLocaleString('default', { month: 'long' })}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="w-full sm:w-1/3">
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Year</label>
-                        <input 
-                            type="number"
-                            value={exportYear}
-                            onChange={(e) => setExportYear(Number(e.target.value))}
-                            className="w-full bg-white dark:bg-slate-900 border border-border-light dark:border-border-dark rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary/20 text-sm font-medium"
-                        />
-                    </div>
-                    <div className="w-full sm:w-1/3">
-                        <button 
-                            onClick={handleDownloadPayroll}
-                            disabled={isExporting}
-                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                            <span className="material-icons-round text-[18px]">
-                                {isExporting ? 'sync' : 'download'}
-                            </span>
-                            {isExporting ? 'Generating...' : 'Export to CSV'}
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     );

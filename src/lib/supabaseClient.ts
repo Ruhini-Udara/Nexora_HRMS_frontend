@@ -79,9 +79,22 @@ export async function getHrmsSignedUrl(filePath: string, expiresIn = 3600): Prom
         .createSignedUrl(filePath, expiresIn);
 
     if (error) {
-        console.error("HRMS Signed URL error:", error.message);
+        if (!error.message.includes("Object not found")) {
+            console.error("HRMS Signed URL error:", error.message);
+        }
         return null;
     }
 
     return data.signedUrl;
+}
+
+/**
+ * Gets a signed URL for a profile picture, trying the new HRMS bucket first.
+ * If the file is not found (because it hasn't been migrated yet), it falls back to the old leave-documents bucket.
+ */
+export async function getProfilePictureSignedUrl(filePath: string, expiresIn = 3600): Promise<string | null> {
+    const url = await getHrmsSignedUrl(filePath, expiresIn);
+    if (url) return url;
+    
+    return await getSignedUrl(filePath, expiresIn);
 }

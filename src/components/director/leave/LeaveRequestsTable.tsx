@@ -95,7 +95,7 @@ const LeaveRequestsTable = () => {
             const overseas = overseasRes.data.map((r: LeaveResponse) => ({ ...r, refType: 'OVERSEAS_LEAVE' }));
             const maternity = maternityRes.data.map((r: LeaveResponse) => ({ ...r, refType: 'MATERNITY_LEAVE' }));
 
-            setRequests([...overseas, ...maternity]);
+            setRequests([...overseas, ...maternity].sort((a: any, b: any) => b.id - a.id));
         } catch (err) {
             const error = err as { response?: { data?: { message?: string } } };
             setError(error.response?.data?.message || "Could not connect to the backend. Please ensure the server is running.");
@@ -212,9 +212,9 @@ const LeaveRequestsTable = () => {
                         <tr>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Employee</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Type</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Requested Date</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Submitted Date</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Dates</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Days</th>
+                            <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Requested Period</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300">Status</th>
                             <th className="px-6 py-4 font-semibold text-gray-700 dark:text-slate-300 text-center">Actions</th>
                         </tr>

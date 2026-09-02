@@ -21,8 +21,58 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
   const [errors, setErrors] = useState({
     eventName: false,
     eventDate: false,
+    eventDateOutOfRange: false,
     eventTime: false,
   });
+
+  // Date boundary: 2 years in past and 2 years in future
+  const today = new Date();
+  const minAllowedDate = new Date(today.getFullYear() - 2, today.getMonth(), today.getDate());
+  minAllowedDate.setHours(0, 0, 0, 0);
+
+  const maxAllowedDate = new Date(today.getFullYear() + 2, today.getMonth(), today.getDate());
+  maxAllowedDate.setHours(23, 59, 59, 999);
+
+  const minMonthDate = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+  const maxMonthDate = new Date(today.getFullYear() + 2, today.getMonth(), 1);
+
+  const isPrevMonthDisabled =
+    currentMonth.getFullYear() < minMonthDate.getFullYear() ||
+    (currentMonth.getFullYear() === minMonthDate.getFullYear() &&
+      currentMonth.getMonth() <= minMonthDate.getMonth());
+
+  const isNextMonthDisabled =
+    currentMonth.getFullYear() > maxMonthDate.getFullYear() ||
+    (currentMonth.getFullYear() === maxMonthDate.getFullYear() &&
+      currentMonth.getMonth() >= maxMonthDate.getMonth());
+
+  const parseDateString = (dateStr: string): Date | null => {
+    if (!dateStr || !dateStr.trim()) return null;
+    const parts = dateStr.trim().split(/[-/]/);
+    if (parts.length !== 3) return null;
+
+    let year: number, month: number, day: number;
+    if (parts[0].length === 4) {
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10) - 1;
+      day = parseInt(parts[2], 10);
+    } else {
+      month = parseInt(parts[0], 10) - 1;
+      day = parseInt(parts[1], 10);
+      year = parseInt(parts[2], 10);
+    }
+
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    const d = new Date(year, month, day);
+    if (d.getFullYear() !== year || d.getMonth() !== month || d.getDate() !== day) return null;
+    return d;
+  };
+
+  const isDateOutOfRange = (date: Date) => {
+    const check = new Date(date);
+    check.setHours(0, 0, 0, 0);
+    return check < minAllowedDate || check > maxAllowedDate;
+  };
 
   // Close calendar when clicking outside
   useEffect(() => {
@@ -87,8 +137,8 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
   const handleDateSelect = (date: Date) => {
     setEventDate(formatDate(date));
     setShowCalendar(false);
-    if (errors.eventDate) {
-      setErrors({ ...errors, eventDate: false });
+    if (errors.eventDate || errors.eventDateOutOfRange) {
+      setErrors({ ...errors, eventDate: false, eventDateOutOfRange: false });
     }
   };
 
@@ -110,21 +160,16 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
     return formatDate(date) === eventDate;
   };
 
-  const isPastDate = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const checkDate = new Date(date);
-    checkDate.setHours(0, 0, 0, 0);
-    return checkDate < today;
-  };
-
-
-
   const handleSave = async () => {
-    // Validate required fields
+    // Validate required fields and date range
+    const parsedDate = parseDateString(eventDate);
+    const dateEmpty = eventDate.trim() === "";
+    const dateOutOfRange = !dateEmpty && (!parsedDate || isDateOutOfRange(parsedDate));
+
     const newErrors = {
       eventName: eventName.trim() === "",
-      eventDate: eventDate.trim() === "",
+      eventDate: dateEmpty,
+      eventDateOutOfRange: dateOutOfRange,
       eventTime: eventTime.trim() === "",
     };
 
@@ -132,8 +177,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
     setSaveError(null);
 
     // Check if there are any errors
-    if (newErrors.eventName || newErrors.eventDate || newErrors.eventTime) {
-      // Find the first error field and scroll to it
+    if (newErrors.eventName || newErrors.eventDate || newErrors.eventDateOutOfRange || newErrors.eventTime) {
       const firstErrorField = document.querySelector('.border-red-500');
       if (firstErrorField) {
         firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -195,7 +239,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                 }
               }}
               placeholder="e.g., Team Building Workshop"
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all ${
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
                 errors.eventName ? "border-red-500" : "border-slate-300"
               }`}
             />
@@ -222,14 +266,14 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                   value={eventDate}
                   onChange={(e) => {
                     setEventDate(e.target.value);
-                    if (errors.eventDate) {
-                      setErrors({ ...errors, eventDate: false });
+                    if (errors.eventDate || errors.eventDateOutOfRange) {
+                      setErrors({ ...errors, eventDate: false, eventDateOutOfRange: false });
                     }
                   }}
                   onFocus={() => setShowCalendar(true)}
                   placeholder="mm/dd/yyyy"
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all ${
-                    errors.eventDate ? "border-red-500" : "border-slate-300"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
+                    errors.eventDate || errors.eventDateOutOfRange ? "border-red-500" : "border-slate-300"
                   }`}
                 />
                 
@@ -240,20 +284,40 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                     <div className="flex items-center justify-between mb-4">
                       <button
                         type="button"
-                        onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
-                        className="p-1 hover:bg-slate-100 rounded transition-colors"
+                        disabled={isPrevMonthDisabled}
+                        title={isPrevMonthDisabled ? "Reached minimum viewing limit (2 years in past)" : "Previous month"}
+                        onClick={() => {
+                          if (!isPrevMonthDisabled) {
+                            setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+                          }
+                        }}
+                        className={`p-1 rounded transition-colors ${
+                          isPrevMonthDisabled
+                            ? "opacity-30 cursor-not-allowed text-slate-400"
+                            : "hover:bg-slate-100 text-slate-600 cursor-pointer"
+                        }`}
                       >
-                        <ChevronLeft size={20} className="text-slate-600" />
+                        <ChevronLeft size={20} />
                       </button>
                       <span className="font-semibold text-slate-800">
                         {getMonthName(currentMonth)}
                       </span>
                       <button
                         type="button"
-                        onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
-                        className="p-1 hover:bg-slate-100 rounded transition-colors"
+                        disabled={isNextMonthDisabled}
+                        title={isNextMonthDisabled ? "Reached maximum viewing limit (2 years in future)" : "Next month"}
+                        onClick={() => {
+                          if (!isNextMonthDisabled) {
+                            setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+                          }
+                        }}
+                        className={`p-1 rounded transition-colors ${
+                          isNextMonthDisabled
+                            ? "opacity-30 cursor-not-allowed text-slate-400"
+                            : "hover:bg-slate-100 text-slate-600 cursor-pointer"
+                        }`}
                       >
-                        <ChevronRight size={20} className="text-slate-600" />
+                        <ChevronRight size={20} />
                       </button>
                     </div>
 
@@ -271,8 +335,8 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                       
                       {/* Calendar Days */}
                       {getDaysInMonth(currentMonth).map((dayObj, idx) => {
-                        const isPast = isPastDate(dayObj.date);
-                        const isDisabled = isPast || !dayObj.isCurrentMonth;
+                        const outOfRange = isDateOutOfRange(dayObj.date);
+                        const isDisabled = outOfRange || !dayObj.isCurrentMonth;
                         
                         return (
                           <button
@@ -283,10 +347,10 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                             className={`
                               p-2 text-sm rounded-lg transition-colors
                               ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
-                              ${isPast && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
-                              ${isToday(dayObj.date) && !isPast ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                              ${isSelectedDate(dayObj.date) ? "bg-amber-400 text-white font-semibold" : ""}
-                              ${dayObj.isCurrentMonth && !isPast && !isToday(dayObj.date) && !isSelectedDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
+                              ${outOfRange && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
+                              ${isToday(dayObj.date) && !outOfRange ? "bg-blue-50 text-blue-600 font-semibold" : ""}
+                              ${isSelectedDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold" : ""}
+                              ${dayObj.isCurrentMonth && !outOfRange && !isToday(dayObj.date) && !isSelectedDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
                             `}
                           >
                             {dayObj.day}
@@ -300,6 +364,11 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
               {errors.eventDate && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                   <span>⚠</span> Event date is required
+                </p>
+              )}
+              {errors.eventDateOutOfRange && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> Date must be within 2 years in the past and 2 years in the future
                 </p>
               )}
             </div>
@@ -322,7 +391,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
                       setErrors({ ...errors, eventTime: false });
                     }
                   }}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all ${
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
                     errors.eventTime ? "border-red-500" : "border-slate-300"
                   }`}
                 />
@@ -343,7 +412,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
             <select
               value={eventType}
               onChange={(e) => setEventType(e.target.value)}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all bg-white"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all bg-white"
             >
               <option value="Internal Event">Internal Event</option>
               <option value="Admin Deadline">Admin Deadline</option>
@@ -365,7 +434,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Provide details about the event, agenda, or specific instructions for attendees..."
               rows={4}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all resize-none"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all resize-none"
             />
           </div>
         </div>
@@ -382,7 +451,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-amber-400 hover:bg-amber-500 disabled:bg-amber-200 text-slate-900 font-medium rounded-lg transition-colors"
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#8B3A00] hover:bg-[#722F00] disabled:bg-[#8B3A00]/50 text-white font-medium rounded-lg transition-colors cursor-pointer"
               >
                 <Save size={18} />
                 {isSaving ? "Saving..." : "Save Event"}
@@ -396,7 +465,7 @@ export default function AddCompanyEvent({ onClose }: { onClose?: () => void }) {
               </button>
             </div>
             <p className="text-sm text-slate-500">
-              <span className="text-amber-600">●</span> Required fields are marked automatically
+              <span className="text-[#8B3A00]">●</span> Required fields are marked automatically
             </p>
           </div>
         </div>
