@@ -53,9 +53,9 @@ const HrSidebar = () => {
         { label: "Attendance", href: "/hr/attendance", icon: ClipboardCheck },
         { label: "Leave Management", href: "/hr/leave", icon: Calendar },
        
-        { label: "Welfare", href: "/hr/welfare", icon: Heart },
-        { label: "Analytics", href: "/hr/analytics", icon: BarChart3 },
-         { label: "Calendar", href: "/hr/calendar", icon: Calendar },
+        { label: "Welfare Management", href: "/hr/welfare", icon: Heart },
+        { label: "Attendance & Leave Analytics", href: "/hr/analytics", icon: BarChart3 },
+        { label: "Calendar", href: "/hr/calendar", icon: Calendar },
     ];
 
     return (
