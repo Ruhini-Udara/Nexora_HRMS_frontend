@@ -673,27 +673,13 @@ export default function WelfareRequestPage() {
                             <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>
                             <div>
                                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Certification</p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Your manager must certify your request before HR processing.</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Your HR user must certify your request before board processing.</p>
                             </div>
                         </div>
                     </div>
                     <button className="w-full mt-6 text-[10px] font-bold text-primary border-t border-slate-50 dark:border-slate-800 pt-4 flex items-center justify-center gap-1 hover:underline cursor-pointer">
                         Read Full Policy Documents <span className="material-symbols-outlined text-xs">open_in_new</span>
                     </button>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors">
-                    <h3 className="font-bold text-slate-800 dark:text-white mb-4 text-sm uppercase tracking-tight">Common Questions</h3>
-                    <div className="space-y-3">
-                        <button className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors cursor-pointer">
-                            How to tracking my status?
-                            <span className="material-symbols-outlined text-sm">expand_more</span>
-                        </button>
-                        <button className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors cursor-pointer">
-                            What documents are required?
-                            <span className="material-symbols-outlined text-sm">expand_more</span>
-                        </button>
-                    </div>
                 </div>
             </div>
             </div>
