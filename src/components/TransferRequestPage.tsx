@@ -770,12 +770,6 @@ const SidebarPanel = () => (
                     </div>
                 </li>
             </ul>
-            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                <a href="#" className="text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 flex items-center gap-1 hover:underline transition-all">
-                    Read Full Policy Documents
-                    <span className="material-symbols-outlined text-xs">open_in_new</span>
-                </a>
-            </div>
         </div>
 
         <div className="bg-[#FEF3EB] dark:bg-orange-950/20 rounded-xl p-6 text-slate-800 dark:text-slate-200 shadow-sm border border-[#FDE6D5] dark:border-orange-900/30 relative overflow-hidden transition-colors">
