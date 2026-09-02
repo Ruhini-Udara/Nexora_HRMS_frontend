@@ -104,11 +104,28 @@ export default function ReadOnlyCalendar({
     return events.filter((event) => event.date === dateStr);
   };
 
+  // Boundary calculations: 2 years in past and 2 years in future
+  const today = new Date();
+  const minMonthDate = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+  const maxMonthDate = new Date(today.getFullYear() + 2, today.getMonth(), 1);
+
+  const isPrevDisabled =
+    currentDate.getFullYear() < minMonthDate.getFullYear() ||
+    (currentDate.getFullYear() === minMonthDate.getFullYear() &&
+      currentDate.getMonth() <= minMonthDate.getMonth());
+
+  const isNextDisabled =
+    currentDate.getFullYear() > maxMonthDate.getFullYear() ||
+    (currentDate.getFullYear() === maxMonthDate.getFullYear() &&
+      currentDate.getMonth() >= maxMonthDate.getMonth());
+
   const previousMonth = () => {
+    if (isPrevDisabled) return;
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
   const nextMonth = () => {
+    if (isNextDisabled) return;
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
@@ -215,19 +232,31 @@ export default function ReadOnlyCalendar({
             <div className="flex items-center gap-2">
               <button
                 onClick={previousMonth}
-                className="p-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl text-slate-600 dark:text-slate-400 transition-colors"
+                disabled={isPrevDisabled}
+                title={isPrevDisabled ? "Reached minimum viewing limit (2 years in past)" : "Previous month"}
+                className={`p-2 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors ${
+                  isPrevDisabled
+                    ? "opacity-30 cursor-not-allowed text-slate-400 dark:text-slate-600"
+                    : "hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 cursor-pointer"
+                }`}
               >
                 <ChevronLeft size={18} />
               </button>
               <button
                 onClick={() => setCurrentDate(new Date())}
-                className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-semibold rounded-xl text-slate-700 dark:text-slate-300 transition-colors"
+                className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs font-semibold rounded-xl text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
               >
                 Today
               </button>
               <button
                 onClick={nextMonth}
-                className="p-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl text-slate-600 dark:text-slate-400 transition-colors"
+                disabled={isNextDisabled}
+                title={isNextDisabled ? "Reached maximum viewing limit (2 years in future)" : "Next month"}
+                className={`p-2 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors ${
+                  isNextDisabled
+                    ? "opacity-30 cursor-not-allowed text-slate-400 dark:text-slate-600"
+                    : "hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 cursor-pointer"
+                }`}
               >
                 <ChevronRight size={18} />
               </button>

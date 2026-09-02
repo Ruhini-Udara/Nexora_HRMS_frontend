@@ -24,8 +24,70 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
   const [errors, setErrors] = useState({
     holidayName: false,
     startDate: false,
+    startDateOutOfRange: false,
     endDate: false,
+    endDateOutOfRange: false,
+    endDateBeforeStart: false,
   });
+
+  // Date boundary: 2 years in past and 2 years in future
+  const today = new Date();
+  const minAllowedDate = new Date(today.getFullYear() - 2, today.getMonth(), today.getDate());
+  minAllowedDate.setHours(0, 0, 0, 0);
+
+  const maxAllowedDate = new Date(today.getFullYear() + 2, today.getMonth(), today.getDate());
+  maxAllowedDate.setHours(23, 59, 59, 999);
+
+  const minMonthDate = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+  const maxMonthDate = new Date(today.getFullYear() + 2, today.getMonth(), 1);
+
+  const isStartPrevMonthDisabled =
+    startCurrentMonth.getFullYear() < minMonthDate.getFullYear() ||
+    (startCurrentMonth.getFullYear() === minMonthDate.getFullYear() &&
+      startCurrentMonth.getMonth() <= minMonthDate.getMonth());
+
+  const isStartNextMonthDisabled =
+    startCurrentMonth.getFullYear() > maxMonthDate.getFullYear() ||
+    (startCurrentMonth.getFullYear() === maxMonthDate.getFullYear() &&
+      startCurrentMonth.getMonth() >= maxMonthDate.getMonth());
+
+  const isEndPrevMonthDisabled =
+    endCurrentMonth.getFullYear() < minMonthDate.getFullYear() ||
+    (endCurrentMonth.getFullYear() === minMonthDate.getFullYear() &&
+      endCurrentMonth.getMonth() <= minMonthDate.getMonth());
+
+  const isEndNextMonthDisabled =
+    endCurrentMonth.getFullYear() > maxMonthDate.getFullYear() ||
+    (endCurrentMonth.getFullYear() === maxMonthDate.getFullYear() &&
+      endCurrentMonth.getMonth() >= maxMonthDate.getMonth());
+
+  const parseDateString = (dateStr: string): Date | null => {
+    if (!dateStr || !dateStr.trim()) return null;
+    const parts = dateStr.trim().split(/[-/]/);
+    if (parts.length !== 3) return null;
+
+    let year: number, month: number, day: number;
+    if (parts[0].length === 4) {
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10) - 1;
+      day = parseInt(parts[2], 10);
+    } else {
+      month = parseInt(parts[0], 10) - 1;
+      day = parseInt(parts[1], 10);
+      year = parseInt(parts[2], 10);
+    }
+
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+    const d = new Date(year, month, day);
+    if (d.getFullYear() !== year || d.getMonth() !== month || d.getDate() !== day) return null;
+    return d;
+  };
+
+  const isDateOutOfRange = (date: Date) => {
+    const check = new Date(date);
+    check.setHours(0, 0, 0, 0);
+    return check < minAllowedDate || check > maxAllowedDate;
+  };
 
   // Close calendar when clicking outside
   useEffect(() => {
@@ -40,8 +102,6 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -95,16 +155,16 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
   const handleStartDateSelect = (date: Date) => {
     setStartDate(formatDate(date));
     setShowStartCalendar(false);
-    if (errors.startDate) {
-      setErrors({ ...errors, startDate: false });
+    if (errors.startDate || errors.startDateOutOfRange || errors.endDateBeforeStart) {
+      setErrors({ ...errors, startDate: false, startDateOutOfRange: false, endDateBeforeStart: false });
     }
   };
 
   const handleEndDateSelect = (date: Date) => {
     setEndDate(formatDate(date));
     setShowEndCalendar(false);
-    if (errors.endDate) {
-      setErrors({ ...errors, endDate: false });
+    if (errors.endDate || errors.endDateOutOfRange || errors.endDateBeforeStart) {
+      setErrors({ ...errors, endDate: false, endDateOutOfRange: false, endDateBeforeStart: false });
     }
   };
 
@@ -131,30 +191,39 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
     return formatDate(date) === endDate;
   };
 
-  const isPastDate = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const checkDate = new Date(date);
-    checkDate.setHours(0, 0, 0, 0);
-    return checkDate < today;
-  };
-
-
-
   const handleSave = async () => {
-    // Validate required fields
+    // Validate required fields and date range
+    const parsedStart = parseDateString(startDate);
+    const parsedEnd = parseDateString(endDate);
+
+    const startEmpty = startDate.trim() === "";
+    const endEmpty = endDate.trim() === "";
+
+    const startOutOfRange = !startEmpty && (!parsedStart || isDateOutOfRange(parsedStart));
+    const endOutOfRange = !endEmpty && (!parsedEnd || isDateOutOfRange(parsedEnd));
+    const endBeforeStart = !startEmpty && !endEmpty && parsedStart && parsedEnd && parsedEnd < parsedStart;
+
     const newErrors = {
       holidayName: holidayName.trim() === "",
-      startDate: startDate.trim() === "",
-      endDate: endDate.trim() === "",
+      startDate: startEmpty,
+      startDateOutOfRange: startOutOfRange,
+      endDate: endEmpty,
+      endDateOutOfRange: endOutOfRange,
+      endDateBeforeStart: !!endBeforeStart,
     };
 
     setErrors(newErrors);
     setSaveError(null);
 
     // Check if there are any errors
-    if (newErrors.holidayName || newErrors.startDate || newErrors.endDate) {
-      // Find the first error field and scroll to it
+    if (
+      newErrors.holidayName ||
+      newErrors.startDate ||
+      newErrors.startDateOutOfRange ||
+      newErrors.endDate ||
+      newErrors.endDateOutOfRange ||
+      newErrors.endDateBeforeStart
+    ) {
       const firstErrorField = document.querySelector('.border-red-500');
       if (firstErrorField) {
         firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -244,14 +313,14 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                   value={startDate}
                   onChange={(e) => {
                     setStartDate(e.target.value);
-                    if (errors.startDate) {
-                      setErrors({ ...errors, startDate: false });
+                    if (errors.startDate || errors.startDateOutOfRange || errors.endDateBeforeStart) {
+                      setErrors({ ...errors, startDate: false, startDateOutOfRange: false, endDateBeforeStart: false });
                     }
                   }}
                   onFocus={() => setShowStartCalendar(true)}
                   placeholder="mm/dd/yyyy"
                   className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
-                    errors.startDate ? "border-red-500" : "border-slate-300"
+                    errors.startDate || errors.startDateOutOfRange ? "border-red-500" : "border-slate-300"
                   }`}
                 />
                 
@@ -262,20 +331,40 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                     <div className="flex items-center justify-between mb-4">
                       <button
                         type="button"
-                        onClick={() => setStartCurrentMonth(new Date(startCurrentMonth.getFullYear(), startCurrentMonth.getMonth() - 1, 1))}
-                        className="p-1 hover:bg-slate-100 rounded transition-colors"
+                        disabled={isStartPrevMonthDisabled}
+                        title={isStartPrevMonthDisabled ? "Reached minimum viewing limit (2 years in past)" : "Previous month"}
+                        onClick={() => {
+                          if (!isStartPrevMonthDisabled) {
+                            setStartCurrentMonth(new Date(startCurrentMonth.getFullYear(), startCurrentMonth.getMonth() - 1, 1));
+                          }
+                        }}
+                        className={`p-1 rounded transition-colors ${
+                          isStartPrevMonthDisabled
+                            ? "opacity-30 cursor-not-allowed text-slate-400"
+                            : "hover:bg-slate-100 text-slate-600 cursor-pointer"
+                        }`}
                       >
-                        <ChevronLeft size={20} className="text-slate-600" />
+                        <ChevronLeft size={20} />
                       </button>
                       <span className="font-semibold text-slate-800">
                         {getMonthName(startCurrentMonth)}
                       </span>
                       <button
                         type="button"
-                        onClick={() => setStartCurrentMonth(new Date(startCurrentMonth.getFullYear(), startCurrentMonth.getMonth() + 1, 1))}
-                        className="p-1 hover:bg-slate-100 rounded transition-colors"
+                        disabled={isStartNextMonthDisabled}
+                        title={isStartNextMonthDisabled ? "Reached maximum viewing limit (2 years in future)" : "Next month"}
+                        onClick={() => {
+                          if (!isStartNextMonthDisabled) {
+                            setStartCurrentMonth(new Date(startCurrentMonth.getFullYear(), startCurrentMonth.getMonth() + 1, 1));
+                          }
+                        }}
+                        className={`p-1 rounded transition-colors ${
+                          isStartNextMonthDisabled
+                            ? "opacity-30 cursor-not-allowed text-slate-400"
+                            : "hover:bg-slate-100 text-slate-600 cursor-pointer"
+                        }`}
                       >
-                        <ChevronRight size={20} className="text-slate-600" />
+                        <ChevronRight size={20} />
                       </button>
                     </div>
 
@@ -293,8 +382,8 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                       
                       {/* Calendar Days */}
                       {getDaysInMonth(startCurrentMonth).map((dayObj, idx) => {
-                        const isPast = isPastDate(dayObj.date);
-                        const isDisabled = isPast || !dayObj.isCurrentMonth;
+                        const outOfRange = isDateOutOfRange(dayObj.date);
+                        const isDisabled = outOfRange || !dayObj.isCurrentMonth;
                         
                         return (
                           <button
@@ -305,10 +394,10 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                             className={`
                               p-2 text-sm rounded-lg transition-colors
                               ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
-                              ${isPast && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
-                              ${isToday(dayObj.date) && !isPast ? "bg-blue-50 text-blue-600 font-semibold" : ""}
+                              ${outOfRange && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
+                              ${isToday(dayObj.date) && !outOfRange ? "bg-blue-50 text-blue-600 font-semibold" : ""}
                               ${isSelectedStartDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold" : ""}
-                              ${dayObj.isCurrentMonth && !isPast && !isToday(dayObj.date) && !isSelectedStartDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
+                              ${dayObj.isCurrentMonth && !outOfRange && !isToday(dayObj.date) && !isSelectedStartDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
                             `}
                           >
                             {dayObj.day}
@@ -322,6 +411,11 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
               {errors.startDate && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                   <span>⚠</span> Start date is required
+                </p>
+              )}
+              {errors.startDateOutOfRange && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> Date must be within 2 years in the past and 2 years in the future
                 </p>
               )}
             </div>
@@ -339,14 +433,14 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                   value={endDate}
                   onChange={(e) => {
                     setEndDate(e.target.value);
-                    if (errors.endDate) {
-                      setErrors({ ...errors, endDate: false });
+                    if (errors.endDate || errors.endDateOutOfRange || errors.endDateBeforeStart) {
+                      setErrors({ ...errors, endDate: false, endDateOutOfRange: false, endDateBeforeStart: false });
                     }
                   }}
                   onFocus={() => setShowEndCalendar(true)}
                   placeholder="mm/dd/yyyy"
                   className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#8B3A00] focus:border-[#8B3A00] outline-none transition-all ${
-                    errors.endDate ? "border-red-500" : "border-slate-300"
+                    errors.endDate || errors.endDateOutOfRange || errors.endDateBeforeStart ? "border-red-500" : "border-slate-300"
                   }`}
                 />
                 
@@ -357,20 +451,40 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                     <div className="flex items-center justify-between mb-4">
                       <button
                         type="button"
-                        onClick={() => setEndCurrentMonth(new Date(endCurrentMonth.getFullYear(), endCurrentMonth.getMonth() - 1, 1))}
-                        className="p-1 hover:bg-slate-100 rounded transition-colors"
+                        disabled={isEndPrevMonthDisabled}
+                        title={isEndPrevMonthDisabled ? "Reached minimum viewing limit (2 years in past)" : "Previous month"}
+                        onClick={() => {
+                          if (!isEndPrevMonthDisabled) {
+                            setEndCurrentMonth(new Date(endCurrentMonth.getFullYear(), endCurrentMonth.getMonth() - 1, 1));
+                          }
+                        }}
+                        className={`p-1 rounded transition-colors ${
+                          isEndPrevMonthDisabled
+                            ? "opacity-30 cursor-not-allowed text-slate-400"
+                            : "hover:bg-slate-100 text-slate-600 cursor-pointer"
+                        }`}
                       >
-                        <ChevronLeft size={20} className="text-slate-600" />
+                        <ChevronLeft size={20} />
                       </button>
                       <span className="font-semibold text-slate-800">
                         {getMonthName(endCurrentMonth)}
                       </span>
                       <button
                         type="button"
-                        onClick={() => setEndCurrentMonth(new Date(endCurrentMonth.getFullYear(), endCurrentMonth.getMonth() + 1, 1))}
-                        className="p-1 hover:bg-slate-100 rounded transition-colors"
+                        disabled={isEndNextMonthDisabled}
+                        title={isEndNextMonthDisabled ? "Reached maximum viewing limit (2 years in future)" : "Next month"}
+                        onClick={() => {
+                          if (!isEndNextMonthDisabled) {
+                            setEndCurrentMonth(new Date(endCurrentMonth.getFullYear(), endCurrentMonth.getMonth() + 1, 1));
+                          }
+                        }}
+                        className={`p-1 rounded transition-colors ${
+                          isEndNextMonthDisabled
+                            ? "opacity-30 cursor-not-allowed text-slate-400"
+                            : "hover:bg-slate-100 text-slate-600 cursor-pointer"
+                        }`}
                       >
-                        <ChevronRight size={20} className="text-slate-600" />
+                        <ChevronRight size={20} />
                       </button>
                     </div>
 
@@ -388,8 +502,8 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                       
                       {/* Calendar Days */}
                       {getDaysInMonth(endCurrentMonth).map((dayObj, idx) => {
-                        const isPast = isPastDate(dayObj.date);
-                        const isDisabled = isPast || !dayObj.isCurrentMonth;
+                        const outOfRange = isDateOutOfRange(dayObj.date);
+                        const isDisabled = outOfRange || !dayObj.isCurrentMonth;
                         
                         return (
                           <button
@@ -400,10 +514,10 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                             className={`
                               p-2 text-sm rounded-lg transition-colors
                               ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
-                              ${isPast && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
-                              ${isToday(dayObj.date) && !isPast ? "bg-blue-50 text-blue-600 font-semibold" : ""}
+                              ${outOfRange && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
+                              ${isToday(dayObj.date) && !outOfRange ? "bg-blue-50 text-blue-600 font-semibold" : ""}
                               ${isSelectedEndDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold" : ""}
-                              ${dayObj.isCurrentMonth && !isPast && !isToday(dayObj.date) && !isSelectedEndDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
+                              ${dayObj.isCurrentMonth && !outOfRange && !isToday(dayObj.date) && !isSelectedEndDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
                             `}
                           >
                             {dayObj.day}
@@ -417,6 +531,16 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
               {errors.endDate && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                   <span>⚠</span> End date is required
+                </p>
+              )}
+              {errors.endDateOutOfRange && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> Date must be within 2 years in the past and 2 years in the future
+                </p>
+              )}
+              {errors.endDateBeforeStart && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> End date cannot be before start date
                 </p>
               )}
             </div>

@@ -91,11 +91,28 @@ export default function OfficeCalendar() {
     return events.filter((event) => event.date === dateStr);
   };
 
+  // Date boundary: 2 years in past and 2 years in future
+  const today = new Date();
+  const minMonthDate = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+  const maxMonthDate = new Date(today.getFullYear() + 2, today.getMonth(), 1);
+
+  const isPrevDisabled =
+    currentDate.getFullYear() < minMonthDate.getFullYear() ||
+    (currentDate.getFullYear() === minMonthDate.getFullYear() &&
+      currentDate.getMonth() <= minMonthDate.getMonth());
+
+  const isNextDisabled =
+    currentDate.getFullYear() > maxMonthDate.getFullYear() ||
+    (currentDate.getFullYear() === maxMonthDate.getFullYear() &&
+      currentDate.getMonth() >= maxMonthDate.getMonth());
+
   const previousMonth = () => {
+    if (isPrevDisabled) return;
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
   const nextMonth = () => {
+    if (isNextDisabled) return;
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
@@ -146,15 +163,27 @@ export default function OfficeCalendar() {
             <div className="flex items-center gap-2">
               <button
                 onClick={previousMonth}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                disabled={isPrevDisabled}
+                title={isPrevDisabled ? "Reached minimum viewing limit (2 years in past)" : "Previous month"}
+                className={`p-2 rounded-lg transition-colors ${
+                  isPrevDisabled
+                    ? "opacity-30 cursor-not-allowed text-slate-400 dark:text-slate-600"
+                    : "hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-slate-600 dark:text-slate-400"
+                }`}
               >
-                <ChevronLeft size={20} className="text-slate-600 dark:text-slate-400" />
+                <ChevronLeft size={20} />
               </button>
               <button
                 onClick={nextMonth}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                disabled={isNextDisabled}
+                title={isNextDisabled ? "Reached maximum viewing limit (2 years in future)" : "Next month"}
+                className={`p-2 rounded-lg transition-colors ${
+                  isNextDisabled
+                    ? "opacity-30 cursor-not-allowed text-slate-400 dark:text-slate-600"
+                    : "hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-slate-600 dark:text-slate-400"
+                }`}
               >
-                <ChevronRight size={20} className="text-slate-600 dark:text-slate-400" />
+                <ChevronRight size={20} />
               </button>
             </div>
           </div>
