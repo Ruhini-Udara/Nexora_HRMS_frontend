@@ -2,6 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, User, X, Mail, Building2, Briefcase, BadgeCheck, Fingerprint, Phone, MapPin } from "lucide-react";
 import api from "@/lib/axiosInstance";
 import { getDistinctBranches } from "@/lib/api/employeeApi";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAdminNavigation } from "../AdminNavigationContext";
 
@@ -467,18 +474,21 @@ export default function EmployeeTable({ department, jobTitle, status }: Employee
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Branch
                 </label>
-                <select
+                <Select
                   value={editForm.branch || ""}
-                  onChange={(e) => setEditForm({ ...editForm, branch: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  onValueChange={(val) => setEditForm({ ...editForm, branch: val })}
                 >
-                  <option value="">Select Branch</option>
-                  {branches.map((b, idx) => (
-                    <option key={idx} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 h-10 text-sm text-gray-900 focus:ring-2 focus:ring-amber-500">
+                    <SelectValue placeholder="Select Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b, idx) => (
+                      <SelectItem key={idx} value={b}>
+                        {b}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
