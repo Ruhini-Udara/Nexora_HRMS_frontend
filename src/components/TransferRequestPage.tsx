@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useImperativeHandle, forwardRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -8,6 +8,13 @@ import { getDistinctBranches } from '@/lib/api/employeeApi';
 import { useAuthStore } from '@/store/useAuthStore';
 import { uploadHrmsDocument } from '@/lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // ── Types ───────────────────────────────────────────────────────────
 // ── Types ───────────────────────────────────────────────────────────
@@ -319,6 +326,9 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
         register,
         handleSubmit,
         getValues,
+        setValue,
+        watch,
+        control,
         reset,
         formState: { errors },
     } = useForm<TransferFormData>({
@@ -585,17 +595,29 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                             Target Location <span className="text-red-500">*</span>
                                         </label>
-                                        <select
-                                            {...register('targetLocation')}
-                                            className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-[#8B3A00] outline-none text-slate-700 dark:text-slate-100 ${errors.targetLocation ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
-                                        >
-                                            <option value="">Select a branch...</option>
-                                            {availableBranches.map((branch, index) => (
-                                                <option key={index} value={branch}>
-                                                    {branch}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <Controller
+                                            control={control}
+                                            name="targetLocation"
+                                            render={({ field }) => (
+                                                <Select
+                                                    value={field.value || ''}
+                                                    onValueChange={field.onChange}
+                                                >
+                                                    <SelectTrigger
+                                                        className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 h-11 text-sm text-slate-700 dark:text-slate-100 ${errors.targetLocation ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
+                                                    >
+                                                        <SelectValue placeholder="Select Target Branch" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {availableBranches.map((branch, index) => (
+                                                            <SelectItem key={index} value={branch}>
+                                                                {branch}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
                                         {errors.targetLocation && (
                                             <p className="text-xs text-red-500 mt-1">{errors.targetLocation.message}</p>
                                         )}

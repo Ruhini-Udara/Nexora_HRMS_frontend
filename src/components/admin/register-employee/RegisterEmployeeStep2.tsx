@@ -14,6 +14,7 @@ import {
 import { Briefcase, Hash, Info, Building2, UserCog, ChevronLeft, AlertCircle, Calendar, HeartPulse, Loader2 } from "lucide-react";
 import type { EmployeeFormData } from "./RegisterEmployee";
 import api from "@/lib/axiosInstance";
+import { getDistinctBranches } from "@/lib/api/employeeApi";
 
 interface DesignationOption {
   designationId: number;
@@ -41,6 +42,7 @@ export default function RegisterEmployeeStep2({
   onPrevious,
 }: RegisterEmployeeStep2Props) {
   const [designations, setDesignations] = useState<DesignationOption[]>([]);
+  const [branches, setBranches] = useState<string[]>([]);
   const [leaveQuota, setLeaveQuota] = useState<LeavePolicyQuota | null>(null);
   const [isLoadingLeaveQuota, setIsLoadingLeaveQuota] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,10 @@ export default function RegisterEmployeeStep2({
     api.get("/api/designations")
       .then((res) => setDesignations(res.data))
       .catch((err) => console.error("Failed to fetch designations", err));
+
+    getDistinctBranches()
+      .then((data) => setBranches(data || []))
+      .catch((err) => console.error("Failed to fetch branches", err));
 
     if (formData.employeeType) {
       fetchLeaveQuota(formData.employeeType);
@@ -341,15 +347,22 @@ export default function RegisterEmployeeStep2({
                   Branch
                 </Label>
                 <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                  <Input
-                    id="branch"
-                    name="branch"
-                    placeholder="e.g. Head Office"
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10 pointer-events-none" />
+                  <Select
                     value={formData.branch}
-                    onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
-                  />
+                    onValueChange={(value) => handleSelectChange("branch", value)}
+                  >
+                    <SelectTrigger className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white focus:border-amber-500 focus:ring-amber-500">
+                      <SelectValue placeholder="Select Branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.map((b, idx) => (
+                        <SelectItem key={idx} value={b}>
+                          {b}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
