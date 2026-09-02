@@ -7,11 +7,13 @@ import Link from "next/link";
 import { format } from "date-fns";
 
 export default function ResignationsExecutionPage() {
-    const [activeTab, setActiveTab] = useState<"today" | "upcoming">("today");
+    const [activeTab, setActiveTab] = useState<"today" | "upcoming" | "previous">("today");
     const [requests, setRequests] = useState<ResignationRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [executing, setExecuting] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const isApprovedStatus = (status: string | undefined | null) => {
         if (!status) return false;
@@ -40,6 +42,11 @@ export default function ResignationsExecutionPage() {
         fetchRequests();
     }, []);
 
+    const handleTabChange = (tab: "today" | "upcoming" | "previous") => {
+        setActiveTab(tab);
+        setCurrentPage(1);
+    };
+
     const handleExecute = async (id: string) => {
         try {
             setExecuting(id);
@@ -66,16 +73,23 @@ export default function ResignationsExecutionPage() {
 
     const filteredRequests = requests.filter((req) => {
         const todayStr = getTodayDateStr();
-        const rawDate = req.lastWorkingDate ? req.lastWorkingDate.split('T')[0] : todayStr;
+        const rawDate = req.lastWorkingDate ? req.lastWorkingDate.split('T')[0] : (req.resignationDate ? req.resignationDate.split('T')[0] : todayStr);
         
         if (activeTab === "today") {
-            // Effective date is today or earlier
-            return rawDate <= todayStr;
-        } else {
-            // Effective date is in the future
+            // Effective last working date is exactly today
+            return rawDate === todayStr;
+        } else if (activeTab === "upcoming") {
+            // Effective last working date is in the future
             return rawDate > todayStr;
+        } else if (activeTab === "previous") {
+            // Effective last working date is older than today
+            return rawDate < todayStr;
         }
+        return true;
     });
+
+    const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+    const paginatedRequests = filteredRequests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <div className="p-8 max-w-7xl mx-auto w-full flex-1">
@@ -95,21 +109,21 @@ export default function ResignationsExecutionPage() {
 
             <div className="flex space-x-1 border-b border-gray-200 dark:border-slate-800 mb-6">
                 <button
-                    onClick={() => setActiveTab("today")}
-                    className={`px-6 py-3 font-medium text-sm transition-colors relative ${
+                    onClick={() => handleTabChange("today")}
+                    className={`px-6 py-3 font-medium text-sm transition-colors relative cursor-pointer ${
                         activeTab === "today"
                             ? "text-[#8B3A00] dark:text-[#E85C0D]"
                             : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
                     }`}
                 >
-                    Today
+                    Today (Ready)
                     {activeTab === "today" && (
                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B3A00] dark:bg-[#E85C0D]" />
                     )}
                 </button>
                 <button
-                    onClick={() => setActiveTab("upcoming")}
-                    className={`px-6 py-3 font-medium text-sm transition-colors relative ${
+                    onClick={() => handleTabChange("upcoming")}
+                    className={`px-6 py-3 font-medium text-sm transition-colors relative cursor-pointer ${
                         activeTab === "upcoming"
                             ? "text-[#8B3A00] dark:text-[#E85C0D]"
                             : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
@@ -117,6 +131,19 @@ export default function ResignationsExecutionPage() {
                 >
                     Upcoming
                     {activeTab === "upcoming" && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B3A00] dark:bg-[#E85C0D]" />
+                    )}
+                </button>
+                <button
+                    onClick={() => handleTabChange("previous")}
+                    className={`px-6 py-3 font-medium text-sm transition-colors relative cursor-pointer ${
+                        activeTab === "previous"
+                            ? "text-[#8B3A00] dark:text-[#E85C0D]"
+                            : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+                    }`}
+                >
+                    Previous
+                    {activeTab === "previous" && (
                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#8B3A00] dark:bg-[#E85C0D]" />
                     )}
                 </button>
@@ -144,14 +171,14 @@ export default function ResignationsExecutionPage() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : filteredRequests.length === 0 ? (
+                            ) : paginatedRequests.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
                                         No requests available for this selection.
                                     </td>
                                 </tr>
                             ) : (
-                                filteredRequests.map((req) => (
+                                paginatedRequests.map((req) => (
                                     <tr key={req.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/20 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -176,11 +203,13 @@ export default function ResignationsExecutionPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {activeTab === "today" ? (
+                                            {activeTab === "upcoming" ? (
+                                                <span className="text-xs text-slate-400 italic">Execution blocked until {req.lastWorkingDate}</span>
+                                            ) : (
                                                 <button
                                                     onClick={() => handleExecute(req.id)}
                                                     disabled={executing === req.id}
-                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                                 >
                                                     {executing === req.id ? (
                                                         <>
@@ -194,8 +223,6 @@ export default function ResignationsExecutionPage() {
                                                         </>
                                                     )}
                                                 </button>
-                                            ) : (
-                                                <span className="text-xs text-slate-400 italic">Execution blocked until {req.lastWorkingDate}</span>
                                             )}
                                         </td>
                                     </tr>
@@ -204,6 +231,44 @@ export default function ResignationsExecutionPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-gray-200 dark:border-slate-800 flex items-center justify-between">
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRequests.length)} of {filteredRequests.length} requests
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                            </button>
+                            {[...Array(totalPages)].map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                    className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                        currentPage === i + 1
+                                            ? 'bg-[#8B3A00] text-white shadow-md shadow-[#8B3A00]/20'
+                                            : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                    }`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {toast && (

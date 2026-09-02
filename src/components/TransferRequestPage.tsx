@@ -36,6 +36,14 @@ const transferSchema = z.object({
     targetLocation: z.string().min(1, 'Target location is required'),
     expectedDate: z.string().min(1, 'Effective date is required').refine(date => new Date(date) >= new Date(new Date().setHours(0,0,0,0)), 'Date must be today or in the future'),
     validReason: z.string().min(1, 'Reason is required'),
+}).refine(data => {
+    if (data.currentLocation && data.targetLocation) {
+        return data.currentLocation.trim().toLowerCase() !== data.targetLocation.trim().toLowerCase();
+    }
+    return true;
+}, {
+    message: 'Target location cannot be the same as current location',
+    path: ['targetLocation'],
 });
 
 type TransferFormData = z.infer<typeof transferSchema>;
@@ -329,10 +337,12 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
         setValue,
         watch,
         control,
+        trigger,
         reset,
         formState: { errors },
     } = useForm<TransferFormData>({
         resolver: zodResolver(transferSchema),
+        mode: 'onChange',
         defaultValues: {
             currentLocation: user?.branch || '',
             targetLocation: '',
@@ -516,7 +526,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     // ── Render ─────────────────────────────────────────────────────
     return (
         <div className="max-w-7xl w-full mx-auto" key={formKey}>
-            <h1 className="text-2xl font-bold text-[#8B3A00] dark:text-white mb-8">Transfer Request Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Transfer Request Management</h1>
 
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1 space-y-8">
@@ -601,25 +611,31 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                             render={({ field }) => (
                                                 <Select
                                                     value={field.value || ''}
-                                                    onValueChange={field.onChange}
+                                                    onValueChange={(val) => {
+                                                        field.onChange(val);
+                                                        trigger(['targetLocation', 'currentLocation']);
+                                                    }}
                                                 >
                                                     <SelectTrigger
-                                                        className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 h-11 text-sm text-slate-700 dark:text-slate-100 ${errors.targetLocation ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
+                                                        className={`w-full bg-white dark:bg-slate-800 border rounded-lg px-4 py-3 h-11 text-sm text-slate-700 dark:text-slate-100 ${errors.targetLocation ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-700'}`}
                                                     >
                                                         <SelectValue placeholder="Select Target Branch" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {availableBranches.map((branch, index) => (
-                                                            <SelectItem key={index} value={branch}>
-                                                                {branch}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {availableBranches.map((branch, index) => {
+                                                            const isCurrent = branch.trim().toLowerCase() === (getValues('currentLocation') || '').trim().toLowerCase();
+                                                            return (
+                                                                <SelectItem key={index} value={branch} disabled={isCurrent}>
+                                                                    {branch} {isCurrent ? '(Current Location)' : ''}
+                                                                </SelectItem>
+                                                            );
+                                                        })}
                                                     </SelectContent>
                                                 </Select>
                                             )}
                                         />
                                         {errors.targetLocation && (
-                                            <p className="text-xs text-red-500 mt-1">{errors.targetLocation.message}</p>
+                                            <p className="text-xs text-red-500 mt-1 font-medium">{errors.targetLocation.message}</p>
                                         )}
                                     </div>
                                     <div className="space-y-2">
@@ -770,12 +786,6 @@ const SidebarPanel = () => (
                     </div>
                 </li>
             </ul>
-            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                <a href="#" className="text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 flex items-center gap-1 hover:underline transition-all">
-                    Read Full Policy Documents
-                    <span className="material-symbols-outlined text-xs">open_in_new</span>
-                </a>
-            </div>
         </div>
 
         <div className="bg-[#FEF3EB] dark:bg-orange-950/20 rounded-xl p-6 text-slate-800 dark:text-slate-200 shadow-sm border border-[#FDE6D5] dark:border-orange-900/30 relative overflow-hidden transition-colors">
