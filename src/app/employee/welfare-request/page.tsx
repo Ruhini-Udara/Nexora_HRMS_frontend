@@ -22,7 +22,7 @@ interface DocumentSlot {
 // ── Zod Validation Schema ───────────────────────────────────────────
 const welfareSchema = z.object({
     welfareType: z.string().min(1, 'Welfare type is required'),
-    employeeType: z.string().min(1, 'Employee type is required'),
+    employeeType: z.string().optional(),
     amount: z.string().min(1, 'Amount is required'),
     specialRemark: z.string().optional(),
 });
@@ -220,7 +220,8 @@ export default function WelfareRequestPage() {
         employeeName: user?.name || "—",
         designation: user?.designation || "—",
         dateJoined: "—",
-        branch: user?.department || "—"
+        branch: user?.department || "—",
+        employeeType: "—"
     });
 
     useEffect(() => {
@@ -232,13 +233,16 @@ export default function WelfareRequestPage() {
                 if (res.ok) {
                     const data = await res.json();
                     if (data) {
+                        const empType = data.employeeType || 'Full-time';
                         setEmployeeProfile({
                             epfNumber: data.epfNumber || '—',
                             employeeName: data.employeeName || user?.name || '—',
                             designation: data.designation || user?.designation || '—',
                             dateJoined: data.dateJoined || '—',
-                            branch: data.branch || user?.department || '—'
+                            branch: data.branch || user?.department || '—',
+                            employeeType: empType
                         });
+                        setValue('employeeType', empType);
                     }
                 }
             } catch (err) {
@@ -256,6 +260,7 @@ export default function WelfareRequestPage() {
         register,
         handleSubmit,
         getValues,
+        setValue,
         reset,
         formState: { errors },
     } = useForm<WelfareFormData>({
@@ -355,7 +360,7 @@ export default function WelfareRequestPage() {
         return {
             status,
             welfareType: data.welfareType,
-            employeeType: data.employeeType,
+            employeeType: data.employeeType || (employeeProfile.employeeType !== '—' ? employeeProfile.employeeType : 'Full-time'),
             amount: parseFloat(data.amount) || 0,
             employeeRemarks: data.specialRemark || '',
             epfNumber: employeeProfile.epfNumber !== '—' ? employeeProfile.epfNumber : undefined,
@@ -517,9 +522,13 @@ export default function WelfareRequestPage() {
                                         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Date Joined</p>
                                         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mt-1">{employeeProfile.dateJoined}</p>
                                     </div>
-                                    <div className="col-span-2">
+                                    <div>
                                         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Branch</p>
                                         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mt-1">{employeeProfile.branch}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Employee Type</p>
+                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mt-1">{employeeProfile.employeeType}</p>
                                     </div>
                                 </div>
                             </div>
@@ -541,24 +550,6 @@ export default function WelfareRequestPage() {
                                     </select>
                                     {errors.welfareType && (
                                         <p className="text-xs text-red-500 mt-1">{errors.welfareType.message}</p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        Employee Type <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        {...register('employeeType')}
-                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 dark:text-slate-100 bg-white dark:bg-slate-800 ${errors.employeeType ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
-                                    >
-                                        <option value="">Select Employee Type</option>
-                                        {employeeTypes.map((type) => (
-                                            <option key={type} value={type}>{type}</option>
-                                        ))}
-                                    </select>
-                                    {errors.employeeType && (
-                                        <p className="text-xs text-red-500 mt-1">{errors.employeeType.message}</p>
                                     )}
                                 </div>
 
