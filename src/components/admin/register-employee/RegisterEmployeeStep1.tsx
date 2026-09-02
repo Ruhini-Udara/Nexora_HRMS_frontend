@@ -126,6 +126,53 @@ export default function RegisterEmployeeStep1({
     return true;
   };
 
+  const validateBirthYearWithNic = (dobStr: string, nicStr: string): boolean => {
+    const trimmedDob = dobStr?.trim();
+    const trimmedNic = nicStr?.trim();
+    if (!trimmedDob || !trimmedNic) {
+      return true;
+    }
+
+    const dobParts = trimmedDob.split('/');
+    if (dobParts.length !== 3) {
+      return true;
+    }
+    const dobYear = parseInt(dobParts[2], 10);
+    if (isNaN(dobYear)) {
+      return true;
+    }
+
+    if (/^[0-9]{4}/.test(trimmedNic)) {
+      const firstFour = trimmedNic.substring(0, 4);
+      if (dobYear.toString() !== firstFour) {
+        // Also support old NIC format (9 digits + V/X) where first 2 digits represent the birth year
+        if (/^[0-9]{9}[vVxX]$/.test(trimmedNic)) {
+          const firstTwo = trimmedNic.substring(0, 2);
+          if (dobYear.toString().slice(2) !== firstTwo) {
+            const errorMsg = `The year of birthday (${dobYear}) should match the NIC number birth year (${firstTwo}).`;
+            setDobError(errorMsg);
+            setError(errorMsg);
+            return false;
+          }
+          if (dobError && (dobError.includes("NIC number") || dobError.includes("nic number"))) {
+            setDobError(null);
+          }
+          return true;
+        }
+
+        const errorMsg = "The year of birthday should be same to nic number first four number.";
+        setDobError(errorMsg);
+        setError(errorMsg);
+        return false;
+      }
+    }
+
+    if (dobError && (dobError.includes("NIC number") || dobError.includes("nic number"))) {
+      setDobError(null);
+    }
+    return true;
+  };
+
   const validateDateJoined = (djStr: string, dobStr: string): boolean => {
     const trimmedDJ = djStr?.trim();
     if (!trimmedDJ) {
@@ -369,10 +416,13 @@ export default function RegisterEmployeeStep1({
     if (fieldName === "phoneNumber") {
       return currentError.includes("Phone") || currentError.includes("phone");
     }
-    if (fieldName === "dateOfBirth") {
+    if (fieldName === "dateOfBirth" || fieldName === "nicNumber") {
       return (
         currentError.includes("Date of Birth") ||
-        currentError.includes("18 years old")
+        currentError.includes("18 years old") ||
+        currentError.includes("nic number") ||
+        currentError.includes("NIC number") ||
+        currentError.includes("NIC")
       );
     }
     if (fieldName === "dateJoined") {
@@ -497,6 +547,9 @@ export default function RegisterEmployeeStep1({
     if (name === "nicNumber") {
       setNicExists(false);
       setNicError(validateNic(value));
+      if (formData.dateOfBirth) {
+        validateBirthYearWithNic(formData.dateOfBirth, value);
+      }
     }
     if (name === "email") {
       setEmailExists(false);
@@ -508,6 +561,11 @@ export default function RegisterEmployeeStep1({
     }
     if (name === "dateOfBirth") {
       setDobError(null);
+      if (validateAge(value)) {
+        if (formData.nicNumber) {
+          validateBirthYearWithNic(value, formData.nicNumber);
+        }
+      }
       if (formData.dateJoined) {
         validateDateJoined(formData.dateJoined, value);
       }
@@ -582,7 +640,11 @@ export default function RegisterEmployeeStep1({
     updateFormData({ [field]: formatted });
     if (field === 'dateOfBirth') {
       setShowDateOfBirthCalendar(false);
-      validateAge(formatted);
+      if (validateAge(formatted)) {
+        if (formData.nicNumber) {
+          validateBirthYearWithNic(formatted, formData.nicNumber);
+        }
+      }
       if (formData.dateJoined) {
         validateDateJoined(formData.dateJoined, formatted);
       }
@@ -707,6 +769,10 @@ export default function RegisterEmployeeStep1({
 
     // Date of Birth validation
     if (!validateAge(formData.dateOfBirth)) {
+      return;
+    }
+
+    if (!validateBirthYearWithNic(formData.dateOfBirth, formData.nicNumber)) {
       return;
     }
 
@@ -893,11 +959,15 @@ export default function RegisterEmployeeStep1({
                       ) {
                         return;
                       }
-                      validateAge(e.target.value);
+                      if (validateAge(e.target.value)) {
+                        if (formData.nicNumber) {
+                          validateBirthYearWithNic(e.target.value, formData.nicNumber);
+                        }
+                      }
                     }}
                     placeholder="mm/dd/yyyy"
                     name="dateOfBirth"
-                    className="w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    className={`w-full pl-11 pr-4 h-12 bg-gray-50 dark:bg-slate-800 border ${dobError ? "border-red-500" : "border-gray-300 dark:border-slate-700"} text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all`}
                   />
 
                   {/* Calendar Dropdown */}
