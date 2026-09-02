@@ -1,5 +1,6 @@
 import React from "react";
-import { Calendar, GraduationCap, ArrowLeftRight, Heart, Plane, FileText, MoreVertical } from "lucide-react";
+import Link from "next/link";
+import { Calendar, GraduationCap, ArrowLeftRight, Heart, Plane, FileText } from "lucide-react";
 
 export interface RecentRequestItem {
   type: string;
@@ -9,6 +10,7 @@ export interface RecentRequestItem {
 
 interface RecentRequestsTableProps {
   requests: RecentRequestItem[];
+  hideViewAll?: boolean;
 }
 
 const getRequestIcon = (type: string) => {
@@ -58,11 +60,13 @@ const getStatusBadge = (status: string) => {
   return <span className="bg-[#FFFBEB] dark:bg-amber-950/20 text-[#B45309] dark:text-amber-400 px-3 py-1 rounded-full text-xs font-medium">{status}</span>;
 };
 
-const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
+const RecentRequestsTable = ({ requests, hideViewAll = false }: RecentRequestsTableProps) => (
   <div className="bg-white dark:bg-slate-900 border border-[#F1F5F9] dark:border-slate-800 shadow-sm rounded-2xl p-8 transition-colors">
     <div className="flex justify-between items-center border-b border-[#F1F5F9] dark:border-slate-800 pb-6 mb-4">
       <h3 className="font-bold text-xl text-[#0F172A] dark:text-white">My Recent Requests</h3>
-      <a href="#" className="text-[#8B4513] dark:text-amber-500 font-semibold text-base hover:underline">View All</a>
+      {!hideViewAll && (
+        <Link href="/employee/requests" className="text-[#8B4513] dark:text-amber-500 font-semibold text-base hover:underline">View All</Link>
+      )}
     </div>
     <table className="w-full text-left">
       <thead>
@@ -70,13 +74,12 @@ const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
           <th className="py-3 px-6">Request Type</th>
           <th className="py-3 px-6">Date Submitted</th>
           <th className="py-3 px-6">Status</th>
-          <th className="py-3 px-6 text-right">Actions</th>
         </tr>
       </thead>
       <tbody className="text-[#334155] dark:text-slate-300 text-sm">
         {requests.length === 0 ? (
           <tr>
-            <td colSpan={4} className="py-8 text-center text-slate-500">No recent requests found</td>
+            <td colSpan={3} className="py-8 text-center text-slate-500">No recent requests found</td>
           </tr>
         ) : (
           requests.map((req, i) => (
@@ -89,9 +92,6 @@ const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
                 {new Date(req.dateSubmitted).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })}
               </td>
               <td className="py-4 px-6">{getStatusBadge(req.status)}</td>
-              <td className="py-4 px-6 text-right">
-                <MoreVertical className="w-5 h-5 text-[#94A3B8] cursor-pointer inline-block" />
-              </td>
             </tr>
           ))
         )}
