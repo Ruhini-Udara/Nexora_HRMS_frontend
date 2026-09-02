@@ -463,7 +463,7 @@ export default function WelfareRequestPage() {
         <div className="max-w-[1400px] w-full mx-auto space-y-8">
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-2xl font-bold text-primary dark:text-white">Welfare Request Management</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welfare Request Management</h1>
                     <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Submit and track your formal welfare requests</p>
                 </div>
             </div>

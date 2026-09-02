@@ -516,7 +516,7 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     // ── Render ─────────────────────────────────────────────────────
     return (
         <div className="max-w-7xl w-full mx-auto" key={formKey}>
-            <h1 className="text-2xl font-bold text-[#8B3A00] dark:text-white mb-8">Transfer Request Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Transfer Request Management</h1>
 
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="flex-1 space-y-8">
