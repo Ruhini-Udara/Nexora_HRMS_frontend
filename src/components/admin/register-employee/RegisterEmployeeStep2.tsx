@@ -46,6 +46,62 @@ export default function RegisterEmployeeStep2({
   const [leaveQuota, setLeaveQuota] = useState<LeavePolicyQuota | null>(null);
   const [isLoadingLeaveQuota, setIsLoadingLeaveQuota] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [epfError, setEpfError] = useState<string | null>(null);
+  const [etfError, setEtfError] = useState<string | null>(null);
+  const [epfExists, setEpfExists] = useState(false);
+  const [etfExists, setEtfExists] = useState(false);
+
+  const validateEpf = (val: string, isFinalCheck = false): string | null => {
+    const trimmed = val.trim();
+    if (!trimmed) return null;
+
+    if (!/^[0-9A-Za-z/]+$/.test(trimmed)) {
+      return "EPF can only contain digits, letters, and slashes (e.g. 12345/A/12).";
+    }
+
+    if (trimmed.length > 10) {
+      return "EPF number cannot exceed 10 characters.";
+    }
+
+    if (isFinalCheck || trimmed.length === 10) {
+      if (!/^\d{5}\/[A-Za-z]\/\d{2}$/.test(trimmed)) {
+        return "Invalid EPF format. Must follow 12345/A/12 (5 digits / Letter / 2 digits).";
+      }
+    } else {
+      const partialRegex = /^\d{0,5}(\/([A-Za-z](\/(\d{0,2})?)?)?)?$/;
+      if (!partialRegex.test(trimmed)) {
+        return "Invalid EPF format. Must follow 12345/A/12 (5 digits / Letter / 2 digits).";
+      }
+    }
+
+    return null;
+  };
+
+  const validateEtf = (val: string, isFinalCheck = false): string | null => {
+    const trimmed = val.trim();
+    if (!trimmed) return null;
+
+    if (!/^[0-9A-Za-z/]+$/.test(trimmed)) {
+      return "ETF can only contain digits, letters, and slashes (e.g. 12345/A/12).";
+    }
+
+    if (trimmed.length > 10) {
+      return "ETF number cannot exceed 10 characters.";
+    }
+
+    if (isFinalCheck || trimmed.length === 10) {
+      if (!/^\d{5}\/[A-Za-z]\/\d{2}$/.test(trimmed)) {
+        return "Invalid ETF format. Must follow 12345/A/12 (5 digits / Letter / 2 digits).";
+      }
+    } else {
+      const partialRegex = /^\d{0,5}(\/([A-Za-z](\/(\d{0,2})?)?)?)?$/;
+      if (!partialRegex.test(trimmed)) {
+        return "Invalid ETF format. Must follow 12345/A/12 (5 digits / Letter / 2 digits).";
+      }
+    }
+
+    return null;
+  };
 
   const fetchLeaveQuota = async (empType: string) => {
     if (!empType) {
@@ -84,11 +140,83 @@ export default function RegisterEmployeeStep2({
     }
   }, []);
 
+  // Debounced check for existing EPF number in database
+  useEffect(() => {
+    const trimmed = formData.epfNumber?.trim() ?? "";
+    if (!trimmed || !/^\d{5}\/[A-Za-z]\/\d{2}$/.test(trimmed)) {
+      setEpfExists(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await api.get<boolean>("/api/employees/exists-epf", {
+          params: { epfNumber: trimmed },
+        });
+        if (!cancelled) {
+          setEpfExists(response.data === true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Error checking EPF uniqueness:", err);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [formData.epfNumber]);
+
+  // Debounced check for existing ETF number in database
+  useEffect(() => {
+    const trimmed = formData.etfNumber?.trim() ?? "";
+    if (!trimmed || !/^\d{5}\/[A-Za-z]\/\d{2}$/.test(trimmed)) {
+      setEtfExists(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await api.get<boolean>("/api/employees/exists-etf", {
+          params: { etfNumber: trimmed },
+        });
+        if (!cancelled) {
+          setEtfExists(response.data === true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Error checking ETF uniqueness:", err);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [formData.etfNumber]);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const { name, value } = e.target;
+    const { name } = e.target;
+    let { value } = e.target;
+    if (name === "epfNumber" || name === "etfNumber") {
+      value = value.toUpperCase();
+    }
     updateFormData({ [name]: value });
+    if (name === "epfNumber") {
+      setEpfExists(false);
+      setEpfError(validateEpf(value));
+    }
+    if (name === "etfNumber") {
+      setEtfExists(false);
+      setEtfError(validateEtf(value));
+    }
     if (error) setError(null);
   };
 
@@ -114,22 +242,26 @@ export default function RegisterEmployeeStep2({
       return;
     }
 
-    const formatRegex = /^[a-zA-Z0-9/-]+$/;
-
-    // Validate EPF number format if filled
-    if (formData.epfNumber && formData.epfNumber.trim()) {
-      if (!formatRegex.test(formData.epfNumber.trim())) {
-        setError("Invalid EPF format. Must contain only alphanumeric characters, dashes, or slashes.");
-        return;
-      }
+    const epfErr = validateEpf(formData.epfNumber || "", true);
+    if (epfErr) {
+      setEpfError(epfErr);
+      setError(epfErr);
+      return;
+    }
+    if (epfExists) {
+      setError("EPF Number already registered");
+      return;
     }
 
-    // Validate ETF number format if filled
-    if (formData.etfNumber && formData.etfNumber.trim()) {
-      if (!formatRegex.test(formData.etfNumber.trim())) {
-        setError("Invalid ETF format. Must contain only alphanumeric characters, dashes, or slashes.");
-        return;
-      }
+    const etfErr = validateEtf(formData.etfNumber || "", true);
+    if (etfErr) {
+      setEtfError(etfErr);
+      setError(etfErr);
+      return;
+    }
+    if (etfExists) {
+      setError("ETF Number already registered");
+      return;
     }
 
     setError(null);
@@ -378,12 +510,28 @@ export default function RegisterEmployeeStep2({
                   <Input
                     id="epfNumber"
                     name="epfNumber"
-                    placeholder="e.g. EPF-12345"
+                    maxLength={10}
+                    placeholder="e.g. 12345/A/12"
                     value={formData.epfNumber}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
+                    onBlur={() => {
+                      if (formData.epfNumber) {
+                        setEpfError(validateEpf(formData.epfNumber, true));
+                      }
+                    }}
+                    className={`pl-11 h-12 bg-gray-50 dark:bg-slate-800 border ${epfError || epfExists ? "border-red-500" : "border-gray-300 dark:border-slate-700"} text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500`}
                   />
                 </div>
+                {epfError && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {epfError}
+                  </p>
+                )}
+                {!epfError && epfExists && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    EPF Number already registered
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -395,12 +543,28 @@ export default function RegisterEmployeeStep2({
                   <Input
                     id="etfNumber"
                     name="etfNumber"
-                    placeholder="e.g. ETF-67890"
+                    maxLength={10}
+                    placeholder="e.g. 12345/A/12"
                     value={formData.etfNumber}
                     onChange={handleInputChange}
-                    className="pl-11 h-12 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500"
+                    onBlur={() => {
+                      if (formData.etfNumber) {
+                        setEtfError(validateEtf(formData.etfNumber, true));
+                      }
+                    }}
+                    className={`pl-11 h-12 bg-gray-50 dark:bg-slate-800 border ${etfError || etfExists ? "border-red-500" : "border-gray-300 dark:border-slate-700"} text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500`}
                   />
                 </div>
+                {etfError && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {etfError}
+                  </p>
+                )}
+                {!etfError && etfExists && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    ETF Number already registered
+                  </p>
+                )}
               </div>
             </div>
 
