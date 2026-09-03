@@ -10,6 +10,7 @@ interface CalendarEvent {
   id: string;
   title: string;
   date: string;
+  endDate?: string;
   time?: string;
 }
 
@@ -88,7 +89,11 @@ export default function OfficeCalendar() {
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const dateStr = `${year}-${month}-${day}`;
-    return events.filter((event) => event.date === dateStr);
+    return events.filter((event) => {
+      const start = event.date;
+      const end = event.endDate || event.date;
+      return dateStr >= start && dateStr <= end;
+    });
   };
 
   // Date boundary: 2 years in past and 2 years in future
@@ -228,18 +233,26 @@ export default function OfficeCalendar() {
                     {dayObj.day}
                   </div>
                   <div className="space-y-1">
-                    {dayEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        className="text-xs px-2 py-1 rounded border bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-200 dark:border-amber-900/40 truncate cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors"
-                        title={event.title}
-                      >
-                        <div className="font-medium">{event.title}</div>
-                        {event.time && (
-                          <div className="text-[10px] opacity-90 mt-0.5">{event.time}</div>
-                        )}
-                      </div>
-                    ))}
+                    {dayEvents.map((event) => {
+                      const isMultiDay = !!(event.endDate && event.endDate !== event.date);
+                      return (
+                        <div
+                          key={event.id}
+                          className="text-xs px-2 py-1 rounded border bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-200 dark:border-amber-900/40 truncate cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors"
+                          title={isMultiDay ? `${event.title} (${event.date} to ${event.endDate})` : event.title}
+                        >
+                          <div className="font-medium truncate">{event.title}</div>
+                          {event.time && (
+                            <div className="text-[10px] opacity-90 mt-0.5">{event.time}</div>
+                          )}
+                          {isMultiDay && !event.time && (
+                            <div className="text-[9px] opacity-75 mt-0.5 truncate">
+                              Multi-day (to {event.endDate})
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );

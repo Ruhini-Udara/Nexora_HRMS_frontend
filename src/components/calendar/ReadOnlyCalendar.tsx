@@ -14,6 +14,7 @@ interface CalendarEvent {
   id: string;
   title: string;
   date: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
   time?: string;
 }
 
@@ -101,7 +102,11 @@ export default function ReadOnlyCalendar({
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const dateStr = `${year}-${month}-${day}`;
-    return events.filter((event) => event.date === dateStr);
+    return events.filter((event) => {
+      const start = event.date;
+      const end = event.endDate || event.date;
+      return dateStr >= start && dateStr <= end;
+    });
   };
 
   // Boundary calculations: 2 years in past and 2 years in future
@@ -170,10 +175,11 @@ export default function ReadOnlyCalendar({
   // Group events by date for the side view of all upcoming events
   const upcomingEvents = [...events]
     .filter((e) => {
-      const eventDate = new Date(e.date);
+      const effectiveEndDate = e.endDate || e.date;
+      const eventEndDate = new Date(effectiveEndDate + "T23:59:59");
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      return eventDate >= today;
+      return eventEndDate >= today;
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -368,6 +374,7 @@ export default function ReadOnlyCalendar({
                 <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
                   {getEventsForDate(selectedDate).map((event) => {
                     const styles = getEventCategoryStyles(event.title);
+                    const isMultiDay = !!(event.endDate && event.endDate !== event.date);
                     return (
                       <div
                         key={event.id}
@@ -375,6 +382,12 @@ export default function ReadOnlyCalendar({
                       >
                         <div className="space-y-1">
                           <p className="text-xs font-bold leading-snug">{event.title}</p>
+                          {isMultiDay && (
+                            <div className="flex items-center gap-1 text-[10px] opacity-90 font-medium">
+                              <CalendarIcon size={10} />
+                              <span>{event.date} to {event.endDate}</span>
+                            </div>
+                          )}
                           {event.time && (
                             <div className="flex items-center gap-1 text-[10px] opacity-80">
                               <Clock size={10} />
@@ -410,8 +423,9 @@ export default function ReadOnlyCalendar({
                 </div>
               ) : (
                 upcomingEvents.map((event) => {
-                  const evDate = new Date(event.date);
+                  const evDate = new Date(event.date + "T00:00:00");
                   const styles = getEventCategoryStyles(event.title);
+                  const isMultiDay = !!(event.endDate && event.endDate !== event.date);
                   return (
                     <div
                       key={event.id}
@@ -433,11 +447,16 @@ export default function ReadOnlyCalendar({
                         <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
                           {event.title}
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <span className={`w-1.5 h-1.5 rounded-full ${styles.indicator}`} />
                           <span className="text-[10px] text-slate-400 dark:text-slate-500 capitalize">
                             {styles.label}
                           </span>
+                          {isMultiDay && (
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                              • Until {event.endDate}
+                            </span>
+                          )}
                           {event.time && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
                               • <Clock size={8} /> {event.time}
