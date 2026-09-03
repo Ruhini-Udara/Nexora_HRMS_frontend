@@ -1,5 +1,6 @@
 import React from "react";
-import { CheckCircle, Calendar, GraduationCap, Clock, XCircle } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle, Calendar, GraduationCap, Clock, XCircle, ChevronRight } from "lucide-react";
 
 interface DashboardCardsProps {
   attendanceStatus: string;
@@ -18,26 +19,39 @@ const DashboardCards = ({
 }: DashboardCardsProps) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
     {/* Attendance Status */}
-    <div className="bg-white dark:bg-slate-900 border border-[#F1F5F9] dark:border-slate-800 shadow-sm rounded-2xl p-6 flex flex-col h-[178px] transition-colors">
-      <div className="flex items-center gap-3 mb-6">
-        <div className={`rounded-lg p-2 ${attendanceStatus === 'Checked In' ? 'bg-[#ECFDF5] dark:bg-green-950/20 text-[#059669] dark:text-green-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-          {attendanceStatus === 'Checked In' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+    <div className="bg-white dark:bg-slate-900 border border-[#F1F5F9] dark:border-slate-800 shadow-sm rounded-2xl p-6 flex flex-col h-[178px] transition-colors justify-between">
+      <div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`rounded-lg p-2 ${attendanceStatus === 'Checked In' ? 'bg-[#ECFDF5] dark:bg-green-950/20 text-[#059669] dark:text-green-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+            {attendanceStatus === 'Checked In' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+          </div>
+          <span className="font-medium text-[#64748B] dark:text-slate-400 text-base">Attendance Status</span>
         </div>
-        <span className="font-medium text-[#64748B] dark:text-slate-400 text-base">Attendance Status</span>
+        <div className="font-bold text-2xl text-[#0F172A] dark:text-white mb-1">{attendanceStatus}</div>
       </div>
-      <div className="font-bold text-2xl text-[#0F172A] dark:text-white mb-1">{attendanceStatus}</div>
       {attendanceTime && <div className="text-sm text-[#059669] dark:text-green-400 font-medium">{attendanceTime}</div>}
     </div>
     {/* Leave Balance */}
-    <div className="bg-white dark:bg-slate-900 border border-[#F1F5F9] dark:border-slate-800 shadow-sm rounded-2xl p-6 flex flex-col h-[178px] transition-colors">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-[#FFFBEB] dark:bg-amber-950/20 text-[#D97706] dark:text-amber-500 rounded-lg p-2">
-          <Calendar className="w-5 h-5" />
+    <div className="bg-white dark:bg-slate-900 border border-[#F1F5F9] dark:border-slate-800 shadow-sm rounded-2xl p-6 flex flex-col h-[178px] transition-colors justify-between">
+      <div>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-[#FFFBEB] dark:bg-amber-950/20 text-[#D97706] dark:text-amber-500 rounded-lg p-2">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <span className="font-medium text-[#64748B] dark:text-slate-400 text-base">Leave Balance</span>
         </div>
-        <span className="font-medium text-[#64748B] dark:text-slate-400 text-base">Leave Balance</span>
+        <div className="font-bold text-2xl text-[#0F172A] dark:text-white mb-1">{leaveBalance} Days</div>
       </div>
-      <div className="font-bold text-2xl text-[#0F172A] dark:text-white mb-1">{leaveBalance} Days</div>
-      <div className="text-sm text-[#94A3B8] dark:text-slate-500">Available</div>
+      <div className="flex items-center justify-between text-sm pt-1">
+        <span className="text-[#94A3B8] dark:text-slate-500">Available</span>
+        <Link 
+          href="/employee/leave-overview" 
+          className="text-xs font-semibold text-primary hover:text-[#7a3000] dark:text-orange-400 dark:hover:text-orange-300 flex items-center gap-0.5 transition-colors group"
+        >
+          <span>View Details</span>
+          <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </div>
     </div>
     {/* Active Training */}
     <div className="bg-white dark:bg-slate-900 border border-[#F1F5F9] dark:border-slate-800 shadow-sm rounded-2xl p-6 flex flex-col h-[178px] transition-colors">

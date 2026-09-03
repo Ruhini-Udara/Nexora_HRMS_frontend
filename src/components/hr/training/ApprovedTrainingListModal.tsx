@@ -308,20 +308,9 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                                 {approvedRequests.map(req => (
                                     <tr key={req.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                                         <td className="py-3 px-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="print-hide">
-                                                    {req.avatar ? (
-                                                        <img src={req.avatar} alt={req.employeeName} className="size-10 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
-                                                    ) : (
-                                                        <div className="size-10 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-sm">
-                                                            {req.initials}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <div className="font-semibold text-sm text-slate-900 dark:text-white">{req.employeeName}</div>
-                                                    <div className="text-xs text-slate-500">{req.designation || 'Employee'}</div>
-                                                </div>
+                                            <div>
+                                                <div className="font-semibold text-sm text-slate-900 dark:text-white">{req.employeeName}</div>
+                                                <div className="text-xs text-slate-500">{req.designation || 'Employee'}</div>
                                             </div>
                                         </td>
                                         <td className="py-3 px-6 text-sm text-slate-600 dark:text-slate-300 font-medium">
@@ -400,7 +389,11 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                                 <button 
                                     onClick={() => {
                                         if (eventId) {
-                                            api.put(`/api/training/events/${eventId}/status`, { status: 'Pending Admin Approval' })
+                                            const todayStr = new Date().toISOString().split('T')[0];
+                                            api.put(`/api/training/events/${eventId}/status`, { 
+                                                status: 'Pending Admin Approval',
+                                                dateSubmitted: todayStr
+                                            })
                                                 .then(() => {
                                                     setToast({ message: "Training list sent to Admin for approval!", type: 'success' });
                                                     if (onStatusUpdate) onStatusUpdate();

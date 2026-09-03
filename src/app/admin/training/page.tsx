@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import TrainingStats from '@/components/admin/training/TrainingStats';
 import TrainingTable from '@/components/admin/training/TrainingTable';
 import api from '@/lib/axiosInstance';
+import { formatDateRange } from '@/lib/utils';
 
 interface TrainingEvent {
     id: number;
@@ -11,6 +12,7 @@ interface TrainingEvent {
     trainingCode?: string;
     category: string;
     proposedStartDate?: string;
+    proposedEndDate?: string;
     date?: string;
     time?: string;
     location?: string;
@@ -19,6 +21,8 @@ interface TrainingEvent {
     reason?: string;
     trainingName?: string;
     trainingType?: string;
+    dateSubmitted?: string;
+    submittedAt?: string;
     updatedAt?: string;
     trainingDate?: string;
     trainingTime?: string;
@@ -48,6 +52,8 @@ interface MappedTrainingEvent {
     expectedParticipants: number;
     status: string;
     rejectionReason?: string;
+    approvedAt?: string;
+    updatedAt?: string;
 }
 
 export default function TrainingRequestsPage() {
@@ -79,23 +85,43 @@ export default function TrainingRequestsPage() {
                     ['Pending Admin Approval', 'Approved', 'Rejected'].includes(event.status) || event.approvedBy
                 );
                 
-                // Map filtered API events to the table model
-                const mappedEvents: MappedTrainingEvent[] = relevantEvents.map((event: TrainingEvent) => ({
-                    id: event.id,
-                    title: event.title || event.trainingName || "Untitled Training",
-                    trainingCode: event.trainingCode,
-                    requester: "HR Department", 
-                    type: event.category || event.trainingType || "General",
-                    typeColor: "bg-blue-100 text-blue-800",
-                    submissionDate: event.updatedAt ? new Date(event.updatedAt).toLocaleDateString() : new Date().toLocaleDateString(),
-                    date: event.proposedStartDate || event.date || event.trainingDate || "TBD",
-                    time: formatTime(event.time || event.trainingTime || "10:00"),
-                    location: event.location || event.trainingLocation || "Main Conference Hall",
-                    trainer: event.instructor || event.trainer || event.trainerName || "To Be Assigned",
-                    expectedParticipants: event.expectedParticipants || event.participants || 0,
-                    status: event.approvedBy ? 'Approved' : (event.status === 'Pending Admin Approval' ? 'Pending' : event.status),
-                    rejectionReason: event.reason || event.rejectionReason
-                }));
+                // Map filtered API events to the table model, sorting newest approved/submitted on top
+                const mappedEvents: MappedTrainingEvent[] = relevantEvents
+                    .sort((a: TrainingEvent, b: TrainingEvent) => {
+                        const timeA = a.approvedAt ? new Date(a.approvedAt).getTime() : 0;
+                        const timeB = b.approvedAt ? new Date(b.approvedAt).getTime() : 0;
+                        if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+                        if (timeA && !timeB) return -1;
+                        if (!timeA && timeB) return 1;
+
+                        const subA = a.dateSubmitted ? new Date(a.dateSubmitted).getTime() : 0;
+                        const subB = b.dateSubmitted ? new Date(b.dateSubmitted).getTime() : 0;
+                        if (subA && subB && subA !== subB) return subB - subA;
+
+                        return b.id - a.id;
+                    })
+                    .map((event: TrainingEvent) => ({
+                        id: event.id,
+                        title: event.title || event.trainingName || "Untitled Training",
+                        trainingCode: event.trainingCode,
+                        requester: "HR Department", 
+                        type: event.category || event.trainingType || "General",
+                        typeColor: "bg-blue-100 text-blue-800",
+                        submissionDate: event.dateSubmitted 
+                            ? new Date(event.dateSubmitted).toLocaleDateString() 
+                            : (event.submittedAt 
+                                ? new Date(event.submittedAt).toLocaleDateString() 
+                                : (event.updatedAt ? new Date(event.updatedAt).toLocaleDateString() : "N/A")),
+                        date: formatDateRange(event.proposedStartDate || event.date || event.trainingDate, event.proposedEndDate),
+                        time: formatTime(event.time || event.trainingTime || "10:00"),
+                        location: event.location || event.trainingLocation || "Main Conference Hall",
+                        trainer: event.instructor || event.trainer || event.trainerName || "To Be Assigned",
+                        expectedParticipants: event.expectedParticipants || event.participants || 0,
+                        status: event.approvedBy ? 'Approved' : (event.status === 'Pending Admin Approval' ? 'Pending' : event.status),
+                        rejectionReason: event.reason || event.rejectionReason,
+                        approvedAt: event.approvedAt,
+                        updatedAt: event.updatedAt
+                    }));
                 setRequests(mappedEvents);
             } catch (err) {
                 console.error("Failed to fetch training events for admin", err);

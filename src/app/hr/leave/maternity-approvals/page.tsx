@@ -93,7 +93,7 @@ export default function MaternityApprovalsPage() {
         setError("");
         try {
             const res = await api.get(`/api/v1/leaves/maternity/status/${statusFilter}`);
-            setRequests(res.data);
+            setRequests(res.data.sort((a: any, b: any) => b.id - a.id));
         } catch (err) {
             const error = err as { response?: { data?: { message?: string } } };
             setError(error.response?.data?.message || "Could not connect to the backend. Please ensure the server is running.");

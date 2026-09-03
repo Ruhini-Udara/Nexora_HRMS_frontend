@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from 'react';
+import { formatDateRange } from '@/lib/utils';
 
 type EventParticipant = {
     id: string | number;
@@ -28,6 +29,7 @@ interface FeedbackReportModalProps {
         category?: string;
         location?: string;
         proposedStartDate?: string;
+        proposedEndDate?: string;
         instructor?: string;
         budget?: number;
     } | null;
@@ -279,7 +281,7 @@ export default function FeedbackReportModal({
                                 </div>
                                 <div>
                                     <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider print:text-[8px]">Date</span>
-                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 print:text-[11px] print:text-black">{event.proposedStartDate || 'TBD'}</span>
+                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 print:text-[11px] print:text-black">{formatDateRange(event.proposedStartDate, event.proposedEndDate)}</span>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2.5 print:gap-1.5">

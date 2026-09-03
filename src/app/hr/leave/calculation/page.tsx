@@ -43,7 +43,7 @@ interface LeaveBalance {
     calculationSource?: "AUTOMATIC" | "HISTORICAL_IMPORT" | "MANUAL_ADJUSTMENT";
 }
 
-interface DistrictSummary {
+interface BranchSummary {
     name: string;
     pending: number;
     total: number;
@@ -62,7 +62,7 @@ interface LeaveImportRequest {
     medicalLeaveUsed: number;
 }
 
-function groupByBranch(balances: LeaveBalance[]): DistrictSummary[] {
+function groupByBranch(balances: LeaveBalance[]): BranchSummary[] {
     const map: Record<string, { pending: number; total: number; finalized: boolean; employees: LeaveBalance[] }> = {};
     for (const lb of balances) {
         if (!lb?.employee) continue;
@@ -103,10 +103,10 @@ export default function LeaveCalculationPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [balances, setBalances] = useState<LeaveBalance[]>([]);
-    const [districts, setDistricts] = useState<DistrictSummary[]>([]);
+    const [branches, setBranches] = useState<BranchSummary[]>([]);
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-    const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
+    const [expandedBranch, setExpandedBranch] = useState<string | null>(null);
     const [viewEmployee, setViewEmployee] = useState<LeaveBalance | null>(null);
     const [confirmFinalize, setConfirmFinalize] = useState<string | null>(null);
 
@@ -125,12 +125,12 @@ export default function LeaveCalculationPage() {
             const res = await api.get(`/api/leave-calculation/balances?year=${selectedYear}`);
             const data: LeaveBalance[] = Array.isArray(res.data) ? res.data : [];
             setBalances(data);
-            setDistricts(groupByBranch(data));
-            setExpandedDistrict(null); // Reset expanded on refresh
+            setBranches(groupByBranch(data));
+            setExpandedBranch(null); // Reset expanded on refresh
         } catch (err: any) {
             console.error("Failed to fetch leave balances:", err);
             setBalances([]);
-            setDistricts([]);
+            setBranches([]);
         } finally {
             setIsLoading(false);
         }
@@ -366,17 +366,17 @@ export default function LeaveCalculationPage() {
                 </div>
             </div>
 
-            {/* District Table & Employees */}
+            {/* Branch Table & Employees */}
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden w-full">
                 <div className="px-5 py-4 border-b border-gray-100 dark:border-zinc-800">
-                    <h2 className="text-sm font-bold text-gray-900 dark:text-white">District-Wise Finalization</h2>
+                    <h2 className="text-sm font-bold text-gray-900 dark:text-white">Branch-Wise Finalization</h2>
                 </div>
 
                 <div className="w-full overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-800">
                             <tr>
-                                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">District / Branch</th>
+                                <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Branch</th>
                                 <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Employees</th>
                                 <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Pending</th>
                                 <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
@@ -386,41 +386,41 @@ export default function LeaveCalculationPage() {
                         <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
                             {isLoading ? (
                                 <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-400"><RefreshCw className="w-4 h-4 animate-spin inline mr-2" />Loading...</td></tr>
-                            ) : districts.length === 0 ? (
+                            ) : branches.length === 0 ? (
                                 <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-400">No data found for {selectedYear}.</td></tr>
                             ) : (
-                                districts.map((district) => (
-                                    <React.Fragment key={district.name}>
+                                branches.map((branch) => (
+                                    <React.Fragment key={branch.name}>
                                         <tr className="hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors">
                                             <td className="px-5 py-3">
-                                                <button onClick={() => setExpandedDistrict(expandedDistrict === district.name ? null : district.name)} className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white hover:text-primary">
-                                                    <ChevronRight className={`w-4 h-4 transition-transform ${expandedDistrict === district.name ? "rotate-90" : ""}`} />
-                                                    {district.name}
+                                                <button onClick={() => setExpandedBranch(expandedBranch === branch.name ? null : branch.name)} className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white hover:text-primary">
+                                                    <ChevronRight className={`w-4 h-4 transition-transform ${expandedBranch === branch.name ? "rotate-90" : ""}`} />
+                                                    {branch.name}
                                                 </button>
                                             </td>
-                                            <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-400">{district.total}</td>
-                                            <td className="px-5 py-3 text-sm font-semibold text-amber-600">{district.finalized ? "0" : district.pending}</td>
+                                            <td className="px-5 py-3 text-sm text-gray-600 dark:text-gray-400">{branch.total}</td>
+                                            <td className="px-5 py-3 text-sm font-semibold text-amber-600">{branch.finalized ? "0" : branch.pending}</td>
                                             <td className="px-5 py-3">
-                                                {district.finalized ? (
+                                                {branch.finalized ? (
                                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800"><CheckCircle2 className="w-3.5 h-3.5" /> Finalized</span>
                                                 ) : (
                                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Pending Review</span>
                                                 )}
                                             </td>
                                             <td className="px-5 py-3 text-right">
-                                                {!district.finalized && (
-                                                    <Button onClick={() => setConfirmFinalize(district.name)} className="text-xs h-7 px-3 font-bold" variant="default">
-                                                        Finalize District
+                                                {!branch.finalized && (
+                                                    <Button onClick={() => setConfirmFinalize(branch.name)} className="text-xs h-7 px-3 font-bold" variant="default">
+                                                        Finalize Branch
                                                     </Button>
                                                 )}
                                             </td>
                                         </tr>
                                         {/* Expandable Employee Details */}
-                                        {expandedDistrict === district.name && (
+                                        {expandedBranch === branch.name && (
                                             <tr>
                                                 <td colSpan={5} className="p-0 border-b-2 border-primary/20">
                                                     <div className="bg-gray-50/80 dark:bg-zinc-900/50 p-4 shadow-inner">
-                                                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Employee Leave Balances - {district.name}</h4>
+                                                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 ml-2">Employee Leave Balances - {branch.name}</h4>
                                                         <div className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
                                                             <table className="w-full text-left text-sm">
                                                                 <thead className="bg-gray-100/50 dark:bg-zinc-700/50 border-b border-gray-200 dark:border-zinc-700">
@@ -435,7 +435,7 @@ export default function LeaveCalculationPage() {
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody className="divide-y divide-gray-100 dark:divide-zinc-700">
-                                                                    {district.employees.map(emp => (
+                                                                    {branch.employees.map(emp => (
                                                                         <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-zinc-700/30">
                                                                             <td className="px-4 py-2 text-gray-500">#{emp.employee?.id}</td>
                                                                             <td className="px-4 py-2 font-medium">{emp.employee?.fullName || "N/A"}</td>

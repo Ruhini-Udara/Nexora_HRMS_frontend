@@ -22,7 +22,7 @@ interface DocumentSlot {
 // ── Zod Validation Schema ───────────────────────────────────────────
 const welfareSchema = z.object({
     welfareType: z.string().min(1, 'Welfare type is required'),
-    employeeType: z.string().min(1, 'Employee type is required'),
+    employeeType: z.string().optional(),
     amount: z.string().min(1, 'Amount is required'),
     specialRemark: z.string().optional(),
 });
@@ -56,9 +56,12 @@ const welfareTypes = [
 ];
 
 const employeeTypes = [
-    'Permanent',
+    'Full-time',
+    'Part-time',
+    'Contract',
+    'Probationary',
     'Temporary',
-    'Casual'
+    'Intern'
 ];
 
 // employeeProfile is now handled dynamically inside the component
@@ -217,33 +220,9 @@ export default function WelfareRequestPage() {
         employeeName: user?.name || "—",
         designation: user?.designation || "—",
         dateJoined: "—",
-        branch: user?.department || "—"
+        branch: user?.department || "—",
+        employeeType: "—"
     });
-
-    useEffect(() => {
-        const fetchEmployeeProfile = async () => {
-            if (!user?.id && !user?.email) return;
-            try {
-                const queryParam = user?.id ? `employeeId=${user.id}` : `email=${encodeURIComponent(user?.email || '')}`;
-                const res = await fetch(`/api/employee-profile?${queryParam}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data) {
-                        setEmployeeProfile({
-                            epfNumber: data.epfNumber || '—',
-                            employeeName: data.employeeName || user?.name || '—',
-                            designation: data.designation || user?.designation || '—',
-                            dateJoined: data.dateJoined || '—',
-                            branch: data.branch || user?.department || '—'
-                        });
-                    }
-                }
-            } catch (err) {
-                // Silently fallback to current state
-            }
-        };
-        fetchEmployeeProfile();
-    }, [user?.id, user?.email, user?.name, user?.designation, user?.department, user?.epfNumber]);
 
     const [docSlots, setDocSlots] = useState<DocumentSlot[]>([
         { key: 'supporting_document', label: 'Supporting Document (e.g., Certificates, Bills)', icon: 'description', mandatory: true, file: null },
@@ -253,6 +232,7 @@ export default function WelfareRequestPage() {
         register,
         handleSubmit,
         getValues,
+        setValue,
         reset,
         formState: { errors },
     } = useForm<WelfareFormData>({
@@ -264,6 +244,38 @@ export default function WelfareRequestPage() {
             specialRemark: '',
         },
     });
+
+    useEffect(() => {
+        const fetchEmployeeProfile = async () => {
+            if (!user?.id && !user?.email && !user?.epfNumber) return;
+            try {
+                const params = new URLSearchParams();
+                if (user?.id) params.append('employeeId', String(user.id));
+                else if (user?.epfNumber) params.append('employeeId', String(user.epfNumber));
+                if (user?.email) params.append('email', user.email);
+
+                const res = await fetch(`/api/employee-profile?${params.toString()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        const empType = data.employeeType || 'Full-time';
+                        setEmployeeProfile({
+                            epfNumber: data.epfNumber || user?.epfNumber || '—',
+                            employeeName: data.employeeName || user?.name || '—',
+                            designation: data.designation || user?.designation || '—',
+                            dateJoined: data.dateJoined || '—',
+                            branch: data.branch || user?.department || '—',
+                            employeeType: empType
+                        });
+                        setValue('employeeType', empType);
+                    }
+                }
+            } catch (err) {
+                // Silently fallback to current state
+            }
+        };
+        fetchEmployeeProfile();
+    }, [user?.id, user?.email, user?.name, user?.designation, user?.department, user?.epfNumber, setValue]);
 
     const loadRequests = useCallback(async () => {
         if (!user?.id) return; // Prevent calling with id 0 or null during load
@@ -352,7 +364,7 @@ export default function WelfareRequestPage() {
         return {
             status,
             welfareType: data.welfareType,
-            employeeType: data.employeeType,
+            employeeType: data.employeeType || (employeeProfile.employeeType !== '—' ? employeeProfile.employeeType : 'Full-time'),
             amount: parseFloat(data.amount) || 0,
             employeeRemarks: data.specialRemark || '',
             epfNumber: employeeProfile.epfNumber !== '—' ? employeeProfile.epfNumber : undefined,
@@ -451,7 +463,7 @@ export default function WelfareRequestPage() {
         <div className="max-w-[1400px] w-full mx-auto space-y-8">
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-2xl font-bold text-primary dark:text-white">Welfare Request Management</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welfare Request Management</h1>
                     <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Submit and track your formal welfare requests</p>
                 </div>
             </div>
@@ -514,9 +526,13 @@ export default function WelfareRequestPage() {
                                         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Date Joined</p>
                                         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mt-1">{employeeProfile.dateJoined}</p>
                                     </div>
-                                    <div className="col-span-2">
+                                    <div>
                                         <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Branch</p>
                                         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mt-1">{employeeProfile.branch}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Employee Type</p>
+                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mt-1">{employeeProfile.employeeType}</p>
                                     </div>
                                 </div>
                             </div>
@@ -538,24 +554,6 @@ export default function WelfareRequestPage() {
                                     </select>
                                     {errors.welfareType && (
                                         <p className="text-xs text-red-500 mt-1">{errors.welfareType.message}</p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        Employee Type <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        {...register('employeeType')}
-                                        className={`w-full border rounded-lg px-4 py-3 text-sm focus:ring-1 focus:ring-primary outline-none text-slate-700 dark:text-slate-100 bg-white dark:bg-slate-800 ${errors.employeeType ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
-                                    >
-                                        <option value="">Select Employee Type</option>
-                                        {employeeTypes.map((type) => (
-                                            <option key={type} value={type}>{type}</option>
-                                        ))}
-                                    </select>
-                                    {errors.employeeType && (
-                                        <p className="text-xs text-red-500 mt-1">{errors.employeeType.message}</p>
                                     )}
                                 </div>
 
@@ -673,26 +671,9 @@ export default function WelfareRequestPage() {
                             <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>
                             <div>
                                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Certification</p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Your manager must certify your request before HR processing.</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Your HR user must certify your request before board processing.</p>
                             </div>
                         </div>
-                    </div>
-                    <button className="w-full mt-6 text-[10px] font-bold text-primary border-t border-slate-50 dark:border-slate-800 pt-4 flex items-center justify-center gap-1 hover:underline cursor-pointer">
-                        Read Full Policy Documents <span className="material-symbols-outlined text-xs">open_in_new</span>
-                    </button>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 transition-colors">
-                    <h3 className="font-bold text-slate-800 dark:text-white mb-4 text-sm uppercase tracking-tight">Common Questions</h3>
-                    <div className="space-y-3">
-                        <button className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors cursor-pointer">
-                            How to tracking my status?
-                            <span className="material-symbols-outlined text-sm">expand_more</span>
-                        </button>
-                        <button className="w-full flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition-colors cursor-pointer">
-                            What documents are required?
-                            <span className="material-symbols-outlined text-sm">expand_more</span>
-                        </button>
                     </div>
                 </div>
             </div>

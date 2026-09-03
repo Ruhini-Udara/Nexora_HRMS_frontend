@@ -22,6 +22,8 @@ interface RequestModel {
     location: string;
     trainer: string;
     expectedParticipants: number;
+    approvedAt?: string;
+    updatedAt?: string;
 }
 
 interface TrainingTableProps {
@@ -105,23 +107,28 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
 
         const newStatus = confirmModal.type === 'Approve' ? 'Approved' : (confirmModal.type === 'Return' ? 'Returned' : 'Rejected');
 
-        setIsProcessing(true);
+        const nowIso = new Date().toISOString();
         try {
             await api.put(`/api/training/events/${selectedTraining.id}/status`, {
                 status: newStatus,
                 reason: (confirmModal.type === 'Reject' || confirmModal.type === 'Return') ? rejectionReason : undefined,
-                approvedBy: confirmModal.type === 'Approve' ? user?.name : undefined
+                approvedBy: confirmModal.type === 'Approve' ? user?.name : undefined,
+                approvedAt: confirmModal.type === 'Approve' ? nowIso : undefined
             });
 
-            setRequests(prev => prev.map(req =>
-                req.id === selectedTraining.id
-                    ? {
-                        ...req,
-                        status: newStatus,
-                        ...((confirmModal.type === 'Reject' || confirmModal.type === 'Return') ? { rejectionReason } : {})
-                    }
-                    : req
-            ));
+            setRequests(prev => {
+                const target = prev.find(req => req.id === selectedTraining.id);
+                if (!target) return prev;
+                const updatedItem: RequestModel = {
+                    ...target,
+                    status: newStatus,
+                    approvedAt: confirmModal.type === 'Approve' ? nowIso : target.approvedAt,
+                    updatedAt: nowIso,
+                    ...((confirmModal.type === 'Reject' || confirmModal.type === 'Return') ? { rejectionReason } : {})
+                };
+                // Place newly approved/updated item directly at the top
+                return [updatedItem, ...prev.filter(req => req.id !== selectedTraining.id)];
+            });
         } catch (err) {
             console.error("Failed to update training event status", err);
             alert("Failed to update status. Please try again.");
@@ -136,11 +143,25 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // Filter requests based on selected type and status
-    const filteredRequests = requests.filter(req =>
-        (filterType === "All" || req.type === filterType) &&
-        (filterStatus === "All Statuses" || req.status === filterStatus)
-    );
+    // Filter and sort requests with newest on top
+    const filteredRequests = requests
+        .filter(req =>
+            (filterType === "All" || req.type === filterType) &&
+            (filterStatus === "All Statuses" || req.status === filterStatus)
+        )
+        .sort((a, b) => {
+            const timeA = a.approvedAt ? new Date(a.approvedAt).getTime() : 0;
+            const timeB = b.approvedAt ? new Date(b.approvedAt).getTime() : 0;
+            if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+            if (timeA && !timeB) return -1;
+            if (!timeA && timeB) return 1;
+
+            const subA = a.submissionDate && a.submissionDate !== "N/A" ? new Date(a.submissionDate).getTime() : 0;
+            const subB = b.submissionDate && b.submissionDate !== "N/A" ? new Date(b.submissionDate).getTime() : 0;
+            if (subA && subB && subA !== subB) return subB - subA;
+
+            return b.id - a.id;
+        });
 
     // Pagination Logic
     const totalItems = filteredRequests.length;

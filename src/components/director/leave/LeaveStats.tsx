@@ -16,16 +16,19 @@ const LeaveStats = () => {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+                const [pendingOverseas, approvedOverseas, rejectedOverseas, pendingMaternity, approvedMaternity, rejectedMaternity] = await Promise.all([
                     api.get('/api/v1/leaves/overseas/status/PENDING_DIRECTOR_REVIEW'),
                     api.get('/api/v1/leaves/overseas/status/APPROVED'),
-                    api.get('/api/v1/leaves/overseas/status/REJECTED')
+                    api.get('/api/v1/leaves/overseas/status/REJECTED'),
+                    api.get('/api/v1/leaves/maternity/status/PENDING_DIRECTOR_REVIEW'),
+                    api.get('/api/v1/leaves/maternity/status/APPROVED'),
+                    api.get('/api/v1/leaves/maternity/status/REJECTED')
                 ]);
                 
                 setStatsData({
-                    pending: pendingRes.data.length,
-                    approved: approvedRes.data.length,
-                    rejected: rejectedRes.data.length,
+                    pending: pendingOverseas.data.length + pendingMaternity.data.length,
+                    approved: approvedOverseas.data.length + approvedMaternity.data.length,
+                    rejected: rejectedOverseas.data.length + rejectedMaternity.data.length,
                     total: 0 // calculated below
                 });
             } catch (err) {
@@ -67,7 +70,7 @@ const LeaveStats = () => {
             subTextColor: "text-red-600 dark:text-red-400"
         },
         {
-            label: "Total Overseas",
+            label: "Total Requests",
             value: loading ? "..." : (statsData.pending + statsData.approved + statsData.rejected),
             subtext: "Cumulative history",
             icon: Wallet,

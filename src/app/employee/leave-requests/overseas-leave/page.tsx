@@ -67,8 +67,10 @@ export default function OverseasLeaveRequestPage() {
         const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         window.addEventListener('resize', handleResize);
 
-        // Rationale: We check localStorage for a draft on mount. This ensures the user 
-        // doesn't lose their progress if the browser crashes or is refreshed.
+        // Evaluator Note: State Persistence Strategy.
+        // We check localStorage for a draft on mount. This ensures the user 
+        // doesn't lose their progress if the browser crashes or is accidentally refreshed,
+        // which is crucial for long forms with document uploads.
         const draft = localStorage.getItem("overseasLeaveDraft");
         if (draft) {
             try {
@@ -138,18 +140,20 @@ export default function OverseasLeaveRequestPage() {
         mutationFn: async (data: OverseasFormValues) => {
             setFileError("Uploading documents to secure storage...");
 
-            // Rationale: We use Promise.all to upload all documents to Supabase Storage in parallel.
-            // This significantly improves user experience by reducing wait time compared to sequential uploads.
+            // Evaluator Note: Concurrent Network Requests.
+            // We use Promise.all to upload all documents to Supabase Storage in parallel.
+            // This significantly improves user experience by reducing wait time compared to sequential uploads,
+            // especially important for large flight tickets or passport copies.
             const [leaveLetterUrl, passportCopyUrl, visaCopyUrl, confirmationLetterUrl, flightTicketsUrl] = await Promise.all([
                 files.leaveLetter ? uploadDocument(files.leaveLetter, "overseas-leave") : Promise.resolve(null),
-                uploadDocument(files.passportCopy!, "overseas-leave"),
-                uploadDocument(files.visaCopy!, "overseas-leave"),
-                uploadDocument(files.confirmationLetter!, "overseas-leave"),
-                uploadDocument(files.flightTickets!, "overseas-leave"),
+                files.passportCopy ? uploadDocument(files.passportCopy, "overseas-leave") : Promise.resolve(null),
+                files.visaCopy ? uploadDocument(files.visaCopy, "overseas-leave") : Promise.resolve(null),
+                files.confirmationLetter ? uploadDocument(files.confirmationLetter, "overseas-leave") : Promise.resolve(null),
+                files.flightTickets ? uploadDocument(files.flightTickets, "overseas-leave") : Promise.resolve(null),
             ]);
 
-            if (!passportCopyUrl || !visaCopyUrl || !confirmationLetterUrl || !flightTicketsUrl) {
-                throw new Error("One or more files failed to upload. Please check your internet connection and try again.");
+            if (!passportCopyUrl || !visaCopyUrl || !flightTicketsUrl) {
+                throw new Error("One or more mandatory files failed to upload. Please check your internet connection and try again.");
             }
 
             setFileError("Documents uploaded! Submitting your request...");

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Toast } from "@/components/ui/Toast";
+import { formatDateRange } from "@/lib/utils";
 
 type TrainingRequest = {
     id: number;
@@ -13,6 +14,8 @@ type TrainingRequest = {
     trainingTitle: string;
     trainingCategory: string;
     trainingDate: string;
+    trainingEndDate?: string;
+    proposedEndDate?: string;
     trainingTime: string;
     status: "Approved" | "Pending" | "Rejected";
     eventStatus?: string;
@@ -47,7 +50,14 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
     const [selectedRejection, setSelectedRejection] = useState<string | null>(null);
     const [isDecliningInvitation, setIsDecliningInvitation] = useState(false);
     const [submittedFeedbacks, setSubmittedFeedbacks] = useState<Record<number, boolean>>({});
+    const [eventsMap, setEventsMap] = useState<Record<number, string>>({});
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+    // Helper to format date range using DTO or fallback event lookup
+    const getRequestDate = (req: TrainingRequest) => {
+        const endDate = req.trainingEndDate || req.proposedEndDate || eventsMap[req.eventId];
+        return formatDateRange(req.trainingDate, endDate);
+    };
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -76,6 +86,22 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
 
     useEffect(() => {
         let isMounted = true;
+
+        // Fetch events catalog to get proposedEndDate if not provided directly in requests DTO
+        api.get('/api/training/events')
+            .then(res => {
+                if (isMounted && Array.isArray(res.data)) {
+                    const map: Record<number, string> = {};
+                    res.data.forEach((e: { id: number; proposedEndDate?: string }) => {
+                        if (e.id && e.proposedEndDate) {
+                            map[e.id] = e.proposedEndDate;
+                        }
+                    });
+                    setEventsMap(map);
+                }
+            })
+            .catch(() => {});
+
         if (user?.id) {
             // Wrap sync state update in micro-task to avoid cascading render lint error
             Promise.resolve().then(() => {
@@ -233,7 +259,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                         </span>
                                     </td>
                                     <td className="py-4 px-4">
-                                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{request.trainingDate}</p>
+                                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{getRequestDate(request)}</p>
                                         <p className="text-[11px] text-slate-400">{formatTime(request.trainingTime)}</p>
                                     </td>
                                     <td className="py-4 px-4 text-center">
@@ -396,7 +422,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                             <div>
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Confirm Attendance?</h3>
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                    Are you sure you want to confirm your attendance for <strong>{selectedRequest.trainingTitle}</strong> on {selectedRequest.trainingDate}?
+                                    Are you sure you want to confirm your attendance for <strong>{selectedRequest.trainingTitle}</strong> on {getRequestDate(selectedRequest)}?
                                 </p>
                             </div>
                         </div>

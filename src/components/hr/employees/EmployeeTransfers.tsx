@@ -90,6 +90,8 @@ export default function EmployeeTransfers() {
     const [rejectReason, setRejectReason] = useState("");
     const [rejectReasonError, setRejectReasonError] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'employee' | 'other'>('employee');
+    const [otherCategoryFilter, setOtherCategoryFilter] = useState<string>('All');
 
     const loadRequests = React.useCallback(async () => {
         try {
@@ -274,7 +276,12 @@ export default function EmployeeTransfers() {
                     <div className="mb-6 border-b border-slate-200 dark:border-slate-700">
                         <div className="flex gap-0">
                             <button
-                                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer border-primary text-primary`}
+                                onClick={() => setActiveTab('employee')}
+                                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+                                    activeTab === 'employee'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
                             >
                                 <span className="flex items-center gap-2">
                                     <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
@@ -282,7 +289,12 @@ export default function EmployeeTransfers() {
                                 </span>
                             </button>
                             <button
-                                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300`}
+                                onClick={() => setActiveTab('other')}
+                                className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
+                                    activeTab === 'other'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
                             >
                                 <span className="flex items-center gap-2">
                                     <span className="material-symbols-outlined text-[18px]">folder_shared</span>
@@ -293,200 +305,261 @@ export default function EmployeeTransfers() {
                     </div>
                 )}
 
-                {/* Filter & Search Bar */}
-                <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                    <div className="relative w-full sm:w-96">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="material-symbols-outlined text-slate-400">search</span>
-                        </span>
-                        <input
-                            type="text"
-                            placeholder="Search by ID, Name, or EPF..."
-                            value={searchTerm}
-                            onChange={(e) => {
-                                setSearchTerm(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow shadow-sm"
-                        />
-                    </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        {showVerifiedList ? (
-                            <div className="flex items-center gap-3">
-                                <span className="px-4 py-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[16px]">filter_list</span>
-                                    Verified Requests Only
+                {activeTab === 'other' ? (
+                    <div>
+                        {/* Other Transfer Filter & Search Bar */}
+                        <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                            <div className="relative w-full sm:w-96">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <span className="material-symbols-outlined text-slate-400">search</span>
                                 </span>
-                                <button
-                                    onClick={() => setShowConfirmDialog(true)}
-                                    disabled={verifiedCount === 0}
-                                    className="px-6 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">send</span>
-                                    Submit for Admin Approvals
-                                </button>
+                                <input
+                                    type="text"
+                                    placeholder="Search by ID, Name, or EPF..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow shadow-sm"
+                                />
                             </div>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-slate-400">filter_list</span>
-                                    <select
-                                          value={timeFilter}
-                                          onChange={(e) => {
-                                              setTimeFilter(e.target.value);
-                                              setCurrentPage(1);
-                                          }}
-                                          className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
-                                      >
-                                          <option value="2days">Last 2 Days</option>
-                                          <option value="week">Last Week</option>
-                                          <option value="month">Last Month</option>
-                                          <option value="year">Last Year</option>
-                                      </select>
-                                      <select
-                                        value={statusFilter}
-                                        onChange={(e) => {
-                                            setStatusFilter(e.target.value);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
-                                    >
-                                        <option value="All">All Statuses</option>
-                                        {Object.keys(statusConfig).map(st => (
-                                            <option key={st} value={st}>{statusConfig[st as TransferStatus].label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                {verifiedCount > 0 && (
-                                    <button
-                                        onClick={handleShowVerifiedList}
-                                        className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
-                                    >
-                                        <span className="material-symbols-outlined text-[18px]">checklist</span>
-                                        Submit List for Admin ({verifiedCount})
-                                    </button>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {/* Stats Row */}
-                {!showVerifiedList && (
-                    <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        {(
-                            [
-                                { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
-                                { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-                                { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
-                                { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
-                            ] as const
-                        ).map(({ label, status, icon, color, bg }) => (
-                            <div key={status} className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center gap-3 shadow-sm`}>
-                                <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
-                                <div>
-                                    <p className="text-2xl font-bold text-slate-800 dark:text-white">
-                                        {legitRequests.filter((r) => r.status === status).length}
-                                    </p>
-                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Data Table */}
-                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                                    <th className="py-4 px-6">Request ID</th>
-                                    <th className="py-4 px-6">Employee</th>
-                                    <th className="py-4 px-6 text-center">Current Location</th>
-                                    <th className="py-4 px-6 text-center">Target Location</th>
-                                    <th className="py-4 px-6 text-center">Status</th>
-                                    <th className="py-4 px-6 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm">
-                                {paginatedRequests.map((req) => {
-                                    const st = getStatusBadge(req.status);
-                                    return (
-                                        <tr
-                                            key={req.id}
-                                            className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors group"
-                                        >
-                                            <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">
-                                                {req.id}
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
-                                                <div className="text-xs text-slate-500">EPF: {req.epfNumber}</div>
-                                            </td>
-                                            <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-300">{req.currentBranch}</td>
-                                            <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-300">{req.targetBranch}</td>
-                                            <td className="py-4 px-6 text-center">
-                                                <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-semibold ${st.classes}`}>
-                                                    {st.label}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-6 text-right">
-                                                <button
-                                                    onClick={() => handleView(req)}
-                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-all cursor-pointer"
-                                                >
-                                                    <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                    {req.status === 'SUBMITTED' ? "Review & Verify" : "View Details"}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                {filteredRequests.length === 0 && (
-                                    <tr>
-                                        <td colSpan={6} className="py-12 text-center text-slate-400">
-                                            No transfer requests found matching your filters.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRequests.length)} of {filteredRequests.length} requests
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <span className="material-symbols-outlined text-slate-400">category</span>
+                                <select
+                                    value={otherCategoryFilter}
+                                    onChange={(e) => setOtherCategoryFilter(e.target.value)}
+                                    className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
                                 >
-                                    <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-                                </button>
-                                {[...Array(totalPages)].map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setCurrentPage(i + 1)}
-                                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${currentPage === i + 1 ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
-                                >
-                                    <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-                                </button>
+                                    <option value="All">All Categories</option>
+                                    <option value="Disciplinary">Disciplinary Action</option>
+                                    <option value="Service">Service Requirement</option>
+                                    <option value="Promotion">Employee Promotion</option>
+                                    <option value="Policy">Policy Rotation</option>
+                                </select>
                             </div>
                         </div>
-                    )}
-                </div>
+
+                        {/* Empty State for Other Transfers */}
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+                            <div className="w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/30 flex items-center justify-center mx-auto mb-4">
+                                <span className="material-symbols-outlined text-3xl text-primary">folder_open</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">No Other Transfer Requests</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+                                There are currently no administrative or organization-initiated transfer requests recorded in the system.
+                            </p>
+                            <div className="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+                                <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-full text-xs font-semibold">
+                                    🚨 Disciplinary Action
+                                </span>
+                                <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-full text-xs font-semibold">
+                                    ⚙️ Service Requirement
+                                </span>
+                                <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-full text-xs font-semibold">
+                                    🎖️ Employee Promotion
+                                </span>
+                                <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded-full text-xs font-semibold">
+                                    🔄 Policy Rotation
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Filter & Search Bar */}
+                        <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                            <div className="relative w-full sm:w-96">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <span className="material-symbols-outlined text-slate-400">search</span>
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Search by ID, Name, or EPF..."
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow shadow-sm"
+                                />
+                            </div>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                {showVerifiedList ? (
+                                    <div className="flex items-center gap-3">
+                                        <span className="px-4 py-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-[16px]">filter_list</span>
+                                            Verified Requests Only
+                                        </span>
+                                        <button
+                                            onClick={() => setShowConfirmDialog(true)}
+                                            disabled={verifiedCount === 0}
+                                            className="px-6 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">send</span>
+                                            Submit for Admin Approvals
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-slate-400">filter_list</span>
+                                            <select
+                                                  value={timeFilter}
+                                                  onChange={(e) => {
+                                                      setTimeFilter(e.target.value);
+                                                      setCurrentPage(1);
+                                                  }}
+                                                  className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
+                                              >
+                                                  <option value="2days">Last 2 Days</option>
+                                                  <option value="week">Last Week</option>
+                                                  <option value="month">Last Month</option>
+                                                  <option value="year">Last Year</option>
+                                              </select>
+                                              <select
+                                                value={statusFilter}
+                                                onChange={(e) => {
+                                                    setStatusFilter(e.target.value);
+                                                    setCurrentPage(1);
+                                                }}
+                                                className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer shadow-sm"
+                                            >
+                                                <option value="All">All Statuses</option>
+                                                {Object.keys(statusConfig).map(st => (
+                                                    <option key={st} value={st}>{statusConfig[st as TransferStatus].label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {verifiedCount > 0 && (
+                                            <button
+                                                onClick={handleShowVerifiedList}
+                                                className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]">checklist</span>
+                                                Submit List for Admin ({verifiedCount})
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Stats Row */}
+                        {!showVerifiedList && (
+                            <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                {(
+                                    [
+                                        { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
+                                        { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+                                        { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
+                                        { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
+                                    ] as const
+                                ).map(({ label, status, icon, color, bg }) => (
+                                    <div key={status} className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center gap-3 shadow-sm`}>
+                                        <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
+                                        <div>
+                                            <p className="text-2xl font-bold text-slate-800 dark:text-white">
+                                                {legitRequests.filter((r) => r.status === status).length}
+                                            </p>
+                                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Data Table */}
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                                            <th className="py-4 px-6">Request ID</th>
+                                            <th className="py-4 px-6">Employee</th>
+                                            <th className="py-4 px-6 text-center">Current Location</th>
+                                            <th className="py-4 px-6 text-center">Target Location</th>
+                                            <th className="py-4 px-6 text-center">Status</th>
+                                            <th className="py-4 px-6 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-sm">
+                                        {paginatedRequests.map((req) => {
+                                            const st = getStatusBadge(req.status);
+                                            return (
+                                                <tr
+                                                    key={req.id}
+                                                    className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors group"
+                                                >
+                                                    <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">
+                                                        {req.id}
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <div className="font-semibold text-slate-800 dark:text-white">{req.employeeName}</div>
+                                                        <div className="text-xs text-slate-500">EPF: {req.epfNumber}</div>
+                                                    </td>
+                                                    <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-300">{req.currentBranch}</td>
+                                                    <td className="py-4 px-6 text-center text-slate-600 dark:text-slate-300">{req.targetBranch}</td>
+                                                    <td className="py-4 px-6 text-center">
+                                                        <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-semibold ${st.classes}`}>
+                                                            {st.label}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-6 text-right">
+                                                        <button
+                                                            onClick={() => handleView(req)}
+                                                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-all cursor-pointer"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                                            {req.status === 'SUBMITTED' ? "Review & Verify" : "View Details"}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {filteredRequests.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="py-12 text-center text-slate-400">
+                                                    No transfer requests found matching your filters.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                                        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredRequests.length)} of {filteredRequests.length} requests
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                                        >
+                                            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                                        </button>
+                                        {[...Array(totalPages)].map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setCurrentPage(i + 1)}
+                                                className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${currentPage === i + 1 ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                            >
+                                                {i + 1}
+                                            </button>
+                                        ))}
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors cursor-pointer"
+                                        >
+                                            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
 
                 {/* Review Modal */}
                 {selectedRequest && (

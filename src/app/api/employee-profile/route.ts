@@ -37,12 +37,15 @@ export async function GET(request: Request) {
             WHERE 1=1
         `;
         const params: any[] = [];
-        if (employeeId) {
+        if (employeeId && email) {
+            params.push(employeeId, email);
+            query += ` AND (e.id::text = $1 OR e.employee_code = $1 OR e.epf_number = $1 OR e.email = $2)`;
+        } else if (employeeId) {
             params.push(employeeId);
-            query += ` AND (e.id = $${params.length} OR e.employee_code = $${params.length})`;
+            query += ` AND (e.id::text = $1 OR e.employee_code = $1 OR e.epf_number = $1)`;
         } else if (email) {
             params.push(email);
-            query += ` AND e.email = $${params.length}`;
+            query += ` AND e.email = $1`;
         }
 
         query += ` LIMIT 1`;
@@ -52,13 +55,28 @@ export async function GET(request: Request) {
 
         if (res.rows.length > 0) {
             const emp = res.rows[0];
-            let joinedDateStr = 'N/A';
+            let joinedDateStr = '—';
             if (emp.joined_date) {
                 const d = new Date(emp.joined_date);
                 if (!isNaN(d.getTime())) {
                     joinedDateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                } else {
+                    joinedDateStr = String(emp.joined_date);
                 }
             }
+
+            const formatType = (val?: string) => {
+                if (!val) return 'Full-time';
+                const lower = val.toLowerCase().trim();
+                if (lower === 'full-time' || lower === 'fulltime') return 'Full-time';
+                if (lower === 'part-time' || lower === 'parttime') return 'Part-time';
+                if (lower === 'contract') return 'Contract';
+                if (lower === 'probationary' || lower === 'probation') return 'Probationary';
+                if (lower === 'temporary') return 'Temporary';
+                if (lower === 'intern' || lower === 'internship') return 'Intern';
+                if (lower === 'permanent') return 'Full-time';
+                return val.charAt(0).toUpperCase() + val.slice(1);
+            };
 
             return NextResponse.json({
                 id: emp.id,
@@ -68,7 +86,7 @@ export async function GET(request: Request) {
                 dateJoined: joinedDateStr,
                 branch: emp.branch || emp.department || 'N/A',
                 email: emp.email || '',
-                employeeType: emp.employee_type || 'Permanent',
+                employeeType: formatType(emp.employee_type),
             });
         }
 
