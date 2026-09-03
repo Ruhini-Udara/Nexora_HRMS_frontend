@@ -14,6 +14,7 @@ interface RequestModel {
     requester: string;
     type: string;
     typeColor: string;
+    proposedStartDate?: string;
     submissionDate: string;
     date: string;
     status: string;
@@ -224,11 +225,11 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Training Program</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Training Type</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Date Submitted</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Proposed Start Date</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Action</th>
                                 {(filterStatus === "Rejected" || filterStatus === "Returned") && (
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider w-48">Reason</th>
+                                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider w-48">Reason</th>
                                 )}
                             </tr>
                         </thead>
@@ -243,7 +244,9 @@ export default function TrainingTable({ requests, setRequests }: TrainingTablePr
                                     <td className="px-6 py-4">
                                         <p className="text-sm text-gray-600 dark:text-slate-400">{req.type}</p>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-slate-400">{req.submissionDate}</td>
+                                    <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-slate-400">
+                                        {req.proposedStartDate || req.date || "TBD"}
+                                    </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'Approved' ? 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400' :
                                             req.status === 'Rejected' ? 'bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400' :
