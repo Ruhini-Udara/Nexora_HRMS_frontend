@@ -30,15 +30,17 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
     endDateBeforeStart: false,
   });
 
-  // Date boundary: 2 years in past and 2 years in future
+  // Date boundary: Only today and future dates (up to 2 years)
   const today = new Date();
-  const minAllowedDate = new Date(today.getFullYear() - 2, today.getMonth(), today.getDate());
+  today.setHours(0, 0, 0, 0);
+
+  const minAllowedDate = new Date(today);
   minAllowedDate.setHours(0, 0, 0, 0);
 
   const maxAllowedDate = new Date(today.getFullYear() + 2, today.getMonth(), today.getDate());
   maxAllowedDate.setHours(23, 59, 59, 999);
 
-  const minMonthDate = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+  const minMonthDate = new Date(today.getFullYear(), today.getMonth(), 1);
   const maxMonthDate = new Date(today.getFullYear() + 2, today.getMonth(), 1);
 
   const isStartPrevMonthDisabled =
@@ -360,7 +362,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                       <button
                         type="button"
                         disabled={isStartPrevMonthDisabled}
-                        title={isStartPrevMonthDisabled ? "Reached minimum viewing limit (2 years in past)" : "Previous month"}
+                        title={isStartPrevMonthDisabled ? "Cannot navigate to past months" : "Previous month"}
                         onClick={() => {
                           if (!isStartPrevMonthDisabled) {
                             setStartCurrentMonth(new Date(startCurrentMonth.getFullYear(), startCurrentMonth.getMonth() - 1, 1));
@@ -380,7 +382,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                       <button
                         type="button"
                         disabled={isStartNextMonthDisabled}
-                        title={isStartNextMonthDisabled ? "Reached maximum viewing limit (2 years in future)" : "Next month"}
+                        title={isStartNextMonthDisabled ? "Reached maximum limit (2 years in future)" : "Next month"}
                         onClick={() => {
                           if (!isStartNextMonthDisabled) {
                             setStartCurrentMonth(new Date(startCurrentMonth.getFullYear(), startCurrentMonth.getMonth() + 1, 1));
@@ -421,11 +423,11 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                             disabled={isDisabled}
                             className={`
                               p-2 text-sm rounded-lg transition-colors
-                              ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
-                              ${outOfRange && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
-                              ${isToday(dayObj.date) && !outOfRange ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                              ${isSelectedStartDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold" : ""}
-                              ${dayObj.isCurrentMonth && !outOfRange && !isToday(dayObj.date) && !isSelectedStartDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
+                              ${!dayObj.isCurrentMonth ? "text-slate-200 cursor-not-allowed opacity-30" : ""}
+                              ${outOfRange && dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed line-through opacity-40" : ""}
+                              ${isToday(dayObj.date) && !outOfRange && !isSelectedStartDate(dayObj.date) ? "bg-blue-50 text-blue-600 font-semibold border border-blue-200" : ""}
+                              ${isSelectedStartDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold shadow-sm" : ""}
+                              ${dayObj.isCurrentMonth && !outOfRange && !isToday(dayObj.date) && !isSelectedStartDate(dayObj.date) ? "hover:bg-slate-100 text-slate-700 cursor-pointer font-medium" : ""}
                             `}
                           >
                             {dayObj.day}
@@ -443,7 +445,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
               )}
               {errors.startDateOutOfRange && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>⚠</span> Date must be within 2 years in the past and 2 years in the future
+                  <span>⚠</span> Start date must be today or a future date
                 </p>
               )}
             </div>
@@ -485,7 +487,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                       <button
                         type="button"
                         disabled={isEndPrevMonthDisabled}
-                        title={isEndPrevMonthDisabled ? "Reached minimum viewing limit (2 years in past)" : "Previous month"}
+                        title={isEndPrevMonthDisabled ? "Cannot navigate to past months" : "Previous month"}
                         onClick={() => {
                           if (!isEndPrevMonthDisabled) {
                             setEndCurrentMonth(new Date(endCurrentMonth.getFullYear(), endCurrentMonth.getMonth() - 1, 1));
@@ -505,7 +507,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                       <button
                         type="button"
                         disabled={isEndNextMonthDisabled}
-                        title={isEndNextMonthDisabled ? "Reached maximum viewing limit (2 years in future)" : "Next month"}
+                        title={isEndNextMonthDisabled ? "Reached maximum limit (2 years in future)" : "Next month"}
                         onClick={() => {
                           if (!isEndNextMonthDisabled) {
                             setEndCurrentMonth(new Date(endCurrentMonth.getFullYear(), endCurrentMonth.getMonth() + 1, 1));
@@ -546,11 +548,11 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                             disabled={isDisabled}
                             className={`
                               p-2 text-sm rounded-lg transition-colors
-                              ${!dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed" : ""}
-                              ${outOfRange && dayObj.isCurrentMonth ? "text-slate-400 cursor-not-allowed line-through" : ""}
-                              ${isToday(dayObj.date) && !outOfRange ? "bg-blue-50 text-blue-600 font-semibold" : ""}
-                              ${isSelectedEndDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold" : ""}
-                              ${dayObj.isCurrentMonth && !outOfRange && !isToday(dayObj.date) && !isSelectedEndDate(dayObj.date) ? "hover:bg-slate-100 cursor-pointer" : ""}
+                              ${!dayObj.isCurrentMonth ? "text-slate-200 cursor-not-allowed opacity-30" : ""}
+                              ${outOfRange && dayObj.isCurrentMonth ? "text-slate-300 cursor-not-allowed line-through opacity-40" : ""}
+                              ${isToday(dayObj.date) && !outOfRange && !isSelectedEndDate(dayObj.date) ? "bg-blue-50 text-blue-600 font-semibold border border-blue-200" : ""}
+                              ${isSelectedEndDate(dayObj.date) ? "bg-[#8B3A00] text-white font-semibold shadow-sm" : ""}
+                              ${dayObj.isCurrentMonth && !outOfRange && !isToday(dayObj.date) && !isSelectedEndDate(dayObj.date) ? "hover:bg-slate-100 text-slate-700 cursor-pointer font-medium" : ""}
                             `}
                           >
                             {dayObj.day}
@@ -568,7 +570,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
               )}
               {errors.endDateOutOfRange && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>⚠</span> Date must be within 2 years in the past and 2 years in the future
+                  <span>⚠</span> End date must be today or a future date
                 </p>
               )}
               {errors.endDateBeforeStart && (
