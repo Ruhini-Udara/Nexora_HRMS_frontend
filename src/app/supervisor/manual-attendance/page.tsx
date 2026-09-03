@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-    Search, Bell, Calendar,
-    X, CheckCircle, Loader2, CheckSquare, Clock
+    Search, Calendar,
+    X, CheckCircle, Loader2, Clock,
+    ClipboardList, AlertCircle, XCircle
 } from "lucide-react";
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
-import UserAvatar from "@/components/common/UserAvatar";
-import Link from "next/link";
-import { NotificationBell } from "@/components/NotificationBell";
+import SupervisorSummaryCard from "@/components/supervisor/SupervisorSummaryCard";
 
 type Status = "Present" | "Absent" | "Late" | "Half_Day" | null;
 
@@ -117,6 +116,11 @@ export default function ManualAttendanceApprovalsPage() {
 
     const pendingList = list.filter(e => e.approvalStatus === "PENDING" || (!e.approvalStatus && e.status === "Pending Approval"));
 
+    const totalCount = emps.length;
+    const pendingTotalCount = emps.filter(e => e.approvalStatus === "PENDING" || (!e.approvalStatus && e.status === "Pending Approval")).length;
+    const approvedTotalCount = emps.filter(e => e.approvalStatus === "APPROVED" || e.status === "Present").length;
+    const rejectedTotalCount = emps.filter(e => e.approvalStatus === "CANCELLED" || e.approvalStatus === "REJECTED" || e.status === "Absent").length;
+
     const toggleSelectAll = () => {
         if (selectedIds.length > 0 && selectedIds.length === pendingList.length) {
             setSelectedIds([]);
@@ -201,72 +205,96 @@ export default function ManualAttendanceApprovalsPage() {
     };
 
     return (
-        <div className="flex flex-col flex-1 min-h-0 bg-[#f4f7f9] dark:bg-slate-950 transition-colors">
-            {/* ── Premium Header ───────────────────────────────────────────── */}
-            <header className="flex-shrink-0 bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 border-b border-gray-200/80 dark:border-slate-800 px-8 h-[72px] flex items-center justify-between sticky top-0 z-30 transition-colors shadow-sm">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9e3f00] to-[#e65c00] flex items-center justify-center shadow-lg shadow-orange-500/20">
-                        <CheckSquare className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-[22px] font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">Attendance Approvals</h1>
-                        <p className="text-[12px] text-gray-500 font-medium mt-1">Review and approve manual attendance entries</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="relative group">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#9e3f00] transition-colors" />
-                        <input
-                            value={q}
-                            onChange={e => setQ(e.target.value)}
-                            placeholder="Search employee..."
-                            className="w-64 pl-10 pr-4 py-2.5 text-sm font-medium border border-gray-200 dark:border-slate-700 rounded-full bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-[#9e3f00]/10 focus:border-[#9e3f00]/50 transition-all shadow-inner"
-                        />
-                    </div>
-                    <div className="hidden sm:block">
-                        <NotificationBell />
-                    </div>
-                    <div className="w-px h-8 bg-gray-200 dark:bg-slate-800" />
-                    <Link
-                        href="/supervisor/profile"
-                        className="flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-slate-800/50 p-1.5 pr-3 rounded-full transition-colors cursor-pointer border border-transparent hover:border-gray-200"
-                    >
-                        <UserAvatar user={isClient ? user : null} size="md" />
-                        <div className="text-left hidden sm:block">
-                            <p className="text-[13px] font-bold text-gray-800 dark:text-white leading-tight">
-                                {isClient && user ? user.name : "Supervisor"}
-                            </p>
-                            <p className="text-[11px] text-gray-500 dark:text-slate-400 leading-tight font-medium">
-                                {isClient && user ? (user.designation || user.role) : "HR Department"}
-                            </p>
-                        </div>
-                    </Link>
-                </div>
-            </header>
+        <div className="p-8 max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
+            {/* ── Page Title ──────────────────────────────────────────────── */}
+            <div className="mb-6 flex flex-col gap-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Attendance Approvals</h1>
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Review and approve manual attendance entries for your team.
+                </p>
+            </div>
+
+            {/* ── Summary Stats ───────────────────────────────────────────── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+                <SupervisorSummaryCard
+                    title="Total Requests"
+                    value={String(totalCount)}
+                    subtext="All manual submissions"
+                    icon={ClipboardList}
+                    variant="primary"
+                />
+                <SupervisorSummaryCard
+                    title="Pending Approval"
+                    value={String(pendingTotalCount)}
+                    subtext={
+                        <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            {pendingTotalCount > 0 ? "Requires action" : "Up to date"}
+                        </span>
+                    }
+                    icon={Clock}
+                    variant="amber"
+                />
+                <SupervisorSummaryCard
+                    title="Approved"
+                    value={String(approvedTotalCount)}
+                    subtext={
+                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Processed entries
+                        </span>
+                    }
+                    icon={CheckCircle}
+                    variant="emerald"
+                />
+                <SupervisorSummaryCard
+                    title="Rejected / Cancelled"
+                    value={String(rejectedTotalCount)}
+                    subtext={
+                        <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                            <XCircle className="w-3.5 h-3.5" />
+                            Disallowed submissions
+                        </span>
+                    }
+                    icon={XCircle}
+                    variant="rose"
+                />
+            </div>
 
             {/* ── Filters Bar ──────────────────────────────────────────────── */}
-            <div className="flex-shrink-0 bg-white/60 backdrop-blur-md dark:bg-slate-900/60 border-b border-gray-200/50 dark:border-slate-800 px-8 py-4 flex items-center gap-6 overflow-x-auto transition-colors">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 mb-6 shadow-sm flex flex-wrap items-center gap-4 transition-colors">
+                {/* Search */}
+                <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                        value={q}
+                        onChange={e => setQ(e.target.value)}
+                        placeholder="Search employee..."
+                        className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                    />
+                </div>
+
                 {/* Date Filter */}
-                <div className="flex items-center gap-2.5">
-                    <span className="text-[13px] font-bold text-slate-500 uppercase tracking-wider">Date</span>
-                    <div className="relative flex items-center gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3.5 py-2 shadow-sm hover:border-[#9e3f00]/40 transition-all focus-within:ring-2 focus-within:ring-[#9e3f00]/20 focus-within:border-[#9e3f00]/50">
-                        <Calendar className="w-4 h-4 text-[#9e3f00] dark:text-orange-400 flex-shrink-0" />
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Date:</span>
+                    <div className="relative flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
+                        <Calendar className="w-4 h-4 text-primary dark:text-orange-400 mr-2 flex-shrink-0" />
                         <input
                             type="date"
                             value={date}
                             onChange={e => setDate(e.target.value)}
-                            className="text-[13px] font-bold text-gray-700 dark:text-slate-200 bg-transparent border-none outline-none cursor-pointer dark:[color-scheme:dark]"
+                            className="text-sm font-medium text-slate-800 dark:text-slate-200 bg-transparent border-none outline-none cursor-pointer"
                         />
                     </div>
                 </div>
 
                 {/* Department Filter */}
-                <div className="flex items-center gap-2.5">
-                    <span className="text-[13px] font-bold text-slate-500 uppercase tracking-wider">Department</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Department:</span>
                     <select
                         value={department}
                         onChange={e => setDepartment(e.target.value)}
-                        className="appearance-none text-[13px] font-bold text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg pl-4 pr-10 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9e3f00]/20 focus:border-[#9e3f00]/50 cursor-pointer hover:border-[#9e3f00]/40 transition-all"
+                        className="text-sm font-medium text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-200 cursor-pointer"
                     >
                         {departments.map(d => (
                             <option key={d} value={d}>{d}</option>
@@ -275,12 +303,12 @@ export default function ManualAttendanceApprovalsPage() {
                 </div>
 
                 {/* Status Filter */}
-                <div className="flex items-center gap-2.5">
-                    <span className="text-[13px] font-bold text-slate-500 uppercase tracking-wider">Status</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Status:</span>
                     <select
                         value={statusFilter}
                         onChange={e => setStatusFilter(e.target.value)}
-                        className="appearance-none text-[13px] font-bold text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg pl-4 pr-10 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9e3f00]/20 focus:border-[#9e3f00]/50 cursor-pointer hover:border-[#9e3f00]/40 transition-all"
+                        className="text-sm font-medium text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-200 cursor-pointer"
                     >
                         <option value="All">All</option>
                         <option value="Pending Approval">Pending Approval</option>
@@ -289,201 +317,198 @@ export default function ManualAttendanceApprovalsPage() {
                     </select>
                 </div>
 
-                <div className="ml-auto flex items-center gap-4">
-                    {/* Multiple Approval Action Button */}
-                    {list.length > 0 && selectedIds.length > 0 && (
+                {/* Multiple Approval Action Button */}
+                {list.length > 0 && selectedIds.length > 0 && (
+                    <div className="ml-auto">
                         <button 
                             onClick={approveSelected}
                             disabled={submitting}
-                            className="flex items-center gap-2 bg-[#9e3f00] hover:bg-[#7a3000] disabled:bg-slate-400 text-white px-4 py-2 rounded-lg font-bold text-[13px] transition-all shadow-sm"
+                            className="flex items-center gap-2 bg-primary hover:bg-[#7a3000] disabled:bg-slate-400 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm"
                         >
                             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                             Approve Selected ({selectedIds.length})
                         </button>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* ── Table Area ───────────────────────────────────────────────── */}
-            <div className="flex-1 overflow-y-auto p-8">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-gray-200/40 dark:shadow-none border border-slate-200/60 dark:border-slate-800 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-800/50 dark:to-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                    <th className="p-5 w-16 text-center">
-                                        <div className="flex items-center justify-center">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={pendingList.length > 0 && selectedIds.length === pendingList.length}
-                                                onChange={toggleSelectAll}
-                                                disabled={pendingList.length === 0}
-                                                className="w-4 h-4 text-[#9e3f00] rounded-sm border-gray-300 focus:ring-[#9e3f00] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                            />
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th className="py-3.5 px-4 w-12 text-center">
+                                    <div className="flex items-center justify-center">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={pendingList.length > 0 && selectedIds.length === pendingList.length}
+                                            onChange={toggleSelectAll}
+                                            disabled={pendingList.length === 0}
+                                            className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary cursor-pointer disabled:opacity-50"
+                                        />
+                                    </div>
+                                </th>
+                                <th className="py-3.5 px-4">Employee</th>
+                                <th className="py-3.5 px-4">Department</th>
+                                <th className="py-3.5 px-4">Date</th>
+                                <th className="py-3.5 px-4">In Time</th>
+                                <th className="py-3.5 px-4">Out Time</th>
+                                <th className="py-3.5 px-4">Status</th>
+                                <th className="py-3.5 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={8} className="p-12 text-center text-slate-500">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                            <span className="font-medium text-sm">Loading requests...</span>
                                         </div>
-                                    </th>
-                                    <th className="p-5 text-[12px] font-extrabold text-slate-500 uppercase tracking-widest">Employee</th>
-                                    <th className="p-5 text-[12px] font-extrabold text-slate-500 uppercase tracking-widest">Department</th>
-                                    <th className="p-5 text-[12px] font-extrabold text-slate-500 uppercase tracking-widest">Date</th>
-                                    <th className="p-5 text-[12px] font-extrabold text-slate-500 uppercase tracking-widest">In</th>
-                                    <th className="p-5 text-[12px] font-extrabold text-slate-500 uppercase tracking-widest">Out</th>
-                                    <th className="p-5 text-[12px] font-extrabold text-slate-500 uppercase tracking-widest">Status</th>
-                                    <th className="p-5 text-[12px] font-extrabold text-slate-500 uppercase tracking-widest text-right">Action</th>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={8} className="p-12 text-center text-slate-500">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <Loader2 className="w-8 h-8 animate-spin text-[#9e3f00]" />
-                                                <span className="font-semibold text-sm">Loading requests...</span>
+                            ) : list.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="p-16 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <CheckCircle className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-1" />
+                                            <span className="text-slate-700 dark:text-slate-300 font-semibold text-base">You&apos;re all caught up!</span>
+                                            <span className="text-slate-400 text-sm">No pending attendance requests right now.</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                list.map((emp) => (
+                                    <tr key={emp.id} className={`transition-colors group cursor-pointer ${selectedIds.includes(emp.id as number) ? 'bg-orange-50/60 dark:bg-orange-950/20' : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40'}`}>
+                                        <td className="py-4 px-4 text-center">
+                                            <div className="flex items-center justify-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={emp.id ? selectedIds.includes(emp.id) : false}
+                                                    onChange={(e) => {
+                                                        e.stopPropagation();
+                                                        if (emp.id) {
+                                                            toggleSelect(emp.id);
+                                                        }
+                                                    }}
+                                                    disabled={emp.approvalStatus !== 'PENDING' && emp.status !== 'Pending Approval'}
+                                                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary cursor-pointer disabled:opacity-50"
+                                                />
                                             </div>
                                         </td>
-                                    </tr>
-                                ) : list.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={8} className="p-16 text-center">
-                                            <div className="flex flex-col items-center justify-center gap-3">
-                                                <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-2">
-                                                    <CheckCircle className="w-8 h-8 text-slate-300" />
+                                        <td className="py-4 px-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                                    {emp.employeeName.charAt(0)}
                                                 </div>
-                                                <span className="text-slate-500 font-bold text-lg">You&apos;re all caught up!</span>
-                                                <span className="text-slate-400 text-sm">No pending attendance requests right now.</span>
+                                                <div>
+                                                    <p className="font-semibold text-slate-800 dark:text-slate-200 leading-tight">{emp.employeeName}</p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{emp.employeeCode}</p>
+                                                </div>
                                             </div>
                                         </td>
-                                    </tr>
-                                ) : (
-                                    list.map((emp) => (
-                                        <tr key={emp.id} className={`transition-all duration-200 group cursor-pointer ${selectedIds.includes(emp.id as number) ? 'bg-[#9e3f00]/5 dark:bg-orange-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}`}>
-                                            <td className="p-5 text-center">
-                                                <div className="flex items-center justify-center h-full">
-                                                    <input 
-                                                        type="checkbox"
-                                                        checked={emp.id ? selectedIds.includes(emp.id) : false}
-                                                        onChange={(e) => {
-                                                            e.stopPropagation();
-                                                            if (emp.id) {
-                                                                toggleSelect(emp.id);
-                                                            }
-                                                        }}
-                                                        disabled={emp.approvalStatus !== 'PENDING' && emp.status !== 'Pending Approval'}
-                                                        className="w-4 h-4 text-[#9e3f00] rounded-sm border-gray-300 focus:ring-[#9e3f00] cursor-pointer transition-transform duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td className="p-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-800 border border-white dark:border-slate-600 shadow-sm flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold text-sm">
-                                                        {emp.employeeName.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[14px] font-bold text-slate-900 dark:text-white leading-tight">{emp.employeeName}</p>
-                                                        <p className="text-[12px] font-medium text-slate-500 mt-0.5">{emp.employeeCode}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="p-5 text-[14px] font-semibold text-slate-600 dark:text-slate-300">{emp.department}</td>
-                                            <td className="p-5 text-[14px] font-semibold text-slate-600 dark:text-slate-300">{formatDate(emp.inDate || "")}</td>
-                                            <td className="p-5 text-[14px] font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-transparent">{emp.inTime || "—"}</td>
-                                            <td className="p-5 text-[14px] font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-transparent">{emp.outTime || "—"}</td>
-                                            <td className="p-5">
-                                                {(() => {
-                                                    const status = emp.approvalStatus?.toUpperCase() || 'PENDING';
-                                                    if (status === 'APPROVED') {
-                                                        return (
-                                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                                                Approved
-                                                            </span>
-                                                        );
-                                                    }
-                                                    if (status === 'CANCELLED' || status === 'REJECTED') {
-                                                        return (
-                                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                                                {status === 'CANCELLED' ? 'Cancelled' : 'Rejected'}
-                                                            </span>
-                                                        );
-                                                    }
+                                        <td className="py-4 px-4 text-slate-600 dark:text-slate-300">{emp.department}</td>
+                                        <td className="py-4 px-4 text-slate-600 dark:text-slate-300">{formatDate(emp.inDate || "")}</td>
+                                        <td className="py-4 px-4 font-medium text-slate-800 dark:text-slate-200">{emp.inTime || "—"}</td>
+                                        <td className="py-4 px-4 font-medium text-slate-800 dark:text-slate-200">{emp.outTime || "—"}</td>
+                                        <td className="py-4 px-4">
+                                            {(() => {
+                                                const status = emp.approvalStatus?.toUpperCase() || 'PENDING';
+                                                if (status === 'APPROVED') {
                                                     return (
-                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                                            Pending
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                            Approved
                                                         </span>
                                                     );
-                                                })()}
-                                            </td>
-                                            <td className="p-5 text-right">
-                                                <button 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSel(emp);
-                                                    }}
-                                                    className="text-[13px] font-bold text-[#9e3f00] hover:text-white bg-[#9e3f00]/10 hover:bg-[#9e3f00] px-4 py-2 rounded-lg transition-all shadow-sm"
-                                                >
-                                                    View
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                                }
+                                                if (status === 'CANCELLED' || status === 'REJECTED') {
+                                                    return (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                                            {status === 'CANCELLED' ? 'Cancelled' : 'Rejected'}
+                                                        </span>
+                                                    );
+                                                }
+                                                return (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                                        Pending
+                                                    </span>
+                                                );
+                                            })()}
+                                        </td>
+                                        <td className="py-4 px-4 text-right">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSel(emp);
+                                                }}
+                                                className="text-xs font-semibold text-primary hover:text-white bg-primary/10 hover:bg-primary px-3 py-1.5 rounded-lg transition-colors"
+                                            >
+                                                View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
             {/* ── Centered Modal Popup ─────────────────────────────────────── */}
             {sel && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col transform transition-all border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                                    <Clock className="w-4 h-4 text-[#9e3f00] dark:text-orange-400" />
+                                <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center">
+                                    <Clock className="w-4 h-4 text-primary dark:text-orange-400" />
                                 </div>
-                                <h2 className="font-extrabold text-gray-900 dark:text-white text-lg">View Request</h2>
+                                <h2 className="font-bold text-gray-900 dark:text-white text-lg">View Attendance Request</h2>
                             </div>
-                            <button onClick={() => setSel(null)} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full cursor-pointer transition-colors">
+                            <button onClick={() => setSel(null)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="flex flex-col gap-6 px-6 py-6 overflow-y-auto max-h-[70vh]">
+                        <div className="flex flex-col gap-5 px-6 py-5 overflow-y-auto max-h-[70vh]">
                             {/* Employee Info */}
-                            <div className="flex items-center gap-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 border border-white dark:border-slate-600 shadow-sm flex items-center justify-center text-slate-700 dark:text-white font-bold text-xl flex-shrink-0">
+                            <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5">
+                                <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                                     {sel.employeeName.charAt(0)}
                                 </div>
                                 <div>
-                                    <p className="font-extrabold text-gray-900 dark:text-white text-[16px]">{sel.employeeName}</p>
-                                    <p className="text-[13px] font-medium text-gray-500 dark:text-slate-400 mt-1">{sel.employeeCode} &bull; {sel.role}</p>
+                                    <p className="font-bold text-gray-900 dark:text-white text-sm">{sel.employeeName}</p>
+                                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{sel.employeeCode} &bull; {sel.role}</p>
                                 </div>
                             </div>
 
                             {/* Date & Time display */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-xl p-3">
-                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">In Date</p>
-                                    <div className="text-[14px] font-bold text-slate-800 dark:text-slate-200">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3">
+                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">In Date</p>
+                                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                                         {formatDate(sel.inDate || "")}
                                     </div>
                                 </div>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-xl p-3">
-                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Out Date</p>
-                                    <div className="text-[14px] font-bold text-slate-800 dark:text-slate-200">
+                                <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3">
+                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Out Date</p>
+                                    <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                                         {formatDate(sel.outDate || "")}
                                     </div>
                                 </div>
-                                <div className="bg-[#9e3f00]/5 dark:bg-orange-900/10 border border-[#9e3f00]/10 dark:border-orange-900/30 rounded-xl p-3">
-                                    <p className="text-[11px] font-bold text-[#9e3f00]/70 dark:text-orange-400/70 uppercase tracking-widest mb-1.5">In Time</p>
-                                    <div className="text-[16px] font-black text-[#9e3f00] dark:text-orange-400">
+                                <div className="bg-orange-50/50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 rounded-xl p-3">
+                                    <p className="text-xs font-semibold text-primary dark:text-orange-400 uppercase tracking-wider mb-1">In Time</p>
+                                    <div className="text-base font-bold text-primary dark:text-orange-400">
                                         {sel.inTime || "—"}
                                     </div>
                                 </div>
-                                <div className="bg-[#9e3f00]/5 dark:bg-orange-900/10 border border-[#9e3f00]/10 dark:border-orange-900/30 rounded-xl p-3">
-                                    <p className="text-[11px] font-bold text-[#9e3f00]/70 dark:text-orange-400/70 uppercase tracking-widest mb-1.5">Out Time</p>
-                                    <div className="text-[16px] font-black text-[#9e3f00] dark:text-orange-400">
+                                <div className="bg-orange-50/50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 rounded-xl p-3">
+                                    <p className="text-xs font-semibold text-primary dark:text-orange-400 uppercase tracking-wider mb-1">Out Time</p>
+                                    <div className="text-base font-bold text-primary dark:text-orange-400">
                                         {sel.outTime || "—"}
                                     </div>
                                 </div>
@@ -491,43 +516,43 @@ export default function ManualAttendanceApprovalsPage() {
 
                             {/* Remarks */}
                             <div>
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Status</p>
-                                <div className="w-full p-4 mb-4 text-[13px] font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 leading-relaxed">
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Status</p>
+                                <div className="w-full p-3 mb-3 text-sm font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300">
                                     {sel.status === "Pending Approval" || sel.approvalStatus === "PENDING" ? "Pending Approval" : sel.status || sel.approvalStatus}
                                 </div>
 
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Reason / Remarks</p>
-                                <div className="w-full p-4 text-[13px] font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 leading-relaxed">
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Remarks</p>
+                                <div className="w-full p-3 text-sm font-normal bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 leading-relaxed">
                                     {sel.remarks ? `"${sel.remarks}"` : <span className="text-slate-400 italic">No remarks provided</span>}
                                 </div>
                             </div>
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
+                        <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
                             {(sel.approvalStatus === "PENDING" || (!sel.approvalStatus && sel.status === "Pending Approval")) ? (
                                 <div className="flex gap-3 w-full">
                                     <button 
                                         onClick={() => handleRejectSingle(sel)}
                                         disabled={submitting}
-                                        className="flex-1 py-3 text-[14px] font-bold text-slate-700 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-900/50 rounded-xl transition-all shadow-sm"
+                                        className="flex-1 py-2.5 text-sm font-semibold text-slate-700 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-200 rounded-lg transition-colors"
                                     >
                                         Reject
                                     </button>
                                     <button 
                                         onClick={() => handleApproveSingle(sel)}
                                         disabled={submitting}
-                                        className="flex-[2] py-3 text-[14px] font-bold text-white bg-gradient-to-r from-[#9e3f00] to-[#c75000] hover:from-[#7a3000] hover:to-[#9e3f00] rounded-xl shadow-lg shadow-orange-900/20 transition-all hover:shadow-orange-900/40 hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                                        className="flex-[2] py-2.5 text-sm font-semibold text-white bg-primary hover:bg-[#7a3000] rounded-lg transition-colors flex items-center justify-center gap-2"
                                     >
                                         {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                                         Approve Request
                                     </button>
                                 </div>
                             ) : (
-                                <div className="w-full text-center py-2">
-                                    <p className="text-[13px] font-semibold text-slate-500 flex items-center justify-center gap-2">
+                                <div className="w-full text-center py-1">
+                                    <p className="text-sm font-medium text-slate-500 flex items-center justify-center gap-2">
                                         <CheckCircle className="w-4 h-4 text-slate-400" />
-                                        This request has been {sel.approvalStatus ? sel.approvalStatus.toLowerCase() : 'processed'} and cannot be modified.
+                                        This request has been {sel.approvalStatus ? sel.approvalStatus.toLowerCase() : 'processed'}.
                                     </p>
                                 </div>
                             )}
@@ -538,9 +563,9 @@ export default function ManualAttendanceApprovalsPage() {
 
             {/* Toast */}
             {toast.on && (
-                <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 ${toast.type === "error" ? "bg-red-600" : "bg-slate-900"} text-white text-[14px] font-bold px-6 py-3.5 rounded-2xl shadow-2xl transition-all animate-in slide-in-from-bottom-4 duration-300`}>
-                    <div className={`w-6 h-6 rounded-full ${toast.type === "error" ? "bg-white/20" : "bg-green-500"} flex items-center justify-center flex-shrink-0`}>
-                        {toast.type === "error" ? <X className="w-4 h-4 text-white" /> : <CheckCircle className="w-4 h-4 text-white" />}
+                <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 ${toast.type === "error" ? "bg-red-600" : "bg-slate-900"} text-white text-sm font-medium px-5 py-3 rounded-xl shadow-2xl transition-all animate-in slide-in-from-bottom-4 duration-300`}>
+                    <div className={`w-5 h-5 rounded-full ${toast.type === "error" ? "bg-white/20" : "bg-green-500"} flex items-center justify-center flex-shrink-0`}>
+                        {toast.type === "error" ? <X className="w-3.5 h-3.5 text-white" /> : <CheckCircle className="w-3.5 h-3.5 text-white" />}
                     </div>
                     <span>{toast.msg}</span>
                 </div>
