@@ -5,6 +5,7 @@ import TrainingStats from '@/components/admin/training/TrainingStats';
 import TrainingTable from '@/components/admin/training/TrainingTable';
 import api from '@/lib/axiosInstance';
 import { formatDateRange } from '@/lib/utils';
+import { AlertCircle } from 'lucide-react';
 
 interface TrainingEvent {
     id: number;
@@ -44,6 +45,7 @@ interface MappedTrainingEvent {
     requester: string;
     type: string;
     typeColor: string;
+    proposedStartDate?: string;
     submissionDate: string;
     date: string;
     time: string;
@@ -77,6 +79,26 @@ export default function TrainingRequestsPage() {
             }
         };
 
+        // Utility to format date explicitly as year/month/day (YYYY/MM/DD)
+        const formatDisplayDate = (dateStr?: string) => {
+            if (!dateStr || dateStr === "TBD") return "TBD";
+            try {
+                const parts = dateStr.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const [y, m, d] = parts;
+                    return `${y}/${m.padStart(2, '0')}/${d.padStart(2, '0')}`;
+                }
+                const dateObj = new Date(dateStr);
+                if (isNaN(dateObj.getTime())) return dateStr;
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                return `${year}/${month}/${day}`;
+            } catch {
+                return dateStr;
+            }
+        };
+
         const fetchEvents = async () => {
             try {
                 const res = await api.get('/api/training/events');
@@ -94,9 +116,9 @@ export default function TrainingRequestsPage() {
                         if (timeA && !timeB) return -1;
                         if (!timeA && timeB) return 1;
 
-                        const subA = a.dateSubmitted ? new Date(a.dateSubmitted).getTime() : 0;
-                        const subB = b.dateSubmitted ? new Date(b.dateSubmitted).getTime() : 0;
-                        if (subA && subB && subA !== subB) return subB - subA;
+                        const startA = a.proposedStartDate ? new Date(a.proposedStartDate).getTime() : 0;
+                        const startB = b.proposedStartDate ? new Date(b.proposedStartDate).getTime() : 0;
+                        if (startA && startB && startA !== startB) return startB - startA;
 
                         return b.id - a.id;
                     })
@@ -107,11 +129,8 @@ export default function TrainingRequestsPage() {
                         requester: "HR Department", 
                         type: event.category || event.trainingType || "General",
                         typeColor: "bg-blue-100 text-blue-800",
-                        submissionDate: event.dateSubmitted 
-                            ? new Date(event.dateSubmitted).toLocaleDateString() 
-                            : (event.submittedAt 
-                                ? new Date(event.submittedAt).toLocaleDateString() 
-                                : (event.updatedAt ? new Date(event.updatedAt).toLocaleDateString() : "N/A")),
+                        proposedStartDate: formatDisplayDate(event.proposedStartDate || event.date || event.trainingDate),
+                        submissionDate: formatDisplayDate(event.proposedStartDate || event.date || event.trainingDate),
                         date: formatDateRange(event.proposedStartDate || event.date || event.trainingDate, event.proposedEndDate),
                         time: formatTime(event.time || event.trainingTime || "10:00"),
                         location: event.location || event.trainingLocation || "Main Conference Hall",
@@ -166,6 +185,16 @@ export default function TrainingRequestsPage() {
                 rejectedCount={rejectedCount}
                 approvedCount={approvedCount}
             />
+
+            {/* Important Notice */}
+            <div className="mt-8 mb-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl flex items-center gap-3.5 text-amber-900 dark:text-amber-200 shadow-sm">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0 text-amber-600 dark:text-amber-400">
+                    <AlertCircle className="w-5 h-5" />
+                </div>
+                <p className="text-sm font-medium">
+                    <span className="font-bold text-amber-950 dark:text-amber-100">Important Note:</span> Please make sure to review and approve the training list before the <span className="font-semibold underline underline-offset-2">Proposed Start Date</span> to ensure participants and trainers receive timely confirmation.
+                </p>
+            </div>
 
             {/* Content */}
             <TrainingTable
