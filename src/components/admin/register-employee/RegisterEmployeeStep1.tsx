@@ -15,18 +15,22 @@ import { CalendarIcon, User, Mail, Home, IdCard, Users, Info, ChevronLeft, Chevr
 import { cn } from "@/lib/utils";
 import type { EmployeeFormData } from "./RegisterEmployee";
 import api from "@/lib/axiosInstance";
+import { useAdminNavigation } from "../AdminNavigationContext";
 
 interface RegisterEmployeeStep1Props {
   formData: EmployeeFormData;
   updateFormData: (fields: Partial<EmployeeFormData>) => void;
   onNext?: () => void;
+  onPrevious?: () => void;
 }
 
 export default function RegisterEmployeeStep1({
   formData,
   updateFormData,
   onNext,
+  onPrevious,
 }: RegisterEmployeeStep1Props) {
+  const { setActiveView } = useAdminNavigation();
 
   const [showDateOfBirthCalendar, setShowDateOfBirthCalendar] = useState(false);
   const [showDateJoinedCalendar, setShowDateJoinedCalendar] = useState(false);
@@ -788,6 +792,14 @@ export default function RegisterEmployeeStep1({
     }
   };
 
+  const handlePreviousStep = () => {
+    if (onPrevious) {
+      onPrevious();
+    } else {
+      setActiveView("employeeMaster");
+    }
+  };
+
   return (
     <div className="min-h-screen pb-10">
       <div className="max-w-5xl mx-auto px-6">
@@ -1465,7 +1477,15 @@ export default function RegisterEmployeeStep1({
         )}
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-4 mt-8">
+        <div className="flex justify-between gap-4 mt-8">
+          <Button
+            onClick={handlePreviousStep}
+            variant="outline"
+            className="font-semibold px-10 h-12 rounded-lg border-2 border-gray-300 dark:border-slate-700 bg-transparent dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
+          >
+            <ChevronLeft className="mr-2 h-5 w-5" />
+            Previous
+          </Button>
           <Button
             onClick={handleNextStep}
             className="bg-[#8B3A00] hover:bg-[#722F00] text-white font-semibold px-10 h-12 rounded-lg shadow-md transition-all"
