@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'; 
 import { useRouter, useSearchParams } from 'next/navigation'; 
 import api from '@/lib/axiosInstance';
+import { areDateRangesOverlapping } from '@/lib/utils';
 
 // create training plan form
 export default function CreateTrainingPlanForm() {
@@ -12,6 +13,7 @@ export default function CreateTrainingPlanForm() {
     const [trainingCode, setTrainingCode] = useState('');
     const [category, setCategory] = useState('');
     const [date, setDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [time, setTime] = useState('');
     const [participants, setParticipants] = useState('');
     const [description, setDescription] = useState('');
@@ -28,6 +30,7 @@ export default function CreateTrainingPlanForm() {
         id: number;
         title: string;
         proposedStartDate?: string;
+        proposedEndDate?: string;
         time?: string;
         location?: string;
         instructor?: string;
@@ -116,9 +119,10 @@ export default function CreateTrainingPlanForm() {
         };
     }, [trainingCode, editId]);
 
-    // Real-time date/time, location & instructor clash detection
+    // Real-time date/time range, location & instructor clash detection
     useEffect(() => {
         const trimmedDate = date?.trim();
+        const trimmedEndDate = endDate?.trim() || trimmedDate;
         const trimmedTime = time?.trim();
         const currentId = editId ? Number(editId) : null;
 
@@ -128,12 +132,19 @@ export default function CreateTrainingPlanForm() {
             return true;
         });
 
+        // Helper to check date overlap
+        const checkDateOverlap = (e: (typeof existingEvents)[0]) => {
+            const eStart = e.proposedStartDate?.trim();
+            const eEnd = e.proposedEndDate?.trim() || eStart;
+            if (!eStart || !trimmedDate) return false;
+            return areDateRangesOverlapping(trimmedDate, trimmedEndDate, eStart, eEnd);
+        };
+
         // Date & Time slot clash check (Strict Option: only 1 event allowed per date & time)
         if (trimmedDate && trimmedTime) {
             const conflict = candidateEvents.find(e => {
-                const eDate = e.proposedStartDate?.trim();
                 const eTime = e.time?.trim();
-                return eDate === trimmedDate && eTime === trimmedTime;
+                return eTime === trimmedTime && checkDateOverlap(e);
             });
             setDateTimeConflict(conflict ? conflict.title : null);
         } else {
@@ -146,10 +157,9 @@ export default function CreateTrainingPlanForm() {
 
         if (trimmedDate && trimmedTime && !isIgnoredLoc) {
             const conflict = candidateEvents.find(e => {
-                const eDate = e.proposedStartDate?.trim();
                 const eTime = e.time?.trim();
                 const eLoc = e.location?.trim().toLowerCase();
-                return eDate === trimmedDate && eTime === trimmedTime && eLoc === trimmedLoc;
+                return eTime === trimmedTime && eLoc === trimmedLoc && checkDateOverlap(e);
             });
             setLocationConflict(conflict ? conflict.title : null);
         } else {
@@ -162,20 +172,20 @@ export default function CreateTrainingPlanForm() {
 
         if (trimmedDate && trimmedTime && !isIgnoredInst) {
             const conflict = candidateEvents.find(e => {
-                const eDate = e.proposedStartDate?.trim();
                 const eTime = e.time?.trim();
                 const eInst = e.instructor?.trim().toLowerCase();
-                return eDate === trimmedDate && eTime === trimmedTime && eInst === trimmedInst;
+                return eTime === trimmedTime && eInst === trimmedInst && checkDateOverlap(e);
             });
             setInstructorConflict(conflict ? conflict.title : null);
         } else {
             setInstructorConflict(null);
         }
-    }, [date, time, location, instructor, existingEvents, editId]);
+    }, [date, endDate, time, location, instructor, existingEvents, editId]);
 
     // form validation logic
     const participantsNum = parseInt(participants);
     const budgetNum = parseFloat(budget);
+    const isEndDateValid = !endDate || !date || new Date(endDate) >= new Date(date);
     const isDateLogicValid = date && applyBefore ? new Date(applyBefore) < new Date(date) : true;
     const isParticipantsValid = participants.trim() !== '' && !isNaN(participantsNum) && participantsNum > 0;
     const isBudgetValid = budget === '' || (!isNaN(budgetNum) && budgetNum >= 0);
@@ -189,6 +199,7 @@ export default function CreateTrainingPlanForm() {
         date !== '' && 
         applyBefore !== '' &&
         isDateLogicValid &&
+        isEndDateValid &&
         !isTitleConflict &&
         !isCodeConflict &&
         !dateTimeConflict &&
@@ -207,6 +218,7 @@ export default function CreateTrainingPlanForm() {
                         setTrainingCode(eventToEdit.trainingCode || '');
                         setCategory(eventToEdit.category || '');
                         setDate(eventToEdit.proposedStartDate || '');
+                        setEndDate(eventToEdit.proposedEndDate || eventToEdit.proposedStartDate || '');
                         setTime(eventToEdit.time || '');
                         setParticipants(eventToEdit.expectedParticipants?.toString() || '');
                         setDescription(eventToEdit.description || '');
@@ -314,7 +326,7 @@ export default function CreateTrainingPlanForm() {
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</label>
                             <textarea
                                 className="w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4"
-                                placeholder="Briefly describe the purpose of this training..."
+                                placeholder="Briefly describe the purpose of this training and, if the event spans multiple days, specify the exact number of training days, excluding weekends, to make the duration clear and convenient for employees."
                                 rows={4}
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -333,15 +345,35 @@ export default function CreateTrainingPlanForm() {
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">Schedule &amp; Logistics</h3>
                         </div>
                         <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proposed Start Date <span className="text-red-500">*</span></label>
-                                <input
-                                    className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${dateTimeConflict ? 'border-red-500 ring-1 ring-red-500' : ''}`}
-                                    type="date"
-                                    min={new Date().toISOString().split('T')[0]}  // disable past dates
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proposed Start Date <span className="text-red-500">*</span></label>
+                                    <input
+                                        className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${dateTimeConflict ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+                                        type="date"
+                                        min={new Date().toISOString().split('T')[0]}  // disable past dates
+                                        value={date}
+                                        onChange={(e) => {
+                                            setDate(e.target.value);
+                                            if (endDate && new Date(e.target.value) > new Date(endDate)) {
+                                                setEndDate(e.target.value);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proposed End Date <span className="text-xs font-normal text-gray-400 dark:text-gray-500">(Optional)</span></label>
+                                    <input
+                                        className={`w-full rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-sm py-3 px-4 ${!isEndDateValid ? 'border-red-500 ring-1 ring-red-500' : ''}`}
+                                        type="date"
+                                        min={date || new Date().toISOString().split('T')[0]}
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                    />
+                                    {!isEndDateValid && (
+                                        <p className="text-red-500 text-xs mt-1 font-medium">End Date must be on or after Start Date</p>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Proposed Time</label>
@@ -487,6 +519,7 @@ export default function CreateTrainingPlanForm() {
                                         expectedParticipants: participantsNum,
                                         description: description || "No description provided.",
                                         proposedStartDate: date,
+                                        proposedEndDate: endDate || date,
                                         time: time || "TBD",
                                         applyBefore: applyBefore,
                                         location: location || "TBA",

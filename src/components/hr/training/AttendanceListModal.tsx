@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { formatTime } from '@/lib/utils';
+import { formatTime, formatDateRange } from '@/lib/utils';
 
 type EventParticipant = {
     id: string | number;
@@ -24,6 +24,7 @@ interface AttendanceListModalProps {
         category?: string;
         location?: string;
         proposedStartDate?: string;
+        proposedEndDate?: string;
         instructor?: string;
         time?: string;
     } | null;
@@ -176,7 +177,7 @@ export default function AttendanceListModal({
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider print:text-[8px]">Date, Time & Location</p>
                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 print:text-xs print:text-black">
-                                {event.proposedStartDate || 'TBD'} ({formatTime(event.time)}) - {event.location}
+                                {formatDateRange(event.proposedStartDate, event.proposedEndDate)} ({formatTime(event.time)}) - {event.location}
                             </p>
                         </div>
                     </div>

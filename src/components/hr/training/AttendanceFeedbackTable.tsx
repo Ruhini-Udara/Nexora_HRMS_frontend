@@ -6,13 +6,14 @@ import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
 import FeedbackDetailsModal from "@/components/hr/training/FeedbackDetailsModal";
 import FeedbackReportModal from "@/components/hr/training/FeedbackReportModal";
 import AttendanceListModal from "@/components/hr/training/AttendanceListModal";
-import { formatTime } from '@/lib/utils';
+import { formatTime, formatDateRange } from '@/lib/utils';
 
 type TrainingEvent = {
     id: number;
     title: string;
     trainingCode?: string;
     proposedStartDate?: string;
+    proposedEndDate?: string;
     date?: string;
     time?: string;
     category: string;
@@ -198,7 +199,7 @@ export default function AttendanceFeedbackTable() {
                         <TrainingEventCard
                             key={event.id}
                             title={event.title}
-                            date={event.proposedStartDate || event.date || "TBD"}
+                            date={formatDateRange(event.proposedStartDate || event.date, event.proposedEndDate)}
                             time={formatTime(event.time)}
                             category={event.category}
                             hideActions={true}
@@ -294,7 +295,7 @@ export default function AttendanceFeedbackTable() {
                                     </div>
                                     <div>
                                         <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Date</span>
-                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{selectedEvent.proposedStartDate || selectedEvent.date || "TBD"}</span>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{formatDateRange(selectedEvent.proposedStartDate || selectedEvent.date, selectedEvent.proposedEndDate)}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2.5">

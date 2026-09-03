@@ -6,7 +6,7 @@ import TrainingRequestDetailsModal from "@/components/hr/training/TrainingReques
 import ApprovedTrainingListModal from "@/components/hr/training/ApprovedTrainingListModal";
 import { TrainingRequest } from '@/types/training';
 import api from '@/lib/axiosInstance';
-import { formatTime } from '@/lib/utils';
+import { formatTime, formatDateRange } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
 
 // Props describing a training event
@@ -14,6 +14,7 @@ type TrainingEvent = {
     id: number;
     title: string;
     proposedStartDate?: string;
+    proposedEndDate?: string;
     date?: string;
     time?: string;
     category: string;
@@ -391,7 +392,7 @@ export default function TrainingRequestsTable() {
                                 <TrainingEventCard
                                     key={event.id}
                                     title={event.title}
-                                    date={event.proposedStartDate || "TBD"}
+                                    date={formatDateRange(event.proposedStartDate, event.proposedEndDate)}
                                     time={formatTime(event.time)}
                                     category={event.category}
                                     status={event.approvedBy ? 'Approved' : event.status}

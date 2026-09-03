@@ -389,7 +389,11 @@ export default function ApprovedTrainingListModal({ isOpen, onClose, requests, e
                                 <button 
                                     onClick={() => {
                                         if (eventId) {
-                                            api.put(`/api/training/events/${eventId}/status`, { status: 'Pending Admin Approval' })
+                                            const todayStr = new Date().toISOString().split('T')[0];
+                                            api.put(`/api/training/events/${eventId}/status`, { 
+                                                status: 'Pending Admin Approval',
+                                                dateSubmitted: todayStr
+                                            })
                                                 .then(() => {
                                                     setToast({ message: "Training list sent to Admin for approval!", type: 'success' });
                                                     if (onStatusUpdate) onStatusUpdate();

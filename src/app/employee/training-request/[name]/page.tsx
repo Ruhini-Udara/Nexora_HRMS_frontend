@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import api from "@/lib/axiosInstance";
 import { uploadDocument } from "@/lib/supabaseClient";
 import { useRouter, useSearchParams } from "next/navigation";
-import { formatTime } from "@/lib/utils";
+import { formatTime, formatDateRange } from "@/lib/utils";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Toast } from "@/components/ui/Toast";
 
@@ -14,6 +14,7 @@ interface TrainingEvent {
     trainingCode?: string;
     description: string;
     proposedStartDate?: string;
+    proposedEndDate?: string;
     date?: string;
     time?: string;
     applyBefore?: string;
@@ -231,7 +232,7 @@ export default function TrainingRequestPage({ params }: TrainingRequestPageProps
                                 </div>
                                 <div>
                                     <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase">Proposed Date</p>
-                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{displayEvent.proposedStartDate || displayEvent.date || "TBD"}</p>
+                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDateRange(displayEvent.proposedStartDate || displayEvent.date, displayEvent.proposedEndDate)}</p>
                                 </div>
                             </div>
                             

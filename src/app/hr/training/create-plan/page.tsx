@@ -5,7 +5,7 @@ import api from "@/lib/axiosInstance";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TrainingEventCard from "@/components/hr/training/TrainingEventCard";
-import { formatTime } from "@/lib/utils";
+import { formatTime, formatDateRange } from "@/lib/utils";
 import { Toast } from "@/components/ui/Toast";
 
 type TrainingEvent = {
@@ -13,6 +13,7 @@ type TrainingEvent = {
     title: string;
     trainingCode?: string;
     proposedStartDate?: string;
+    proposedEndDate?: string;
     date?: string;
     time?: string;
     category: string;
@@ -74,8 +75,14 @@ export default function CreateTrainingPlanPage() {
     });
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const upcomingEvents = filteredEvents.filter(e => !e.proposedStartDate || e.proposedStartDate === "TBD" || e.proposedStartDate >= todayStr);
-    const pastEvents = filteredEvents.filter(e => e.proposedStartDate && e.proposedStartDate !== "TBD" && e.proposedStartDate < todayStr);
+    const upcomingEvents = filteredEvents.filter(e => {
+        const effectiveEnd = e.proposedEndDate || e.proposedStartDate;
+        return !effectiveEnd || effectiveEnd === "TBD" || effectiveEnd >= todayStr;
+    });
+    const pastEvents = filteredEvents.filter(e => {
+        const effectiveEnd = e.proposedEndDate || e.proposedStartDate;
+        return effectiveEnd && effectiveEnd !== "TBD" && effectiveEnd < todayStr;
+    });
 
     // Pagination for upcoming events
     const totalPagesUpcoming = Math.ceil(upcomingEvents.length / itemsPerPage);
@@ -209,7 +216,7 @@ export default function CreateTrainingPlanPage() {
                             <TrainingEventCard
                                 key={event.id}
                                 title={event.title}
-                                date={event.proposedStartDate || "TBD"}
+                                date={formatDateRange(event.proposedStartDate, event.proposedEndDate)}
                                 time={formatTime(event.time)}
                                 category={event.category}
                                 status={event.approvedBy ? 'Approved' : event.status}
@@ -286,7 +293,7 @@ export default function CreateTrainingPlanPage() {
                                     <TrainingEventCard
                                         key={event.id}
                                         title={event.title}
-                                        date={event.proposedStartDate || "TBD"}
+                                        date={formatDateRange(event.proposedStartDate, event.proposedEndDate)}
                                         time={formatTime(event.time)}
                                         category={event.category}
                                         status={event.approvedBy ? 'Approved' : event.status}
@@ -383,7 +390,7 @@ export default function CreateTrainingPlanPage() {
                                     <span className="material-symbols-outlined text-stone-400 dark:text-stone-500">calendar_month</span>
                                     <div>
                                         <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Date</p>
-                                        <p className="font-medium text-sm text-stone-900 dark:text-stone-100">{selectedViewEvent.proposedStartDate}</p>
+                                        <p className="font-medium text-sm text-stone-900 dark:text-stone-100">{formatDateRange(selectedViewEvent.proposedStartDate, selectedViewEvent.proposedEndDate)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-stone-600 dark:text-stone-300">
