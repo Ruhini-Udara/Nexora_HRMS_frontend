@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import RegisterEmployeeStep1 from "./RegisterEmployeeStep1";
 import RegisterEmployeeStep2 from "./RegisterEmployeeStep2";
 import RegisterEmployeeStep3 from "./RegisterEmployeeStep3";
+import { useAdminNavigation } from "../AdminNavigationContext";
 
 export interface EmployeeFormData {
   // Step 1: Personal Info
@@ -32,6 +33,7 @@ export interface EmployeeFormData {
 }
 
 export default function RegisterEmployee() {
+  const { setActiveView } = useAdminNavigation();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<EmployeeFormData>({
     nicNumber: "",
@@ -79,6 +81,7 @@ export default function RegisterEmployee() {
           formData={formData}
           updateFormData={updateFormData}
           onNext={handleNextStep}
+          onPrevious={() => setActiveView("employeeMaster")}
         />
       )}
       {currentStep === 2 && (
