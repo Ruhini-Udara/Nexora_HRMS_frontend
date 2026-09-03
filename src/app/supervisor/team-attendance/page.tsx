@@ -3,11 +3,9 @@
 import React, { useEffect, useState } from "react";
 import {
     Search,
-    Bell,
     Calendar,
     Download,
     FileSpreadsheet,
-    ChevronDown,
     Clock,
     UserCheck,
     UserMinus,
@@ -15,11 +13,11 @@ import {
     Loader2,
     CheckCircle,
     X,
+    Users,
 } from "lucide-react";
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
-import UserAvatar from "@/components/common/UserAvatar";
-import Link from "next/link";
+import SupervisorSummaryCard from "@/components/supervisor/SupervisorSummaryCard";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -54,13 +52,13 @@ interface AttendanceRow {
 
 const StatusBadge = ({ status }: { status: AttendanceStatus }) => {
     const configs: Record<AttendanceStatus, string> = {
-        Present: "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/30",
-        "On Leave": "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30",
-        Absent: "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30",
-        Unknown: "bg-gray-50 dark:bg-zinc-800 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-zinc-700",
+        Present: "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50",
+        "On Leave": "bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
+        Absent: "bg-rose-100 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/50",
+        Unknown: "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
     };
     return (
-        <span className={`px-3 py-1 rounded-full text-[12px] font-bold border ${configs[status]}`}>
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${configs[status]}`}>
             {status}
         </span>
     );
@@ -74,14 +72,11 @@ export default function TeamAttendancePage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedDept, setSelectedDept] = useState("All Departments");
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
-    const [isClient, setIsClient] = useState(false);
     const [toast, setToast] = useState({ msg: "", on: false, type: "success" as "success" | "error" });
     const [selectedDetail, setSelectedDetail] = useState<AttendanceRow | null>(null);
     const [selectedForApproval, setSelectedForApproval] = useState<number[]>([]);
     const [isApproving, setIsApproving] = useState(false);
     const user = useAuthStore(s => s.user);
-
-    useEffect(() => { setIsClient(true); }, []);
 
     const pop = (msg: string, type: "success" | "error" = "success") => {
         setToast({ msg, on: true, type });
@@ -119,7 +114,7 @@ export default function TeamAttendancePage() {
             }
         };
         loadData();
-    }, [selectedDate, user?.id]);
+    }, [selectedDate, user?.id, user?.employeeId]);
 
     const handleApproveSelected = async () => {
         if (selectedForApproval.length === 0) return;
@@ -141,16 +136,13 @@ export default function TeamAttendancePage() {
 
     const rows: AttendanceRow[] = employees.map(emp => {
         const code = emp.employeeCode || `EMP-${emp.id}`;
-        // Map to manual attendance dto which has inDate, inTime, outDate, outTime
         const record = attendanceLog.find(a => (a.employeeCode === code || a.employeeId === emp.id) && a.status && a.status !== 'Unknown');
         
         const formatTime = (isoString?: string) => {
             if (!isoString) return "—";
-            // Check if it's already a time string "HH:mm" or "HH:mm:ss"
             if (isoString.includes("T")) {
                 return new Date(isoString).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
             }
-            // Parse time string directly
             const [h, m] = isoString.split(":");
             const hr = parseInt(h, 10);
             const ampm = hr >= 12 ? 'PM' : 'AM';
@@ -166,7 +158,6 @@ export default function TeamAttendancePage() {
             const inDate = new Date();
             inDate.setHours(parseInt(h, 10), parseInt(m, 10), 0);
             
-            // Expected shift logic based on role
             let expectedMins = 480; 
             let shiftStartHour = 8;
             let shiftStartMin = 30;
@@ -182,10 +173,8 @@ export default function TeamAttendancePage() {
                 shiftStartMin = 0;
             }
 
-            // Late check
             isLate = (inDate.getHours() > shiftStartHour) || (inDate.getHours() === shiftStartHour && inDate.getMinutes() > shiftStartMin);
 
-            // Short leave / Half day check
             if (record.outTime) {
                 const [oh, om] = record.outTime.split(":");
                 const outDate = new Date();
@@ -239,8 +228,12 @@ export default function TeamAttendancePage() {
         return matchSearch && matchDept;
     });
 
+    const totalMembersCount = employees.length;
     const presentCount = filtered.filter(r => r.status === "Present").length;
-    const absentCount = filtered.filter(r => r.status === "On Leave" || r.status === "Absent").length;
+    const onLeaveCount = filtered.filter(r => r.status === "On Leave").length;
+    const absentCount = filtered.filter(r => r.status === "Absent").length;
+    const lateCount = filtered.filter(r => r.isLate).length;
+    const presencePercentage = totalMembersCount > 0 ? Math.round((presentCount / totalMembersCount) * 100) : 0;
 
     const exportToPDF = () => {
         const doc = new jsPDF();
@@ -295,240 +288,250 @@ export default function TeamAttendancePage() {
     };
 
     return (
-        <div className="flex flex-col flex-1 min-h-screen bg-[#f8f9fa] dark:bg-zinc-950">
-            {/* Header */}
-            <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-8 dark:border-zinc-800 dark:bg-zinc-900 sticky top-0 z-30">
-                <div className="relative w-96 font-medium">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <div className="p-8 max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0 space-y-6">
+            {/* ── Page Header ─────────────────────────────────────────── */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Team Attendance</h1>
+                    <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                        Monitor daily attendance metrics and detailed logs for your team.
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button onClick={exportToPDF} className="inline-flex items-center gap-2 px-3.5 py-2 bg-primary hover:bg-[#7a3000] text-white font-semibold text-sm rounded-lg transition-colors shadow-sm cursor-pointer">
+                        <Download className="w-4 h-4" />
+                        Export PDF
+                    </button>
+                    <button onClick={exportToExcel} className="inline-flex items-center gap-2 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm rounded-lg transition-colors shadow-sm cursor-pointer">
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Export Excel
+                    </button>
+                </div>
+            </div>
+
+            {/* ── Summary Stats ───────────────────────────────────────── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <SupervisorSummaryCard
+                    title="Total Team"
+                    value={String(totalMembersCount)}
+                    subtext="Assigned team roster"
+                    icon={Users}
+                    variant="primary"
+                />
+                <SupervisorSummaryCard
+                    title="Present Today"
+                    value={String(presentCount)}
+                    subtext={
+                        <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            {presencePercentage}% present rate
+                        </span>
+                    }
+                    icon={UserCheck}
+                    variant="emerald"
+                />
+                <SupervisorSummaryCard
+                    title="On Leave"
+                    value={String(onLeaveCount)}
+                    subtext="Approved leave today"
+                    icon={Calendar}
+                    variant="amber"
+                />
+                <SupervisorSummaryCard
+                    title="Absent / Late"
+                    value={String(absentCount)}
+                    subtext={
+                        <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                            <UserMinus className="w-3.5 h-3.5" />
+                            {lateCount > 0 ? `${lateCount} late arrival(s)` : `${absentCount} unavailable`}
+                        </span>
+                    }
+                    icon={UserMinus}
+                    variant="rose"
+                />
+            </div>
+
+            {/* ── Filter Bar ──────────────────────────────────────────── */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-4">
+                {/* Search */}
+                <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Search team members..."
-                        className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 dark:border-zinc-700 dark:bg-zinc-800 text-slate-800 dark:text-slate-100"
+                        className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex items-center gap-4">
-                    <button className="relative p-2 text-gray-400 hover:text-gray-600">
-                        <Bell className="h-5 w-5" />
-                        <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
-                    </button>
-                    <div className="h-8 w-px bg-gray-200 dark:bg-zinc-700 mx-2" />
-                    <Link
-                        href="/supervisor/profile"
-                        className="flex items-center gap-2.5 hover:bg-gray-50 dark:hover:bg-zinc-800/50 p-2 rounded-lg transition-colors cursor-pointer"
+
+                {/* Department Filter */}
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Department:</span>
+                    <select
+                        className="text-sm font-medium text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-200 cursor-pointer"
+                        value={selectedDept}
+                        onChange={(e) => setSelectedDept(e.target.value)}
                     >
-                        <div className="text-right">
-                            <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
-                                {isClient && user ? user.name : "Loading..."}
-                            </p>
-                            <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-tight">
-                                {isClient && user ? (user.designation || user.role) : "Supervisor"}
-                            </p>
-                        </div>
-                        <UserAvatar user={isClient ? user : null} size="md" />
-                    </Link>
-                </div>
-            </header>
-
-            <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
-                {/* Title */}
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Team Attendance</h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium">
-                        Monitor daily attendance metrics and detailed logs for your team.
-                    </p>
+                        {departments.map(d => (
+                            <option key={d} value={d}>
+                                {d}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-medium">
-                    {[
-                        { label: "Total Employees", value: String(filtered.length).padStart(2, "0"), sub: "Registered in system", icon: UserCheck, iconBg: "bg-[#fff4ed] dark:bg-orange-950/30", color: "text-[#9e3f00] dark:text-orange-400", trend: "text-green-600 dark:text-green-400" },
-                        { label: "Total Present", value: String(presentCount).padStart(2, "0"), sub: "On schedule today", icon: UserCheck, iconBg: "bg-green-50 dark:bg-green-950/30", color: "text-green-700 dark:text-green-400", trend: "text-green-600 dark:text-green-400" },
-                        { label: "On Leave / Absent", value: String(absentCount).padStart(2, "0"), sub: "Not available today", icon: UserMinus, iconBg: "bg-red-50 dark:bg-red-950/30", color: "text-red-700 dark:text-red-400", trend: "text-red-500 dark:text-red-400" },
-                    ].map((stat, i) => (
-                        <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 p-6 rounded-2xl shadow-sm flex items-center justify-between">
-                            <div>
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em]">{stat.label}</p>
-                                <h3 className="text-4xl font-black text-slate-800 dark:text-white mt-1 leading-none tracking-tight">{stat.value}</h3>
-                                <div className={`flex items-center gap-1 mt-3 ${stat.trend}`}>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">{stat.sub}</span>
-                                </div>
-                            </div>
-                            <div className={`${stat.iconBg} p-4 rounded-xl border border-white/50 dark:border-zinc-700`}>
-                                <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Filter Bar */}
-                <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-
-                        <div className="relative min-w-[200px]">
-                            <select
-                                className="h-10 w-full appearance-none pl-4 pr-10 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-orange-500/20 cursor-pointer"
-                                value={selectedDept}
-                                onChange={(e) => setSelectedDept(e.target.value)}
-                            >
-                                {departments.map(d => (
-                                    <option key={d} className="bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200">
-                                        {d}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                        </div>
-                        {/* Date Picker */}
-                        <div className="relative">
-                            <input
-                                type="date"
-                                value={selectedDate}
-                                onChange={e => setSelectedDate(e.target.value)}
-                                className="appearance-none text-sm font-bold text-gray-700 dark:text-slate-200 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl pl-4 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-[#9e3f00]/20 focus:border-[#9e3f00] cursor-pointer shadow-sm transition-all w-40"
-                            />
-                            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        {selectedForApproval.length > 0 && (
-                            <button 
-                                onClick={handleApproveSelected} 
-                                disabled={isApproving}
-                                className="flex items-center gap-2 h-10 px-5 bg-green-600 hover:bg-green-700 text-white font-bold text-[13px] rounded-xl transition-colors shadow-sm disabled:opacity-50"
-                            >
-                                {isApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                Approve ({selectedForApproval.length})
-                            </button>
-                        )}
-                        <button onClick={exportToPDF} className="flex items-center gap-2 h-10 px-5 bg-[#9e3f00] dark:bg-orange-600 hover:bg-[#7a3000] dark:hover:bg-orange-700 text-white font-bold text-[13px] rounded-xl transition-colors shadow-sm cursor-pointer">
-                            <Download className="w-4 h-4" />
-                            Export PDF
-                        </button>
-                        <button onClick={exportToExcel} className="flex items-center gap-2 h-10 px-5 bg-[#9e3f00] dark:bg-orange-600 hover:bg-[#7a3000] dark:hover:bg-orange-700 text-white font-bold text-[13px] rounded-xl transition-colors shadow-sm cursor-pointer">
-                            <FileSpreadsheet className="w-4 h-4" />
-                            Export Excel
-                        </button>
+                {/* Date Picker */}
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Date:</span>
+                    <div className="relative flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
+                        <Calendar className="w-4 h-4 text-primary dark:text-orange-400 mr-2 flex-shrink-0" />
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={e => setSelectedDate(e.target.value)}
+                            className="text-sm font-medium text-slate-800 dark:text-slate-200 bg-transparent border-none outline-none cursor-pointer"
+                        />
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-20">
-                            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-[#fcfcfd] dark:bg-zinc-800/50 border-b border-slate-100 dark:border-zinc-800">
+                {/* Batch Action */}
+                {selectedForApproval.length > 0 && (
+                    <div className="ml-auto">
+                        <button 
+                            onClick={handleApproveSelected} 
+                            disabled={isApproving}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            {isApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                            Approve ({selectedForApproval.length})
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* ── Table ───────────────────────────────────────────────── */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="text-sm font-medium">Loading team attendance...</span>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <tr>
+                                    <th className="py-3.5 px-4 w-10 text-center"></th>
+                                    <th className="py-3.5 px-6">Employee</th>
+                                    <th className="py-3.5 px-6">Department</th>
+                                    <th className="py-3.5 px-6">Status</th>
+                                    <th className="py-3.5 px-6">Check-In</th>
+                                    <th className="py-3.5 px-6">Check-Out</th>
+                                    <th className="py-3.5 px-6 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm">
+                                {filtered.length === 0 ? (
                                     <tr>
-                                        <th className="px-4 py-4 w-10"></th>
-                                        <th className="px-8 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Employee</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Department</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Check-In</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Check-Out</th>
-                                        <th className="px-8 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                                        <td colSpan={7} className="text-center py-16 text-slate-400 dark:text-slate-500">
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <CheckCircle className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-1" />
+                                                <span className="text-base font-semibold text-slate-700 dark:text-slate-300">No employees found</span>
+                                                <span className="text-sm text-slate-400">No attendance logs matching current filters.</span>
+                                            </div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50 dark:divide-zinc-800">
-                                    {filtered.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="text-center py-12 text-gray-400 dark:text-slate-500">No employees found.</td>
-                                        </tr>
-                                    ) : filtered.map((row) => (
-                                        <tr key={row.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/40 transition-colors group">
-                                            <td className="px-4 py-5 text-center">
-                                                {row.approvalStatus === 'PENDING' && row.recordId && (
-                                                    <input 
-                                                        type="checkbox" 
-                                                        className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500 cursor-pointer"
-                                                        checked={selectedForApproval.includes(row.recordId)}
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setSelectedForApproval(prev => [...prev, row.recordId!]);
-                                                            } else {
-                                                                setSelectedForApproval(prev => prev.filter(id => id !== row.recordId));
-                                                            }
-                                                        }}
-                                                    />
-                                                )}
-                                            </td>
-                                            <td className="px-8 py-5">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-[#9e3f00] dark:text-orange-400 font-black text-xs border border-orange-200 dark:border-orange-900/30">
-                                                        {row.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{row.name}</p>
-                                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{row.role} · {row.employeeCode}</p>
-                                                    </div>
+                                ) : filtered.map((row) => (
+                                    <tr key={row.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors group">
+                                        <td className="py-4 px-4 text-center">
+                                            {row.approvalStatus === 'PENDING' && row.recordId && (
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary cursor-pointer"
+                                                    checked={selectedForApproval.includes(row.recordId)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedForApproval(prev => [...prev, row.recordId!]);
+                                                        } else {
+                                                            setSelectedForApproval(prev => prev.filter(id => id !== row.recordId));
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                                    {row.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-sm text-slate-600 dark:text-slate-300">{row.department}</td>
-                                            <td className="px-6 py-5"><StatusBadge status={row.status} /></td>
-                                            <td className="px-6 py-5 text-sm text-slate-500 dark:text-slate-400">
-                                                <div className="flex flex-col items-start gap-1">
-                                                    <div className="flex items-center gap-1">
-                                                        <Clock className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />{row.checkIn}
-                                                    </div>
-                                                    {row.isLate && <span className="text-[9px] font-bold uppercase tracking-wider text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800">Late</span>}
+                                                <div>
+                                                    <p className="font-semibold text-slate-900 dark:text-white leading-tight">{row.name}</p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{row.role} · {row.employeeCode}</p>
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-sm text-slate-500 dark:text-slate-400">
-                                                <div className="flex flex-col items-start gap-1">
-                                                    {row.checkOut}
-                                                    {row.warning && <span className="text-[9px] font-bold uppercase tracking-wider text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-800">{row.warning}</span>}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300">{row.department}</td>
+                                        <td className="py-4 px-6"><StatusBadge status={row.status} /></td>
+                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
+                                            <div className="flex flex-col items-start gap-1">
+                                                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                                                    <Clock className="w-3.5 h-3.5 text-slate-400" />{row.checkIn}
                                                 </div>
-                                            </td>
-                                            <td className="px-8 py-5 text-right">
-                                                <button 
-                                                    onClick={() => setSelectedDetail(row)}
-                                                    className="text-[12px] font-bold text-[#9e3f00] dark:text-orange-400 hover:text-[#7a3100] transition-colors uppercase tracking-widest cursor-pointer"
-                                                >
-                                                    Details
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                                {row.isLate && <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/50">Late</span>}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
+                                            <div className="flex flex-col items-start gap-1">
+                                                <span className="font-medium text-slate-800 dark:text-slate-200">{row.checkOut}</span>
+                                                {row.warning && <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800/50">{row.warning}</span>}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6 text-right">
+                                            <button 
+                                                onClick={() => setSelectedDetail(row)}
+                                                className="text-xs font-semibold text-primary hover:text-white bg-primary/10 hover:bg-primary px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                                            >
+                                                Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
-                    {/* Footer */}
-                    <div className="bg-[#fcfcfd] dark:bg-zinc-800/50 border-t border-slate-100 dark:border-zinc-800 px-8 py-4 flex items-center justify-between">
-                        <p className="text-[12px] font-bold text-slate-400">
-                            Showing <span className="text-slate-900 dark:text-white">{filtered.length}</span> of{" "}
-                            <span className="text-slate-900 dark:text-white">{employees.length}</span> employees
-                        </p>
-                        <div className="flex items-center gap-1 text-xs text-slate-400">
-                            <AlertCircle className="w-3.5 h-3.5" />
-                            <span>Attendance times require a time-tracking integration</span>
-                        </div>
+                {/* Table Footer */}
+                <div className="bg-slate-50/50 dark:bg-slate-800/40 border-t border-slate-200 dark:border-slate-800 px-6 py-3.5 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <p className="font-medium">
+                        Showing <span className="font-semibold text-slate-900 dark:text-white">{filtered.length}</span> of{" "}
+                        <span className="font-semibold text-slate-900 dark:text-white">{employees.length}</span> team members
+                    </p>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>Daily logs update in real-time</span>
                     </div>
                 </div>
             </div>
 
-            {/* ── Details Modal ──────────────────────────────────────────────────────── */}
+            {/* ── Details Modal ────────────────────────────────────────── */}
             {selectedDetail && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 dark:border-zinc-800">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-zinc-800 bg-[#f8f9fa] dark:bg-zinc-800/50">
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Attendance Details</h3>
-                            <button onClick={() => setSelectedDetail(null)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white">Attendance Details</h3>
+                            <button onClick={() => setSelectedDetail(null)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="p-6 space-y-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-[#9e3f00] dark:text-orange-400 font-black text-lg border border-orange-200 dark:border-orange-900/30">
+                        <div className="p-6 space-y-5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                                     {selectedDetail.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
                                 </div>
                                 <div>
-                                    <p className="text-base font-bold text-slate-900 dark:text-white leading-tight">{selectedDetail.name}</p>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{selectedDetail.name}</p>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{selectedDetail.role} · {selectedDetail.department}</p>
                                 </div>
                                 <div className="ml-auto">
@@ -536,38 +539,38 @@ export default function TeamAttendancePage() {
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-100 dark:border-zinc-700">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Check-In</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Check-In</p>
                                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{selectedDetail.checkIn}</p>
-                                    {selectedDetail.isLate && <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-wider text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800">Late</span>}
+                                    {selectedDetail.isLate && <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/50">Late</span>}
                                 </div>
-                                <div className="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-100 dark:border-zinc-700">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Check-Out</p>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Check-Out</p>
                                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{selectedDetail.checkOut}</p>
-                                    {selectedDetail.warning && <span className="inline-block mt-1 text-[9px] font-bold uppercase tracking-wider text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-800">{selectedDetail.warning}</span>}
+                                    {selectedDetail.warning && <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-wider text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-800/50">{selectedDetail.warning}</span>}
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-100 dark:border-zinc-700">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Work Hours</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Work Hours</p>
                                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{selectedDetail.workHours} hrs</p>
                                 </div>
-                                <div className="bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-100 dark:border-zinc-700">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Overtime</p>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Overtime</p>
                                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{selectedDetail.overtimeHours} hrs</p>
                                 </div>
                             </div>
 
                             <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Approval Status</p>
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Approval Status</p>
                                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{selectedDetail.approvalStatus}</p>
                             </div>
 
                             <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Remarks</p>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-slate-100 dark:border-zinc-700">
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Remarks</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700/50">
                                     {selectedDetail.remarks}
                                 </p>
                             </div>
@@ -576,11 +579,11 @@ export default function TeamAttendancePage() {
                 </div>
             )}
 
-            {/* ── Toast ──────────────────────────────────────────────────────── */}
+            {/* ── Toast ────────────────────────────────────────────────── */}
             {toast.on && (
-                <div className={`fixed bottom-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 ${toast.type === "error" ? "bg-red-900" : "bg-gray-900"} text-white text-[13px] font-medium px-5 py-3 rounded-full shadow-2xl`}>
+                <div className={`fixed bottom-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 ${toast.type === "error" ? "bg-red-900" : "bg-slate-900"} text-white text-sm font-medium px-5 py-3 rounded-xl shadow-2xl`}>
                     <div className={`w-5 h-5 rounded-full ${toast.type === "error" ? "bg-red-500" : "bg-green-500"} flex items-center justify-center flex-shrink-0`}>
-                        {toast.type === "error" ? <X className="w-3 h-3 text-white" /> : <CheckCircle className="w-3 h-3 text-white" />}
+                        {toast.type === "error" ? <X className="w-3.5 h-3.5 text-white" /> : <CheckCircle className="w-3.5 h-3.5 text-white" />}
                     </div>
                     <span>{toast.msg}</span>
                 </div>
