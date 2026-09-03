@@ -19,6 +19,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/backend-api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/:path*`
+      }
+    ]
+  },
   webpack: (config) => {
     config.resolve.alias.canvas = false;
     return config;
