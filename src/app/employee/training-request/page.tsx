@@ -7,6 +7,7 @@ import TrainingFeedbackModal from "@/components/employee/training/TrainingFeedba
 import api from "@/lib/axiosInstance";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Toast } from "@/components/ui/Toast";
+import { formatDateRange } from "@/lib/utils";
 
 // Training event coming from backend (catalog of courses)
 type TrainingEvent = {
@@ -14,6 +15,7 @@ type TrainingEvent = {
     title: string;
     trainingCode?: string;
     proposedStartDate?: string;
+    proposedEndDate?: string;
     date?: string;
     time?: string;
     category: string;
@@ -185,7 +187,7 @@ export default function TrainingRequestPage() {
                                 imageSrc={event.imageSrc || "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070&auto=format&fit=crop"}
                                 imageAlt={event.imageAlt || event.title}
                                 title={event.title}
-                                date={event.proposedStartDate || event.date || "TBD"}
+                                date={formatDateRange(event.proposedStartDate || event.date, event.proposedEndDate)}
                                 time={event.time || "TBD"}
                                 applyBefore={event.applyBefore}
                                 isApplied={isApplied}

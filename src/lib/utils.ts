@@ -20,3 +20,18 @@ export const formatTime = (timeStr: string | undefined) => {
         return timeStr;
     }
 };
+
+export const formatDateRange = (startDate?: string, endDate?: string) => {
+    if (!startDate || startDate === "TBD") return "TBD";
+    if (!endDate || endDate === "TBD" || endDate === startDate) return startDate;
+    return `${startDate} to ${endDate}`;
+};
+
+export const areDateRangesOverlapping = (startA?: string, endA?: string, startB?: string, endB?: string): boolean => {
+    const sA = (startA || '').trim();
+    const eA = (endA || startA || '').trim();
+    const sB = (startB || '').trim();
+    const eB = (endB || startB || '').trim();
+    if (!sA || !sB) return false;
+    return sA <= eB && eA >= sB;
+};
