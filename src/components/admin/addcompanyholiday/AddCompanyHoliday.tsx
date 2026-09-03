@@ -89,6 +89,19 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
     return check < minAllowedDate || check > maxAllowedDate;
   };
 
+  const validateDatesRealtime = (newStartStr: string, newEndStr: string) => {
+    const pStart = parseDateString(newStartStr);
+    const pEnd = parseDateString(newEndStr);
+
+    if (pStart && pEnd) {
+      pStart.setHours(0, 0, 0, 0);
+      pEnd.setHours(0, 0, 0, 0);
+      return pEnd < pStart;
+    }
+
+    return false;
+  };
+
   // Close calendar when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -153,19 +166,29 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
   };
 
   const handleStartDateSelect = (date: Date) => {
-    setStartDate(formatDate(date));
+    const formatted = formatDate(date);
+    setStartDate(formatted);
     setShowStartCalendar(false);
-    if (errors.startDate || errors.startDateOutOfRange || errors.endDateBeforeStart) {
-      setErrors({ ...errors, startDate: false, startDateOutOfRange: false, endDateBeforeStart: false });
-    }
+    const endBeforeStart = validateDatesRealtime(formatted, endDate);
+    setErrors((prev) => ({
+      ...prev,
+      startDate: false,
+      startDateOutOfRange: false,
+      endDateBeforeStart: endBeforeStart,
+    }));
   };
 
   const handleEndDateSelect = (date: Date) => {
-    setEndDate(formatDate(date));
+    const formatted = formatDate(date);
+    setEndDate(formatted);
     setShowEndCalendar(false);
-    if (errors.endDate || errors.endDateOutOfRange || errors.endDateBeforeStart) {
-      setErrors({ ...errors, endDate: false, endDateOutOfRange: false, endDateBeforeStart: false });
-    }
+    const endBeforeStart = validateDatesRealtime(startDate, formatted);
+    setErrors((prev) => ({
+      ...prev,
+      endDate: false,
+      endDateOutOfRange: false,
+      endDateBeforeStart: endBeforeStart,
+    }));
   };
 
   const getMonthName = (date: Date) => {
@@ -201,7 +224,7 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
 
     const startOutOfRange = !startEmpty && (!parsedStart || isDateOutOfRange(parsedStart));
     const endOutOfRange = !endEmpty && (!parsedEnd || isDateOutOfRange(parsedEnd));
-    const endBeforeStart = !startEmpty && !endEmpty && parsedStart && parsedEnd && parsedEnd < parsedStart;
+    const endBeforeStart = validateDatesRealtime(startDate, endDate);
 
     const newErrors = {
       holidayName: holidayName.trim() === "",
@@ -312,10 +335,15 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                   type="text"
                   value={startDate}
                   onChange={(e) => {
-                    setStartDate(e.target.value);
-                    if (errors.startDate || errors.startDateOutOfRange || errors.endDateBeforeStart) {
-                      setErrors({ ...errors, startDate: false, startDateOutOfRange: false, endDateBeforeStart: false });
-                    }
+                    const val = e.target.value;
+                    setStartDate(val);
+                    const endBeforeStart = validateDatesRealtime(val, endDate);
+                    setErrors((prev) => ({
+                      ...prev,
+                      startDate: false,
+                      startDateOutOfRange: false,
+                      endDateBeforeStart: endBeforeStart,
+                    }));
                   }}
                   onFocus={() => setShowStartCalendar(true)}
                   placeholder="mm/dd/yyyy"
@@ -432,10 +460,15 @@ export default function AddCompanyHoliday({ onClose }: { onClose?: () => void })
                   type="text"
                   value={endDate}
                   onChange={(e) => {
-                    setEndDate(e.target.value);
-                    if (errors.endDate || errors.endDateOutOfRange || errors.endDateBeforeStart) {
-                      setErrors({ ...errors, endDate: false, endDateOutOfRange: false, endDateBeforeStart: false });
-                    }
+                    const val = e.target.value;
+                    setEndDate(val);
+                    const endBeforeStart = validateDatesRealtime(startDate, val);
+                    setErrors((prev) => ({
+                      ...prev,
+                      endDate: false,
+                      endDateOutOfRange: false,
+                      endDateBeforeStart: endBeforeStart,
+                    }));
                   }}
                   onFocus={() => setShowEndCalendar(true)}
                   placeholder="mm/dd/yyyy"
