@@ -54,7 +54,8 @@ export default function LoginPage() {
             document.cookie = `nexora-role=${userData.role}; path=/; max-age=86400; SameSite=Strict`;
 
             // Rationale: Role-based redirection ensures users land on the dashboard 
-            // specifically designed for their permissions.
+            // specifically designed for their permissions. This prevents unauthorized 
+            // access attempts right from the start of the session.
             let redirectPath = '/employee';
             if (userData.role === 'ROLE_ADMIN') redirectPath = '/admin';
             else if (userData.role === 'ROLE_HR') redirectPath = '/hr';

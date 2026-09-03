@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from "@/lib/axiosInstance";
 
 
@@ -14,15 +14,37 @@ interface HandoverChecklistProps {
 
 export function HandoverChecklist({ className = "", onComplete, employeeName = "Employee" }: HandoverChecklistProps) {
     const [tasks, setTasks] = useState(INITIAL_TASKS);
+    const [employees, setEmployees] = useState<{ id: number; fullName: string; email: string; epfNumber: string }[]>([]);
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
+    useEffect(() => {
+        api.get('/api/employees')
+            .then(res => setEmployees(res.data))
+            .catch(err => console.error("Failed to fetch employees", err));
+    }, []);
+
     // Check if all tasks have been assigned with both name and email
     const isAllAssigned = tasks.length > 0 && tasks.every(t => t.assignedTo !== '' && t.colleagueEmail !== '');
 
-    const handleAssignColleague = (taskId: string, name: string) => {
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, assignedTo: name } : t));
+    const handleAssignColleague = (taskId: string, value: string) => {
+        const matched = employees.find(e => 
+            `${e.fullName} - ${e.epfNumber}` === value || 
+            e.fullName === value || 
+            e.epfNumber === value
+        );
+        
+        setTasks(prev => prev.map(t => {
+            if (t.id === taskId) {
+                return { 
+                    ...t, 
+                    assignedTo: matched ? matched.fullName : value, 
+                    colleagueEmail: matched ? matched.email : t.colleagueEmail 
+                };
+            }
+            return t;
+        }));
     };
 
     const handleAssignEmail = (taskId: string, email: string) => {
@@ -107,6 +129,13 @@ export function HandoverChecklist({ className = "", onComplete, employeeName = "
                 </div>
             </div>
 
+            {/* Datalist for colleagues */}
+            <datalist id="colleagues-list">
+                {employees.map(emp => (
+                    <option key={emp.id} value={`${emp.fullName} - ${emp.epfNumber}`} />
+                ))}
+            </datalist>
+
             {/* List of Tasks */}
             <div className="space-y-4 mb-8">
                 {tasks.map((task) => (
@@ -131,7 +160,8 @@ export function HandoverChecklist({ className = "", onComplete, employeeName = "
                             <div className="relative w-full">
                                 <input 
                                     type="text"
-                                    placeholder="Colleague Name"
+                                    list="colleagues-list"
+                                    placeholder="Colleague Name or ID"
                                     value={task.assignedTo}
                                     onChange={(e) => handleAssignColleague(task.id, e.target.value)}
                                     className={`w-full bg-white dark:bg-slate-900 border rounded-lg p-2 text-xs outline-none transition-colors ${task.assignedTo ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30' : 'border-slate-200 dark:border-slate-700'} focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:text-slate-300`}
