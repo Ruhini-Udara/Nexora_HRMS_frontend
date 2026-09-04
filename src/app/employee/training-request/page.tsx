@@ -22,6 +22,7 @@ type TrainingEvent = {
     imageSrc?: string;
     imageAlt?: string;
     applyBefore?: string;
+    expectedParticipants?: number;
 };
 
 // Training request submitted by employee
@@ -191,6 +192,7 @@ export default function TrainingRequestPage() {
                                 time={event.time || "TBD"}
                                 applyBefore={event.applyBefore}
                                 isApplied={isApplied}
+                                expectedParticipants={event.expectedParticipants}
                             />
                         );
                     })}
