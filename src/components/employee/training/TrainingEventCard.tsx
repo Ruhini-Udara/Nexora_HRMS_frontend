@@ -15,6 +15,7 @@ interface TrainingEventProps {
     imageAlt: string;
     applyBefore?: string;
     isApplied?: boolean;  // Determines whether user has already applied for this event
+    expectedParticipants?: number;
 }
 
 const TrainingEventCard: React.FC<TrainingEventProps> = ({
@@ -24,7 +25,8 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
     date,
     time,
     applyBefore,
-    isApplied
+    isApplied,
+    expectedParticipants
 }) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const isRegistrationClosed = applyBefore && applyBefore !== "TBD" ? applyBefore < todayStr : false;
@@ -44,17 +46,32 @@ const TrainingEventCard: React.FC<TrainingEventProps> = ({
                 </span>
             </div>
             <div className="p-3 flex-1 flex flex-col">
-                <h3 className="font-bold text-sm mb-1 text-stone-800 dark:text-white line-clamp-1" title={title}>{title}</h3>
-                <div className="space-y-1 mb-3">
-                    {/* Date & time display using material icons */}
-                    <div className="flex items-center gap-1.5 text-[10px] text-stone-500 dark:text-slate-400">
-                        <span className="material-symbols-outlined text-xs">calendar_month</span>
-                        {date}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-sm mb-1 text-stone-800 dark:text-white line-clamp-1" title={title}>{title}</h3>
+                        <div className="space-y-1">
+                            {/* Date & time display using material icons */}
+                            <div className="flex items-center gap-1.5 text-[10px] text-stone-500 dark:text-slate-400">
+                                <span className="material-symbols-outlined text-xs">calendar_month</span>
+                                <span className="truncate">{date}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-stone-500 dark:text-slate-400">
+                                <span className="material-symbols-outlined text-xs">schedule</span>
+                                <span>{formatTime(time)}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-stone-500 dark:text-slate-400">
-                        <span className="material-symbols-outlined text-xs">schedule</span>
-                        {formatTime(time)}
-                    </div>
+
+                    {expectedParticipants !== undefined && expectedParticipants !== null && (
+                        <div className="px-3 py-1.5 rounded-xl bg-[var(--color-training-primary)]/10 dark:bg-[var(--color-training-primary)]/20 border border-[var(--color-training-primary)]/25 dark:border-[var(--color-training-primary)]/40 flex flex-col items-center justify-center shrink-0 min-w-[68px] text-center shadow-xs">
+                            <span className="text-sm font-black text-[var(--color-training-primary)] dark:text-orange-400 leading-tight">
+                                {expectedParticipants}
+                            </span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-training-primary)] dark:text-orange-300/90 leading-tight">
+                                Expected
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Bottom bar: show "Apply Before" (if applicable) or "Applied" badge */}
