@@ -37,6 +37,9 @@ interface OverseasLeave {
     contactNumber: string;
     email: string;
     specialRemark: string;
+    isEdited?: boolean;
+    returnReason?: string;
+    returnedBy?: string;
 }
 
 interface LeaveImpactData {
@@ -196,11 +199,11 @@ export default function LeaveApprovalsPage() {
     };
 
     // ── Approve / Reject ───────────────────────────────────────────────────
-    const handleDecision = async (decision: "APPROVE" | "REJECT") => {
+    const handleDecision = async (decision: "APPROVE" | "REJECT" | "RETURNED") => {
         if (!selectedRequest) return;
 
-        if (decision === "REJECT" && !hrRemark.trim()) {
-            setToast({ message: "Please provide a remark explaining the reason for rejection.", type: "error" });
+        if ((decision === "REJECT" || decision === "RETURNED") && !hrRemark.trim()) {
+            setToast({ message: `Please provide a remark explaining the reason to ${decision.toLowerCase()}.`, type: "error" });
             setTimeout(() => setToast(null), 4000);
             return;
         }
@@ -210,13 +213,15 @@ export default function LeaveApprovalsPage() {
             await api.post("/api/v1/approvals", {
                 refId: selectedRequest.id,
                 refType: "OVERSEAS_LEAVE",
-                decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
+                decision: decision === "APPROVE" ? "APPROVED" : decision === "REJECT" ? "REJECTED" : "RETURNED",
                 remark: hrRemark,
                 approvedBy: { id: user?.id }, // Use actual HR id from store
             });
 
             if (decision === "REJECT") {
                 setToast({ message: "Rejection reason has been successfully sent to the employee.", type: "success" });
+            } else if (decision === "RETURNED") {
+                setToast({ message: "Request has been returned to the employee for editing.", type: "success" });
             } else {
                 setToast({ message: "Request has been verified and forwarded successfully.", type: "success" });
             }
@@ -301,6 +306,7 @@ export default function LeaveApprovalsPage() {
                             <option value="PENDING_DIRECTOR_REVIEW">Pending Director Review</option>
                             <option value="APPROVED">Approved (Final)</option>
                             <option value="REJECTED">Rejected</option>
+                            <option value="RETURNED">Returned for Editing</option>
                         </select>
                     </div>
                 </div>
@@ -338,6 +344,11 @@ export default function LeaveApprovalsPage() {
                                                 <div>
                                                     <div className="font-semibold text-slate-800 dark:text-white whitespace-nowrap">
                                                         {req.employeeName}
+                                                        {(req as any).isEdited && (
+                                                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                                                                EDITED
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="text-xs text-slate-500 dark:text-slate-400">
                                                         {req.employeeCode} • {req.department}
@@ -353,7 +364,18 @@ export default function LeaveApprovalsPage() {
                                                 <span className="text-xs text-slate-400">({req.totalDays} days)</span>
                                             </td>
                                             <td className="py-4 px-6">
-                                                <StatusBadge status={req.status} />
+                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                    req.status === "PENDING_HR_APPROVAL" ? "bg-slate-100 text-slate-600" :
+                                                    req.status === "PENDING_ADMIN_APPROVAL" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+                                                    req.status === "APPROVED" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                                                    req.status === "RETURNED" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" :
+                                                    "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                                }`}>
+                                                    {req.status === "PENDING_HR_APPROVAL" ? "Pending Verification" :
+                                                     req.status === "PENDING_ADMIN_APPROVAL" ? "Verified (Pending Admin)" :
+                                                     req.status === "APPROVED" ? "Approved" : 
+                                                     req.status === "RETURNED" ? "Returned for Editing" : "Rejected"}
+                                                </span>
                                             </td>
                                             <td className="py-4 px-6 text-right">
                                                 <button
@@ -389,10 +411,18 @@ export default function LeaveApprovalsPage() {
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Verify Overseas Leave Request</h3>
-                                <p className="text-sm text-slate-500 mt-1">Request ID: #{selectedRequest.id}</p>
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Review Overseas Leave — #{selectedRequest.id}</h3>
+                                    {selectedRequest.isEdited && (
+                                        <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/30 flex items-center gap-1 shadow-sm">
+                                            <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                                            Edited & Resubmitted
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Review employee documents and travel details.</p>
                             </div>
-                            <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+                            <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
@@ -431,6 +461,21 @@ export default function LeaveApprovalsPage() {
                             </div>
 
                             <WorkflowTrackerStepper steps={getWorkflowSteps(selectedRequest)} />
+
+                            {/* Previous Return Comment */}
+                            {selectedRequest.isEdited && selectedRequest.returnReason && (
+                                <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800/30">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="material-symbols-outlined text-blue-500 text-sm">history</span>
+                                        <span className="font-bold text-sm text-blue-800 dark:text-blue-200">
+                                            Previous Return Comment {selectedRequest.returnedBy && <span className="text-blue-600 dark:text-blue-400 font-medium ml-1">by {selectedRequest.returnedBy}</span>}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300 italic">
+                                        &quot;{selectedRequest.returnReason}&quot;
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Documents */}
                             <div>
@@ -541,6 +586,13 @@ export default function LeaveApprovalsPage() {
                                         className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-bold text-sm transition-colors disabled:opacity-50"
                                     >
                                         Reject Request
+                                    </button>
+                                    <button
+                                        onClick={() => handleDecision("RETURNED")}
+                                        disabled={submitting}
+                                        className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg font-bold text-sm transition-colors disabled:opacity-50"
+                                    >
+                                        Return to Employee
                                     </button>
                                     <button
                                         onClick={() => handleDecision("APPROVE")}

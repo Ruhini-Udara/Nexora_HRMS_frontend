@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { MaternityGuidelines } from "@/components/leave/MaternityGuidelines";
 import { EmployeeDetailsSection } from "@/components/leave/EmployeeDetailsSection";
 import { MaternityLeaveDetailsSection } from "@/components/leave/MaternityLeaveDetailsSection";
@@ -32,7 +33,10 @@ const STATUS_DRAFT = "draft";
 const STATUS_SUBMITTED = "submitted";
 const STATUS_EDITING = "editing";
 
-export default function MaternityLeaveRequestPage() {
+function MaternityLeaveRequestForm() {
+    const searchParams = useSearchParams();
+    const editId = searchParams.get("editId");
+
     const { user } = useAuthStore();
     const { register, handleSubmit, control, getValues, reset, setValue, watch, formState: { errors } } = useForm<MaternityFormValues>({
         resolver: zodResolver(maternitySchema),
@@ -62,7 +66,7 @@ export default function MaternityLeaveRequestPage() {
         }, 0);
         const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
         window.addEventListener('resize', handleResize);
-        
+
         // Evaluator Note: State Persistence Strategy.
         // We check localStorage for a draft on mount. This ensures the user 
         // doesn't lose their progress if the browser crashes or is accidentally refreshed,
@@ -92,8 +96,38 @@ export default function MaternityLeaveRequestPage() {
         enabled: !!user?.id
     });
 
+    const { data: existingRequest, isLoading: isFetchingExisting } = useQuery({
+        queryKey: ['maternityLeave', editId],
+        queryFn: async () => {
+            const res = await api.get(`/api/v1/leaves/maternity/${editId}`);
+            return res.data;
+        },
+        enabled: !!editId
+    });
+
     useEffect(() => {
-        if (employeeData && status !== STATUS_DRAFT) {
+        if (existingRequest) {
+            reset({
+                employeeName: existingRequest.employeeName || "",
+                epfNumber: existingRequest.epfNumber || "",
+                designation: existingRequest.designation || "",
+                dateOfRequest: existingRequest.createdAt ? new Date(existingRequest.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+                startDate: existingRequest.fromDate || "",
+                endDate: existingRequest.endDate || "",
+                leaveReason: existingRequest.reason || "",
+                childNumber: existingRequest.childNumber || "1st Child",
+                employeeType: existingRequest.employeeType || "Permanent",
+                branch: existingRequest.branch || "",
+                contactNumber: existingRequest.contactNumber || "",
+                email: existingRequest.email || "",
+                level: existingRequest.level || "Level 1",
+                specialRemark: existingRequest.specialRemark || "",
+            });
+        }
+    }, [existingRequest, reset]);
+
+    useEffect(() => {
+        if (!editId && employeeData && status !== STATUS_DRAFT) {
             const draft = localStorage.getItem("maternityLeaveDraft");
             if (!draft) {
                 setValue("employeeName", employeeData.fullName || user?.name || "");
@@ -104,7 +138,7 @@ export default function MaternityLeaveRequestPage() {
                 setValue("contactNumber", employeeData.contactNumber || employeeData.phoneNumber || "");
             }
         }
-    }, [employeeData, setValue, status, user]);
+    }, [employeeData, setValue, status, user, editId]);
 
     // eslint-disable-next-line react-hooks/incompatible-library
     const watchStartDate = watch("startDate");
@@ -170,13 +204,13 @@ export default function MaternityLeaveRequestPage() {
             // This significantly improves user experience by reducing wait time compared to sequential uploads,
             // especially important for large medical certificates or supporting documents.
             const [medicalCertificateUrl, leaveLetterUrl, supportingDocumentUrl] = await Promise.all([
-                uploadDocument(files.medicalCertificate!, "maternity-leave"),
-                uploadDocument(files.leaveLetter!, "maternity-leave"),
+                files.medicalCertificate ? uploadDocument(files.medicalCertificate, "maternity-leave") : Promise.resolve(null),
+                files.leaveLetter ? uploadDocument(files.leaveLetter, "maternity-leave") : Promise.resolve(null),
                 files.supportingDocument ? uploadDocument(files.supportingDocument, "maternity-leave") : Promise.resolve(null),
             ]);
 
-            if (!medicalCertificateUrl || !leaveLetterUrl) {
-                throw new Error("One or more files failed to upload. Please check your internet connection and try again.");
+            if (!editId && (!medicalCertificateUrl || !leaveLetterUrl)) {
+                throw new Error("One or more mandatory files failed to upload. Please check your internet connection and try again.");
             }
 
             setFileError("Documents uploaded! Submitting your request...");
@@ -202,7 +236,12 @@ export default function MaternityLeaveRequestPage() {
                 specialRemark: data.specialRemark,
             };
 
-            const response = await api.post("/api/v1/leaves/maternity", payload);
+            let response;
+            if (editId) {
+                response = await api.put(`/api/v1/leaves/maternity/${editId}`, payload);
+            } else {
+                response = await api.post("/api/v1/leaves/maternity", payload);
+            }
             const savedLeave = response.data;
             const leaveId: number = savedLeave.id;
 
@@ -233,6 +272,9 @@ export default function MaternityLeaveRequestPage() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             // Invalidate the 'leaves' query to refresh the dashboard
             queryClient.invalidateQueries({ queryKey: ['leaves', user?.id] });
+            if (editId) {
+                queryClient.invalidateQueries({ queryKey: ['maternityLeave', editId] });
+            }
         },
         onError: (error: unknown) => {
             console.error("Maternity submission error:", error);
@@ -244,7 +286,7 @@ export default function MaternityLeaveRequestPage() {
     });
 
     const onSubmit = (data: MaternityFormValues) => {
-        if (!files.medicalCertificate || !files.leaveLetter) {
+        if (!editId && (!files.medicalCertificate || !files.leaveLetter)) {
             setFileError("Medical Certificate and Leave Letter are mandatory for submission.");
             return;
         }
@@ -263,7 +305,7 @@ export default function MaternityLeaveRequestPage() {
                 const joinedDate = new Date(employeeData.dateJoined);
                 const startDate = new Date(data.startDate);
                 const diffTime = startDate.getTime() - joinedDate.getTime();
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                 if (diffDays < 80) {
                     setFileError("Employee must have a minimum service of 80 days before the leave starts.");
                     return;
@@ -305,7 +347,7 @@ export default function MaternityLeaveRequestPage() {
                 )}
 
                 {status === STATUS_SUBMITTED && (
-                    <SuccessBanner 
+                    <SuccessBanner
                         title="Maternity Leave Submitted!"
                         message="Your request has been successfully received. You can track the approval status on your dashboard."
                         onReset={() => {
@@ -314,17 +356,35 @@ export default function MaternityLeaveRequestPage() {
                         }}
                     />
                 )}
+
+
+
+                {existingRequest?.status === "RETURNED" && existingRequest?.returnReason && status !== STATUS_SUBMITTED && (
+                    <div className="bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 p-4 rounded-xl border border-orange-200 dark:border-orange-800/30 flex items-start gap-3 mb-6">
+                        <span className="material-symbols-outlined text-orange-500 mt-0.5">assignment_return</span>
+                        <div>
+                            <h4 className="font-bold text-sm">
+                                Action Required {existingRequest.returnedBy && <span className="font-medium ml-1">by {existingRequest.returnedBy}</span>}
+                            </h4>
+                            <p className="text-sm mt-1">This request was returned with the following feedback:</p>
+                            <div className="mt-2 p-3 bg-white/60 dark:bg-slate-900/40 rounded-lg text-sm font-medium italic border border-orange-100 dark:border-orange-900/50">
+                                &quot;{existingRequest.returnReason}&quot;
+                            </div>
+                            <p className="text-xs mt-3 opacity-80">Please update the details below and resubmit.</p>
+                        </div>
+                    </div>
+                )}
             </div>
 
 
 
-            {!isDisabled && (
+            {status !== STATUS_SUBMITTED && (
                 <div className="contents">
                     {/* Left Column - Form fields */}
                     <div className="col-span-12 lg:col-span-8">
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
-                    <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
-                                    <EmployeeDetailsSection register={register} errors={errors} isDisabled={isDisabled}>
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+                            <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
+                                <EmployeeDetailsSection register={register} errors={errors} isDisabled={isDisabled}>
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                                             Employee Type <span className="text-red-500">*</span>
@@ -351,188 +411,199 @@ export default function MaternityLeaveRequestPage() {
                                         Documents
                                     </h2>
 
-                            <div className="space-y-4">
-                                {/* Maternity Leave Request Letter */}
-                                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                                            <span className="material-symbols-outlined">description</span>
+                                    <div className="space-y-4">
+                                        {/* Maternity Leave Request Letter */}
+                                        <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                                    <span className="material-symbols-outlined">description</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                                                        Maternity Leave Request Letter <span className="text-red-500">*</span>
+                                                    </h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Please upload your formal request letter.</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                {!isDisabled && (
+                                                    <FileUploadDropzone
+                                                        onFileAccepted={(f) => handleFileChange(f, "leaveLetter")}
+                                                        currentFile={files.leaveLetter}
+                                                        label="Request Letter"
+                                                    />
+                                                )}
+                                                {files.leaveLetter && (
+                                                    <button type="button" onClick={() => setPreviewFile(files.leaveLetter)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                        <span className="material-symbols-outlined text-[14px]">visibility</span> Preview Letter
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                Maternity Leave Request Letter <span className="text-red-500">*</span>
-                                            </h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Please upload your formal request letter.</p>
+
+                                        {/* Medical Certificate */}
+                                        <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                                    <span className="material-symbols-outlined">medical_information</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                                                        Medical Certificate <span className="text-red-500">*</span>
+                                                    </h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Certified document from your doctor.</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                {!isDisabled && (
+                                                    <FileUploadDropzone
+                                                        onFileAccepted={(f) => handleFileChange(f, "medicalCertificate")}
+                                                        currentFile={files.medicalCertificate}
+                                                        label="Medical Certificate"
+                                                    />
+                                                )}
+                                                {files.medicalCertificate && (
+                                                    <button type="button" onClick={() => setPreviewFile(files.medicalCertificate)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                        <span className="material-symbols-outlined text-[14px]">visibility</span> Preview Certificate
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Any supporting document */}
+                                        <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0">
+                                                    <span className="material-symbols-outlined">attach_file</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-slate-800 dark:text-white">Any supporting document</h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Optional additional files.</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                {!isDisabled && (
+                                                    <FileUploadDropzone
+                                                        onFileAccepted={(f) => handleFileChange(f, "supportingDocument")}
+                                                        currentFile={files.supportingDocument}
+                                                        label="Supporting Doc"
+                                                    />
+                                                )}
+                                                {files.supportingDocument && (
+                                                    <button type="button" onClick={() => setPreviewFile(files.supportingDocument)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                                        <span className="material-symbols-outlined text-[14px]">visibility</span> Preview Doc
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        {!isDisabled && (
-                                            <FileUploadDropzone 
-                                                onFileAccepted={(f) => handleFileChange(f, "leaveLetter")}
-                                                currentFile={files.leaveLetter}
-                                                label="Request Letter"
-                                            />
+                                </section>
+
+                                {/* 4. Special Remark */}
+                                <section>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Special Remark</label>
+                                    <textarea
+                                        disabled={isDisabled}
+                                        {...register("specialRemark")}
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60"
+                                        placeholder="Any additional information..."
+                                        rows={2}
+                                    />
+                                </section>
+
+                                {/* Form Actions with Acknowledgment */}
+                                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="mb-6">
+                                        <label className="flex items-start gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center justify-center mt-0.5">
+                                                <input
+                                                    type="checkbox"
+                                                    disabled={isDisabled}
+                                                    {...register("acknowledgement")}
+                                                    className={`appearance-none w-5 h-5 border-2 border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 checked:bg-primary checked:border-primary disabled:opacity-60 disabled:cursor-not-allowed transition-all peer ${errors.acknowledgement ? 'border-red-500 ring-2 ring-red-500/20' : ''}`}
+                                                />
+                                                <span className="material-symbols-outlined absolute text-white text-[14px] opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">
+                                                    check
+                                                </span>
+                                            </div>
+                                            <span className={`text-sm ${isDisabled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'} transition-colors leading-snug`}>
+                                                I acknowledge that all provided details and mandatory documents are accurate.
+
+                                            </span>
+                                        </label>
+                                        {errors.acknowledgement && <p className="text-red-500 text-xs mt-2 font-medium">{errors.acknowledgement.message}</p>}
+                                    </div>
+
+                                    <div className="flex flex-col gap-4">
+                                        {fileError && (
+                                            <div className={`p-4 rounded-xl flex items-center gap-3 border ${
+                                                fileError.includes("Uploading") || fileError.includes("uploaded") 
+                                                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800/30"
+                                                : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800/30"
+                                            }`}>
+                                                <span className="material-symbols-outlined">
+                                                    {fileError.includes("Uploading") || fileError.includes("uploaded") ? "info" : "error"}
+                                                </span>
+                                                <div className="text-sm font-medium">{fileError}</div>
+                                            </div>
                                         )}
-                                        {files.leaveLetter && (
-                                            <button type="button" onClick={() => setPreviewFile(files.leaveLetter)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
-                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview Letter
+                                        <div className="flex items-center gap-4">
+                                            <button
+                                                className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                type="submit"
+                                                disabled={submitMutation.isPending}
+                                            >
+                                                {submitMutation.isPending ? (
+                                                    <>
+                                                        <span className="material-symbols-outlined animate-spin text-sm">sync</span>
+                                                        Submitting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="material-symbols-outlined text-sm">send</span>
+                                                        Submit Request
+                                                    </>
+                                                )}
                                             </button>
-                                        )}
-                                    </div>
-                                </div>
 
-                                {/* Medical Certificate */}
-                                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                                            <span className="material-symbols-outlined">medical_information</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                Medical Certificate <span className="text-red-500">*</span>
-                                            </h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Certified document from your doctor.</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        {!isDisabled && (
-                                            <FileUploadDropzone 
-                                                onFileAccepted={(f) => handleFileChange(f, "medicalCertificate")}
-                                                currentFile={files.medicalCertificate}
-                                                label="Medical Certificate"
-                                            />
-                                        )}
-                                        {files.medicalCertificate && (
-                                            <button type="button" onClick={() => setPreviewFile(files.medicalCertificate)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
-                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview Certificate
+                                            <button
+                                                onClick={handleSaveDraft}
+                                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 px-8 py-2.5 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+                                                type="button"
+                                                disabled={isDisabled}
+                                            >
+                                                <span className="material-symbols-outlined text-sm">save</span>
+                                                Save as Draft
                                             </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Any supporting document */}
-                                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/30">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0">
-                                            <span className="material-symbols-outlined">attach_file</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800 dark:text-white">Any supporting document</h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Optional additional files.</p>
+                                            <Link
+                                                href="/employee/leave-requests"
+                                                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4 transition-colors"
+                                            >
+                                                Cancel
+                                            </Link>
                                         </div>
                                     </div>
-                                    <div>
-                                        {!isDisabled && (
-                                            <FileUploadDropzone 
-                                                onFileAccepted={(f) => handleFileChange(f, "supportingDocument")}
-                                                currentFile={files.supportingDocument}
-                                                label="Supporting Doc"
-                                            />
-                                        )}
-                                        {files.supportingDocument && (
-                                            <button type="button" onClick={() => setPreviewFile(files.supportingDocument)} className="mt-2 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
-                                                <span className="material-symbols-outlined text-[14px]">visibility</span> Preview Doc
-                                            </button>
-                                        )}
-                                    </div>
                                 </div>
-                            </div>
-                        </section>
-
-                        {/* 4. Special Remark */}
-                        <section>
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Special Remark</label>
-                            <textarea
-                                disabled={isDisabled}
-                                {...register("specialRemark")}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none disabled:opacity-60"
-                                placeholder="Any additional information..."
-                                rows={2}
-                            />
-                        </section>
-
-                        {/* Form Actions with Acknowledgment */}
-                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                            <div className="mb-6">
-                                <label className="flex items-start gap-3 cursor-pointer group">
-                                    <div className="relative flex items-center justify-center mt-0.5">
-                                        <input
-                                            type="checkbox"
-                                            disabled={isDisabled}
-                                            {...register("acknowledgement")}
-                                            className={`appearance-none w-5 h-5 border-2 border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 checked:bg-primary checked:border-primary disabled:opacity-60 disabled:cursor-not-allowed transition-all peer ${errors.acknowledgement ? 'border-red-500 ring-2 ring-red-500/20' : ''}`}
-                                        />
-                                        <span className="material-symbols-outlined absolute text-white text-[14px] opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">
-                                            check
-                                        </span>
-                                    </div>
-                                    <span className={`text-sm ${isDisabled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'} transition-colors leading-snug`}>
-                                        I acknowledge that all provided details and mandatory documents are accurate.
-                                        I understand that <strong className="text-slate-800 dark:text-slate-200">once submitted, this maternity leave request cannot be edited</strong> or modified.
-                                    </span>
-                                </label>
-                                {errors.acknowledgement && <p className="text-red-500 text-xs mt-2 font-medium">{errors.acknowledgement.message}</p>}
-                            </div>
-
-                            {fileError && (
-                                <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-xl border border-red-200 dark:border-red-800/30 flex items-center gap-3 mb-6">
-                                    <span className="material-symbols-outlined text-red-500">error</span>
-                                    <div className="text-sm font-medium">{fileError}</div>
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-4">
-                                {!isDisabled && (
-                                    <>
-                                        <button
-                                            className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            type="submit"
-                                            disabled={submitMutation.isPending}
-                                        >
-                                            {submitMutation.isPending ? (
-                                                <>
-                                                    <span className="material-symbols-outlined animate-spin text-sm">sync</span>
-                                                    Submitting...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="material-symbols-outlined text-sm">send</span>
-                                                    Submit Request
-                                                </>
-                                            )}
-                                        </button>
-
-                                        <button
-                                            onClick={handleSaveDraft}
-                                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 px-8 py-2.5 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
-                                            type="button"
-                                            disabled={isDisabled}
-                                        >
-                                            <span className="material-symbols-outlined text-sm">save</span>
-                                            Save as Draft
-                                        </button>
-                                    </>
-                                )}
-                                <Link
-                                    href="/employee/leave-requests"
-                                    className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4 transition-colors"
-                                >
-                                    {isDisabled ? "Back to Dashboard" : "Cancel"}
-                                </Link>
-                            </div>
+                            </form>
                         </div>
-                    </form>
-                </div>
-            </div>
+                    </div>
 
-            {/* Right Column - Sidebar */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-                <MaternityGuidelines />
-            </div>
-        </div>
-        )}
- 
+                    {/* Right Column - Sidebar */}
+                    <div className="col-span-12 lg:col-span-4 space-y-6">
+                        <MaternityGuidelines />
+                    </div>
+                </div>
+            )}
+
             <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
+    );
+}
+
+export default function MaternityLeaveRequestPage() {
+    return (
+        <Suspense fallback={<div className="flex flex-col items-center justify-center min-h-[400px]"><span className="material-symbols-outlined animate-spin text-primary text-4xl mb-4">sync</span><p className="text-slate-500 dark:text-slate-400 font-medium">Loading form...</p></div>}>
+            <MaternityLeaveRequestForm />
+        </Suspense>
     );
 }

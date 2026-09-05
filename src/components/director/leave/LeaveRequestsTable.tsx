@@ -32,6 +32,9 @@ interface OverseasLeave {
     employeeCode: string;
     department: string;
     createdAt?: string;
+    isEdited?: boolean;
+    returnReason?: string;
+    returnedBy?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -288,10 +291,22 @@ const LeaveRequestsTable = () => {
             {reviewModalOpen && selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center shrink-0">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Review Board Application</h3>
-                            <button onClick={() => setReviewModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer">
-                                <X className="w-6 h-6" />
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-slate-800 shrink-0">
+                            <div>
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Review Request #{selectedRequest.id}</h3>
+                                    {selectedRequest.isEdited && (
+                                        <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/30 flex items-center gap-1 shadow-sm">
+                                            <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                                            Edited & Resubmitted
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Provide your final decision as Director.</p>
+                            </div>
+                            <button onClick={() => setReviewModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 

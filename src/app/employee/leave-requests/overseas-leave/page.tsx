@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { OverseasGuidelines } from "@/components/leave/OverseasGuidelines";
 import { EmployeeDetailsSection } from "@/components/leave/EmployeeDetailsSection";
 import { OverseasTravelDetailsSection } from "@/components/leave/OverseasTravelDetailsSection";
@@ -21,6 +21,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Card, CardContent } from "@/components/ui/card";
+import { useSearchParams } from "next/navigation";
 
 
 import { overseasSchema } from "@/lib/validations";
@@ -33,7 +34,7 @@ const STATUS_DRAFT = "draft";
 const STATUS_SUBMITTED = "submitted";
 const STATUS_EDITING = "editing";
 
-export default function OverseasLeaveRequestPage() {
+function OverseasLeaveRequestForm() {
     const { user } = useAuthStore();
     const { register, handleSubmit, control, getValues, reset, setValue, formState: { errors } } = useForm<OverseasFormValues>({
         resolver: zodResolver(overseasSchema),
@@ -42,6 +43,9 @@ export default function OverseasLeaveRequestPage() {
             dateOfRequest: new Date().toISOString().split("T")[0],
         }
     });
+
+    const searchParams = useSearchParams();
+    const editId = searchParams.get("editId");
 
     const [files, setFiles] = useState({
         leaveLetter: null as File | null,
@@ -97,7 +101,7 @@ export default function OverseasLeaveRequestPage() {
     });
 
     useEffect(() => {
-        if (employeeData && status !== STATUS_DRAFT) {
+        if (employeeData && status !== STATUS_DRAFT && !editId) {
             const draft = localStorage.getItem("overseasLeaveDraft");
             if (!draft) {
                 setValue("employeeName", employeeData.fullName || user?.name || "");
@@ -108,7 +112,32 @@ export default function OverseasLeaveRequestPage() {
                 setValue("contactNumber", employeeData.contactNumber || employeeData.phoneNumber || "");
             }
         }
-    }, [employeeData, setValue, status, user]);
+    }, [employeeData, setValue, status, user, editId]);
+
+    // Fetch existing leave request if editId is provided
+    const { data: existingRequest } = useQuery({
+        queryKey: ['overseasLeave', editId],
+        queryFn: async () => {
+            if (!editId) return null;
+            const res = await api.get(`/api/v1/leaves/overseas/${editId}`);
+            const data = res.data;
+            if (data) {
+                setValue("employeeName", data.employeeName || "");
+                setValue("email", data.email || "");
+                setValue("branch", data.branch || "");
+                setValue("epfNumber", data.epfNumber || "");
+                setValue("contactNumber", data.contactNumber || "");
+                setValue("startDate", data.fromDate || "");
+                setValue("endDate", data.endDate || "");
+                setValue("leaveReason", data.reason || "");
+                setValue("passportNumber", data.passportNumber || "");
+                setValue("passportExpDate", data.passportExpDate || "");
+                setValue("specialRemark", data.specialRemark || "");
+            }
+            return data;
+        },
+        enabled: !!editId
+    });
 
     const noOfDays = useLeaveDays(control, "startDate", "endDate").toString();
 
@@ -152,7 +181,7 @@ export default function OverseasLeaveRequestPage() {
                 files.flightTickets ? uploadDocument(files.flightTickets, "overseas-leave") : Promise.resolve(null),
             ]);
 
-            if (!passportCopyUrl || !visaCopyUrl || !flightTicketsUrl) {
+            if (!editId && (!passportCopyUrl || !visaCopyUrl || !flightTicketsUrl)) {
                 throw new Error("One or more mandatory files failed to upload. Please check your internet connection and try again.");
             }
 
@@ -178,7 +207,12 @@ export default function OverseasLeaveRequestPage() {
                 specialRemark: data.specialRemark,
             };
 
-            const response = await api.post("/api/v1/leaves/overseas", payload);
+            let response;
+            if (editId) {
+                response = await api.put(`/api/v1/leaves/overseas/${editId}`, payload);
+            } else {
+                response = await api.post("/api/v1/leaves/overseas", payload);
+            }
             const savedLeave = response.data;
             const leaveId: number = savedLeave.id;
 
@@ -212,6 +246,9 @@ export default function OverseasLeaveRequestPage() {
             localStorage.removeItem("overseasLeaveDraft");
             window.scrollTo({ top: 0, behavior: 'smooth' });
             queryClient.invalidateQueries({ queryKey: ['leaves', user?.id] });
+            if (editId) {
+                queryClient.invalidateQueries({ queryKey: ['overseasLeave', editId] });
+            }
         },
         onError: (error: Error) => {
             console.error("Submission error:", error);
@@ -220,7 +257,7 @@ export default function OverseasLeaveRequestPage() {
     });
 
     const onSubmit = (data: OverseasFormValues) => {
-        if (!files.passportCopy || !files.visaCopy || !files.flightTickets) {
+        if (!editId && (!files.passportCopy || !files.visaCopy || !files.flightTickets)) {
             setFileError("Flight Tickets, Passport Copy, and Visa Copy are mandatory for submission.");
             return;
         }
@@ -243,14 +280,31 @@ export default function OverseasLeaveRequestPage() {
                         <span className="material-symbols-outlined">arrow_back</span>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Apply for Overseas Leave</h1>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                            {editId ? "Edit Overseas Leave Request" : "Apply for Overseas Leave"}
+                        </h1>
                         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                            Please provide all necessary details and mandatory documents for your overseas travel.
+                            {editId ? "Update your details and resubmit." : "Please provide all necessary details and mandatory documents for your overseas travel."}
                         </p>
                     </div>
                 </div>
 
                 {/* Status Banners */}
+                {existingRequest?.status === "RETURNED" && existingRequest?.returnReason && status !== STATUS_SUBMITTED && (
+                    <div className="bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 p-4 rounded-xl border border-orange-200 dark:border-orange-800/30 flex items-start gap-3 mb-6">
+                        <span className="material-symbols-outlined text-orange-500 mt-0.5">assignment_return</span>
+                        <div>
+                            <h4 className="font-bold text-sm">
+                                Action Required {existingRequest.returnedBy && <span className="font-medium ml-1">by {existingRequest.returnedBy}</span>}
+                            </h4>
+                            <p className="text-sm mt-1">This request was returned with the following feedback:</p>
+                            <div className="mt-2 p-3 bg-white/60 dark:bg-slate-900/40 rounded-lg text-sm font-medium italic border border-orange-100 dark:border-orange-900/50">
+                                &quot;{existingRequest.returnReason}&quot;
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {status === STATUS_DRAFT && (
                     <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/30 flex items-center gap-3 mb-6">
                         <span className="material-symbols-outlined text-amber-500">save</span>
@@ -271,15 +325,10 @@ export default function OverseasLeaveRequestPage() {
                     />
                 )}
 
-                {fileError && (
-                    <div className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-4 rounded-xl border border-red-200 dark:border-red-800/30 flex items-center gap-3 mb-6">
-                        <span className="material-symbols-outlined text-red-500">error</span>
-                        <div className="text-sm font-medium">{fileError}</div>
-                    </div>
-                )}
+
             </div>
 
-            {!isDisabled && (
+            {status !== STATUS_SUBMITTED && (
                 <div className="contents">
                     <div className="col-span-12 lg:col-span-8">
                         <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
@@ -304,7 +353,7 @@ export default function OverseasLeaveRequestPage() {
                                                 </div>
                                                 <div>
                                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                        Flight Tickets / Itinerary <span className="text-red-500">*</span>
+                                                        Flight Tickets / Itinerary {!editId && <span className="text-red-500">*</span>}
                                                     </h4>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Upload your confirmed flight booking.</p>
                                                 </div>
@@ -335,7 +384,7 @@ export default function OverseasLeaveRequestPage() {
                                                 </div>
                                                 <div>
                                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                        Copy of Passport <span className="text-red-500">*</span>
+                                                        Copy of Passport {!editId && <span className="text-red-500">*</span>}
                                                     </h4>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Please upload the primary info page.</p>
                                                 </div>
@@ -366,7 +415,7 @@ export default function OverseasLeaveRequestPage() {
                                                 </div>
                                                 <div>
                                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white">
-                                                        Visa Copy <span className="text-red-500">*</span>
+                                                        Visa Copy {!editId && <span className="text-red-500">*</span>}
                                                     </h4>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Valid visa for the destination.</p>
                                                 </div>
@@ -484,14 +533,25 @@ export default function OverseasLeaveRequestPage() {
                                             </div>
                                             <span className={`text-sm ${isDisabled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200'} transition-colors leading-snug`}>
                                                 I acknowledge that all provided details and mandatory documents are accurate.
-                                                I understand that <strong className="text-slate-800 dark:text-slate-200">once submitted, this overseas leave request cannot be edited</strong> or modified.
+
                                             </span>
                                         </label>
                                         {errors.acknowledgement && <p className="text-red-500 text-xs mt-2 font-medium">{errors.acknowledgement.message}</p>}
                                     </div>
 
-                                    <div className="flex items-center gap-4">
-                                        {!isDisabled && (
+                                    <div className="flex flex-col gap-4">
+                                        {fileError && (
+                                            <div className={`p-4 rounded-xl flex items-center gap-3 border ${fileError.includes("Uploading") || fileError.includes("uploaded")
+                                                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800/30"
+                                                    : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800/30"
+                                                }`}>
+                                                <span className="material-symbols-outlined">
+                                                    {fileError.includes("Uploading") || fileError.includes("uploaded") ? "info" : "error"}
+                                                </span>
+                                                <div className="text-sm font-medium">{fileError}</div>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-4">
                                             <>
                                                 {/* Submit: must be type="submit" so form onSubmit runs */}
                                                 <button
@@ -506,8 +566,8 @@ export default function OverseasLeaveRequestPage() {
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <span className="material-symbols-outlined text-sm">send</span>
-                                                            Submit Request
+                                                            <span className="material-symbols-outlined text-sm">{editId ? 'update' : 'send'}</span>
+                                                            {editId ? 'Resubmit Request' : 'Submit Request'}
                                                         </>
                                                     )}
                                                 </button>
@@ -522,13 +582,13 @@ export default function OverseasLeaveRequestPage() {
                                                     Save as Draft
                                                 </button>
                                             </>
-                                        )}
-                                        <Link
-                                            href="/employee/leave-requests"
-                                            className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4 transition-colors"
-                                        >
-                                            {isDisabled ? "Back to Dashboard" : "Cancel"}
-                                        </Link>
+                                            <Link
+                                                href="/employee/leave-requests"
+                                                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium px-4 transition-colors"
+                                            >
+                                                Cancel
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             </form>
@@ -544,5 +604,13 @@ export default function OverseasLeaveRequestPage() {
 
             <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
+    );
+}
+
+export default function OverseasLeaveRequestPage() {
+    return (
+        <Suspense fallback={<div className="flex flex-col items-center justify-center min-h-[400px]"><span className="material-symbols-outlined animate-spin text-primary text-4xl mb-4">sync</span><p className="text-slate-500 dark:text-slate-400 font-medium">Loading form...</p></div>}>
+            <OverseasLeaveRequestForm />
+        </Suspense>
     );
 }

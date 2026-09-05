@@ -40,6 +40,9 @@ interface OverseasLeave {
     passportNumber: string;
     passportExpDate: string;
     createdAt?: string;
+    isEdited?: boolean;
+    returnReason?: string;
+    returnedBy?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -50,12 +53,13 @@ function StatusBadge({ status }: { status: string }) {
         PENDING_DIRECTOR_REVIEW: "bg-purple-100 text-purple-700  ",
         APPROVED: "bg-emerald-100 text-emerald-700  ",
         REJECTED: "bg-red-100 text-red-700  ",
+        RETURNED: "bg-orange-100 text-orange-700  ",
     };
     const label: Record<string, string> = {
         PENDING_ADMIN_APPROVAL: "Pending Admin Approval",
         ADMIN_APPROVED: "In Board Agenda",
         PENDING_DIRECTOR_REVIEW: "Sent to Director",
-        APPROVED: "Approved", REJECTED: "Rejected",
+        APPROVED: "Approved", REJECTED: "Rejected", RETURNED: "Returned for Editing",
     };
     return <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold ${map[status] ?? "bg-slate-100 text-slate-600"}`}>{label[status] ?? status}</span>;
 }
@@ -161,13 +165,13 @@ export default function OverseasLeaveApprovals() {
     };
 
     // ── Approve / Reject ───────────────────────────────────────────────────
-    const handleDecision = async (decision: "APPROVE" | "REJECT") => {
+    const handleDecision = async (decision: "APPROVE" | "REJECT" | "RETURNED") => {
         if (!selectedRequest) return;
         setSubmitting(true);
         try {
             await api.post("/api/v1/approvals", {
                 refId: selectedRequest.id, refType: "OVERSEAS_LEAVE",
-                decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
+                decision: decision === "APPROVE" ? "APPROVED" : decision === "REJECT" ? "REJECTED" : "RETURNED",
                 remark: adminRemark,
                 approvedBy: { id: user?.id }, // Logged-in admin's employee id
             });
@@ -389,7 +393,7 @@ export default function OverseasLeaveApprovals() {
                     <div className="relative flex-1">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
                         <input type="text" placeholder="Search by name or ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                           className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
                     </div>
                     {activeTab === "pending" && (
                         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
@@ -463,7 +467,14 @@ export default function OverseasLeaveApprovals() {
                                         <td className="py-4 px-4"><input type="checkbox" className="w-4 h-4 rounded" checked={selectedIds.includes(req.id)} onChange={e => setSelectedIds(prev => e.target.checked ? [...prev, req.id] : prev.filter(id => id !== req.id))} /></td>
                                         <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">#{req.id}</td>
                                         <td className="py-4 px-6">
-                                            <div className="font-semibold text-slate-800 dark:text-slate-200">{req.employeeName}</div>
+                                            <div className="font-semibold text-slate-800 dark:text-slate-200">
+                                                {req.employeeName}
+                                                {req.isEdited && (
+                                                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                                                        EDITED
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="text-xs text-slate-500 dark:text-slate-400">{req.employeeCode} • {req.department}</div>
                                         </td>
                                         <td className="py-4 px-6 text-slate-600 dark:text-slate-350 font-medium">
@@ -495,12 +506,20 @@ export default function OverseasLeaveApprovals() {
 
             {/* Review Modal */}
             {selectedRequest && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Review Overseas Leave — #{selectedRequest.id}</h3>
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Review Overseas Leave — #{selectedRequest.id}</h3>
+                                    {selectedRequest.isEdited && (
+                                        <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/30 flex items-center gap-1 shadow-sm">
+                                            <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                                            Edited & Resubmitted
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Verified by HR. Your decision forwards this to the Director or rejects it.</p>
                             </div>
                             <button onClick={() => setSelectedRequest(null)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
@@ -537,6 +556,21 @@ export default function OverseasLeaveApprovals() {
                             {/* Workflow Tracker */}
                             <WorkflowTrackerStepper steps={getWorkflowSteps(selectedRequest)} />
 
+                            {/* Previous Return Comment */}
+                            {selectedRequest.isEdited && selectedRequest.returnReason && (
+                                <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800/30">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="material-symbols-outlined text-blue-500 text-sm">history</span>
+                                        <span className="font-bold text-sm text-blue-800 dark:text-blue-200">
+                                            Previous Return Comment {selectedRequest.returnedBy && <span className="text-blue-600 dark:text-blue-400 font-medium ml-1">by {selectedRequest.returnedBy}</span>}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300 italic">
+                                        &quot;{selectedRequest.returnReason}&quot;
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Documents */}
                             <div>
                                 <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
@@ -571,6 +605,9 @@ export default function OverseasLeaveApprovals() {
                                     <button onClick={() => handleDecision("REJECT")} disabled={submitting} className="px-5 py-2.5 bg-red-50 text-red-600 font-bold hover:bg-red-100 rounded-lg text-sm flex items-center gap-2 disabled:opacity-50">
                                         <span className="material-symbols-outlined text-[18px]">cancel</span> Reject
                                     </button>
+                                    <button onClick={() => handleDecision("RETURNED")} disabled={submitting || !adminRemark.trim()} className="px-5 py-2.5 bg-orange-50 text-orange-600 font-bold hover:bg-orange-100 rounded-lg text-sm flex items-center gap-2 disabled:opacity-50" title={!adminRemark.trim() ? "Remark required to return" : ""}>
+                                        <span className="material-symbols-outlined text-[18px]">reply</span> Return
+                                    </button>
                                     <button onClick={() => handleDecision("APPROVE")} disabled={submitting} className="px-5 py-2.5 bg-primary text-white font-bold hover:bg-primary/90 rounded-lg text-sm flex items-center gap-2 shadow-sm disabled:opacity-50">
                                         {submitting ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-[18px]">fact_check</span>}
                                         Approve
@@ -584,7 +621,7 @@ export default function OverseasLeaveApprovals() {
 
             {/* Toast Notification */}
             {toast && (
-                <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
+                <div className={`fixed bottom-8 right-8 z-[50] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-500 ${toast.type === 'success' ? 'bg-slate-900 text-white' : 'bg-red-600 text-white'
                     }`}>
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-white/20'
                         }`}>
