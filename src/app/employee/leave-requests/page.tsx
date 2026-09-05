@@ -118,6 +118,8 @@ export default function LeaveRequestsDashboard() {
                 return "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400";
             case "PENDING_DIRECTOR_REVIEW":
                 return "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400";
+            case "RETURNED":
+                return "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400";
             default:
                 return "bg-slate-50 text-slate-600 dark:bg-slate-900/20 dark:text-slate-400";
         }
@@ -189,6 +191,7 @@ export default function LeaveRequestsDashboard() {
                             <option value="PENDING_ADMIN_APPROVAL">Pending Admin</option>
                             <option value="APPROVED">Approved</option>
                             <option value="REJECTED">Rejected</option>
+                            <option value="RETURNED">Returned</option>
                         </select>
                     </div>
                 </div>
@@ -253,6 +256,15 @@ export default function LeaveRequestsDashboard() {
                                                     <span className="material-symbols-outlined text-[18px]">assignment_return</span>
                                                     Handover
                                                 </button>
+                                            )}
+                                            {req.status.toUpperCase() === "RETURNED" && (req.type === "Overseas Leave" || req.type === "Maternity Leave") && (
+                                                <Link
+                                                    href={`/employee/leave-requests/${req.type === "Overseas Leave" ? "overseas-leave" : "maternity-leaves"}?editId=${req.id}`}
+                                                    className="text-orange-600 hover:text-orange-700 font-bold text-sm flex items-center gap-1.5 justify-end transition-colors"
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                                                    Edit & Resubmit
+                                                </Link>
                                             )}
                                         </td>
                                     </tr>

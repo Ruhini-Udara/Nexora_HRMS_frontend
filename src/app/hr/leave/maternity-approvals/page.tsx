@@ -29,6 +29,9 @@ interface MaternityLeave {
     endDate: string;
     totalDays: number;
     createdAt?: string;
+    isEdited?: boolean;
+    returnReason?: string;
+    returnedBy?: string;
 }
 
 interface LeaveDocument {
@@ -138,11 +141,11 @@ export default function MaternityApprovalsPage() {
         setHrRemarkInput("");
     };
 
-    const handleDecision = async (decision: "APPROVE" | "REJECT") => {
+    const handleDecision = async (decision: "APPROVE" | "REJECT" | "RETURN") => {
         if (!selectedRequest) return;
 
-        if (decision === "REJECT" && !hrRemarkInput.trim()) {
-            setToast({ message: "Please provide a remark explaining the reason for rejection.", type: "error" });
+        if ((decision === "REJECT" || decision === "RETURN") && !hrRemarkInput.trim()) {
+            setToast({ message: "Please provide a remark explaining the reason.", type: "error" });
             setTimeout(() => setToast(null), 4000);
             return;
         }
@@ -152,13 +155,15 @@ export default function MaternityApprovalsPage() {
             await api.post("/api/v1/approvals", {
                 refId: selectedRequest.id,
                 refType: "MATERNITY_LEAVE",
-                decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
+                decision: decision === "APPROVE" ? "APPROVED" : decision === "RETURN" ? "RETURNED" : "REJECTED",
                 remark: hrRemarkInput,
                 approvedBy: { id: user?.id },
             });
             
             if (decision === "REJECT") {
                 setToast({ message: "Rejection reason has been successfully sent to the employee.", type: "success" });
+            } else if (decision === "RETURN") {
+                setToast({ message: "Request returned to employee for edits.", type: "success" });
             } else {
                 setToast({ message: "Request has been verified and forwarded successfully.", type: "success" });
             }
@@ -263,6 +268,11 @@ export default function MaternityApprovalsPage() {
                                                 <div>
                                                     <div className="font-semibold text-slate-800 dark:text-white whitespace-nowrap">
                                                         {req.employeeName}
+                                                        {req.isEdited && (
+                                                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                                                                EDITED
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="text-xs text-slate-500 dark:text-slate-400">
                                                         {req.employeeCode} • {req.department}
@@ -338,8 +348,22 @@ export default function MaternityApprovalsPage() {
                                     </div>
                                     <div className="space-y-3 text-sm">
                                         <div className="flex justify-between"><span className="text-slate-500">Contact:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.contactNumber}</span></div>
-                                        <div className="flex justify-between"><span className="text-slate-500">Email:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
+                                        <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500">Email:</span> <span className="font-medium text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
                                     </div>
+                                    
+                                    {selectedRequest.isEdited && selectedRequest.returnReason && (
+                                        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800/30">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="material-symbols-outlined text-blue-500 text-sm">history</span>
+                                                <span className="font-bold text-sm text-blue-800 dark:text-blue-200">
+                                                    Previous Return Comment {selectedRequest.returnedBy && <span className="text-blue-600 dark:text-blue-400 font-medium ml-1">by {selectedRequest.returnedBy}</span>}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 italic">
+                                                &quot;{selectedRequest.returnReason}&quot;
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-4 border-b border-slate-100 dark:border-slate-800 pb-2 uppercase tracking-wider">Leave Details</h4>
@@ -458,6 +482,14 @@ export default function MaternityApprovalsPage() {
                                         className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-bold text-sm transition-colors disabled:opacity-50"
                                     >
                                         Reject Request
+                                    </button>
+                                    <button
+                                        disabled={submitting || !hrRemarkInput.trim()}
+                                        onClick={() => handleDecision("RETURN")}
+                                        className="px-6 py-2.5 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                        title={!hrRemarkInput.trim() ? "Remark required to return" : ""}
+                                    >
+                                        Return to Employee
                                     </button>
                                     <button
                                         disabled={submitting}

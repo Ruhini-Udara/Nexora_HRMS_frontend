@@ -28,6 +28,9 @@ interface MaternityLeave {
     endDate: string;
     totalDays: number;
     createdAt?: string;
+    isEdited?: boolean;
+    returnReason?: string;
+    returnedBy?: string;
 }
 
 interface LeaveDocument {
@@ -109,13 +112,12 @@ export default function MaternityLeaveApprovals() {
         }
     };
 
-    const handleDecision = async (decision: "APPROVED" | "REJECTED") => {
+    const handleDecision = async (decision: "APPROVED" | "REJECTED" | "RETURNED") => {
         if (!selectedRequest) return;
         setSubmitting(true);
         try {
             await api.post("/api/v1/approvals", {
-                refId: selectedRequest.id,
-                refType: "MATERNITY_LEAVE",
+                refId: selectedRequest.id, refType: "MATERNITY_LEAVE",
                 decision: decision,
                 remark: adminRemark,
                 approvedBy: { id: user?.id },
@@ -124,6 +126,8 @@ export default function MaternityLeaveApprovals() {
             triggerNotification(
                 decision === "APPROVED"
                     ? "Request Approved & Submitted for Salary Calculation! Employee notified via E-mail."
+                    : decision === "RETURNED"
+                    ? "Request Returned to Employee for edits."
                     : "Request Rejected. Employee notified via E-mail.",
                 'success'
             );
@@ -155,6 +159,13 @@ export default function MaternityLeaveApprovals() {
         const fullName = (req.employeeName || "").toLowerCase();
         return fullName.includes(searchTerm.toLowerCase()) || String(req.id).includes(searchTerm);
     });
+
+    const statusStyles: Record<string, string> = {
+        PENDING_ADMIN_APPROVAL: "bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400",
+        APPROVED: "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400",
+        REJECTED: "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400",
+        RETURNED: "bg-orange-100 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400"
+    };
 
     return (
         <div className="max-w-7xl mx-auto w-full relative p-6">
@@ -201,6 +212,7 @@ export default function MaternityLeaveApprovals() {
                         <option value="PENDING_ADMIN_APPROVAL">Pending Admin Approval</option>
                         <option value="APPROVED">Final Approved (Salary Calc)</option>
                         <option value="REJECTED">Rejected</option>
+                        <option value="RETURNED">Returned for Edits</option>
                     </select>
                 </div>
             </div>
@@ -225,7 +237,14 @@ export default function MaternityLeaveApprovals() {
                                 <tr key={req.id} className="border-b border-slate-100 dark:border-slate-805 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                                     <td className="py-5 px-6 font-bold text-slate-900 dark:text-white">#{req.id}</td>
                                     <td className="py-5 px-6">
-                                        <div className="font-bold text-slate-800 dark:text-slate-200">{req.employeeName}</div>
+                                        <div className="font-bold text-slate-800 dark:text-slate-200">
+                                            {req.employeeName}
+                                            {(req as any).isEdited && (
+                                                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                                                    EDITED
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{req.employeeCode} • {req.department}</div>
                                     </td>
                                     <td className="py-5 px-6 text-slate-600 dark:text-slate-300 font-bold">
@@ -236,11 +255,8 @@ export default function MaternityLeaveApprovals() {
                                         <div className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">{req.totalDays} Days</div>
                                     </td>
                                     <td className="py-5 px-6">
-                                        <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold ${req.status === "PENDING_ADMIN_APPROVAL" ? "bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400" :
-                                                req.status === "APPROVED" ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400" :
-                                                    "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400"
-                                            }`}>
-                                            {req.status === "PENDING_ADMIN_APPROVAL" ? "Pending Admin Approval" : req.status === "APPROVED" ? "Approved" : "Rejected"}
+                                        <span className={`inline-flex px-3 py-1 rounded-full text-sm font-bold ${statusStyles[req.status] || "bg-slate-100 text-slate-700"}`}>
+                                            {req.status === "PENDING_ADMIN_APPROVAL" ? "Pending Admin" : req.status === "APPROVED" ? "Approved" : req.status === "RETURNED" ? "Returned" : "Rejected"}
                                         </span>
                                     </td>
                                     <td className="py-5 px-6 text-right">
@@ -282,6 +298,20 @@ export default function MaternityLeaveApprovals() {
                                         <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">Department</span> <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedRequest.department}</span></div>
                                         <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2"><span className="text-slate-500 font-bold">E-mail Address</span> <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedRequest.email}</span></div>
                                     </div>
+                                    
+                                    {selectedRequest.isEdited && selectedRequest.returnReason && (
+                                        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800/30">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="material-symbols-outlined text-blue-500 text-sm">history</span>
+                                                <span className="font-bold text-sm text-blue-800 dark:text-blue-200">
+                                                    Previous Return Comment {selectedRequest.returnedBy && <span className="text-blue-600 dark:text-blue-400 font-medium ml-1">by {selectedRequest.returnedBy}</span>}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm font-medium text-blue-700 dark:text-blue-300 italic">
+                                                &quot;{selectedRequest.returnReason}&quot;
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="space-y-6">
                                     <h4 className="text-sm font-bold text-primary mb-4">Leave Parameters</h4>
@@ -336,13 +366,14 @@ export default function MaternityLeaveApprovals() {
                         <div className="p-8 border-t border-slate-100 bg-slate-50 shrink-0 flex items-center justify-end gap-4 rounded-b-3xl">
                             <button onClick={() => setSelectedRequest(null)} className="px-8 py-3 text-slate-600 font-semibold hover:bg-slate-200 :bg-slate-800 rounded-xl transition-all text-sm">Cancel</button>
                             {selectedRequest.status === "PENDING_ADMIN_APPROVAL" && (
-                                <>
-                                    <button disabled={submitting} onClick={() => handleDecision("REJECTED")} className="px-8 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-semibold text-sm transition-all disabled:opacity-50">Reject Request</button>
-                                    <button disabled={submitting} onClick={() => handleDecision("APPROVED")} className="px-8 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-semibold text-sm shadow-xl shadow-emerald-500/20 transition-all disabled:opacity-50 flex items-center gap-2">
-                                        {submitting ? "Processing..." : "Approve & Calc Salary"}
-                                    </button>
-                                </>
-                            )}
+                                                <>
+                                                    <button disabled={submitting} onClick={() => handleDecision("REJECTED")} className="px-8 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-semibold text-sm transition-all disabled:opacity-50">Reject Request</button>
+                                                    <button disabled={submitting || !adminRemark.trim()} onClick={() => handleDecision("RETURNED")} className="px-8 py-3 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-xl font-semibold text-sm transition-all disabled:opacity-50" title={!adminRemark.trim() ? "Remark required to return" : ""}>Return to Employee</button>
+                                                    <button disabled={submitting} onClick={() => handleDecision("APPROVED")} className="px-8 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-semibold text-sm shadow-xl shadow-emerald-500/20 transition-all disabled:opacity-50 flex items-center gap-2">
+                                                        {submitting ? "Processing..." : "Approve & Calc Salary"}
+                                                    </button>
+                                                </>
+                                            )}
                         </div>
                     </div>
                 </div>
