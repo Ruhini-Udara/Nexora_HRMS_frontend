@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MaternityGuidelines } from "@/components/leave/MaternityGuidelines";
@@ -33,7 +33,7 @@ const STATUS_DRAFT = "draft";
 const STATUS_SUBMITTED = "submitted";
 const STATUS_EDITING = "editing";
 
-export default function MaternityLeaveRequestPage() {
+function MaternityLeaveRequestForm() {
     const searchParams = useSearchParams();
     const editId = searchParams.get("editId");
 
@@ -597,5 +597,13 @@ export default function MaternityLeaveRequestPage() {
 
             <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
+    );
+}
+
+export default function MaternityLeaveRequestPage() {
+    return (
+        <Suspense fallback={<div className="flex flex-col items-center justify-center min-h-[400px]"><span className="material-symbols-outlined animate-spin text-primary text-4xl mb-4">sync</span><p className="text-slate-500 dark:text-slate-400 font-medium">Loading form...</p></div>}>
+            <MaternityLeaveRequestForm />
+        </Suspense>
     );
 }
