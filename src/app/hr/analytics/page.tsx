@@ -2,6 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import api from "@/lib/axiosInstance";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend
+} from 'recharts';
 
 interface PassportExpiry {
     employeeName: string;
@@ -24,7 +37,15 @@ interface AnalyticsData {
     upcomingMaternityReturns: MaternityReturn[];
     departmentEmployeeCount: Record<string, number>;
     departmentLeaveImpact: Record<string, number>;
+    designationEmployeeCount: Record<string, number>;
+    employmentStatusCount: Record<string, number>;
+    branchEmployeeCount: Record<string, number>;
+    leaveTypesUsed: Record<string, number>;
+    attendanceStatusToday: Record<string, number>;
 }
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#e056fd', '#eb4d4b', '#f9ca24', '#f0932b'];
+const MUTED_COLORS = ['#0077DF', '#00A888', '#EAA420', '#E66A35', '#7672C8', '#70BA8B', '#CC4CEB', '#D94341', '#E5BA1C', '#DE8422'];
 
 export default function HrAnalyticsPage() {
     const [data, setData] = useState<AnalyticsData | null>(null);
@@ -100,66 +121,189 @@ export default function HrAnalyticsPage() {
     };
 
     // Calculate max values for bar charts
-    const maxEmployees = Math.max(...Object.values(data.departmentEmployeeCount), 1);
-    const maxLeaves = Math.max(...Object.values(data.departmentLeaveImpact), 1);
+    const maxEmployees = Math.max(...Object.values(data.departmentEmployeeCount || {}), 1);
+    const maxLeaves = Math.max(...Object.values(data.departmentLeaveImpact || {}), 1);
 
     const departments = Array.from(new Set([
-        ...Object.keys(data.departmentEmployeeCount),
-        ...Object.keys(data.departmentLeaveImpact)
+        ...Object.keys(data.departmentEmployeeCount || {}),
+        ...Object.keys(data.departmentLeaveImpact || {})
     ])).sort();
 
+    const toChartData = (record: Record<string, number> | undefined) => {
+        if (!record) return [];
+        return Object.entries(record).map(([name, value]) => ({ name, value }));
+    };
+
+    const getDepartmentChartData = () => {
+        if (!data?.departmentEmployeeCount) return [];
+        let unassignedCount = 0;
+        const result: { name: string; value: number }[] = [];
+
+        for (const [key, val] of Object.entries(data.departmentEmployeeCount)) {
+            if (!key || key.trim() === "" || key === "null") {
+                unassignedCount += val;
+            } else {
+                result.push({ name: key, value: val });
+            }
+        }
+
+        result.sort((a, b) => a.name.localeCompare(b.name));
+
+        if (unassignedCount > 0) {
+            result.push({ name: "Unassigned", value: unassignedCount });
+        }
+
+        return result;
+    };
+
+    const getLeaveChartData = () => {
+        if (!data?.leaveTypesUsed) return [];
+
+        const order = ["Annual Leave", "Casual Leave", "Medical Leave", "Overseas Leave", "Maternity Leave"];
+        const result: { name: string; value: number }[] = [];
+
+        // Add preferred types in exact order
+        for (const type of order) {
+            result.push({ name: type, value: data.leaveTypesUsed[type] || 0 });
+        }
+
+        // Add any remaining types
+        for (const [key, val] of Object.entries(data.leaveTypesUsed)) {
+            if (!order.includes(key)) {
+                result.push({ name: key, value: val });
+            }
+        }
+
+        return result;
+    };
+
+    const CustomYAxisTick = (props: any) => {
+        const { y, payload } = props;
+        return (
+            <g transform={`translate(20,${y})`}>
+                <text x={0} y={0} dy={4} textAnchor="start" fill="#6b7280" fontSize={11}>
+                    {payload.value}
+                </text>
+            </g>
+        );
+    };
+
     return (
-        <div className="p-8 max-w-7xl mx-auto w-full">
+        <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
             <div className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Special Leave Analytics</h2>
-                <p className="text-gray-600 dark:text-gray-400">Real-time HR special leave analytics & impact</p>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">HR Analytics Dashboard</h2>
+                <p className="text-gray-600 dark:text-gray-400">Comprehensive overview of workforce metrics</p>
             </div>
 
-            {/* Top Metrics Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {/* Pending Overseas */}
-                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Overseas</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.pendingOverseas}</h3>
-                    </div>
-                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
-                        <span className="material-icons-round text-primary">flight</span>
+            {/* Charts Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+                {/* 1. Attendance Status Today (Doughnut) */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow h-96 flex flex-col">
+                    <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Attendance Today</h3>
+                    <div className="flex-1 min-h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={toChartData(data.attendanceStatusToday)} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={2}>
+                                    {toChartData(data.attendanceStatusToday).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={
+                                            entry.name === 'Absent' ? '#8B3A00' : 
+                                            entry.name === 'On Leave' ? '#9ca3af' : 
+                                            COLORS[(index + 3) % COLORS.length]
+                                        } />
+                                    ))}
+                                </Pie>
+                                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '0px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Pending Maternity */}
-                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Maternity</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.pendingMaternity}</h3>
-                    </div>
-                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
-                        <span className="material-icons-round text-primary">pregnant_woman</span>
-                    </div>
-                </div>
-
-                {/* Passport Expiries */}
-                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Passport Expiries</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.passportExpiryAlerts?.length || 0}</h3>
-                    </div>
-                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
-                        <span className="material-icons-round text-primary">badge</span>
+                {/* 2. Leave Types Used */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow h-96 flex flex-col">
+                    <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Approved Leaves This Month</h3>
+                    <div className="flex-1 min-h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={getLeaveChartData()} margin={{ top: 5, right: 30, left: 20, bottom: 40 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                <XAxis dataKey="name" angle={-25} textAnchor="end" height={60} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                                <YAxis allowDecimals={false} tick={{ fill: '#6b7280' }} />
+                                <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                <Bar dataKey="value" fill="#64748b" radius={[4, 4, 0, 0]} name="Active Leaves" />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Delayed Approvals */}
-                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Delayed &gt; 2 Days</p>
-                        <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{data.delayedApprovals}</h3>
-                    </div>
-                    <div className="w-12 h-12 bg-primary/10 flex items-center justify-center rounded-lg">
-                        <span className="material-icons-round text-primary">warning</span>
+                {/* 3. Employees by Employment Status (Doughnut) */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow h-[500px] flex flex-col">
+                    <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Employment Status</h3>
+                    <div className="flex-1 min-h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={toChartData(data.employmentStatusCount)} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={2}>
+                                    {toChartData(data.employmentStatusCount).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={MUTED_COLORS[index % MUTED_COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '0px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
+
+                {/* 4. Employees by Branch/Location (Pie) */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow h-[500px] flex flex-col">
+                    <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Employees by Branch</h3>
+                    <div className="flex-1 min-h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={toChartData(data.branchEmployeeCount)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110}>
+                                    {toChartData(data.branchEmployeeCount).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={MUTED_COLORS[(index + 5) % MUTED_COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '0px' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 5. Employees by Department */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow h-[500px] flex flex-col">
+                    <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Employees by Department</h3>
+                    <div className="flex-1 min-h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={getDepartmentChartData()} margin={{ top: 5, right: 30, left: 20, bottom: 40 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} tick={{ fontSize: 12, fill: '#6b7280' }} />
+                                <YAxis allowDecimals={false} tick={{ fill: '#6b7280' }} />
+                                <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                <Bar dataKey="value" fill="#8B3A00" radius={[4, 4, 0, 0]} name="Employees" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 6. Employees by Designation (Horizontal Bar) */}
+                <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark card-shadow h-[500px] flex flex-col">
+                    <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Employees by Designation</h3>
+                    <div className="flex-1 min-h-[250px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={toChartData(data.designationEmployeeCount)} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                                <XAxis type="number" allowDecimals={false} tick={{ fill: '#6b7280' }} />
+                                <YAxis type="category" dataKey="name" width={80} interval={0} tick={<CustomYAxisTick />} />
+                                <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                <Bar dataKey="value" fill="#64748b" radius={[0, 4, 4, 0]} name="Employees" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
             </div>
 
             {/* Middle Row: Department Impact */}
@@ -225,11 +369,11 @@ export default function HrAnalyticsPage() {
                             <span className="material-icons-round text-primary">flight</span>
                             Passport Expiries (&lt; 6 mo)
                         </h3>
-                        <span className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-bold border border-amber-200 dark:border-amber-800">{data.passportExpiryAlerts.length}</span>
+                        <span className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full text-xs font-bold border border-amber-200 dark:border-amber-800">{data.passportExpiryAlerts?.length || 0}</span>
                     </div>
 
                     <div className="flex-1 overflow-y-auto pr-2">
-                        {data.passportExpiryAlerts.length === 0 ? (
+                        {!data.passportExpiryAlerts || data.passportExpiryAlerts.length === 0 ? (
                             <div className="h-full flex items-center justify-center text-gray-500 text-sm py-12">
                                 No upcoming passport expirations.
                             </div>
@@ -259,11 +403,11 @@ export default function HrAnalyticsPage() {
                             <span className="material-icons-round text-primary">pregnant_woman</span>
                             Upcoming Maternity Returns
                         </h3>
-                        <span className="bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 px-3 py-1 rounded-full text-xs font-bold border border-pink-200 dark:border-pink-800">{data.upcomingMaternityReturns.length}</span>
+                        <span className="bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 px-3 py-1 rounded-full text-xs font-bold border border-pink-200 dark:border-pink-800">{data.upcomingMaternityReturns?.length || 0}</span>
                     </div>
 
                     <div className="flex-1 overflow-y-auto pr-2">
-                        {data.upcomingMaternityReturns.length === 0 ? (
+                        {!data.upcomingMaternityReturns || data.upcomingMaternityReturns.length === 0 ? (
                             <div className="h-full flex items-center justify-center text-gray-500 text-sm py-12">
                                 No upcoming returns this month.
                             </div>

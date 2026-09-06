@@ -10,7 +10,13 @@ import {
   Contact,
   Calendar,
   BarChart2,
-  GraduationCap
+  GraduationCap,
+  CheckSquare,
+  UserCog,
+  CalendarDays,
+  UserCheck,
+  Palmtree,
+  Hourglass
 } from "lucide-react";
 import EmployeeMaster from "@/components/admin/employee-master/EmployeeMaster";
 import RegisterEmployee from "@/components/admin/register-employee/RegisterEmployee";
@@ -20,34 +26,36 @@ import { useAdminNavigation } from "./AdminNavigationContext";
 
 export default function AdminContent() {
   const { activeView, setActiveView } = useAdminNavigation();
-  const [employeeCount, setEmployeeCount] = useState<number | string>("...");
-  const [shiftCount, setShiftCount] = useState<number | string>("...");
+
+  const [stats, setStats] = useState({
+    totalStaff: "..." as number | string,
+    attendancePercentage: "..." as string,
+    presentToday: "..." as number | string,
+    onLeaveToday: "..." as number | string,
+    pendingRequests: "..." as number | string,
+  });
 
   useEffect(() => {
     let isMounted = true;
-    const fetchCounts = async () => {
+    const fetchStats = async () => {
       try {
-        const [empRes, shiftRes] = await Promise.all([
-          api.get("/api/employees"),
-          api.get("/api/shifts"),
-        ]);
+        const res = await api.get("/api/v1/dashboard/analytics");
+        const d = res.data;
         if (isMounted) {
-          setEmployeeCount(Array.isArray(empRes.data) ? empRes.data.length : 0);
-          setShiftCount(Array.isArray(shiftRes.data) ? shiftRes.data.length : 0);
+          setStats({
+            totalStaff: d.totalStaff ?? 0,
+            attendancePercentage: d.attendancePercentage ?? "0%",
+            presentToday: d.presentToday ?? 0,
+            onLeaveToday: d.onLeaveToday ?? 0,
+            pendingRequests: d.totalPendingRequests ?? 0,
+          });
         }
       } catch (error) {
-        console.error("Error fetching stats:", error);
-        if (isMounted) {
-          setEmployeeCount("N/A");
-          setShiftCount("N/A");
-        }
+        console.error("Error fetching admin stats:", error);
       }
     };
-
-    fetchCounts();
-    return () => {
-      isMounted = false;
-    };
+    fetchStats();
+    return () => { isMounted = false; };
   }, []);
 
   if (activeView === "employeeMaster") {
@@ -81,19 +89,33 @@ export default function AdminContent() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <StatCard
           title="Total Employees"
-          value={employeeCount}
+          value={stats.totalStaff}
           icon={<Users className="w-7 h-7 text-primary" />}
           iconBgColor="bg-primary/10"
         />
 
         <StatCard
-          title="Today's Shifts"
-          value={shiftCount}
-          icon={<Clock className="w-7 h-7 text-blue-600" />}
-          iconBgColor="bg-blue-50"
+          title="Today's Attendance"
+          value={stats.attendancePercentage}
+          icon={<UserCheck className="w-7 h-7 text-blue-600" />}
+          iconBgColor="bg-blue-50 dark:bg-blue-900/20"
+        />
+
+        <StatCard
+          title="Employees on Leave Today"
+          value={stats.onLeaveToday}
+          icon={<Palmtree className="w-7 h-7 text-orange-500" />}
+          iconBgColor="bg-orange-50 dark:bg-orange-900/20"
+        />
+
+        <StatCard
+          title="Total Pending Requests"
+          value={stats.pendingRequests}
+          icon={<Hourglass className="w-7 h-7 text-red-500" />}
+          iconBgColor="bg-red-50 dark:bg-red-900/20"
         />
       </div>
 
@@ -136,6 +158,27 @@ export default function AdminContent() {
           description="Manage and review all pending training applications and monitor employee skill development."
           icon={<GraduationCap className="w-6 h-6" />}
           href="/admin/training"
+          className="lg:col-span-2"
+        />
+        <ModuleCard
+          title="Other Approvals"
+          description="Review and action pending overseas leave, maternity leave, and other special HR approval requests."
+          icon={<CheckSquare className="w-6 h-6" />}
+          href="/admin/other-approvals"
+          className="lg:col-span-2"
+        />
+        <ModuleCard
+          title="Employee Actions"
+          description="Process resignations, transfers, terminations, and other official employee status changes."
+          icon={<UserCog className="w-6 h-6" />}
+          href="/admin/employee-actions"
+          className="lg:col-span-2"
+        />
+        <ModuleCard
+          title="Leave Management"
+          description="Review, approve, or reject staff leave requests and monitor leave balances across all departments."
+          icon={<CalendarDays className="w-6 h-6" />}
+          href="/admin/leave-requests"
           className="lg:col-span-2"
         />
       </div>
