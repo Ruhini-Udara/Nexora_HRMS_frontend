@@ -62,6 +62,11 @@ export const useAuthStore = create<AuthState>()(
             // survives page refreshes by automatically syncing with localStorage.
             name: 'nexora-auth-storage',
             storage: createJSONStorage(() => localStorage),
+            onRehydrateStorage: () => (state) => {
+                if (state?.user && (state.user.name === 'System Admin User' || !state.user.name)) {
+                    state.user.name = 'HR Admin';
+                }
+            }
         }
     )
 );

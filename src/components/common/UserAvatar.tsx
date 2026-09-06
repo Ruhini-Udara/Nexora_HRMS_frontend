@@ -27,7 +27,8 @@ export default function UserAvatar({ user, size = "md" }: UserAvatarProps) {
         return () => { isMounted = false; };
     }, [user?.profilePicturePath]);
 
-    const initials = user?.name ? user.name.substring(0, 2).toUpperCase() : "U";
+    const displayName = (!user?.name || user?.name === "System Admin User") ? "HR Admin" : user.name;
+    const initials = displayName ? displayName.substring(0, 2).toUpperCase() : "U";
     
     let sizeClasses = "w-10 h-10";
     if (size === "sm") sizeClasses = "w-8 h-8";

@@ -39,7 +39,9 @@ export default function AdminTopbar() {
         <div className="h-8 border-l border-gray-200 dark:border-slate-800"></div>
         <Link href="/admin/profile" className="flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-800/50 p-2 rounded-lg transition-colors group cursor-pointer">
           <div className="text-right">
-            <div className="font-semibold text-sm text-slate-800 dark:text-white leading-none">{user?.name || "User"}</div>
+            <div className="font-semibold text-sm text-slate-800 dark:text-white leading-none">
+              {(!user?.name || user?.name === "System Admin User") ? "HR Admin" : user.name}
+            </div>
             <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Admin Account</div>
           </div>
           <UserAvatar user={user} size="md" />
