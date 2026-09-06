@@ -62,12 +62,20 @@ export default function ProfileView() {
         }
     };
 
+    useEffect(() => {
+        if (user && user.name === "System Admin User" && token) {
+            login(token, { ...user, name: "HR Admin" });
+        }
+    }, [user, token, login]);
+
     if (!user) {
         return <div>Loading profile...</div>;
     }
 
+    const displayName = (!user.name || user.name === "System Admin User") ? "HR Admin" : user.name;
+
     // A placeholder avatar with initials if no profile picture is set
-    const initials = user.name ? user.name.substring(0, 2).toUpperCase() : "US";
+    const initials = displayName ? displayName.substring(0, 2).toUpperCase() : "HR";
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
@@ -99,7 +107,7 @@ export default function ProfileView() {
                             <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} disabled={isUploading} />
                         </label>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">{user.name}</h3>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">{displayName}</h3>
                     <p className="text-slate-500 dark:text-slate-400 mb-6">{user.designation}</p>
                     
                     <div className="w-full mt-4 pt-6 border-t border-slate-100 dark:border-slate-800 text-left space-y-4">
