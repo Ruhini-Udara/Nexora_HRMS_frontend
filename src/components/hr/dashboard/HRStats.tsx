@@ -10,6 +10,10 @@ interface HRDashboardData {
     trainingsFinishingSoon: number;
     attendancePercentage: string;
     presentToday: number;
+    onLeaveToday: number;
+    pendingOverseas: number;
+    pendingMaternity: number;
+    totalPendingRequests: number;
 }
 
 export default function HRStats() {
@@ -19,7 +23,19 @@ export default function HRStats() {
         const fetchDashboardData = async () => {
             try {
                 const response = await api.get("/api/v1/dashboard/analytics");
-                setData(response.data);
+                const d = response.data;
+                setData({
+                    totalStaff: d.totalStaff ?? 0,
+                    newHiresThisWeek: d.newHiresThisWeek ?? 0,
+                    activeTrainingPrograms: d.activeTrainingPrograms ?? 0,
+                    trainingsFinishingSoon: d.trainingsFinishingSoon ?? 0,
+                    attendancePercentage: d.attendancePercentage ?? "0%",
+                    presentToday: d.presentToday ?? 0,
+                    onLeaveToday: d.onLeaveToday ?? 0,
+                    pendingOverseas: d.pendingOverseas ?? 0,
+                    pendingMaternity: d.pendingMaternity ?? 0,
+                    totalPendingRequests: d.totalPendingRequests ?? 0,
+                });
             } catch (error) {
                 console.error("Failed to fetch HR dashboard data:", error);
                 // Fallback mock data in case backend endpoint is broken
@@ -28,8 +44,12 @@ export default function HRStats() {
                     newHiresThisWeek: 4,
                     activeTrainingPrograms: 12,
                     trainingsFinishingSoon: 3,
-                    attendancePercentage: "92",
-                    presentToday: 142
+                    attendancePercentage: "92%",
+                    presentToday: 142,
+                    onLeaveToday: 12,
+                    pendingOverseas: 5,
+                    pendingMaternity: 3,
+                    totalPendingRequests: 8,
                 });
             }
         };
@@ -37,7 +57,7 @@ export default function HRStats() {
         fetchDashboardData();
     }, []);
 
-    return (
+    return (<>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
                 <div>
@@ -88,7 +108,40 @@ export default function HRStats() {
                     <span className="material-icons-round text-blue-600">how_to_reg</span>
                 </div>
             </div>
+            <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Employees on Leave Today</p>
+                    <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                        {data ? data.onLeaveToday : "..."}
+                    </h3>
+                    <p className="text-xs text-orange-500 font-medium mt-2 flex items-center">
+                        <span className="material-icons-round text-sm mr-1">beach_access</span>
+                        out of office today
+                    </p>
+                </div>
+                <div className="w-12 h-12 bg-orange-500/10 flex items-center justify-center rounded-lg">
+                    <span className="material-icons-round text-orange-500">beach_access</span>
+                </div>
+            </div>
+            <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Pending Requests</p>
+                    <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                        {data ? data.totalPendingRequests : "..."}
+                    </h3>
+                    <p className="text-xs text-red-500 font-medium mt-2 flex items-center">
+                        <span className="material-icons-round text-sm mr-1">hourglass_top</span>
+                        awaiting approval
+                    </p>
+                </div>
+                <div className="w-12 h-12 bg-red-500/10 flex items-center justify-center rounded-lg">
+                    <span className="material-icons-round text-red-500">hourglass_top</span>
+                </div>
+            </div>
         </div>
-    );
+        
+            
+
+    </>);
 }
 
