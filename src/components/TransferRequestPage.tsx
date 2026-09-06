@@ -77,7 +77,7 @@ const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onCo
                 </div>
                 <div className="p-6">
                     <p className="text-sm text-slate-600 leading-relaxed">
-                        After submission, the request cannot be edited as it is submitted for approvals.
+                        After submission, the request will be submitted to HR for review and verification.
                     </p>
                 </div>
                 <div className="p-6 bg-slate-50 flex items-center justify-end gap-3">
@@ -463,12 +463,13 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
 
     const onFormValid = async (data: TransferFormData) => {
         if (pendingAction === 'draft') {
-            const payload = await buildPayload(data, 'NEW');
+            const draftStatus: TransferStatus = editingDraft?.status === 'RETURNED' ? 'RETURNED' : 'NEW';
+            const payload = await buildPayload(data, draftStatus);
             try {
                 if (editingDraft) {
                     const updated = await updateTransferRequest(editingDraft.id, payload);
                     onRequestChange(requests.map(r => r.id === updated.id ? updated : r));
-                    showSuccess(`Draft ${updated.id} updated successfully`);
+                    showSuccess(editingDraft.status === 'RETURNED' ? `Changes for returned request ${updated.id} saved` : `Draft ${updated.id} updated successfully`);
                 } else {
                     const userDetails = user ? {
                         id: user.id,
@@ -498,12 +499,17 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
     const handleConfirmSubmit = async () => {
         setIsUploading(true);
         const values = getValues();
-        const payload = await buildPayload(values, 'SUBMITTED');
+        const submitStatus: TransferStatus = editingDraft?.status === 'RETURNED' ? 'RESUBMITTED' : 'SUBMITTED';
+        const payload = await buildPayload(values, submitStatus);
         try {
             if (editingDraft) {
                 const updated = await updateTransferRequest(editingDraft.id, payload);
                 onRequestChange(requests.map(r => r.id === updated.id ? updated : r));
-                showSuccess(`Request ${updated.id} submitted for approval`);
+                showSuccess(
+                    editingDraft.status === 'RETURNED'
+                        ? `Amended request ${updated.id} resubmitted for HR verification`
+                        : `Request ${updated.id} submitted for approval`
+                );
             } else {
                 const userDetails = user ? {
                     id: user.id,
@@ -534,24 +540,49 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
 
                     <form onSubmit={handleSubmit(onFormValid)}>
                         {editingDraft && (
-                            <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/40 rounded-xl flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-[#8B3A00] dark:text-orange-400 text-2xl">edit_note</span>
+                            <div className={`mb-6 p-4 rounded-xl flex items-start justify-between border ${
+                                editingDraft.status === 'RETURNED'
+                                    ? 'bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800'
+                                    : 'bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-900/40'
+                            }`}>
+                                <div className="flex items-start gap-3">
+                                    <span className={`material-symbols-outlined text-2xl mt-0.5 ${
+                                        editingDraft.status === 'RETURNED'
+                                            ? 'text-orange-600 dark:text-orange-400'
+                                            : 'text-[#8B3A00] dark:text-orange-400'
+                                    }`}>
+                                        {editingDraft.status === 'RETURNED' ? 'assignment_return' : 'edit_note'}
+                                    </span>
                                     <div>
-                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                                            Editing Draft <span className="text-[#8B3A00] dark:text-orange-400 font-extrabold">{editingDraft.id}</span>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                                {editingDraft.status === 'RETURNED' ? 'Amending Returned Request' : 'Editing Draft'} <span className="text-[#8B3A00] dark:text-orange-400 font-extrabold">{editingDraft.id}</span>
+                                            </p>
+                                            {editingDraft.status === 'RETURNED' && (
+                                                <span className="text-[10px] font-bold bg-orange-200 dark:bg-orange-900/60 text-orange-800 dark:text-orange-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                    Returned
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                            {editingDraft.status === 'RETURNED'
+                                                ? 'Please make the required changes below and click "Resubmit Request" to send it back to HR.'
+                                                : 'Modify the details below and click "Submit Request" or update the draft.'}
                                         </p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            Modify the details below and click &quot;Submit Request&quot; or update the draft.
-                                        </p>
+                                        {editingDraft.status === 'RETURNED' && editingDraft.hrRemark && (
+                                            <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-orange-200 dark:border-orange-800/60 rounded-lg">
+                                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Reason for Return (from HR):</p>
+                                                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{editingDraft.hrRemark}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={resetForm}
-                                    className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors cursor-pointer"
+                                    className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors cursor-pointer shrink-0"
                                 >
-                                    Cancel Edit
+                                    Cancel
                                 </button>
                             </div>
                         )}
@@ -700,10 +731,10 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                             <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <button
                                     type="submit"
-                                    className="px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                                    className="px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
                                     onClick={triggerSaveAsDraft}
                                 >
-                                    {isEditing ? 'Update Draft' : 'Save as Draft'}
+                                    {editingDraft?.status === 'RETURNED' ? 'Save Changes' : isEditing ? 'Update Draft' : 'Save as Draft'}
                                 </button>
                                 <div className="flex items-center gap-3 ml-auto">
                                     <div className="relative group">
@@ -711,13 +742,15 @@ const TransferRequestPage = forwardRef<TransferRequestPageRef, TransferRequestPa
                                             type="submit"
                                             onClick={triggerSubmit}
                                             disabled={mandatoryDocsMissing}
-                                            className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${mandatoryDocsMissing
+                                            className={`px-10 py-3 rounded-lg font-bold text-sm flex items-center gap-2 transition-all cursor-pointer ${mandatoryDocsMissing
                                                 ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                                                 : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
                                                 }`}
                                         >
-                                            <span className="material-symbols-outlined text-[20px]">send</span>
-                                            Submit Request
+                                            <span className="material-symbols-outlined text-[20px]">
+                                                {editingDraft?.status === 'RETURNED' ? 'update' : 'send'}
+                                            </span>
+                                            {editingDraft?.status === 'RETURNED' ? 'Resubmit Request' : 'Submit Request'}
                                         </button>
                                         {mandatoryDocsMissing && (
                                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-[10px] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">

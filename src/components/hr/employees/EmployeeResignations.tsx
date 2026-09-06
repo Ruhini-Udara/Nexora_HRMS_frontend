@@ -9,6 +9,8 @@ import { getHrmsSignedUrl } from '@/lib/supabaseClient';
 // ── Status badge config ─────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; classes: string }> = {
     SUBMITTED: { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+    RESUBMITTED: { label: "Resubmitted (Amended)", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+    RETURNED: { label: "Returned", classes: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
     VERIFIED_BY_HR: { label: "Verified", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
     PENDING_ADMIN: { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
     SUBMITTED_TO_DIRECTOR: { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
@@ -22,6 +24,8 @@ const getStatusBadge = (status: string | undefined | null) => {
     const s = String(status).trim();
     const upper = s.toUpperCase();
     if (upper === "NEW" || upper === "DRAFT") return { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" };
+    if (upper === "RESUBMITTED") return { label: "Resubmitted (Amended)", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
+    if (upper === "RETURNED") return { label: "Returned", classes: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" };
     if (upper === "SUBMITTED" || upper === "PENDING") return { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" };
     if (upper === "VERIFIED_BY_HR" || upper === "VERIFIED") return { label: "Verified", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" };
     if (upper === "PENDING_ADMIN") return { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
@@ -134,12 +138,12 @@ export default function EmployeeResignations() {
         }
         if (!selectedRequest) return;
         try {
-            await updateResignationStatus(selectedRequest.id, "REJECTED", rejectReason);
+            await updateResignationStatus(selectedRequest.id, "RETURNED", rejectReason);
             await fetchRequests();
             handleCloseRejectDialog();
             handleCloseModal();
         } catch (error) {
-            console.error('Failed to reject:', error);
+            console.error('Failed to return request:', error);
         }
     };
 
@@ -344,12 +348,13 @@ export default function EmployeeResignations() {
 
                 {/* Stats Row */}
                 {!showVerifiedList && (
-                    <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="mb-6 grid grid-cols-2 sm:grid-cols-5 gap-4">
                         {(
                             [
                                 { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20", ring: "ring-amber-500" },
                                 { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20", ring: "ring-emerald-500" },
                                 { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
+                                { label: "Returned", status: "RETURNED", icon: "assignment_return", color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-900/20", ring: "ring-orange-500" },
                                 { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
                             ] as const
                         ).map(({ label, status, icon, color, bg, ring }) => {
@@ -441,7 +446,7 @@ export default function EmployeeResignations() {
                                                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-all cursor-pointer"
                                                 >
                                                     <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                    {req.status === 'SUBMITTED' ? "Review & Verify" : "View Details"}
+                                                    {(req.status === 'SUBMITTED' || req.status === 'RESUBMITTED') ? "Review & Verify" : "View Details"}
                                                 </button>
                                             </td>
                                         </tr>
@@ -523,6 +528,31 @@ export default function EmployeeResignations() {
 
                             {/* Body */}
                             <div className="p-8 overflow-y-auto flex-1 space-y-8">
+                                {selectedRequest.status === 'RESUBMITTED' && (
+                                    <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-2xl mt-0.5">edit_note</span>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                                                    Amended Resignation Request
+                                                </p>
+                                                <span className="text-[10px] font-bold bg-blue-200 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                    Resubmitted
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                                This resignation request was previously returned by HR and has been amended and resubmitted by the employee.
+                                            </p>
+                                            {selectedRequest.hrRemark && (
+                                                <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-blue-200 dark:border-blue-800/60 rounded-lg">
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Previous HR Return Reason:</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{selectedRequest.hrRemark}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-2 gap-6">
                                     <ReadOnlyField label="Current Designation" value={selectedRequest.designation} />
                                     <ReadOnlyField label="Branch" value={selectedRequest.branch} />
@@ -631,13 +661,14 @@ export default function EmployeeResignations() {
 
                             {/* Footer Actions */}
                             <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex items-center justify-end gap-3 rounded-b-2xl">
-                                {selectedRequest.status === "SUBMITTED" && !showVerifiedList ? (
+                                {(selectedRequest.status === "SUBMITTED" || selectedRequest.status === "RESUBMITTED") && !showVerifiedList ? (
                                     <>
                                         <button
                                             onClick={handleOpenRejectDialog}
-                                            className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-bold text-sm transition-colors cursor-pointer"
+                                            className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg font-bold text-sm transition-colors cursor-pointer flex items-center gap-1.5"
                                         >
-                                            Reject Request
+                                            <span className="material-symbols-outlined text-[18px]">assignment_return</span>
+                                            Return Request
                                         </button>
                                         <button
                                             onClick={handleVerify}
@@ -695,30 +726,32 @@ export default function EmployeeResignations() {
                     </div>
                 )}
 
-                {/* Reject Reason Popup */}
+                {/* Return Reason Popup */}
                 {showRejectDialog && selectedRequest && (
                     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
                         <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-red-500 text-xl">cancel</span>
+                                    <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-orange-500 text-xl">assignment_return</span>
                                     </div>
-                                    <h3 className="text-base font-bold text-slate-800 dark:text-white">Reject Request</h3>
+                                    <h3 className="text-base font-bold text-slate-800 dark:text-white">Return Request for Amendment</h3>
                                 </div>
                                 <button onClick={handleCloseRejectDialog} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
                                     <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
                             <div className="p-6 space-y-4">
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Please provide a reason for rejecting this request.</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    Please specify the reason why this resignation request is being returned to the employee. The employee will be notified by email and will be able to amend and resubmit it.
+                                </p>
                                 <textarea
                                     value={rejectReason}
                                     onChange={(e) => {
                                         setRejectReason(e.target.value);
                                         if (e.target.value.trim()) setRejectReasonError(false);
                                     }}
-                                    placeholder="e.g. Missing mandatory documents..."
+                                    placeholder="e.g. Please clarify obligations or re-upload the signed clearance letter..."
                                     rows={4}
                                     className={`w-full border rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 resize-none transition-colors ${rejectReasonError ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-primary/20 focus:border-primary"}`}
                                 />
@@ -728,9 +761,9 @@ export default function EmployeeResignations() {
                                 <button onClick={handleCloseRejectDialog} className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 cursor-pointer">
                                     Cancel
                                 </button>
-                                <button onClick={handleConfirmReject} className="px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg shadow-sm shadow-red-200 transition-all cursor-pointer flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[18px]">cancel</span>
-                                    Confirm Rejection
+                                <button onClick={handleConfirmReject} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[18px]">assignment_return</span>
+                                    Return Request
                                 </button>
                             </div>
                         </div>

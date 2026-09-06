@@ -9,6 +9,8 @@ export interface ResignationDocument {
 export type ResignationStatus = 
     | 'NEW' 
     | 'SUBMITTED' 
+    | 'RESUBMITTED'
+    | 'RETURNED'
     | 'VERIFIED_BY_HR' 
     | 'PENDING_ADMIN' 
     | 'REJECTED'

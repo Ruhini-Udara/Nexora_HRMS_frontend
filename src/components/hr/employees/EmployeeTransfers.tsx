@@ -11,6 +11,8 @@ import { Toast } from "@/components/ui/Toast";
 // ── Status badge config ─────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; classes: string }> = {
     SUBMITTED: { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+    RESUBMITTED: { label: "Resubmitted (Amended)", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+    RETURNED: { label: "Returned", classes: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" },
     VERIFIED_BY_HR: { label: "Verified", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
     PENDING_ADMIN: { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
     SUBMITTED_TO_DIRECTOR: { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
@@ -24,6 +26,8 @@ const getStatusBadge = (status: string | undefined | null) => {
     const s = String(status).trim();
     const upper = s.toUpperCase();
     if (upper === "NEW" || upper === "DRAFT") return { label: "Draft", classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" };
+    if (upper === "RESUBMITTED") return { label: "Resubmitted (Amended)", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
+    if (upper === "RETURNED") return { label: "Returned", classes: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" };
     if (upper === "SUBMITTED" || upper === "PENDING") return { label: "Submitted", classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" };
     if (upper === "VERIFIED_BY_HR" || upper === "VERIFIED") return { label: "Verified", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" };
     if (upper === "PENDING_ADMIN") return { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
@@ -135,15 +139,15 @@ export default function EmployeeTransfers() {
         if (!selectedRequest) return;
         
         try {
-            const updatedReq = await updateTransferStatus(selectedRequest.id, "REJECTED", rejectReason);
+            const updatedReq = await updateTransferStatus(selectedRequest.id, "RETURNED", rejectReason);
             setRequests((prev) => prev.map((req) => req.id === updatedReq.id ? updatedReq : req));
             
-            setSuccessMessage(`Email successfully sent to ${updatedReq.employeeName}`);
+            setSuccessMessage(`Request returned to ${updatedReq.employeeName} for amendments. Email sent.`);
             
             handleCloseRejectDialog();
             handleCloseModal();
         } catch (error) {
-            console.error("Failed to reject request", error);
+            console.error("Failed to return request", error);
         }
     };
 
@@ -444,20 +448,21 @@ export default function EmployeeTransfers() {
 
                         {/* Stats Row */}
                         {!showVerifiedList && (
-                            <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div className="mb-6 grid grid-cols-2 sm:grid-cols-5 gap-4">
                                 {(
                                     [
-                                        { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
-                                        { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-                                        { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
-                                        { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
+                                        { label: "Submitted", count: legitRequests.filter((r) => r.status === "SUBMITTED" || r.status === "RESUBMITTED").length, icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
+                                        { label: "Verified", count: legitRequests.filter((r) => r.status === "VERIFIED_BY_HR").length, icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+                                        { label: "Pending Admin", count: legitRequests.filter((r) => r.status === "PENDING_ADMIN").length, icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
+                                        { label: "Returned", count: legitRequests.filter((r) => r.status === "RETURNED").length, icon: "assignment_return", color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-900/20" },
+                                        { label: "Rejected", count: legitRequests.filter((r) => r.status === "REJECTED").length, icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
                                     ] as const
-                                ).map(({ label, status, icon, color, bg }) => (
-                                    <div key={status} className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center gap-3 shadow-sm`}>
+                                ).map(({ label, count, icon, color, bg }) => (
+                                    <div key={label} className={`rounded-xl p-4 ${bg} border border-slate-200 dark:border-slate-700 flex items-center gap-3 shadow-sm`}>
                                         <span className={`material-symbols-outlined text-2xl ${color}`}>{icon}</span>
                                         <div>
                                             <p className="text-2xl font-bold text-slate-800 dark:text-white">
-                                                {legitRequests.filter((r) => r.status === status).length}
+                                                {count}
                                             </p>
                                             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</p>
                                         </div>
@@ -508,7 +513,7 @@ export default function EmployeeTransfers() {
                                                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-all cursor-pointer"
                                                         >
                                                             <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                            {req.status === 'SUBMITTED' ? "Review & Verify" : "View Details"}
+                                                            {(req.status === 'SUBMITTED' || req.status === 'RESUBMITTED') ? "Review & Verify" : "View Details"}
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -573,8 +578,8 @@ export default function EmployeeTransfers() {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                                            {selectedRequest.status === "SUBMITTED" && !showVerifiedList
-                                                ? "Verify Transfer Request"
+                                            {(selectedRequest.status === "SUBMITTED" || selectedRequest.status === "RESUBMITTED") && !showVerifiedList
+                                                ? (selectedRequest.status === "RESUBMITTED" ? "Verify Amended Transfer Request" : "Verify Transfer Request")
                                                 : "View Transfer Request"}
                                         </h3>
                                         <p className="text-sm text-slate-500">Request ID: {selectedRequest.id} · {selectedRequest.employeeName}</p>
@@ -590,6 +595,49 @@ export default function EmployeeTransfers() {
 
                             {/* Body */}
                             <div className="p-8 overflow-y-auto flex-1 space-y-8">
+                                {selectedRequest.status === "RESUBMITTED" && (
+                                    <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-2xl mt-0.5">update</span>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                                                    Amended Transfer Request
+                                                </p>
+                                                <span className="text-[10px] font-bold bg-blue-200 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                    Resubmitted
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                                This request was previously returned for amendments and has been updated and resubmitted by the employee.
+                                            </p>
+                                            {selectedRequest.hrRemark && (
+                                                <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-blue-200 dark:border-blue-800/60 rounded-lg">
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Previous Return Reason:</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{selectedRequest.hrRemark}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {selectedRequest.status === "RETURNED" && (
+                                    <div className="p-4 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-xl flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-2xl mt-0.5">assignment_return</span>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-bold text-orange-900 dark:text-orange-200">
+                                                Returned to Employee for Amendments
+                                            </p>
+                                            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                                This request has been returned to the employee to make required changes.
+                                            </p>
+                                            {selectedRequest.hrRemark && (
+                                                <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-orange-200 dark:border-orange-800/60 rounded-lg">
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Reason for Return:</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{selectedRequest.hrRemark}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-6">
                                     <ReadOnlyField label="Current Designation" value={selectedRequest.designation} />
                                     <ReadOnlyField label="Current Location" value={selectedRequest.currentBranch} />
@@ -646,13 +694,13 @@ export default function EmployeeTransfers() {
 
                             {/* Footer Actions */}
                             <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex items-center justify-end gap-3 rounded-b-2xl">
-                                {selectedRequest.status === "SUBMITTED" && !showVerifiedList ? (
+                                {(selectedRequest.status === "SUBMITTED" || selectedRequest.status === "RESUBMITTED") && !showVerifiedList ? (
                                     <>
                                         <button
                                             onClick={handleOpenRejectDialog}
                                             className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-bold text-sm transition-colors cursor-pointer"
                                         >
-                                            Reject Request
+                                            Reject &amp; Return
                                         </button>
                                         <button
                                             onClick={handleVerify}
@@ -716,24 +764,29 @@ export default function EmployeeTransfers() {
                         <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-red-500 text-xl">cancel</span>
+                                    <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-xl">assignment_return</span>
                                     </div>
-                                    <h3 className="text-base font-bold text-slate-800 dark:text-white">Reject Request</h3>
+                                    <div>
+                                        <h3 className="text-base font-bold text-slate-800 dark:text-white">Reject &amp; Return Request</h3>
+                                        <p className="text-xs text-slate-400">Return to employee for required amendments</p>
+                                    </div>
                                 </div>
                                 <button onClick={handleCloseRejectDialog} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
                                     <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
                             <div className="p-6 space-y-4">
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Please provide a reason for rejecting this request.</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    Please provide a reason for returning this request. An email will be sent to the employee with this reason instructing them to make the required amendments and resubmit.
+                                </p>
                                 <textarea
                                     value={rejectReason}
                                     onChange={(e) => {
                                         setRejectReason(e.target.value);
                                         if (e.target.value.trim()) setRejectReasonError(false);
                                     }}
-                                    placeholder="e.g. Current location requires staff retention..."
+                                    placeholder="e.g. Please update the target location justification and re-upload supporting documents..."
                                     rows={4}
                                     className={`w-full border rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 resize-none transition-colors ${rejectReasonError ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-primary/20 focus:border-primary"}`}
                                 />
@@ -743,9 +796,9 @@ export default function EmployeeTransfers() {
                                 <button onClick={handleCloseRejectDialog} className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 cursor-pointer">
                                     Cancel
                                 </button>
-                                <button onClick={handleConfirmReject} className="px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg shadow-sm shadow-red-200 transition-all cursor-pointer flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[18px]">cancel</span>
-                                    Confirm Rejection
+                                <button onClick={handleConfirmReject} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[18px]">assignment_return</span>
+                                    Confirm &amp; Return Request
                                 </button>
                             </div>
                         </div>

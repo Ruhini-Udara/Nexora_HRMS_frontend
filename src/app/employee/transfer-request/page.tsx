@@ -8,6 +8,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 const statusStyles: Record<string, { label: string; classes: string }> = {
     NEW: { label: 'Draft', classes: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300' },
     DRAFT: { label: 'Draft', classes: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300' },
+    RETURNED: { label: 'Returned', classes: 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800' },
+    RESUBMITTED: { label: 'Resubmitted (Amended)', classes: 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800' },
     SUBMITTED: { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' },
     PENDING: { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400' },
     VERIFIED_BY_HR: { label: 'Verified', classes: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
@@ -142,13 +144,13 @@ export default function Page() {
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        {(req.status === 'NEW' || req.status === 'DRAFT') && (
+                                                        {(req.status === 'NEW' || req.status === 'DRAFT' || req.status === 'RETURNED') && (
                                                             <button
                                                                 onClick={() => handleEditDraft(req)}
                                                                 className="flex items-center gap-1 text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/40 px-3 py-1.5 rounded-lg transition-colors border border-orange-100 dark:border-orange-900/40 cursor-pointer"
                                                             >
                                                                 <span className="material-symbols-outlined text-sm">edit</span>
-                                                                Edit & Submit
+                                                                {req.status === 'RETURNED' ? 'Edit & Resubmit' : 'Edit & Submit'}
                                                             </button>
                                                         )}
                                                         <button
@@ -201,6 +203,78 @@ export default function Page() {
                             </button>
                         </div>
                         <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                            {viewRequest.status === 'RETURNED' && (
+                                <div className="p-4 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-xl flex items-start gap-3">
+                                    <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-2xl mt-0.5">assignment_return</span>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-bold text-orange-900 dark:text-orange-200">
+                                                Request Returned by HR for Amendments
+                                            </p>
+                                        </div>
+                                        <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                            HR has returned this request. Please review the reason below and click <strong>&quot;Edit &amp; Resubmit&quot;</strong> to make changes.
+                                        </p>
+                                        {viewRequest.hrRemark && (
+                                            <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-orange-200 dark:border-orange-800/60 rounded-lg">
+                                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Reason / Instructions from HR:</p>
+                                                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{viewRequest.hrRemark}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {viewRequest.status === 'RESUBMITTED' && (
+                                <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start gap-3">
+                                    <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-2xl mt-0.5">update</span>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                                                Amended Request Resubmitted
+                                            </p>
+                                            <span className="text-[10px] font-bold bg-blue-200 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                Amended
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                            This request was amended by you following HR feedback and has been resubmitted for verification.
+                                        </p>
+                                        {viewRequest.hrRemark && (
+                                            <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-blue-200 dark:border-blue-800/60 rounded-lg">
+                                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Previous HR Return Reason:</p>
+                                                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{viewRequest.hrRemark}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {(viewRequest.status === 'REJECTED' || viewRequest.status === 'Board Rejected') && (
+                                <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+                                    <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-2xl mt-0.5">cancel</span>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm font-bold text-red-900 dark:text-red-200">
+                                                Transfer Request Rejected
+                                            </p>
+                                            <span className="text-[10px] font-bold bg-red-200 dark:bg-red-900/60 text-red-800 dark:text-red-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                Rejected
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                                            This transfer request has been reviewed and rejected by the Director / Board.
+                                        </p>
+                                        {viewRequest.hrRemark && (
+                                            <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-red-200 dark:border-red-800/60 rounded-lg">
+                                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Rejection Reason:</p>
+                                                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{viewRequest.hrRemark}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-8">
                                 <div className="space-y-1.5">
                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Submission Date</p>
@@ -255,7 +329,20 @@ export default function Page() {
                                 </div>
                             )}
                         </div>
-                        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-end border-t border-slate-100 dark:border-slate-800 transition-colors">
+                        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 transition-colors">
+                            {viewRequest.status === 'RETURNED' && (
+                                <button
+                                    onClick={() => {
+                                        const req = viewRequest;
+                                        setViewRequest(null);
+                                        handleEditDraft(req);
+                                    }}
+                                    className="px-6 py-2.5 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-[#8B3A00]/20"
+                                >
+                                    <span className="material-symbols-outlined text-sm">edit</span>
+                                    Edit &amp; Resubmit
+                                </button>
+                            )}
                             <button
                                 onClick={() => setViewRequest(null)}
                                 className="px-8 py-2.5 bg-slate-800 dark:bg-slate-700 text-white text-sm font-bold rounded-xl hover:opacity-90 shadow-lg shadow-slate-900/10 transition-all cursor-pointer"
