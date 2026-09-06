@@ -207,14 +207,14 @@ export default function HrAnalyticsPage() {
                                 <Pie data={toChartData(data.attendanceStatusToday)} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={2}>
                                     {toChartData(data.attendanceStatusToday).map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={
+                                            entry.name === 'On Leave' ? '#64748b' : 
                                             entry.name === 'Absent' ? '#8B3A00' : 
-                                            entry.name === 'On Leave' ? '#9ca3af' : 
                                             COLORS[(index + 3) % COLORS.length]
                                         } />
                                     ))}
                                 </Pie>
                                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '0px' }} />
+                                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '0px' }} formatter={(value) => <span className="text-gray-700 dark:text-gray-300">{value}</span>} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
@@ -248,7 +248,7 @@ export default function HrAnalyticsPage() {
                                     ))}
                                 </Pie>
                                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '0px' }} />
+                                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '0px' }} formatter={(value) => <span className="text-gray-700 dark:text-gray-300">{value}</span>} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
@@ -266,7 +266,7 @@ export default function HrAnalyticsPage() {
                                     ))}
                                 </Pie>
                                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '0px' }} />
+                                <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '0px' }} formatter={(value) => <span className="text-gray-700 dark:text-gray-300">{value}</span>} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>

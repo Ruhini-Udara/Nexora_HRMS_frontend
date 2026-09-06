@@ -29,12 +29,12 @@ export default function ModuleCard({ title, description, icon, href, onClick, cl
       </p>
       {onClick ? (
         <button onClick={handleClick} className="inline-flex items-center text-sm font-bold text-primary hover:text-primary/80 group mt-auto text-left">
-          Open Module 
+          Open Module
           <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
         </button>
       ) : (
         <Link href={href || "#"} className="inline-flex items-center text-sm font-bold text-primary hover:text-primary/80 group mt-auto">
-          Open Module 
+          Open Module
           <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
         </Link>
       )}

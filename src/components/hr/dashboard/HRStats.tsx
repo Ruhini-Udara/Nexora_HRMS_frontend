@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import api from "@/lib/axiosInstance";
+import UpcomingBirthdaysCard from "./UpcomingBirthdaysCard";
 
 interface HRDashboardData {
     totalStaff: number;
@@ -67,7 +68,7 @@ export default function HRStats() {
                     </h3>
                     {data && (
                         <p className="text-xs text-green-600 font-medium mt-2 flex items-center">
-                            <span className="material-icons-round text-sm mr-1">trending_up</span> 
+                            <span className="material-icons-round text-sm mr-1">trending_up</span>
                             +{data.newHiresThisWeek} new hires this week
                         </p>
                     )}
@@ -84,7 +85,7 @@ export default function HRStats() {
                     </h3>
                     {data && (
                         <p className="text-xs text-amber-600 font-medium mt-2 flex items-center">
-                            <span className="material-icons-round text-sm mr-1">pending_actions</span> 
+                            <span className="material-icons-round text-sm mr-1">pending_actions</span>
                             {data.trainingsFinishingSoon} finishing soon
                         </p>
                     )}
@@ -100,7 +101,7 @@ export default function HRStats() {
                         {data ? data.attendancePercentage : "..."}
                     </h3>
                     <p className="text-xs text-blue-600 font-medium mt-2 flex items-center">
-                        <span className="material-icons-round text-sm mr-1">check_circle</span> 
+                        <span className="material-icons-round text-sm mr-1">check_circle</span>
                         {data ? `${data.presentToday} present today` : "..."}
                     </p>
                 </div>
@@ -108,21 +109,7 @@ export default function HRStats() {
                     <span className="material-icons-round text-blue-600">how_to_reg</span>
                 </div>
             </div>
-            <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
-                <div>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Employees on Leave Today</p>
-                    <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-                        {data ? data.onLeaveToday : "..."}
-                    </h3>
-                    <p className="text-xs text-orange-500 font-medium mt-2 flex items-center">
-                        <span className="material-icons-round text-sm mr-1">beach_access</span>
-                        out of office today
-                    </p>
-                </div>
-                <div className="w-12 h-12 bg-orange-500/10 flex items-center justify-center rounded-lg">
-                    <span className="material-icons-round text-orange-500">beach_access</span>
-                </div>
-            </div>
+
             <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
                 <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Pending Requests</p>
@@ -138,10 +125,25 @@ export default function HRStats() {
                     <span className="material-icons-round text-red-500">hourglass_top</span>
                 </div>
             </div>
-        </div>
-        
-            
 
+            <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-border-light dark:border-border-dark flex items-center justify-between card-shadow">
+                <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Employees on Leave Today</p>
+                    <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+                        {data ? data.onLeaveToday : "..."}
+                    </h3>
+                    <p className="text-xs text-orange-500 font-medium mt-2 flex items-center">
+                        <span className="material-icons-round text-sm mr-1">beach_access</span>
+                        out of office today
+                    </p>
+                </div>
+                <div className="w-12 h-12 bg-orange-500/10 flex items-center justify-center rounded-lg">
+                    <span className="material-icons-round text-orange-500">beach_access</span>
+                </div>
+            </div>
+
+            <UpcomingBirthdaysCard />
+        </div>
     </>);
 }
 

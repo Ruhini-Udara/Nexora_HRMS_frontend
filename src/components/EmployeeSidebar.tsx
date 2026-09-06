@@ -49,7 +49,6 @@ const EmployeeSidebar = () => {
 
     const navLinks = [
         { label: "Dashboard", href: "/employee", icon: LayoutDashboard },
-        { label: "My Documents", href: "/employee/documents", icon: FolderOpen },
         { label: "Transfer Requests", href: "/employee/transfer-request", icon: ArrowRightLeft },
         { label: "Resignation Requests", href: "/employee/resignation", icon: LogOut },
         { label: "Welfare Requests", href: "/employee/welfare-request", icon: Heart },
