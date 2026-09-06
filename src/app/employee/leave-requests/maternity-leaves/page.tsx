@@ -297,20 +297,6 @@ function MaternityLeaveRequestForm() {
                 setFileError("Only female employees are eligible to apply for maternity leave.");
                 return;
             }
-            if (!employeeData.dateJoined) {
-                setFileError("Employee's joined date is not set, cannot verify eligibility.");
-                return;
-            }
-            if (data.startDate) {
-                const joinedDate = new Date(employeeData.dateJoined);
-                const startDate = new Date(data.startDate);
-                const diffTime = startDate.getTime() - joinedDate.getTime();
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                if (diffDays < 80) {
-                    setFileError("Employee must have a minimum service of 80 days before the leave starts.");
-                    return;
-                }
-            }
         }
 
         submitMutation.mutate(data);
@@ -337,14 +323,7 @@ function MaternityLeaveRequestForm() {
                 </div>
 
                 {/* Status Banners */}
-                {status === STATUS_DRAFT && (
-                    <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/30 flex items-center gap-3 mb-6">
-                        <span className="material-symbols-outlined text-amber-500">save</span>
-                        <div className="text-sm font-medium">
-                            Your request has been saved with a <strong className="font-bold">&quot;New&quot;</strong> status. You can continue editing or submit it later.
-                        </div>
-                    </div>
-                )}
+
 
                 {status === STATUS_SUBMITTED && (
                     <SuccessBanner
@@ -356,8 +335,6 @@ function MaternityLeaveRequestForm() {
                         }}
                     />
                 )}
-
-
 
                 {existingRequest?.status === "RETURNED" && existingRequest?.returnReason && status !== STATUS_SUBMITTED && (
                     <div className="bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 p-4 rounded-xl border border-orange-200 dark:border-orange-800/30 flex items-start gap-3 mb-6">
@@ -374,6 +351,8 @@ function MaternityLeaveRequestForm() {
                         </div>
                     </div>
                 )}
+
+
             </div>
 
 
@@ -535,6 +514,14 @@ function MaternityLeaveRequestForm() {
                                     </div>
 
                                     <div className="flex flex-col gap-4">
+                                        {status === STATUS_DRAFT && (
+                                            <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/30 flex items-center gap-3 mb-2">
+                                                <span className="material-symbols-outlined text-amber-500">save</span>
+                                                <div className="text-sm font-medium">
+                                                    Your request has been saved with a <strong className="font-bold">&quot;New&quot;</strong> status. You can continue editing or submit it later.
+                                                </div>
+                                            </div>
+                                        )}
                                         {fileError && (
                                             <div className={`p-4 rounded-xl flex items-center gap-3 border ${
                                                 fileError.includes("Uploading") || fileError.includes("uploaded") 

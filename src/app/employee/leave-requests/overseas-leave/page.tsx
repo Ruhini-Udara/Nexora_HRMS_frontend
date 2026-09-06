@@ -305,14 +305,7 @@ function OverseasLeaveRequestForm() {
                     </div>
                 )}
 
-                {status === STATUS_DRAFT && (
-                    <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/30 flex items-center gap-3 mb-6">
-                        <span className="material-symbols-outlined text-amber-500">save</span>
-                        <div className="text-sm font-medium">
-                            Your request has been saved with a <strong className="font-bold">&quot;New&quot;</strong> status. You can continue editing or submit it later.
-                        </div>
-                    </div>
-                )}
+
 
                 {status === STATUS_SUBMITTED && (
                     <SuccessBanner
@@ -540,6 +533,14 @@ function OverseasLeaveRequestForm() {
                                     </div>
 
                                     <div className="flex flex-col gap-4">
+                                        {status === STATUS_DRAFT && (
+                                            <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-4 rounded-xl border border-amber-200 dark:border-amber-800/30 flex items-center gap-3 mb-2">
+                                                <span className="material-symbols-outlined text-amber-500">save</span>
+                                                <div className="text-sm font-medium">
+                                                    Your request has been saved with a <strong className="font-bold">&quot;New&quot;</strong> status. You can continue editing or submit it later.
+                                                </div>
+                                            </div>
+                                        )}
                                         {fileError && (
                                             <div className={`p-4 rounded-xl flex items-center gap-3 border ${fileError.includes("Uploading") || fileError.includes("uploaded")
                                                     ? "bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800/30"
