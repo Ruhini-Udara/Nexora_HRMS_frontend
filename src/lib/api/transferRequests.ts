@@ -6,7 +6,7 @@ export interface TransferDocument {
     filename: string;
 }
 
-export type TransferStatus = "SUBMITTED" | "VERIFIED_BY_HR" | "PENDING_BOARD_APPROVAL" | "PENDING_ADMIN" | "SUBMITTED_TO_DIRECTOR" | "APPROVED" | "REJECTED" | "NEW" | "DRAFT" | "Board Approved" | "Board Rejected" | "EXECUTED";
+export type TransferStatus = "SUBMITTED" | "RESUBMITTED" | "RETURNED" | "VERIFIED_BY_HR" | "PENDING_BOARD_APPROVAL" | "PENDING_ADMIN" | "SUBMITTED_TO_DIRECTOR" | "APPROVED" | "REJECTED" | "NEW" | "DRAFT" | "Board Approved" | "Board Rejected" | "EXECUTED";
 
 export interface TransferRequest {
     id: string;

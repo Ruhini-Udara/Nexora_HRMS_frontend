@@ -12,6 +12,8 @@ type RequestStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'NEW';
 const statusStyles: Record<string, { label: string; classes: string }> = {
     'NEW': { label: 'Draft', classes: 'bg-slate-100 text-slate-600' },
     'SUBMITTED': { label: 'Pending', classes: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' },
+    'RESUBMITTED': { label: 'Resubmitted (Amended)', classes: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
+    'RETURNED': { label: 'Returned for Amendment', classes: 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' },
     'VERIFIED_BY_HR': { label: 'Verified by HR', classes: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
     'PENDING_ADMIN': { label: 'Pending Admin', classes: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
     'SUBMITTED_FOR_ADMIN_APPROVAL': { label: 'Pending Admin', classes: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
@@ -110,6 +112,80 @@ export default function Page() {
                                 </button>
                             </div>
                             <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                                {selectedRequest.status === 'RETURNED' && (
+                                    <div className="p-4 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-xl flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-2xl mt-0.5">assignment_return</span>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold text-orange-900 dark:text-orange-200">
+                                                    Returned by HR for Amendment
+                                                </p>
+                                                <span className="text-[10px] font-bold bg-orange-200 dark:bg-orange-900/60 text-orange-800 dark:text-orange-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                    Action Required
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                                This resignation request has been returned by HR. Please review the reason below, amend the required details, and resubmit.
+                                            </p>
+                                            {selectedRequest.hrRemark && (
+                                                <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-orange-200 dark:border-orange-800/60 rounded-lg">
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">HR Return Reason:</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{selectedRequest.hrRemark}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedRequest.status === 'RESUBMITTED' && (
+                                    <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-2xl mt-0.5">edit_note</span>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                                                    Amended &amp; Resubmitted
+                                                </p>
+                                                <span className="text-[10px] font-bold bg-blue-200 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                    Under Review
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                                You have amended and resubmitted this request. It is currently under review by HR.
+                                            </p>
+                                            {selectedRequest.hrRemark && (
+                                                <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-blue-200 dark:border-blue-800/60 rounded-lg">
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Previous HR Return Reason:</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{selectedRequest.hrRemark}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(selectedRequest.status === 'REJECTED' || selectedRequest.status === 'Board Rejected') && (
+                                    <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-2xl mt-0.5">cancel</span>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold text-red-900 dark:text-red-200">
+                                                    Resignation Request Rejected
+                                                </p>
+                                                <span className="text-[10px] font-bold bg-red-200 dark:bg-red-900/60 text-red-800 dark:text-red-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                    Rejected
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                                                This resignation request has been reviewed and rejected by the Director / Board.
+                                            </p>
+                                            {(selectedRequest.directorRemark || selectedRequest.hrRemark) && (
+                                                <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-red-200 dark:border-red-800/60 rounded-lg">
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Rejection Reason:</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{selectedRequest.directorRemark || selectedRequest.hrRemark}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-8">
                                     <div className="space-y-1.5">
                                         <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Submission Date</p>
@@ -176,7 +252,18 @@ export default function Page() {
                                     </div>
                                 )}
                             </div>
-                            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-end border-t border-slate-100 dark:border-slate-800 transition-colors">
+                            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 transition-colors">
+                                {selectedRequest.status === 'RETURNED' && (
+                                    <button
+                                        onClick={() => {
+                                            setIsViewOnly(false);
+                                        }}
+                                        className="px-6 py-2.5 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-md shadow-[#8B3A00]/20"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">edit</span>
+                                        Edit &amp; Resubmit
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => {
                                         setIsModalOpen(false);
@@ -193,7 +280,7 @@ export default function Page() {
                         <div className="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden">
                             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
                                 <h3 className="text-lg font-bold text-slate-800 dark:text-white">
-                                    Edit Resignation Draft
+                                    {selectedRequest.status === 'RETURNED' ? 'Edit & Resubmit Resignation Request' : 'Edit Resignation Draft'}
                                 </h3>
                                 <button
                                     onClick={() => {
@@ -286,6 +373,20 @@ export default function Page() {
                                                         }}
                                                     >
                                                         <span className="material-symbols-outlined text-[20px]">edit_note</span>
+                                                    </button>
+                                                )}
+                                                {req.status === 'RETURNED' && (
+                                                    <button
+                                                        className="flex items-center gap-1 text-[11px] font-bold text-[#8B3A00] dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/40 px-3 py-1.5 rounded-lg transition-colors border border-orange-100 dark:border-orange-900/40 cursor-pointer"
+                                                        title="Edit & Resubmit"
+                                                        onClick={() => {
+                                                            setSelectedRequest(req);
+                                                            setIsViewOnly(false);
+                                                            setIsModalOpen(true);
+                                                        }}
+                                                    >
+                                                        <span className="material-symbols-outlined text-sm">edit</span>
+                                                        Edit &amp; Resubmit
                                                     </button>
                                                 )}
                                             </td>

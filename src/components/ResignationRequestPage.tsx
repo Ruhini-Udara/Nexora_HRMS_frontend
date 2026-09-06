@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getAllResignationRequests, createResignationRequest, updateResignationStatus, ResignationRequest as ApiResignationRequest } from '@/lib/api/resignationRequests';
+import { getAllResignationRequests, createResignationRequest, updateResignationRequest, updateResignationStatus, ResignationRequest as ApiResignationRequest } from '@/lib/api/resignationRequests';
 import { useAuthStore } from '@/store/useAuthStore';
 import { uploadHrmsDocument } from '@/lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
@@ -61,9 +61,10 @@ interface ConfirmModalProps {
     onClose: () => void;
     onConfirm: () => void;
     isUploading?: boolean;
+    isResubmission?: boolean;
 }
 
-const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm }) => {
+const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm, isResubmission }) => {
     if (!isOpen) return null;
 
     return (
@@ -72,7 +73,7 @@ const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onCo
                 <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                         <span className="material-symbols-outlined text-[#8B3A00]">warning</span>
-                        Confirm Submission
+                        {isResubmission ? "Confirm Resubmission" : "Confirm Submission"}
                     </h3>
                     <button
                         type="button"
@@ -84,7 +85,9 @@ const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onCo
                 </div>
                 <div className="p-6">
                     <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                        After submission, the request cannot be edited as it is submitted for approvals.
+                        {isResubmission 
+                            ? "After resubmitting, your amended resignation request will be forwarded back to HR for verification."
+                            : "After submission, the request cannot be edited as it is submitted for approvals."}
                     </p>
                 </div>
                 <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-end gap-3 transition-colors">
@@ -100,7 +103,7 @@ const ConfirmSubmitModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onCo
                         className="px-8 py-2.5 bg-[#8B3A00] text-white text-sm font-bold rounded-lg hover:opacity-90 shadow-lg shadow-[#8B3A00]/20 transition-all cursor-pointer"
                         onClick={onConfirm}
                     >
-                        Yes, Submit
+                        {isResubmission ? "Yes, Resubmit" : "Yes, Submit"}
                     </button>
                 </div>
             </div>
@@ -480,7 +483,11 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
         };
 
         try {
-            await createResignationRequest(payload, user?.id || 1);
+            if (selectedRequest?.id && selectedRequest.status === 'NEW') {
+                await updateResignationRequest(selectedRequest.id, payload);
+            } else {
+                await createResignationRequest(payload, user?.id || 1);
+            }
             // Refresh requests list in parent
             onCancelEdit(); // Clear editing mode
             window.location.reload(); 
@@ -498,6 +505,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
         setIsUploading(true);
         const values = getValues();
         const uploadedDocs = await uploadDocs();
+        const isReturned = selectedRequest?.status === 'RETURNED';
         const payload: Partial<ResignationRequest> = {
             employeeName: user?.name || '',
             epfNumber: user?.epfNumber || '',
@@ -508,12 +516,16 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
             reason: values.resignationReason,
             obligationDetails: values.obligationDetails,
             specialRemark: values.specialRemark,
-            status: 'SUBMITTED',
+            status: isReturned ? 'RESUBMITTED' : 'SUBMITTED',
             documents: uploadedDocs
         };
 
         try {
-            await createResignationRequest(payload, user?.id || 1);
+            if (selectedRequest?.id) {
+                await updateResignationRequest(selectedRequest.id, payload);
+            } else {
+                await createResignationRequest(payload, user?.id || 1);
+            }
             setShowConfirmModal(false);
             window.location.reload();
         } catch (error) {
@@ -536,7 +548,13 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                     <div className="flex items-center gap-2">
                                         <span className="material-symbols-outlined text-[#8B3A00] dark:text-orange-500 text-[20px]">assignment_late</span>
                                         <h2 className="font-bold text-slate-800 dark:text-white text-sm">
-                                            {isViewOnly ? `View Request — ${selectedRequest?.id}` : isEditing ? `Edit Draft — ${selectedRequest?.id}` : 'Create Resign Request'}
+                                            {isViewOnly 
+                                                ? `View Request — ${selectedRequest?.id}` 
+                                                : selectedRequest?.status === 'RETURNED'
+                                                ? `Edit & Resubmit Request — ${selectedRequest?.id}`
+                                                : isEditing 
+                                                ? `Edit Draft — ${selectedRequest?.id}` 
+                                                : 'Create Resign Request'}
                                         </h2>
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -550,8 +568,8 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                             </button>
                                         )}
                                         {isEditing && !isViewOnly && (
-                                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-1 rounded uppercase tracking-wider">
-                                                Editing Draft
+                                            <span className={`text-[10px] font-bold px-3 py-1 rounded uppercase tracking-wider ${selectedRequest?.status === 'RETURNED' ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' : 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'}`}>
+                                                {selectedRequest?.status === 'RETURNED' ? 'Amending Returned Request' : 'Editing Draft'}
                                             </span>
                                         )}
                                         {isViewOnly && (
@@ -562,6 +580,30 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                     </div>
                                 </div>
                                 <div className="p-8 space-y-8">
+                                    {selectedRequest?.status === 'RETURNED' && (
+                                        <div className="p-4 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-xl flex items-start gap-3">
+                                            <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-2xl mt-0.5">assignment_return</span>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-bold text-orange-900 dark:text-orange-200">
+                                                        Resignation Request Returned by HR
+                                                    </p>
+                                                    <span className="text-[10px] font-bold bg-orange-200 dark:bg-orange-900/60 text-orange-800 dark:text-orange-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                        Amendment Required
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-orange-800 dark:text-orange-300 mt-1">
+                                                    HR has returned your resignation request with the reason specified below. Please review the details, update the necessary fields or documents, and resubmit for approval.
+                                                </p>
+                                                {selectedRequest.hrRemark && (
+                                                    <div className="mt-2.5 p-3 bg-white/90 dark:bg-slate-900/90 border border-orange-200 dark:border-orange-800/60 rounded-lg">
+                                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Return Reason:</p>
+                                                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{selectedRequest.hrRemark}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2">
@@ -725,14 +767,16 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                     <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                         {!isViewOnly ? (
                                             <>
-                                                <button
-                                                    type="button"
-                                                    className="px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
-                                                    onClick={handleSaveAsDraft}
-                                                >
-                                                    {isEditing ? 'Update Draft' : 'Save as Draft'}
-                                                </button>
-                                                <div className="flex items-center gap-3">
+                                                {selectedRequest?.status !== 'RETURNED' && (
+                                                    <button
+                                                        type="button"
+                                                        className="px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                                        onClick={handleSaveAsDraft}
+                                                    >
+                                                        {isEditing ? 'Update Draft' : 'Save as Draft'}
+                                                    </button>
+                                                )}
+                                                <div className={`flex items-center gap-3 ${selectedRequest?.status === 'RETURNED' ? 'w-full justify-end' : ''}`}>
                                                     <button
                                                         type="submit"
                                                         disabled={mandatoryDocsMissing}
@@ -741,8 +785,10 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                                                             : 'bg-[#8B3A00] text-white hover:opacity-90 shadow-lg shadow-[#8B3A00]/10'
                                                             }`}
                                                     >
-                                                        <span className="material-symbols-outlined text-[20px]">send</span>
-                                                        Submit Request
+                                                        <span className="material-symbols-outlined text-[20px]">
+                                                            {selectedRequest?.status === 'RETURNED' ? 'published_with_changes' : 'send'}
+                                                        </span>
+                                                        {selectedRequest?.status === 'RETURNED' ? 'Resubmit Request' : 'Submit Request'}
                                                     </button>
                                                 </div>
                                             </>
@@ -774,6 +820,7 @@ const ResignationRequestPage: React.FC<ResignationRequestPageProps> = ({
                 isOpen={showConfirmModal}
                 onClose={() => setShowConfirmModal(false)}
                 onConfirm={handleConfirmSubmit}
+                isResubmission={selectedRequest?.status === 'RETURNED'}
             />
         </div>
     );
