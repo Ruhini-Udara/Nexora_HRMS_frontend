@@ -24,21 +24,18 @@ export default function DirectorDashboard() {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const res = await fetch('/api/director/dashboard');
-                if (res.ok) {
-                    const json = await res.json();
-                    setData(json);
-                    return;
-                }
+                const res = await api.get('/api/v1/dashboard/director');
+                setData(res.data);
+                return;
             } catch (err) {
-                console.warn("Failed to fetch director dashboard from internal API", err);
+                console.warn("Failed to fetch director dashboard from API", err);
             }
 
             setData({
-                pendingApprovalsCount: 3,
-                urgentApprovalsCount: 1,
-                companyAttendancePercentage: "95.0%",
-                totalEmployeesCount: 42,
+                pendingApprovalsCount: 0,
+                urgentApprovalsCount: 0,
+                companyAttendancePercentage: "0%",
+                totalEmployeesCount: 0,
             });
         };
 
@@ -60,12 +57,12 @@ export default function DirectorDashboard() {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                 <SummaryCard
-                    title="Pending Approvals"
-                    value={data?.pendingApprovalsCount?.toString() || "0"}
+                    title="Total Employees"
+                    value={data?.totalEmployeesCount?.toString() || "0"}
                     subContent=""
-                    icon={<AlertCircle className="w-6 h-6" />}
-                    iconBgColor="bg-orange-50 dark:bg-orange-950/40"
-                    iconColor="text-orange-600 dark:text-orange-400"
+                    icon={<Users className="w-6 h-6" />}
+                    iconBgColor="bg-blue-50 dark:bg-blue-950/40"
+                    iconColor="text-blue-600 dark:text-blue-400"
                 />
                 <SummaryCard
                     title="Company Attendance"
@@ -76,19 +73,19 @@ export default function DirectorDashboard() {
                     iconColor="text-green-600 dark:text-green-400"
                 />
                 <SummaryCard
-                    title="Total Employees"
-                    value={data?.totalEmployeesCount?.toString() || "0"}
+                    title="Total Pending Requests"
+                    value={data?.pendingApprovalsCount?.toString() || "0"}
                     subContent=""
-                    icon={<Users className="w-6 h-6" />}
-                    iconBgColor="bg-blue-50 dark:bg-blue-950/40"
-                    iconColor="text-blue-600 dark:text-blue-400"
+                    icon={<AlertCircle className="w-6 h-6" />}
+                    iconBgColor="bg-orange-50 dark:bg-orange-950/40"
+                    iconColor="text-orange-600 dark:text-orange-400"
                 />
             </div>
 
             {/* Request Management Modules */}
             <section>
                 <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-6">Request Management Modules</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <ModuleCard
                         title="Transfer Requests"
                         description="Review and approve employee requests for internal department transfers or location changes."
@@ -101,23 +98,32 @@ export default function DirectorDashboard() {
                         icon={<UserMinus className="w-5 h-5" />}
                         href="/director/termination"
                     />
-                    <ModuleCard
-                        title="Resignation Requests"
-                        description="Review and process employee resignation letters and exit interviews."
-                        icon={<LogOut className="w-5 h-5" />}
-                        href="/director/resign"
-                    />
+
                     <ModuleCard
                         title="Death Application"
                         description="Process compassionate leave and insurance benefit claims for bereaved employees."
                         icon={<UserX className="w-5 h-5" />}
                         href="/director/death"
                     />
+
+                    <ModuleCard
+                        title="Resignation Requests"
+                        description="Review and process employee resignation letters and exit interviews."
+                        icon={<LogOut className="w-5 h-5" />}
+                        href="/director/resign"
+                    />
+
                     <ModuleCard
                         title="Leave Requests"
                         description="Review and approve annual leave, medical leave, and other time-off applications."
                         icon={<Calendar className="w-5 h-5" />}
                         href="/director/leave"
+                    />
+                    <ModuleCard
+                        title="Calendar"
+                        description="See the company events and upcoming holidays."
+                        icon={<Calendar className="w-5 h-5" />}
+                        href="/director/calendar"
                     />
                 </div>
             </section>

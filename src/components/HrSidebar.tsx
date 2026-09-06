@@ -48,7 +48,6 @@ const HrSidebar = () => {
     const navLinks = [
         { label: "Dashboard", href: "/hr", icon: LayoutDashboard },
         { label: "Employees", href: "/hr/employees", icon: Users },
-        { label: "Documents", href: "/hr/documents", icon: FolderOpen },
         { label: "Training & Development", href: "/hr/training", icon: GraduationCap },
         { label: "Attendance", href: "/hr/attendance", icon: ClipboardCheck },
         { label: "Leave Management", href: "/hr/leave", icon: Calendar },

@@ -153,13 +153,7 @@ export default function AdminContent() {
           onClick={() => setActiveView("registerEmployee")}
           className="lg:col-span-2"
         />
-        <ModuleCard
-          title="Training & Development"
-          description="Manage and review all pending training applications and monitor employee skill development."
-          icon={<GraduationCap className="w-6 h-6" />}
-          href="/admin/training"
-          className="lg:col-span-2"
-        />
+
         <ModuleCard
           title="Other Approvals"
           description="Review and action pending overseas leave, maternity leave, and other special HR approval requests."
@@ -167,6 +161,7 @@ export default function AdminContent() {
           href="/admin/other-approvals"
           className="lg:col-span-2"
         />
+
         <ModuleCard
           title="Employee Actions"
           description="Process resignations, transfers, terminations, and other official employee status changes."
@@ -174,6 +169,15 @@ export default function AdminContent() {
           href="/admin/employee-actions"
           className="lg:col-span-2"
         />
+
+        <ModuleCard
+          title="Training & Development"
+          description="Manage and review all pending training applications and monitor employee skill development."
+          icon={<GraduationCap className="w-6 h-6" />}
+          href="/admin/training"
+          className="lg:col-span-2"
+        />
+
         <ModuleCard
           title="Leave Management"
           description="Review, approve, or reject staff leave requests and monitor leave balances across all departments."
