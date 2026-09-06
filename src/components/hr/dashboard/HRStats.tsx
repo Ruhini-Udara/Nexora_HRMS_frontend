@@ -44,11 +44,12 @@ export default function HRStats() {
                     newHiresThisWeek: 4,
                     activeTrainingPrograms: 12,
                     trainingsFinishingSoon: 3,
-                    attendancePercentage: "92",
+                    attendancePercentage: "92%",
                     presentToday: 142,
                     onLeaveToday: 12,
                     pendingOverseas: 5,
-                    pendingMaternity: 3
+                    pendingMaternity: 3,
+                    totalPendingRequests: 8,
                 });
             }
         };
