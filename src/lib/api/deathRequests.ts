@@ -33,6 +33,7 @@ export interface DeathRequest {
     hrRemark?: string;
     boardMeetingDate?: string;
     createdAt?: string;
+    updatedAt?: string;
 }
 
  
@@ -70,6 +71,7 @@ const mapDtoToFrontend = (dto: any): DeathRequest => {
         hrRemark: dto.hrRemark || '',
         boardMeetingDate: dto.boardMeetingDate || '',
         createdAt: dto.createdAt,
+        updatedAt: dto.updatedAt || dto.createdAt || '',
     };
 };
 

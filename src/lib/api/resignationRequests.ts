@@ -40,6 +40,7 @@ export interface ResignationRequest {
     directorRemark?: string;
     boardMeetingDate?: string;
     createdAt?: string;
+    updatedAt?: string;
 }
 
 // Internal mapping function to map DTO from backend to frontend interface
@@ -66,6 +67,7 @@ const mapDtoToFrontend = (dto: any): ResignationRequest => {
         directorRemark: dto.directorRemark || '',
         boardMeetingDate: dto.boardMeetingDate || '',
         createdAt: dto.createdAt || '',
+        updatedAt: dto.updatedAt || dto.createdAt || '',
     };
 };
 

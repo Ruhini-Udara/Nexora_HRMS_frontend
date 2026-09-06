@@ -26,6 +26,7 @@ export interface TransferRequest {
     createdAt?: string;
     hrRemark?: string;
     boardMeetingDate?: string;
+    updatedAt?: string;
 }
 
 // Internal mapping function to map DTO from backend to frontend interface
@@ -57,6 +58,7 @@ const mapDtoToFrontend = (dto: any): TransferRequest => {
         createdAt: dto.createdAt || '',
         hrRemark: dto.hrRemark || '',
         boardMeetingDate: dto.boardMeetingDate || '',
+        updatedAt: dto.updatedAt || dto.createdAt || '',
     };
 };
 
