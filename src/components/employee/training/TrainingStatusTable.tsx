@@ -22,6 +22,7 @@ type TrainingRequest = {
     eventRejectionReason?: string;
     rejectionReason?: string;
     attendanceConfirmed: boolean;
+    attendanceStatus?: string;
 };
 
 // Removed mock data
@@ -33,6 +34,7 @@ type FeedbackItem = {
     overallExperienceRating?: number;
     suggestions?: string;
     feedback?: string;
+    attendanceStatus?: string;
 };
 
 interface TrainingStatusTableProps {
@@ -112,19 +114,24 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                 .then(async (res) => {
                     if (!isMounted) return;
                     const requestsData = res.data.sort((a: TrainingRequest, b: TrainingRequest) => b.id - a.id);
-                    setRequests(requestsData);
 
-                    // Fetch feedback status for approved requests
-                    const approved = requestsData.filter((r: TrainingRequest) => r.status === 'Approved' && r.attendanceConfirmed);
+                    // Fetch attendance & feedback status for approved requests
+                    const approved = requestsData.filter((r: TrainingRequest) => r.status === 'Approved');
                     const feedbackStatuses: Record<number, boolean> = {};
+                    const attendanceMap: Record<number, string> = {};
 
                     await Promise.all(approved.map(async (r: TrainingRequest) => {
                         try {
                             const feedbackRes = await api.get(`/api/training/events/${r.eventId}/feedback`);
                             const feedbacks = feedbackRes.data;
                             const existing = feedbacks.find((f: FeedbackItem) => f.employeeId === user.id);
-                            if (existing && (existing.courseContentRating > 0 || existing.instructorRating > 0 || existing.overallExperienceRating > 0)) {
-                                feedbackStatuses[r.eventId] = true;
+                            if (existing) {
+                                if (existing.attendanceStatus) {
+                                    attendanceMap[r.id] = existing.attendanceStatus;
+                                }
+                                if (existing.courseContentRating > 0 || existing.instructorRating > 0 || existing.overallExperienceRating > 0) {
+                                    feedbackStatuses[r.eventId] = true;
+                                }
                             }
                         } catch (err) {
                             console.error("Failed to fetch feedback for event", r.eventId, err);
@@ -132,6 +139,11 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                     }));
 
                     if (isMounted) {
+                        const mergedRequests = requestsData.map((r: TrainingRequest) => ({
+                            ...r,
+                            attendanceStatus: r.attendanceStatus || attendanceMap[r.id] || (r.attendanceConfirmed ? 'Confirmed' : undefined)
+                        }));
+                        setRequests(mergedRequests);
                         setSubmittedFeedbacks(feedbackStatuses);
                     }
                 })
@@ -156,10 +168,10 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
         try {
             await api.post('/api/training/feedback', {
                 eventId: selectedRequest.eventId,
-                employeeId: selectedRequest.employeeId,
+                employeeId: selectedRequest.employeeId || user?.id,
                 attendanceStatus: 'Confirmed'
             });
-            setRequests(prev => prev.map(r => r.id === requestId ? { ...r, attendanceConfirmed: true } : r));
+            setRequests(prev => prev.map(r => r.id === requestId ? { ...r, attendanceConfirmed: true, attendanceStatus: 'Confirmed' } : r));
             setToast({ message: "Attendance confirmed successfully!", type: 'success' });
         } catch (err) {
             console.error("Failed to confirm attendance", err);
@@ -171,12 +183,14 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
     };
 
     const handleDeclineInvitation = async (requestId: number) => {
+        if (!selectedRequest) return;
         try {
-            await api.put(`/api/training/requests/${requestId}/status`, {
-                status: 'Rejected',
-                rejectionReason: 'Declined by employee.'
+            await api.post('/api/training/feedback', {
+                eventId: selectedRequest.eventId,
+                employeeId: selectedRequest.employeeId || user?.id,
+                attendanceStatus: 'Declined'
             });
-            setRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Rejected', rejectionReason: 'Declined by employee.' } : r));
+            setRequests(prev => prev.map(r => r.id === requestId ? { ...r, attendanceStatus: 'Declined' } : r));
             setToast({ message: "Invitation declined.", type: 'info' });
         } catch (err) {
             console.error("Failed to decline invitation", err);
@@ -265,16 +279,23 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                     <td className="py-4 px-4 text-center">
                                         {request.status === "Approved" ? (
                                             request.eventStatus === "Approved" ? (
-                                                request.attendanceConfirmed ? (
+                                                (request.attendanceStatus === "Confirmed" || request.attendanceConfirmed) ? (
                                                     <div className="flex items-center justify-center">
                                                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/30">
                                                             <span className="material-symbols-outlined text-[14px]">check_circle</span>
                                                             Confirmed
                                                         </span>
                                                     </div>
+                                                ) : request.attendanceStatus === "Declined" ? (
+                                                    <div className="flex items-center justify-center">
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/30">
+                                                            <span className="material-symbols-outlined text-[14px]">cancel</span>
+                                                            Declined
+                                                        </span>
+                                                    </div>
                                                 ) : (
                                                     <div className="flex items-center justify-center gap-2">
-                                                                                        <button
+                                                        <button
                                                             onClick={() => {
                                                                 setSelectedRequest(request);
                                                                 setIsConfirmingAttendance(true);
@@ -290,7 +311,7 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                                             }}
                                                             className="px-3 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 text-[11px] font-bold rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
                                                         >
-                                                            Reject
+                                                            Decline
                                                         </button>
                                                     </div>
                                                 )
@@ -331,16 +352,14 @@ const TrainingStatusTable: React.FC<TrainingStatusTableProps> = ({ onFeedbackCli
                                         )}
                                     </td>
                                     <td className="py-4 px-4 text-center">
-                                        {request.status === 'Approved' && request.attendanceConfirmed ? (
+                                        {request.status === 'Approved' && (request.attendanceConfirmed || request.attendanceStatus === 'Confirmed') ? (
                                             <button
-                                                className={`text-[11px] font-bold flex items-center gap-1 justify-center mx-auto px-3 py-1.5 rounded-lg transition-colors ${request.status === 'Approved' && request.attendanceConfirmed
-                                                    ? submittedFeedbacks[request.eventId]
+                                                className={`text-[11px] font-bold flex items-center gap-1 justify-center mx-auto px-3 py-1.5 rounded-lg transition-colors ${
+                                                    submittedFeedbacks[request.eventId]
                                                         ? "bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
                                                         : "text-primary hover:bg-primary/5 cursor-pointer"
-                                                    : "text-slate-300 cursor-not-allowed"
-                                                    }`}
-                                                disabled={!(request.status === 'Approved' && request.attendanceConfirmed)}
-                                                onClick={(request.status === 'Approved' && request.attendanceConfirmed) ? () => onFeedbackClick(request) : undefined}
+                                                }`}
+                                                onClick={() => onFeedbackClick(request)}
                                             >
                                                 <span className="material-symbols-outlined text-sm">
                                                     {submittedFeedbacks[request.eventId] ? "visibility" : "rate_review"}
