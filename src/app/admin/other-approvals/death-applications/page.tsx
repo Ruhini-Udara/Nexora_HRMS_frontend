@@ -48,7 +48,8 @@ export default function AdminDeathApplicationsPage() {
         setTimeout(() => setSuccessMessage(null), 3000);
     };
 
-    const preparationList = requests.filter(r => r.status === "PENDING_ADMIN");
+    const isAvailableForBatch = (status?: string) => status === "PENDING_ADMIN" || status === "RESUBMITTED";
+    const preparationList = requests.filter(r => isAvailableForBatch(r.status));
 
     const managementList = requests.filter(r => {
         if (r.status !== "PENDING_BOARD_APPROVAL") return false;
@@ -83,7 +84,7 @@ export default function AdminDeathApplicationsPage() {
         try {
             setLoading(true);
             await Promise.all(selectedIds.map(id => 
-                updateDeathStatus(id, "PENDING_BOARD_APPROVAL", boardDate)
+                updateDeathStatus(id, "PENDING_BOARD_APPROVAL", undefined, boardDate)
             ));
             await loadRequests();
             setSelectedIds([]);
@@ -265,6 +266,7 @@ export default function AdminDeathApplicationsPage() {
                                             <th className="py-4 px-6">Date of Death</th>
                                             <th className="py-4 px-6">Nature</th>
                                             <th className="py-4 px-6">Requester</th>
+                                            <th className="py-4 px-6">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="text-sm">
@@ -284,11 +286,22 @@ export default function AdminDeathApplicationsPage() {
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400">{req.dateOfDeath}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400">{req.natureOfDeath}</td>
                                                 <td className="py-4 px-6">{req.requesterName}</td>
+                                                <td className="py-4 px-6">
+                                                    {req.status === 'RESUBMITTED' ? (
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                                                            Resubmitted (Amended)
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800">
+                                                            Pending Admin
+                                                        </span>
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))}
                                         {preparationList.length === 0 && (
                                             <tr>
-                                                <td colSpan={7} className="py-12 text-center text-slate-500">
+                                                <td colSpan={8} className="py-12 text-center text-slate-500">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <span className="material-symbols-outlined text-4xl text-slate-300">done_all</span>
                                                         <p>No HR-approved requests pending batch creation.</p>

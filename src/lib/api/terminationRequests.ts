@@ -89,12 +89,17 @@ export const updateTerminationStatus = async (idStr: string, status: string, rem
 
 export const updateTerminationRequest = async (idStr: string, data: Partial<TerminationRequest>): Promise<TerminationRequest> => {
     const payload: any = {
+        employeeId: data.employeeId,
+        employeeName: data.employeeName,
+        epfNumber: data.epfNumber,
+        branch: data.branch,
         initiationDate: data.initiationDate,
         effectiveDate: data.effectiveDate,
         type: data.type,
         reason: data.reason,
         specialRemark: data.specialRemark,
         status: data.status,
+        hrRemark: data.hrRemark,
     };
     if (data.documents) {
         if (data.documents.request_for_termination !== undefined) payload.requestForTerminationDoc = data.documents.request_for_termination;

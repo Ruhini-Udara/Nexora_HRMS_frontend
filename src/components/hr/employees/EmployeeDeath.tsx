@@ -22,6 +22,8 @@ const statusConfig: Record<string, { label: string; classes: string }> = {
     SUBMITTED_TO_DIRECTOR: { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
     "Board Approved": { label: "Board Approved", classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
     EXECUTED: { label: "Executed", classes: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400" },
+    RETURNED: { label: "Returned for Amendment", classes: "bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-800" },
+    RESUBMITTED: { label: "Resubmitted", classes: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800" },
     REJECTED: { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
 };
 
@@ -35,6 +37,8 @@ const getStatusBadge = (status: string | undefined | null) => {
     if (upper === "PENDING_ADMIN") return { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
     if (upper === "SUBMITTED_TO_DIRECTOR" || upper === "PENDING_BOARD_APPROVAL") return { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" };
     if (upper === "BOARD APPROVED" || upper === "APPROVED") return { label: "Board Approved", classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" };
+    if (upper === "RETURNED" || upper === "RETURNED FOR AMENDMENT") return { label: "Returned for Amendment", classes: "bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-800" };
+    if (upper === "RESUBMITTED") return { label: "Resubmitted", classes: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800" };
     if (upper === "BOARD REJECTED" || upper === "REJECTED") return { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" };
     if (upper === "EXECUTED") return { label: "Executed", classes: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400" };
     return { label: s, classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" };
@@ -104,7 +108,7 @@ export default function EmployeeDeath() {
 
     const handleView = (req: DeathRequest) => {
         setSelectedRequest(req);
-        setIsReadOnly(req.status !== 'NEW');
+        setIsReadOnly(req.status !== 'NEW' && req.status !== 'SUBMITTED' && req.status !== 'RETURNED');
         setIsModalOpen(true);
     };
 
@@ -113,30 +117,46 @@ export default function EmployeeDeath() {
             if (selectedRequest) {
                 const updated = await updateDeathRequest(selectedRequest.id, data);
                 setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
-                showSuccess("Application updated successfully");
+                if (data.status === 'RESUBMITTED') {
+                    showSuccess("Application amended and resubmitted to Admin successfully");
+                } else {
+                    showSuccess("Application updated successfully");
+                }
                 if (closeAfterSave) setIsModalOpen(false);
             } else {
-                const created = await createDeathRequest(data, { id: user?.id || 1 });
+                const created = await createDeathRequest(data);
                 if (!created.createdAt) created.createdAt = new Date().toISOString();
                 setRequests(prev => [...prev, created]);
                 showSuccess("Application saved as draft");
                 setSelectedRequest(created); // <-- Put modal into edit mode so next save updates this draft
                 if (closeAfterSave) setIsModalOpen(false);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to save death request", error);
+            alert(error?.response?.data?.message || "Failed to save death request");
         }
     };
 
-    const handleVerify = async () => {
+    const handleVerify = async (amendedData?: DeathRequest) => {
         if (!selectedRequest) return;
         try {
-            const updated = await verifyDeathRequest(selectedRequest.id);
+            let updated: DeathRequest;
+            if (amendedData) {
+                updated = await updateDeathRequest(selectedRequest.id, {
+                    ...amendedData,
+                    status: 'VERIFIED_BY_HR'
+                });
+            } else {
+                updated = await verifyDeathRequest(selectedRequest.id);
+            }
             setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
-            showSuccess("Application verified successfully");
+            showSuccess("Application verified and added to Admin list");
             setIsModalOpen(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to verify death request", error);
+            const msg = error?.response?.data?.message || error?.message || "Failed to verify application";
+            alert("Verification Failed: " + msg);
+            throw error;
         }
     };
 
@@ -151,15 +171,17 @@ export default function EmployeeDeath() {
         }
         if (!selectedRequest) return;
         try {
-            const updated = await rejectDeathRequest(selectedRequest.id, rejectReason);
+            const updated = await rejectDeathRequest(selectedRequest.id, rejectReason.trim());
             setRequests(prev => prev.map(r => r.id === updated.id ? updated : r));
-            showSuccess("Application rejected");
+            showSuccess("Application rejected and notification email sent to requester");
             setShowRejectDialog(false);
             setRejectReason('');
             setRejectReasonError(false);
             setIsModalOpen(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to reject death request", error);
+            const msg = error?.response?.data?.message || error?.message || "Failed to reject death application";
+            alert("Rejection Failed: " + msg);
         }
     };
 
@@ -203,7 +225,7 @@ export default function EmployeeDeath() {
 
     const filteredRequests = requests.filter(isLegit).filter(req => {
         const matchesTab = activeTab === 'pending'
-            ? (req.status === 'NEW' || req.status === 'SUBMITTED' || req.status === 'PENDING_ADMIN' || req.status === 'REJECTED' || req.status === 'VERIFIED_BY_HR')
+            ? (req.status === 'NEW' || req.status === 'SUBMITTED' || req.status === 'PENDING_ADMIN' || req.status === 'REJECTED' || req.status === 'VERIFIED_BY_HR' || req.status === 'RETURNED' || req.status === 'RESUBMITTED' || req.status === 'PENDING_BOARD_APPROVAL' || req.status === 'SUBMITTED_TO_DIRECTOR' || req.status === 'APPROVED' || req.status === 'Board Approved')
             : req.status === 'VERIFIED_BY_HR';
         
         const matchesSearch = req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -379,12 +401,13 @@ export default function EmployeeDeath() {
                 </div>
 
                 {/* Stats Row */}
-                <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="mb-6 grid grid-cols-2 sm:grid-cols-5 gap-4">
                     {(
                         [
                             { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20", ring: "ring-amber-500" },
                             { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20", ring: "ring-emerald-500" },
                             { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
+                            { label: "Returned", status: "RETURNED", icon: "assignment_return", color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-900/20", ring: "ring-orange-500" },
                             { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
                         ] as const
                     ).map(({ label, status, icon, color, bg, ring }) => {
@@ -500,10 +523,16 @@ export default function EmployeeDeath() {
                                                     )}
                                                     <button
                                                         onClick={() => handleView(req)}
-                                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-[#8B3A00] hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-all cursor-pointer shadow-sm animate-all"
+                                                        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer shadow-sm animate-all ${
+                                                            req.status === 'RETURNED'
+                                                                ? 'bg-[#8B3A00] text-white hover:bg-[#8B3A00]/90 ring-2 ring-[#8B3A00]/20'
+                                                                : 'bg-slate-100 dark:bg-slate-700 hover:bg-[#8B3A00] hover:text-white text-slate-700 dark:text-slate-200'
+                                                        }`}
                                                     >
-                                                        <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                        {req.status === 'SUBMITTED' ? "Review & Verify" : "View Details"}
+                                                        <span className="material-symbols-outlined text-[18px]">
+                                                            {req.status === 'RETURNED' ? 'edit_note' : 'visibility'}
+                                                        </span>
+                                                        {req.status === 'SUBMITTED' ? "Review & Verify" : req.status === 'RETURNED' ? "Edit & Resubmit" : "View Details"}
                                                     </button>
                                                 </div>
                                             </td>
