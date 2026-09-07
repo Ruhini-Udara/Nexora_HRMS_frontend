@@ -23,6 +23,9 @@ interface NormalLeave {
     branch: string;
     contactNumber: string;
     email: string;
+    isEdited?: boolean;
+    returnReason?: string;
+    returnedBy?: string;
 }
 
 // ─── Status badge helper ──────────────────────────────────────────────────────
@@ -31,11 +34,13 @@ function StatusBadge({ status }: { status: string }) {
         PENDING_HR_APPROVAL: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
         APPROVED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
         REJECTED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        RETURNED: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
     };
     const label: Record<string, string> = {
         PENDING_HR_APPROVAL: "Pending HR Approval",
         APPROVED: "Approved (Final)",
         REJECTED: "Rejected",
+        RETURNED: "Returned for Editing",
     };
     return (
         <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${map[status] ?? "bg-slate-100 text-slate-600"}`}>
@@ -80,12 +85,12 @@ export default function NormalApprovalsPage() {
         setHrRemark("");
     };
 
-    // ── Approve / Reject ───────────────────────────────────────────────────
-    const handleDecision = async (decision: "APPROVE" | "REJECT") => {
+    // ── Approve / Reject / Return ──────────────────────────────────────────
+    const handleDecision = async (decision: "APPROVE" | "REJECT" | "RETURNED") => {
         if (!selectedRequest) return;
 
-        if (decision === "REJECT" && !hrRemark.trim()) {
-            setToast({ message: "Please provide a remark explaining the reason for rejection.", type: "error" });
+        if ((decision === "REJECT" || decision === "RETURNED") && !hrRemark.trim()) {
+            setToast({ message: `Please provide a remark explaining the reason for ${decision === "RETURNED" ? "returning" : "rejection"}.`, type: "error" });
             setTimeout(() => setToast(null), 4000);
             return;
         }
@@ -95,15 +100,17 @@ export default function NormalApprovalsPage() {
             await api.post("/api/v1/approvals", {
                 refId: selectedRequest.id,
                 refType: "NORMAL_LEAVE",
-                decision: decision === "APPROVE" ? "APPROVED" : "REJECTED",
+                decision: decision === "APPROVE" ? "APPROVED" : decision === "RETURNED" ? "RETURNED" : "REJECTED",
                 remark: hrRemark,
                 approvedBy: { id: user?.id }, // Use actual HR id from store
             });
 
             if (decision === "REJECT") {
                 setToast({ message: "Rejection reason has been successfully sent to the employee.", type: "success" });
+            } else if (decision === "RETURNED") {
+                setToast({ message: "Request returned to the employee for amendments.", type: "success" });
             } else {
-                setToast({ message: "Request has been verified and forwarded successfully.", type: "success" });
+                setToast({ message: "Request has been verified and approved successfully.", type: "success" });
             }
             setTimeout(() => setToast(null), 4000);
 
@@ -181,6 +188,7 @@ export default function NormalApprovalsPage() {
                         >
                             <option value="PENDING_HR_APPROVAL">Pending HR Approval</option>
                             <option value="APPROVED">Approved (Final)</option>
+                            <option value="RETURNED">Returned for Editing</option>
                             <option value="REJECTED">Rejected</option>
                         </select>
                     </div>
@@ -216,8 +224,13 @@ export default function NormalApprovalsPage() {
                                             <td className="py-4 px-6 font-medium text-slate-900 dark:text-white">#{req.id}</td>
                                             <td className="py-4 px-6">
                                                 <div>
-                                                    <div className="font-semibold text-slate-800 dark:text-white whitespace-nowrap">
-                                                        {req.employeeName}
+                                                    <div className="font-semibold text-slate-800 dark:text-white whitespace-nowrap flex items-center gap-2">
+                                                        <span>{req.employeeName}</span>
+                                                        {req.isEdited && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30">
+                                                                EDITED
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="text-xs text-slate-500 dark:text-slate-400">
                                                         {req.employeeCode} • {req.department}
@@ -270,7 +283,15 @@ export default function NormalApprovalsPage() {
                                     {selectedRequest.employeeName.charAt(0)}
                                 </div>
                                 <div>
-                                    <p className="font-bold text-gray-900 dark:text-white text-[15px]">{selectedRequest.employeeName}</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-bold text-gray-900 dark:text-white text-[15px]">{selectedRequest.employeeName}</p>
+                                        {selectedRequest.isEdited && (
+                                            <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/30 flex items-center gap-1 shadow-sm">
+                                                <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                                                Edited & Resubmitted
+                                            </span>
+                                        )}
+                                    </div>
                                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{selectedRequest.employeeCode} · {selectedRequest.department}</p>
                                     <span className="inline-block mt-1.5 text-[10px] font-bold text-primary dark:text-primary-light bg-primary/10 dark:bg-primary/20 px-2 py-0.5 rounded-full tracking-wide uppercase">
                                         ID: #{selectedRequest.id}
@@ -283,6 +304,30 @@ export default function NormalApprovalsPage() {
                         </div>
 
                         <div className="flex flex-col gap-5 px-6 py-5 flex-1 overflow-y-auto">
+                            {/* Previous Return Comment */}
+                            {selectedRequest.isEdited && selectedRequest.returnReason && (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800/30">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="material-symbols-outlined text-blue-500 text-sm">history</span>
+                                        <span className="font-bold text-sm text-blue-800 dark:text-blue-200">
+                                            Previous Return Comment {selectedRequest.returnedBy && (
+                                                <span className="text-blue-600 dark:text-blue-400 font-medium ml-1">
+                                                    by {selectedRequest.returnedBy
+                                                        .replace("ROLE_SUPERVISOR", "Supervisor")
+                                                        .replace("ROLE_EMPLOYEE", "Supervisor")
+                                                        .replace("ROLE_ADMIN", "HR Admin")
+                                                        .replace("ROLE_HR", "HR")
+                                                        .replace("ROLE_DIRECTOR", "Director")}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300 italic">
+                                        &quot;{selectedRequest.returnReason}&quot;
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Leave Type & Duration */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
@@ -326,7 +371,7 @@ export default function NormalApprovalsPage() {
                                     onChange={e => setHrRemark(e.target.value)}
                                     disabled={selectedRequest.status !== "PENDING_HR_APPROVAL"}
                                     rows={3}
-                                    placeholder="Enter verification notes or rejection reason..."
+                                    placeholder="Enter verification notes, return instructions, or rejection reason..."
                                     className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary/60 placeholder-gray-400 dark:placeholder-slate-500 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-colors disabled:opacity-60"
                                 />
                             </div>
@@ -339,9 +384,16 @@ export default function NormalApprovalsPage() {
                                     <button
                                         onClick={() => handleDecision("REJECT")}
                                         disabled={submitting}
-                                        className="flex-1 py-2.5 text-sm font-semibold text-red-600 bg-white dark:bg-slate-800 border-2 border-red-200 dark:border-red-900/40 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer disabled:opacity-50"
+                                        className="px-4 py-2.5 text-sm font-semibold text-red-600 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/40 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer disabled:opacity-50"
                                     >
-                                        Reject Request
+                                        Reject
+                                    </button>
+                                    <button
+                                        onClick={() => handleDecision("RETURNED")}
+                                        disabled={submitting}
+                                        className="px-4 py-2.5 text-sm font-semibold text-orange-600 bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900/50 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors cursor-pointer disabled:opacity-50"
+                                    >
+                                        Return to Employee
                                     </button>
                                     <button
                                         onClick={() => handleDecision("APPROVE")}
