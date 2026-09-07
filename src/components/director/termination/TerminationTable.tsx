@@ -45,6 +45,10 @@ export default function TerminationTable() {
     // Reject Modal State
     const [rejectingRequest, setRejectingRequest] = useState<DirTermRequest | null>(null);
     const [rejectReason, setRejectReason] = useState('');
+
+    // Return to HR Modal State
+    const [returningRequest, setReturningRequest] = useState<DirTermRequest | null>(null);
+    const [returnReason, setReturnReason] = useState('');
     
     // Notification states
     const [hrNotified, setHrNotified] = useState(false);
@@ -63,7 +67,8 @@ export default function TerminationTable() {
                     r.status === 'PENDING_BOARD_APPROVAL' || 
                     r.status === 'BOARD_ASSIGNED' ||
                     r.status === 'APPROVED' || 
-                    r.status === 'REJECTED'
+                    r.status === 'REJECTED' ||
+                    r.status === 'RETURNED'
                 ).map((r: any) => ({
                     ...r,
                     boardMeetingDate: r.boardMeetingDate || getTodayStr(),
@@ -189,10 +194,28 @@ export default function TerminationTable() {
         }
     };
 
+    const handleConfirmReturn = async () => {
+        if (!returningRequest || !returnReason.trim()) return;
+        try {
+            const id = returningRequest.id;
+            const updatedReq = await updateTerminationStatus(id, "RETURNED", returnReason.trim());
+            const updated = requests.map(r => r.id === id ? { ...r, ...updatedReq, directorRemark: returnReason.trim(), status: 'RETURNED' } : r);
+            setRequests(updated);
+            showToast(`Request returned to HR for amendments!`);
+            setReturningRequest(null);
+            setViewingRequest(null);
+            setReturnReason('');
+        } catch (error) {
+            console.error('Failed to return to HR:', error);
+        }
+    };
+
     const StatusBadge = ({ status }: { status: string }) => {
         switch (status) {
             case 'APPROVED': return <span className="px-3 py-1 bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-400 rounded-full text-xs font-bold">Approved</span>;
             case 'REJECTED': return <span className="px-3 py-1 bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-400 rounded-full text-xs font-bold">Rejected</span>;
+            case 'RETURNED': return <span className="px-3 py-1 bg-orange-100 dark:bg-orange-950/30 text-orange-800 dark:text-orange-400 rounded-full text-xs font-bold">Returned to HR</span>;
+            case 'RESUBMITTED': return <span className="px-3 py-1 bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-400 rounded-full text-xs font-bold">Resubmitted</span>;
             default: return <span className="px-3 py-1 bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 rounded-full text-xs font-bold">Pending Review</span>;
         }
     };
@@ -200,6 +223,7 @@ export default function TerminationTable() {
     const statsTags = [
         { label: "Total Requests", status: "All", icon: "description", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
         { label: "Pending", status: "PENDING", icon: "schedule", color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-900/20", ring: "ring-yellow-500" },
+        { label: "Returned", status: "RETURNED", icon: "assignment_return", color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-900/20", ring: "ring-orange-500" },
         { label: "Approved", status: "APPROVED", icon: "check_circle", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20", ring: "ring-green-500" },
         { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
     ] as const;
@@ -221,7 +245,7 @@ export default function TerminationTable() {
             </div>
 
             {/* Interactive Stats Tags */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 {statsTags.map(({ label, status, icon, color, bg, ring }) => {
                     const statCount = timeFilteredRequests.filter(r => {
                         if (status === 'All') return true;
@@ -412,6 +436,10 @@ export default function TerminationTable() {
                                 hideFooter={false}
                                 onSave={() => {}}
                                 onCancel={() => setViewingRequest(null)}
+                                onReturn={isPending(viewingRequest.status) ? () => {
+                                    setReturningRequest(viewingRequest);
+                                    setReturnReason('');
+                                } : undefined}
                             />
                         </div>
                     </div>
@@ -451,6 +479,56 @@ export default function TerminationTable() {
                             >
                                 <X className="w-4 h-4" />
                                 Confirm Rejection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Return to HR for Amendments Modal */}
+            {returningRequest && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-[#8B3A00]/20 dark:border-slate-800 transition-colors">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2.5">
+                                <span className="w-8 h-8 rounded-full bg-[#8B3A00]/10 text-[#8B3A00] flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[18px]">assignment_return</span>
+                                </span>
+                                Return to HR for Amendments
+                            </h3>
+                            <button onClick={() => setReturningRequest(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-gray-600 dark:text-slate-300">
+                                Please specify the comments or missing details that HR needs to amend for <span className="font-bold text-gray-900 dark:text-white">{returningRequest.employeeName}&apos;s</span> termination request before it can be approved.
+                            </p>
+                            
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-slate-300 uppercase mb-2">
+                                    Amendments Required / Comment <span className="text-red-500">*</span>
+                                </label>
+                                <textarea 
+                                    value={returnReason}
+                                    onChange={e => setReturnReason(e.target.value)}
+                                    className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#8B3A00]/20 focus:border-[#8B3A00] resize-none h-28 transition-colors"
+                                    placeholder="e.g. Loan clearance letter is missing official seal; please update and resubmit..."
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+                        <div className="p-6 bg-gray-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t border-gray-100 dark:border-slate-800 transition-colors">
+                            <button onClick={() => { setReturningRequest(null); setReturnReason(''); }} className="px-4 py-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white transition-colors cursor-pointer">
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleConfirmReturn} 
+                                disabled={!returnReason.trim()}
+                                className="px-5 py-2 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">assignment_return</span>
+                                Confirm &amp; Return to HR
                             </button>
                         </div>
                     </div>

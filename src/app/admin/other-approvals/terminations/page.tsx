@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -30,9 +30,11 @@ export default function AdminTerminationsPage() {
         );
     };
 
+    const isAvailableForBatch = (status?: string) => status === "PENDING_ADMIN" || status === "RESUBMITTED";
+
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            const approvedIds = requests.filter(r => r.status === "PENDING_ADMIN").map(r => r.id);
+            const approvedIds = requests.filter(r => isAvailableForBatch(r.status)).map(r => r.id);
             setSelectedIds(approvedIds);
         } else {
             setSelectedIds([]);
@@ -83,7 +85,7 @@ export default function AdminTerminationsPage() {
         }
     };
 
-    const preparationList = requests.filter(r => r.status === "PENDING_ADMIN");
+    const preparationList = requests.filter(r => isAvailableForBatch(r.status));
     const availableDates = Array.from(new Set(requests.filter(r => r.status === "PENDING_BOARD_APPROVAL" && r.boardMeetingDate).map(r => r.boardMeetingDate as string)));
     
     const managementList = requests.filter(r => {
@@ -212,6 +214,7 @@ export default function AdminTerminationsPage() {
                                             <th className="py-4 px-6">Type</th>
                                             <th className="py-4 px-6">Branch</th>
                                             <th className="py-4 px-6">Effective Date</th>
+                                            <th className="py-4 px-6">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="text-sm">
@@ -230,11 +233,22 @@ export default function AdminTerminationsPage() {
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400">{req.type}</td>
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-400">{req.branch}</td>
                                                 <td className="py-4 px-6">{req.effectiveDate}</td>
+                                                <td className="py-4 px-6">
+                                                    {req.status === 'RESUBMITTED' ? (
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                                                            Resubmitted (Amended)
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800">
+                                                            Pending Admin
+                                                        </span>
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))}
                                         {preparationList.length === 0 && (
                                             <tr>
-                                                <td colSpan={6} className="py-12 text-center text-slate-500">
+                                                <td colSpan={7} className="py-12 text-center text-slate-500">
                                                     <div className="flex flex-col items-center justify-center gap-2">
                                                         <span className="material-symbols-outlined text-4xl text-slate-300">done_all</span>
                                                         <p>No submitted requests pending batch creation.</p>

@@ -16,12 +16,7 @@ const terminationSchema = z.object({
     type: z.string().min(1, 'Termination type is required'),
     reason: z.string().min(1, 'Reason is required'),
     initiationDate: z.string().min(1, 'Initiation date is required'),
-    effectiveDate: z.string().min(1, 'Effective date is required').refine((val) => {
-        const today = new Date().toISOString().split('T')[0];
-        return val >= today;
-    }, {
-        message: 'Effective date cannot be in the past',
-    }),
+    effectiveDate: z.string().min(1, 'Effective date is required'),
     specialRemark: z.string().optional(),
 });
 
@@ -46,11 +41,14 @@ interface DocUploadCardProps {
 const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove, isReadOnly }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const hasFile = !!slot.file || !!slot.existingName;
-    const fileName = slot.file?.name || slot.existingName || '';
+    const fileName = slot.file?.name || (slot.existingName ? slot.existingName.split('/').pop() || slot.existingName : '');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) onUpload(slot.key, file);
+        if (file) {
+            onUpload(slot.key, file);
+            e.target.value = '';
+        }
     };
 
     const handleDownload = async () => {
@@ -75,33 +73,62 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
     return (
         <div className={`p-4 rounded-xl border transition-all ${hasFile ? 'border-emerald-200 bg-emerald-50/30 dark:border-emerald-800 dark:bg-emerald-900/10' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50'}`}>
             <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${hasFile ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${hasFile ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-slate-200 dark:bg-slate-800'}`}>
                         <span className={`material-symbols-outlined text-[20px] ${hasFile ? 'text-emerald-600' : 'text-slate-500'}`}>
                             {hasFile ? 'check_circle' : slot.icon}
                         </span>
                     </div>
                     <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{slot.label} {slot.mandatory && <span className="text-red-500">*</span>}</p>
-                        <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{hasFile ? fileName : 'No file selected'}</p>
+                        <p className="text-[10px] text-slate-500 truncate max-w-[120px]" title={fileName}>
+                            {hasFile ? (slot.file ? `${fileName} (New)` : fileName) : 'No file selected'}
+                        </p>
                     </div>
                 </div>
-                {hasFile && (
-                    <button type="button" onClick={handleDownload} className="text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors shrink-0 cursor-pointer mr-2">
-                        <span className="material-symbols-outlined text-[20px]">download</span>
-                    </button>
-                )}
-                {!isReadOnly && (
-                    hasFile ? (
-                        <button type="button" onClick={() => onRemove(slot.key)} className="text-slate-400 hover:text-red-500 transition-colors shrink-0">
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                <div className="flex items-center gap-1 shrink-0">
+                    {hasFile && (
+                        <button 
+                            type="button" 
+                            onClick={handleDownload} 
+                            className="p-1 text-[#8B3A00] hover:text-[#8B3A00]/80 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                            title="Download / Preview"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">download</span>
                         </button>
-                    ) : (
-                        <button type="button" onClick={() => inputRef.current?.click()} className="text-[#8B3A00] hover:text-[#8B3A00]/80 transition-colors shrink-0 cursor-pointer">
-                            <span className="material-symbols-outlined text-[20px]">upload</span>
-                        </button>
-                    )
-                )}
+                    )}
+                    {!isReadOnly && (
+                        hasFile ? (
+                            <>
+                                <button 
+                                    type="button" 
+                                    onClick={() => inputRef.current?.click()} 
+                                    className="p-1 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                                    title="Replace file"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">sync</span>
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => onRemove(slot.key)} 
+                                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                                    title="Remove file"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                                </button>
+                            </>
+                        ) : (
+                            <button 
+                                type="button" 
+                                onClick={() => inputRef.current?.click()} 
+                                className="p-1 text-[#8B3A00] hover:text-[#8B3A00]/80 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                                title="Upload file"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">upload</span>
+                            </button>
+                        )
+                    )}
+                </div>
             </div>
             <input type="file" ref={inputRef} onChange={handleChange} className="hidden text-slate-900 font-bold dark:text-white" accept=".pdf,.jpg,.jpeg,.png" />
         </div>
@@ -110,12 +137,13 @@ const DocUploadCard: React.FC<DocUploadCardProps> = ({ slot, onUpload, onRemove,
 
 interface TerminationRequestFormProps {
     initialData?: TerminationRequest;
-    onSave: (data: TerminationRequest) => void;
+    onSave: (data: TerminationRequest) => void | Promise<void>;
     onCancel: () => void;
     isReadOnly?: boolean;
     hideFooter?: boolean;
-    onVerify?: () => void;
+    onVerify?: (amendedData?: TerminationRequest) => void | Promise<void>;
     onReject?: () => void;
+    onReturn?: () => void;
 }
 
 export function TerminationRequestForm({ 
@@ -125,7 +153,8 @@ export function TerminationRequestForm({
     isReadOnly = false, 
     hideFooter = false,
     onVerify,
-    onReject
+    onReject,
+    onReturn
 }: TerminationRequestFormProps) {
     const [showAckPopup, setShowAckPopup] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -160,7 +189,10 @@ export function TerminationRequestForm({
         );
     });
 
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | undefined>((initialData as any)?.employeeId);
+
     const handleSelectEmployee = async (emp: any) => {
+        if (emp.id) setSelectedEmployeeId(emp.id);
         setValue('employeeName', emp.fullName || emp.name || '');
         setValue('epfNumber', emp.epfNumber || emp.epfNo || '');
         const branchVal = emp.branch || emp.department || '';
@@ -210,7 +242,7 @@ export function TerminationRequestForm({
         { key: 'other_document', label: 'Other Supportings', icon: 'attach_file', mandatory: false, file: null, existingName: initialData?.documents?.other_document },
     ]);
 
-    const { register, handleSubmit, formState: { errors }, getValues, setValue } = useForm<TerminationFormData>({
+    const { register, handleSubmit, formState: { errors }, getValues, setValue, trigger } = useForm<TerminationFormData>({
         resolver: zodResolver(terminationSchema),
         defaultValues: initialData || {
             employeeName: '',
@@ -225,21 +257,20 @@ export function TerminationRequestForm({
     });
 
     const handleDocUpload = (key: DocumentSlot['key'], file: File) => {
-        setDocSlots(prev => prev.map(s => s.key === key ? { ...s, file } : s));
+        setDocSlots(prev => prev.map(s => s.key === key ? { ...s, file, existingName: undefined } : s));
     };
 
     const handleDocRemove = (key: DocumentSlot['key']) => {
-        setDocSlots(prev => prev.map(s => s.key === key ? { ...s, file: null } : s));
+        setDocSlots(prev => prev.map(s => s.key === key ? { ...s, file: null, existingName: undefined } : s));
     };
 
-    const mandatoryDocsMissing = docSlots.some(s => s.mandatory && !s.file && !isReadOnly);
+    const mandatoryDocsMissing = docSlots.some(s => s.mandatory && !s.file && !s.existingName);
 
     const onSubmit = (data: TerminationFormData) => {
         if (mandatoryDocsMissing) return;
         setShowAckPopup(true);
     };
 
-    
     const uploadDocs = async () => {
         const documents: any = {};
         for (const slot of docSlots) {
@@ -259,8 +290,9 @@ export function TerminationRequestForm({
         const formData = getValues();
         try {
             const documents = await uploadDocs();
-            onSave({ 
+            await onSave({ 
                 ...formData, 
+                employeeId: selectedEmployeeId || (initialData as any)?.employeeId,
                 specialRemark: formData.specialRemark || '',
                 id: initialData?.id || `TRM-${Date.now()}`, 
                 status: 'SUBMITTED', 
@@ -280,8 +312,9 @@ export function TerminationRequestForm({
         const formData = getValues();
         try {
             const documents = await uploadDocs();
-            onSave({ 
+            await onSave({ 
                 ...formData, 
+                employeeId: selectedEmployeeId || (initialData as any)?.employeeId,
                 specialRemark: formData.specialRemark || '',
                 id: initialData?.id || `TRM-${Date.now()}`, 
                 status: 'NEW', 
@@ -290,6 +323,78 @@ export function TerminationRequestForm({
         } catch (e: any) {
             console.error(e);
             alert("Failed to upload: " + e.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleSaveChanges = async () => {
+        const isValid = await trigger();
+        if (!isValid || mandatoryDocsMissing) return;
+        setIsUploading(true);
+        const formData = getValues();
+        try {
+            const documents = await uploadDocs();
+            await onSave({
+                ...formData,
+                employeeId: selectedEmployeeId || (initialData as any)?.employeeId,
+                specialRemark: formData.specialRemark || '',
+                id: initialData?.id || `TRM-${Date.now()}`,
+                status: initialData?.status || 'SUBMITTED',
+                documents
+            });
+        } catch (e: any) {
+            console.error(e);
+            alert("Failed to save changes: " + e.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const isReviewMode = !isReadOnly && initialData?.status === 'SUBMITTED' && !!onVerify;
+    const isReturnedMode = !isReadOnly && initialData?.status === 'RETURNED';
+
+    const handleResubmitToAdmin = async () => {
+        const isValid = await trigger();
+        if (!isValid || mandatoryDocsMissing) return;
+        setIsUploading(true);
+        const formData = getValues();
+        try {
+            const documents = await uploadDocs();
+            await onSave({
+                ...formData,
+                employeeId: selectedEmployeeId || (initialData as any)?.employeeId,
+                specialRemark: formData.specialRemark || '',
+                id: initialData?.id || `TRM-${Date.now()}`,
+                status: 'RESUBMITTED',
+                documents
+            });
+        } catch (e: any) {
+            console.error(e);
+            alert("Failed to resubmit: " + e.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleVerifySubmit = async (data: TerminationFormData) => {
+        if (mandatoryDocsMissing) return;
+        setIsUploading(true);
+        try {
+            const documents = await uploadDocs();
+            if (onVerify) {
+                await onVerify({
+                    ...data,
+                    employeeId: selectedEmployeeId || (initialData as any)?.employeeId,
+                    specialRemark: data.specialRemark || '',
+                    id: initialData?.id || `TRM-${Date.now()}`,
+                    status: 'VERIFIED_BY_HR',
+                    documents
+                });
+            }
+        } catch (e: any) {
+            console.error(e);
+            alert("Failed to verify: " + e.message);
         } finally {
             setIsUploading(false);
         }
@@ -305,9 +410,19 @@ export function TerminationRequestForm({
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                            {initialData ? (isReadOnly ? 'Termination Details' : 'Edit Termination Request') : 'New Termination Request'}
+                            {isReturnedMode
+                                ? 'Amend & Resubmit Termination Request'
+                                : isReviewMode
+                                    ? 'Review & Verify Termination Request'
+                                    : (initialData ? (isReadOnly ? 'Termination Details' : 'Edit Termination Request') : 'New Termination Request')}
                         </h3>
-                        <p className="text-sm text-slate-500">Employee Separation & Documentation Process</p>
+                        <p className="text-sm text-slate-500">
+                            {isReturnedMode
+                                ? 'Review Board feedback, amend details or documents, and resubmit to Board'
+                                : isReviewMode
+                                    ? 'Review, amend details or documents, and verify for Admin Approval'
+                                    : 'Employee Separation & Documentation Process'}
+                        </p>
                     </div>
                 </div>
                 <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
@@ -318,6 +433,81 @@ export function TerminationRequestForm({
             {/* Form Content */}
             <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto">
                 <div className="p-8 space-y-8">
+                    {/* Amendment Banner for RETURNED status */}
+                    {initialData?.status === 'RETURNED' && (
+                        <div className="p-4 bg-[#8B3A00]/5 dark:bg-[#8B3A00]/15 border-2 border-[#8B3A00]/40 rounded-xl flex items-start gap-3.5 shadow-sm">
+                            <div className="w-9 h-9 rounded-lg bg-[#8B3A00]/10 flex items-center justify-center shrink-0 text-[#8B3A00]">
+                                <span className="material-symbols-outlined text-[22px]">assignment_return</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-bold text-[#8B3A00] dark:text-[#F9B912]">
+                                        Termination Request Returned by Board for Amendments
+                                    </p>
+                                    <span className="text-[10px] font-bold bg-orange-100 text-orange-800 border border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800/60 px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                                        Returned for Amendment
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">
+                                    The Board / Director has reviewed this termination request and returned it with the amendment requirements noted below. Please revise the necessary fields or documents, then click <strong>&quot;Resubmit to Admin&quot;</strong> for the Admin to schedule a new Board meeting date.
+                                </p>
+                                {(initialData.directorRemark || initialData.hrRemark) && (
+                                    <div className="mt-3 p-3.5 bg-white dark:bg-slate-950 border border-[#8B3A00]/30 rounded-lg shadow-sm">
+                                        <p className="text-xs font-bold text-[#8B3A00] dark:text-[#F9B912] flex items-center gap-1.5">
+                                            <span className="material-symbols-outlined text-[16px]">feedback</span>
+                                            Board / Director Feedback:
+                                        </p>
+                                        <p className="text-xs text-slate-800 dark:text-slate-100 mt-1 font-semibold italic leading-relaxed">
+                                            &quot;{initialData.directorRemark || initialData.hrRemark}&quot;
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Amendment Banner for RESUBMITTED status */}
+                    {initialData?.status === 'RESUBMITTED' && (
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950/40 border-2 border-blue-200 dark:border-blue-800/80 rounded-xl flex items-start gap-3.5 shadow-sm">
+                            <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0 text-blue-600 dark:text-blue-400">
+                                <span className="material-symbols-outlined text-[22px]">edit_note</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-bold text-blue-900 dark:text-blue-200">
+                                        Amended Termination Request (Resubmitted to Admin)
+                                    </p>
+                                    <span className="text-[10px] font-bold bg-blue-600 text-white px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                                        Resubmitted
+                                    </span>
+                                </div>
+                                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
+                                    This termination request was previously returned by the Board, amended by HR, and resubmitted to the Admin for new Board meeting date scheduling.
+                                </p>
+                                {(initialData.directorRemark || initialData.hrRemark) && (
+                                    <div className="mt-3 p-3.5 bg-white dark:bg-slate-950 border border-blue-200 dark:border-blue-800/60 rounded-lg shadow-sm">
+                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                            <span className="material-symbols-outlined text-[16px]">history</span>
+                                            Previous Board Feedback:
+                                        </p>
+                                        <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 italic font-medium leading-relaxed">
+                                            &quot;{initialData.directorRemark || initialData.hrRemark}&quot;
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Review Mode Banner */}
+                    {isReviewMode && (
+                        <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-center gap-3 text-amber-800 dark:text-amber-300 text-xs">
+                            <span className="material-symbols-outlined text-[22px] text-amber-600 shrink-0">rate_review</span>
+                            <div>
+                                <span className="font-bold">Review & Verification Mode:</span> You can amend any details or replace/upload supporting documents before verifying and adding to the Admin list.
+                            </div>
+                        </div>
+                    )}
                     {/* Section: Employee & Basic Info */}
                     <div className="space-y-6">
                         <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest border-b border-primary/10 pb-2">Employee Information</h4>
@@ -479,25 +669,19 @@ export function TerminationRequestForm({
                 {!hideFooter && (
                     <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 shrink-0">
                         {isReadOnly ? (
-                            initialData?.status === 'SUBMITTED' && onVerify && onReject ? (
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={onReject}
-                                        className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-bold text-sm transition-colors cursor-pointer"
-                                    >
-                                        Reject Request
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={onVerify}
-                                        className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
-                                    >
-                                        <span className="material-symbols-outlined text-[18px]">verified</span>
-                                        Verify & Add to Admin List
-                                    </button>
+                            <div className="flex items-center justify-between w-full">
+                                <div>
+                                    {onReturn && (
+                                        <button
+                                            type="button"
+                                            onClick={onReturn}
+                                            className="px-5 py-2.5 bg-white dark:bg-slate-800 border-2 border-[#8B3A00] text-[#8B3A00] hover:bg-[#8B3A00]/10 rounded-lg font-bold text-sm transition-colors cursor-pointer flex items-center gap-2 shadow-sm"
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">assignment_return</span>
+                                            Return to HR for Amendments
+                                        </button>
+                                    )}
                                 </div>
-                            ) : (
                                 <button
                                     type="button"
                                     onClick={onCancel}
@@ -505,12 +689,71 @@ export function TerminationRequestForm({
                                 >
                                     Close
                                 </button>
-                            )
+                            </div>
+                        ) : isReturnedMode ? (
+                            <div className="flex items-center justify-end gap-3 w-full">
+                                <button
+                                    type="button"
+                                    onClick={onCancel}
+                                    disabled={isUploading}
+                                    className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg font-bold text-sm transition-colors cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveChanges}
+                                    disabled={isUploading}
+                                    className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-bold text-sm transition-colors cursor-pointer flex items-center gap-1.5"
+                                >
+                                    {isUploading ? <Loader2 className="animate-spin w-4 h-4" /> : <span className="material-symbols-outlined text-[18px]">save</span>}
+                                    Save Changes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleResubmitToAdmin}
+                                    disabled={mandatoryDocsMissing || isUploading}
+                                    className="px-6 py-2.5 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
+                                >
+                                    {isUploading ? <Loader2 className="animate-spin w-4 h-4" /> : <span className="material-symbols-outlined text-[18px]">send</span>}
+                                    Resubmit to Admin
+                                </button>
+                            </div>
+                        ) : isReviewMode ? (
+                            <div className="flex items-center justify-end gap-3 w-full">
+                                <button
+                                    type="button"
+                                    onClick={onCancel}
+                                    disabled={isUploading}
+                                    className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg font-bold text-sm transition-colors cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveChanges}
+                                    disabled={isUploading}
+                                    className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-bold text-sm transition-colors cursor-pointer flex items-center gap-1.5"
+                                >
+                                    {isUploading ? <Loader2 className="animate-spin w-4 h-4" /> : <span className="material-symbols-outlined text-[18px]">save</span>}
+                                    Save Changes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSubmit(handleVerifySubmit)}
+                                    disabled={mandatoryDocsMissing || isUploading}
+                                    className="px-6 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg font-bold text-sm shadow-sm flex items-center gap-2 transition-colors cursor-pointer"
+                                >
+                                    {isUploading ? <Loader2 className="animate-spin w-4 h-4" /> : <span className="material-symbols-outlined text-[18px]">verified</span>}
+                                    Verify & Add to Admin List
+                                </button>
+                            </div>
                         ) : (
                             <div className="flex items-center gap-3 w-full justify-between">
                                 <button
                                     type="button"
                                     onClick={onCancel}
+                                    disabled={isUploading}
                                     className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg font-bold text-sm transition-colors cursor-pointer"
                                 >
                                     Cancel
@@ -519,6 +762,7 @@ export function TerminationRequestForm({
                                     <button
                                         type="button"
                                         onClick={handleSaveAsDraft}
+                                        disabled={isUploading}
                                         className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg font-bold text-sm transition-colors cursor-pointer"
                                     >
                                         {initialData ? 'Update Details' : 'Save as Draft'}

@@ -4,10 +4,11 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { TerminationRequestForm } from "./TerminationRequestForm";
 import { getAllTerminationRequests, updateTerminationStatus, updateTerminationRequest, createTerminationRequest } from "@/lib/api/terminationRequests";
-export type TerminationStatus = 'NEW' | 'SUBMITTED' | 'VERIFIED_BY_HR' | 'PENDING_ADMIN' | 'REJECTED' | 'PENDING_BOARD_APPROVAL' | 'SUBMITTED_TO_DIRECTOR' | 'APPROVED';
+export type TerminationStatus = 'NEW' | 'SUBMITTED' | 'VERIFIED_BY_HR' | 'PENDING_ADMIN' | 'REJECTED' | 'PENDING_BOARD_APPROVAL' | 'SUBMITTED_TO_DIRECTOR' | 'APPROVED' | 'RETURNED' | 'RESUBMITTED' | 'EXECUTED';
 
 export interface TerminationRequest {
     id: string;
+    employeeId?: number;
     employeeName: string;
     epfNumber: string;
     branch: string;
@@ -23,6 +24,7 @@ export interface TerminationRequest {
         other_document?: string;
     };
     hrRemark?: string;
+    directorRemark?: string;
 }
 
 // ── Status badge config ─────────────────────────────────────────────
@@ -32,6 +34,8 @@ const statusConfig: Record<string, { label: string; classes: string }> = {
     PENDING_ADMIN: { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
     SUBMITTED_TO_DIRECTOR: { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" },
     "Board Approved": { label: "Board Approved", classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
+    RETURNED: { label: "Returned for Amendment", classes: "bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-800" },
+    RESUBMITTED: { label: "Resubmitted", classes: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800" },
     EXECUTED: { label: "Executed", classes: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400" },
     REJECTED: { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" }
 };
@@ -45,6 +49,8 @@ const getStatusBadge = (status: string | undefined | null) => {
     if (upper === "VERIFIED_BY_HR" || upper === "VERIFIED") return { label: "Verified", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" };
     if (upper === "PENDING_ADMIN") return { label: "Pending Admin", classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
     if (upper === "SUBMITTED_TO_DIRECTOR" || upper === "PENDING_BOARD_APPROVAL") return { label: "Submitted to Director", classes: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400" };
+    if (upper === "RETURNED" || upper === "RETURNED FOR AMENDMENT") return { label: "Returned for Amendment", classes: "bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-800" };
+    if (upper === "RESUBMITTED") return { label: "Resubmitted", classes: "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800" };
     if (upper === "BOARD APPROVED" || upper === "APPROVED") return { label: "Board Approved", classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" };
     if (upper === "BOARD REJECTED" || upper === "REJECTED") return { label: "Rejected", classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" };
     if (upper === "EXECUTED") return { label: "Executed", classes: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400" };
@@ -93,7 +99,8 @@ export default function EmployeeTerminations() {
     // ── Handlers ─────────────────────────────────────────────────────
     const handleView = (req: TerminationRequest) => {
         setSelectedRequest(req);
-        setIsReadOnly(req.status !== 'NEW');
+        // NEW (draft), SUBMITTED (review & verify), and RETURNED (edit & resubmit) are editable by HR
+        setIsReadOnly(req.status !== 'NEW' && req.status !== 'SUBMITTED' && req.status !== 'RETURNED');
         setIsModalOpen(true);
     };
 
@@ -121,11 +128,18 @@ export default function EmployeeTerminations() {
         }
     };
 
-
-    const handleVerify = async () => {
+    const handleVerify = async (amendedData?: TerminationRequest) => {
         if (!selectedRequest) return;
         try {
-            const updatedReq = await updateTerminationStatus(selectedRequest.id, "VERIFIED_BY_HR");
+            let updatedReq: any;
+            if (amendedData) {
+                updatedReq = await updateTerminationRequest(selectedRequest.id, {
+                    ...amendedData,
+                    status: 'VERIFIED_BY_HR'
+                });
+            } else {
+                updatedReq = await updateTerminationStatus(selectedRequest.id, "VERIFIED_BY_HR");
+            }
             setRequests(prev => prev.map(r => r.id === selectedRequest.id ? updatedReq as unknown as TerminationRequest : r));
             setIsModalOpen(false);
         } catch (error) {
@@ -172,7 +186,7 @@ export default function EmployeeTerminations() {
     // ── Filtered list ─────────────────────────────────────────────────
     const filteredRequests = requests.filter((req) => {
         const matchesTab = activeTab === 'pending' 
-            ? (req.status === 'SUBMITTED' || req.status === 'PENDING_ADMIN' || req.status === 'REJECTED' || req.status === 'NEW' || req.status === 'PENDING_BOARD_APPROVAL' || req.status === 'SUBMITTED_TO_DIRECTOR' || req.status === 'APPROVED')
+            ? (req.status === 'SUBMITTED' || req.status === 'PENDING_ADMIN' || req.status === 'REJECTED' || req.status === 'NEW' || req.status === 'PENDING_BOARD_APPROVAL' || req.status === 'SUBMITTED_TO_DIRECTOR' || req.status === 'APPROVED' || req.status === 'RETURNED' || req.status === 'RESUBMITTED')
             : (req.status === 'VERIFIED_BY_HR');
         
         const matchesSearch =
@@ -180,7 +194,7 @@ export default function EmployeeTerminations() {
             req.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
             req.epfNumber.includes(searchTerm);
         
-        const matchesStatus = statusFilter === "All" || req.status === statusFilter;
+        const matchesStatus = statusFilter === "All" || req.status === statusFilter || (statusFilter === "PENDING_ADMIN" && req.status === "RESUBMITTED");
         
         let matchesTime = true;
         const d = req.initiationDate;
@@ -352,16 +366,17 @@ export default function EmployeeTerminations() {
                 </div>
 
                 {/* Stats Row */}
-                <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="mb-6 grid grid-cols-2 sm:grid-cols-5 gap-4">
                     {(
                         [
                             { label: "Submitted", status: "SUBMITTED", icon: "send", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20", ring: "ring-amber-500" },
+                            { label: "Returned", status: "RETURNED", icon: "assignment_return", color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-900/20", ring: "ring-orange-500" },
                             { label: "Verified", status: "VERIFIED_BY_HR", icon: "verified", color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20", ring: "ring-emerald-500" },
                             { label: "Pending Admin", status: "PENDING_ADMIN", icon: "pending_actions", color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20", ring: "ring-blue-500" },
                             { label: "Rejected", status: "REJECTED", icon: "cancel", color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20", ring: "ring-red-500" },
                         ] as const
                     ).map(({ label, status, icon, color, bg, ring }) => {
-                        const statCount = requests.filter(r => r.status === status).filter(req => {
+                        const statCount = requests.filter(r => status === 'PENDING_ADMIN' ? (r.status === 'PENDING_ADMIN' || r.status === 'RESUBMITTED') : r.status === status).filter(req => {
                             let matchesTime = true;
                             const d = req.initiationDate;
                             if (d) {
@@ -443,13 +458,27 @@ export default function EmployeeTerminations() {
                                                 </span>
                                             </td>
                                             <td className="py-4 px-6 text-right">
-                                                <button
-                                                    onClick={() => handleView(req)}
-                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-all cursor-pointer"
-                                                >
-                                                    <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                    {req.status === 'SUBMITTED' ? "Review & Verify" : "View Details"}
-                                                </button>
+                                                {req.status === 'RETURNED' ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedRequest(req);
+                                                            setIsReadOnly(false);
+                                                            setIsModalOpen(true);
+                                                        }}
+                                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#8B3A00] hover:bg-[#8B3A00]/90 text-white rounded-lg text-sm font-bold shadow-sm transition-all cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                                                        Edit &amp; Resubmit
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleView(req)}
+                                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-sm font-bold transition-all cursor-pointer"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                                        {req.status === 'SUBMITTED' ? "Review & Verify" : "View Details"}
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -511,7 +540,6 @@ export default function EmployeeTerminations() {
                             isReadOnly={isReadOnly}
                             hideFooter={false}
                             onVerify={handleVerify}
-                            onReject={handleOpenRejectDialog}
                         />
                     </div>
                 )}
