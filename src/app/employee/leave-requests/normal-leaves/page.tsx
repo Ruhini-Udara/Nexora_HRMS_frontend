@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -41,13 +42,16 @@ const normalLeaveSchema = z.object({
 
 type NormalLeaveValues = z.infer<typeof normalLeaveSchema>;
 
-export default function NormalLeaveRequestPage() {
+function NormalLeaveForm() {
     const { user } = useAuthStore();
     const queryClient = useQueryClient();
+    const searchParams = useSearchParams();
+    const editId = searchParams.get("editId");
     
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [fileError, setFileError] = useState("");
     const [documentFile, setDocumentFile] = useState<File | null>(null);
+    const [existingLeave, setExistingLeave] = useState<any>(null);
 
     const currentYear = new Date().getFullYear();
 
@@ -101,12 +105,35 @@ export default function NormalLeaveRequestPage() {
         handleSubmit,
         control,
         watch,
+        reset,
         formState: { errors }
     } = useForm<NormalLeaveValues>({
         resolver: zodResolver(normalLeaveSchema),
     });
 
-    // eslint-disable-next-line react-hooks/incompatible-library
+    // If editId is provided, fetch existing leave details to edit
+    useEffect(() => {
+        if (editId) {
+            const fetchLeaveToEdit = async () => {
+                try {
+                    const res = await api.get(`/api/v1/leaves/normal/${editId}`);
+                    const data = res.data;
+                    setExistingLeave(data);
+                    reset({
+                        leaveTypeId: data.leaveTypeId ? String(data.leaveTypeId) : "",
+                        startDate: data.fromDate || "",
+                        endDate: data.endDate || "",
+                        reason: data.reason || "",
+                    });
+                } catch (err) {
+                    console.error("Failed to load leave for editing", err);
+                    setFileError("Could not load the leave request for editing.");
+                }
+            };
+            fetchLeaveToEdit();
+        }
+    }, [editId, reset]);
+
     const selectedStartDate = watch("startDate");
     const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
@@ -129,15 +156,13 @@ export default function NormalLeaveRequestPage() {
         }
     };
 
-    // Removed hardcoded getLeaveTypeId
-
     const submitMutation = useMutation({
         mutationFn: async (data: NormalLeaveValues) => {
             if (!user?.id) {
                 throw new Error("User session not found. Please log in again.");
             }
 
-            setFileError("Submitting your request...");
+            setFileError(editId ? "Resubmitting your request..." : "Submitting your request...");
             
             let documentUrl: string | null = null;
             if (documentFile) {
@@ -157,8 +182,15 @@ export default function NormalLeaveRequestPage() {
                 reason: data.reason,
             };
 
-            const response = await api.post("/api/v1/leaves/normal", payload);
-            const savedLeave = response.data;
+            let savedLeave;
+            if (editId) {
+                const response = await api.put(`/api/v1/leaves/normal/${editId}`, payload);
+                savedLeave = response.data;
+            } else {
+                const response = await api.post("/api/v1/leaves/normal", payload);
+                savedLeave = response.data;
+            }
+            
             const leaveId: number = savedLeave.id;
 
             if (documentUrl) {
@@ -199,10 +231,45 @@ export default function NormalLeaveRequestPage() {
                         <span className="material-symbols-outlined">arrow_back</span>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Apply for Normal Leave</h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Please fill out the form below to submit a normal leave request.</p>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                {editId ? "Edit & Resubmit Normal Leave" : "Apply for Normal Leave"}
+                            </h1>
+                            {editId && (
+                                <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs font-bold uppercase px-2.5 py-1 rounded-full border border-orange-200 dark:border-orange-800/30">
+                                    Resubmission Mode
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                            {editId ? "Update the requested fields and resubmit for review." : "Please fill out the form below to submit a normal leave request."}
+                        </p>
                     </div>
                 </div>
+
+                {/* Return Reason Banner */}
+                {existingLeave?.returnReason && (
+                    <div className="bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 p-4 rounded-xl border border-orange-200 dark:border-orange-800/30 flex items-start gap-3 mb-6 mt-4">
+                        <span className="material-symbols-outlined text-orange-500 mt-0.5">assignment_return</span>
+                        <div>
+                            <div className="text-sm font-bold">
+                                Request Returned for Corrections {existingLeave.returnedBy && (
+                                    <span className="text-orange-600 dark:text-orange-400 font-normal">
+                                        by {existingLeave.returnedBy
+                                            .replace("ROLE_SUPERVISOR", "Supervisor")
+                                            .replace("ROLE_EMPLOYEE", "Supervisor")
+                                            .replace("ROLE_ADMIN", "HR Admin")
+                                            .replace("ROLE_HR", "HR")
+                                            .replace("ROLE_DIRECTOR", "Director")}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="text-xs font-medium mt-1 text-orange-700 dark:text-orange-300 italic">
+                                &ldquo;{existingLeave.returnReason}&rdquo;
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {fileError && (
                     <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 p-4 rounded-xl border border-blue-200 dark:border-blue-800/30 flex items-center gap-3 mb-6 mt-4">
@@ -217,7 +284,7 @@ export default function NormalLeaveRequestPage() {
                     {isSubmitted ? (
                         <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center justify-center gap-2 border border-emerald-100 dark:border-emerald-800/30 font-semibold mb-6">
                             <span className="material-symbols-outlined">check_circle</span>
-                            Leave request submitted successfully! Pending approval.
+                            {editId ? "Leave request resubmitted successfully! Pending approval." : "Leave request submitted successfully! Pending approval."}
                         </div>
                     ) : (
                         <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -266,8 +333,6 @@ export default function NormalLeaveRequestPage() {
                                 </div>
                             </div>
                             
-
-                            
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Total Days</label>
                                 <input className="w-full bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 dark:text-slate-500 p-2.5 outline-none" disabled type="text" value={`${totalDays} Days`} />
@@ -278,42 +343,44 @@ export default function NormalLeaveRequestPage() {
                                 <textarea
                                     {...register("reason")}
                                     className={`w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-600 dark:text-slate-300 p-3 outline-none ${errors.reason ? 'border-red-500 focus:ring-red-500' : ''}`}
-                                    placeholder="Briefly describe your reason for leave..."
                                     rows={4}
+                                    placeholder="Please provide details about your leave..."
                                     disabled={isDisabled}
                                 />
                                 {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason.message}</p>}
                             </div>
-                            
+
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Supporting Document (Optional)</label>
-                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                                    {isDisabled ? (
-                                        <span className="text-xs font-semibold text-slate-400">Upload Locked</span>
-                                    ) : (
-                                        <FileUploadDropzone
-                                            onFileAccepted={handleFileChange}
-                                            currentFile={documentFile}
-                                            label="Upload Document"
-                                        />
-                                    )}
-                                    {documentFile && (
-                                        <button type="button" onClick={() => setPreviewFile(documentFile)} className="mt-3 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
-                                            <span className="material-symbols-outlined text-[14px]">visibility</span> Preview File
-                                        </button>
-                                    )}
-                                </div>
+                                <FileUploadDropzone 
+                                    onFileAccepted={handleFileChange}
+                                    currentFile={documentFile}
+                                    label="medical slip or supporting letter (PDF/Images, Max 5MB)"
+                                    accept={{
+                                        'application/pdf': ['.pdf'],
+                                        'image/jpeg': ['.jpg', '.jpeg'],
+                                        'image/png': ['.png']
+                                    }}
+                                    maxSize={5 * 1024 * 1024}
+                                    disabled={isDisabled}
+                                />
+                                {documentFile && (
+                                    <button type="button" onClick={() => setPreviewFile(documentFile)} className="mt-3 text-xs text-primary font-semibold flex items-center justify-end w-full gap-1 hover:underline">
+                                        <span className="material-symbols-outlined text-[14px]">visibility</span> Preview File
+                                    </button>
+                                )}
                             </div>
                             <div className="flex items-center gap-4 pt-4">
                                 <button disabled={isDisabled} className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-sm shadow-primary/20 transition-all disabled:opacity-50 flex items-center gap-2" type="submit">
                                     {submitMutation.isPending ? (
                                         <>
                                             <span className="material-symbols-outlined animate-spin text-sm">sync</span>
-                                            Submitting...
+                                            {editId ? "Resubmitting..." : "Submitting..."}
                                         </>
                                     ) : (
                                         <>
-                                            Submit Request
+                                            <span className="material-symbols-outlined text-sm">{editId ? "update" : "send"}</span>
+                                            {editId ? "Resubmit Request" : "Submit Request"}
                                         </>
                                     )}
                                 </button>
@@ -394,5 +461,18 @@ export default function NormalLeaveRequestPage() {
             
             <PdfPreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
         </div>
+    );
+}
+
+export default function NormalLeaveRequestPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center py-20 text-slate-500">
+                <span className="material-symbols-outlined animate-spin mr-2">progress_activity</span>
+                Loading...
+            </div>
+        }>
+            <NormalLeaveForm />
+        </Suspense>
     );
 }

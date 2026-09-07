@@ -257,9 +257,15 @@ export default function LeaveRequestsDashboard() {
                                                     Handover
                                                 </button>
                                             )}
-                                            {req.status.toUpperCase() === "RETURNED" && (req.type === "Overseas Leave" || req.type === "Maternity Leave") && (
+                                            {req.status.toUpperCase() === "RETURNED" && (
                                                 <Link
-                                                    href={`/employee/leave-requests/${req.type === "Overseas Leave" ? "overseas-leave" : "maternity-leaves"}?editId=${req.id}`}
+                                                    href={
+                                                        req.type === "Overseas Leave"
+                                                            ? `/employee/leave-requests/overseas-leave?editId=${req.id}`
+                                                            : req.type === "Maternity Leave"
+                                                            ? `/employee/leave-requests/maternity-leaves?editId=${req.id}`
+                                                            : `/employee/leave-requests/normal-leaves?editId=${req.id}`
+                                                    }
                                                     className="text-orange-600 hover:text-orange-700 font-bold text-sm flex items-center gap-1.5 justify-end transition-colors"
                                                 >
                                                     <span className="material-symbols-outlined text-[18px]">edit</span>

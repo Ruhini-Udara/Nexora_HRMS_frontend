@@ -29,7 +29,18 @@ const DashboardCards = ({
         </div>
         <div className="font-bold text-2xl text-[#0F172A] dark:text-white mb-1">{attendanceStatus}</div>
       </div>
-      {attendanceTime && <div className="text-sm text-[#059669] dark:text-green-400 font-medium">{attendanceTime}</div>}
+      <div className="flex items-center justify-between text-sm pt-1">
+        <span className="text-sm font-medium text-[#059669] dark:text-green-400">
+          {attendanceTime || <span className="text-[#94A3B8] dark:text-slate-500 font-normal">Today</span>}
+        </span>
+        <Link 
+          href="/employee/attendance" 
+          className="text-xs font-semibold text-primary hover:text-[#7a3000] dark:text-orange-400 dark:hover:text-orange-300 flex items-center gap-0.5 transition-colors group"
+        >
+          <span>{attendanceStatus === 'Checked In' ? 'View Details' : 'Apply Manual'}</span>
+          <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </div>
     </div>
     {/* Leave Balance */}
     <div className="bg-white dark:bg-slate-900 border border-[#F1F5F9] dark:border-slate-800 shadow-sm rounded-2xl p-6 flex flex-col h-[178px] transition-colors justify-between">

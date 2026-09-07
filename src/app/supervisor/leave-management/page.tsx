@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import SupervisorSummaryCard from "@/components/supervisor/SupervisorSummaryCard";
 
-type LeaveStatus = "Pending" | "Approved" | "Rejected" | "Closed";
+type LeaveStatus = "Pending" | "Approved" | "Rejected" | "Returned" | "Closed";
 type LeaveType = "Annual Leave" | "Medical Leave" | "Casual Leave";
 
 interface LeaveRequest {
@@ -30,6 +30,9 @@ interface LeaveRequest {
     annualLeaveRemaining: number;
     medicalLeaveRemaining: number;
     isActiveShift?: boolean;
+    isEdited?: boolean;
+    returnReason?: string;
+    returnedBy?: string;
 }
 
 
@@ -55,6 +58,7 @@ const STATUS_BADGE: Record<LeaveStatus, string> = {
     Pending: "bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/30",
     Approved: "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/30",
     Rejected: "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/30",
+    Returned: "bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-900/30",
     Closed: "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700",
 };
 
@@ -69,6 +73,7 @@ function mapBackendStatus(raw: string): LeaveStatus {
     if (!raw) return "Pending";
     const u = raw.toUpperCase();
     if (u.includes("APPROVED") && !u.includes("PENDING")) return "Approved";
+    if (u.includes("RETURNED"))  return "Returned";
     if (u.includes("REJECTED"))  return "Rejected";
     if (u.includes("CLOSED"))    return "Closed";
     return "Pending"; // covers PENDING_SUPERVISOR_APPROVAL, PENDING_HR_APPROVAL, etc.
@@ -136,6 +141,9 @@ export default function LeaveManagementPage() {
                     reason: d.reason || "",
                     annualLeaveRemaining: d.annualLeaveRemaining ?? 0,
                     medicalLeaveRemaining: d.medicalLeaveRemaining ?? 0,
+                    isEdited: d.isEdited,
+                    returnReason: d.returnReason,
+                    returnedBy: d.returnedBy,
                     }));
                     
                     setRequests(mapped);
@@ -209,6 +217,29 @@ export default function LeaveManagementPage() {
         } catch (err) {
             console.error(err);
             pop("Failed to reject request.");
+        }
+    };
+
+    const handleReturn = async (id: string) => {
+        if (!remarks.trim()) {
+            pop("Please provide a remark explaining the return reason.");
+            return;
+        }
+        try {
+            await api.post("/api/v1/approvals", {
+                refId: Number(id),
+                refType: "NORMAL_LEAVE",
+                decision: "RETURNED",
+                remark: remarks,
+                approvedBy: { id: user?.id }
+            });
+
+            setRequests(p => p.map(r => r.id === id ? { ...r, status: "Returned" as LeaveStatus, isEdited: false } : r));
+            pop(`Leave request returned to employee for amendments.`);
+            if (sel?.id === id) setSel(prev => prev ? { ...prev, status: "Returned" } : null);
+        } catch (err) {
+            console.error(err);
+            pop("Failed to return request.");
         }
     };
 
@@ -321,6 +352,7 @@ export default function LeaveManagementPage() {
                         <option value="All Requests">All Requests</option>
                         <option value="Pending">Pending</option>
                         <option value="Approved">Approved</option>
+                        <option value="Returned">Returned</option>
                         <option value="Rejected">Rejected</option>
                     </select>
                 </div>
@@ -402,7 +434,15 @@ export default function LeaveManagementPage() {
                             <div className="flex items-center gap-3">
                                 <UserAvatar user={{ name: sel.name, profilePicturePath: sel.avatar }} size="md" />
                                 <div>
-                                    <p className="font-bold text-gray-900 dark:text-white text-sm">{sel.name}</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-bold text-gray-900 dark:text-white text-sm">{sel.name}</p>
+                                        {sel.isEdited && (
+                                            <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/30 flex items-center gap-1 shadow-sm">
+                                                <span className="material-symbols-outlined text-[12px]">edit_note</span>
+                                                Edited
+                                            </span>
+                                        )}
+                                    </div>
                                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{sel.role} · {sel.department}</p>
                                 </div>
                             </div>
@@ -412,6 +452,25 @@ export default function LeaveManagementPage() {
                         </div>
 
                         <div className="flex flex-col gap-4 p-5 flex-1">
+                            {/* Previous Return Comment */}
+                            {sel.isEdited && sel.returnReason && (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800/30">
+                                    <div className="flex items-center gap-1.5 mb-1.5">
+                                        <span className="material-symbols-outlined text-blue-500 text-xs">history</span>
+                                        <span className="font-bold text-xs text-blue-800 dark:text-blue-200">
+                                            Previous Return Comment {sel.returnedBy && (
+                                                <span className="text-blue-600 dark:text-blue-400 font-medium ml-1">
+                                                    by {sel.returnedBy.replace(/ROLE_SUPERVISOR/g, "Supervisor").replace(/ROLE_ADMIN/g, "HR Admin").replace(/ROLE_DIRECTOR/g, "Director").replace(/ROLE_HR/g, "HR").replace(/ROLE_EMPLOYEE/g, "Supervisor")}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs font-medium text-blue-700 dark:text-blue-300 italic leading-relaxed">
+                                        &ldquo;{sel.returnReason}&rdquo;
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Leave Type & Duration */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
@@ -475,7 +534,7 @@ export default function LeaveManagementPage() {
                                     value={remarks}
                                     onChange={e => setRemarks(e.target.value)}
                                     rows={2}
-                                    placeholder="Enter remarks for the employee..."
+                                    placeholder="Enter remarks, instructions to amend, or approval note..."
                                     className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-200 placeholder-gray-400 text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 transition-colors"
                                 />
                             </div>
@@ -486,13 +545,19 @@ export default function LeaveManagementPage() {
                                     <>
                                         <button
                                             onClick={() => handleReject(sel.id)}
-                                            className="flex-1 py-2 text-sm font-semibold text-red-600 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/40 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
+                                            className="flex-1 py-2 text-xs font-semibold text-red-600 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/40 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
                                         >
                                             Reject
                                         </button>
                                         <button
+                                            onClick={() => handleReturn(sel.id)}
+                                            className="flex-1 py-2 text-xs font-semibold text-orange-600 bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900/50 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors cursor-pointer"
+                                        >
+                                            Return
+                                        </button>
+                                        <button
                                             onClick={() => handleApprove(sel.id)}
-                                            className="flex-1 py-2 text-sm font-semibold text-white bg-primary hover:bg-[#7a3000] rounded-lg transition-colors cursor-pointer"
+                                            className="flex-1 py-2 text-xs font-semibold text-white bg-primary hover:bg-[#7a3000] rounded-lg transition-colors cursor-pointer"
                                         >
                                             Approve
                                         </button>
@@ -500,9 +565,10 @@ export default function LeaveManagementPage() {
                                 ) : (
                                     <div className={`flex-1 py-2 text-sm font-semibold text-center rounded-lg ${sel.status === "Approved" ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/30" :
                                         sel.status === "Rejected" ? "bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30" :
+                                        sel.status === "Returned" ? "bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-900/30" :
                                             "bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700"
                                         }`}>
-                                        {sel.status === "Approved" ? "✓ Approved" : sel.status === "Rejected" ? "✗ Rejected" : "Closed"}
+                                        {sel.status === "Approved" ? "✓ Approved" : sel.status === "Rejected" ? "✗ Rejected" : sel.status === "Returned" ? "↩ Returned" : "Closed"}
                                     </div>
                                 )}
                             </div>
@@ -575,6 +641,11 @@ function LeaveCard({ req, selected, onSelect, onApprove, onReject }: {
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight truncate">{req.name}</p>
+                        {req.isEdited && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30">
+                                EDITED
+                            </span>
+                        )}
                         <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full border ${STATUS_BADGE[req.status]}`}>
                             {req.status.toUpperCase()}
                         </span>
