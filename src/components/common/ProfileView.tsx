@@ -9,7 +9,7 @@ import api from "@/lib/axiosInstance";
 import { format } from "date-fns";
 
 export default function ProfileView() {
-    // Evaluator Note: Profile data is retrieved instantaneously from the Zustand global store.
+    // Profile data is retrieved instantaneously from the Zustand global store.
     // Since the full user payload is injected into the store upon login, we eliminate
     // the need for a redundant API call here, significantly improving page load performance.
     const { user, login, token } = useAuthStore();
@@ -32,7 +32,7 @@ export default function ProfileView() {
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
         const file = e.target.files[0];
-        
+
         setIsUploading(true);
         try {
             // Upload to supabase in 'profile-pictures' folder within hrms-documents bucket
@@ -72,7 +72,7 @@ export default function ProfileView() {
     return (
         <div className="max-w-5xl mx-auto space-y-6">
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">My Profile</h1>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Profile Card */}
                 <div className="col-span-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm text-center flex flex-col items-center">
@@ -101,7 +101,7 @@ export default function ProfileView() {
                     </div>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white">{user.name}</h3>
                     <p className="text-slate-500 dark:text-slate-400 mb-6">{user.designation}</p>
-                    
+
                     <div className="w-full mt-4 pt-6 border-t border-slate-100 dark:border-slate-800 text-left space-y-4">
                         <div className="flex flex-col gap-3">
                             <div className="flex items-center gap-3 text-sm" title="Work Email">
@@ -111,7 +111,7 @@ export default function ProfileView() {
                                     <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Work Email</span>
                                 </div>
                             </div>
-                            
+
                             {user.personalEmail && ["ROLE_HR", "ROLE_ADMIN", "ROLE_DIRECTOR", "ROLE_SUPERVISOR"].includes(user.role) && (
                                 <div className="flex items-center gap-3 text-sm" title="Personal Email">
                                     <Mail className="w-5 h-5 text-slate-400" />
@@ -133,46 +133,46 @@ export default function ProfileView() {
                             Read Only
                         </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5"/> Role</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5" /> Role</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.role.replace("ROLE_", "")}</p>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Building className="w-3.5 h-3.5"/> Department</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> Department</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.department || "N/A"}</p>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Hash className="w-3.5 h-3.5"/> Employee ID</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Hash className="w-3.5 h-3.5" /> Employee ID</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.id}</p>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5"/> Designation</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5" /> Designation</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.designation}</p>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Hash className="w-3.5 h-3.5"/> EPF Number</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Hash className="w-3.5 h-3.5" /> EPF Number</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.epfNumber || "N/A"}</p>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Building className="w-3.5 h-3.5"/> Branch</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> Branch</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.branch || "N/A"}</p>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5"/> Employee Type</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Employee Type</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.employeeType || "N/A"}</p>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><User className="w-3.5 h-3.5"/> Gender</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Gender</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.gender || "N/A"}</p>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5"/> Phone Number</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> Phone Number</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">{user.phoneNumber || "N/A"}</p>
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5"/> Status</label>
+                            <label className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" /> Status</label>
                             <p className="text-slate-800 dark:text-slate-200 font-medium">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${user.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                                     {user.isActive ? "Active" : "Inactive"}
@@ -185,20 +185,20 @@ export default function ProfileView() {
 
             {/* Fullscreen Image Modal */}
             {isImageModalOpen && profilePicUrl && (
-                <div 
+                <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
                     onClick={() => setIsImageModalOpen(false)}
                 >
                     <div className="relative max-w-3xl max-h-[90vh] w-full flex justify-center" onClick={(e) => e.stopPropagation()}>
-                        <button 
+                        <button
                             className="absolute -top-12 right-0 md:-right-12 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full p-2"
                             onClick={() => setIsImageModalOpen(false)}
                         >
                             <X className="w-6 h-6" />
                         </button>
-                        <img 
-                            src={profilePicUrl} 
-                            alt="Full Profile" 
+                        <img
+                            src={profilePicUrl}
+                            alt="Full Profile"
                             className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl ring-4 ring-white/10"
                         />
                     </div>
