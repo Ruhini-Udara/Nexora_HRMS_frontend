@@ -158,6 +158,7 @@ export default function AttendancePage() {
                         <input
                             type="date"
                             value={filters.startDate}
+                            max={filters.endDate}
                             disabled={Boolean(filters.date)}
                             onChange={(event) => setFilters({ ...filters, startDate: event.target.value })}
                             className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-900/20 disabled:bg-slate-100"
@@ -171,6 +172,7 @@ export default function AttendancePage() {
                         <input
                             type="date"
                             value={filters.endDate}
+                            min={filters.startDate}
                             disabled={Boolean(filters.date)}
                             onChange={(event) => setFilters({ ...filters, endDate: event.target.value })}
                             className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-900/20 disabled:bg-slate-100"
