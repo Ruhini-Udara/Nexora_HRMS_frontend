@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, Filter, Calendar, CheckCircle2, XCircle, Clock, MoreVertical, Eye, Download, Printer, User, Building2, MapPin, Briefcase, FileText, ChevronRight, LayoutGrid, List as ListIcon, ShieldCheck, Mail, Phone, CalendarDays, History } from 'lucide-react';
 import { getAllResignationRequests, updateResignationStatus, ResignationRequest } from '@/lib/api/resignationRequests';
 import { getHrmsSignedUrl } from '@/lib/supabaseClient';
+import { Toast } from '@/components/ui/Toast';
 
 // ── Status badge config ─────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; classes: string }> = {
@@ -96,6 +97,12 @@ export default function EmployeeResignations() {
     const [rejectReason, setRejectReason] = useState("");
     const [rejectReasonError, setRejectReasonError] = useState(false);
 
+    // ── Return popup state ────────────────────────────────────────────
+    const [showReturnDialog, setShowReturnDialog] = useState(false);
+    const [returnReason, setReturnReason] = useState("");
+    const [returnReasonError, setReturnReasonError] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
     // ── Handlers ─────────────────────────────────────────────────────
     const handleDownload = async (path: string | undefined) => {
         if (!path) return;
@@ -138,9 +145,39 @@ export default function EmployeeResignations() {
         }
         if (!selectedRequest) return;
         try {
-            await updateResignationStatus(selectedRequest.id, "RETURNED", rejectReason);
+            await updateResignationStatus(selectedRequest.id, "REJECTED", rejectReason.trim());
             await fetchRequests();
+            setSuccessMessage(`Request rejected for ${selectedRequest.employeeName}. Notification email sent.`);
             handleCloseRejectDialog();
+            handleCloseModal();
+        } catch (error) {
+            console.error('Failed to reject request:', error);
+        }
+    };
+
+    const handleOpenReturnDialog = () => {
+        setReturnReason("");
+        setReturnReasonError(false);
+        setShowReturnDialog(true);
+    };
+
+    const handleCloseReturnDialog = () => {
+        setShowReturnDialog(false);
+        setReturnReason("");
+        setReturnReasonError(false);
+    };
+
+    const handleConfirmReturn = async () => {
+        if (!returnReason.trim()) {
+            setReturnReasonError(true);
+            return;
+        }
+        if (!selectedRequest) return;
+        try {
+            await updateResignationStatus(selectedRequest.id, "RETURNED", returnReason.trim());
+            await fetchRequests();
+            setSuccessMessage(`Request returned to ${selectedRequest.employeeName} for amendments. Email sent.`);
+            handleCloseReturnDialog();
             handleCloseModal();
         } catch (error) {
             console.error('Failed to return request:', error);
@@ -552,6 +589,44 @@ export default function EmployeeResignations() {
                                         </div>
                                     </div>
                                 )}
+                                {selectedRequest.status === 'RETURNED' && (
+                                    <div className="p-4 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-xl flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-orange-600 dark:text-orange-400 text-2xl mt-0.5">assignment_return</span>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-bold text-orange-900 dark:text-orange-200">
+                                                Returned to Employee for Amendments
+                                            </p>
+                                            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                                This request has been returned to the employee to make required changes.
+                                            </p>
+                                            {selectedRequest.hrRemark && (
+                                                <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-orange-200 dark:border-orange-800/60 rounded-lg">
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Reason for Return:</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{selectedRequest.hrRemark}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {selectedRequest.status === 'REJECTED' && (
+                                    <div className="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+                                        <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-2xl mt-0.5">cancel</span>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-bold text-red-900 dark:text-red-200">
+                                                Resignation Request Rejected
+                                            </p>
+                                            <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                                                This resignation request has been rejected by HR.
+                                            </p>
+                                            {selectedRequest.hrRemark && (
+                                                <div className="mt-2.5 p-3 bg-white/80 dark:bg-slate-900/80 border border-red-200 dark:border-red-800/60 rounded-lg">
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Reason for Rejection:</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 italic">{selectedRequest.hrRemark}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-6">
                                     <ReadOnlyField label="Current Designation" value={selectedRequest.designation} />
@@ -665,6 +740,12 @@ export default function EmployeeResignations() {
                                     <>
                                         <button
                                             onClick={handleOpenRejectDialog}
+                                            className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-bold text-sm transition-colors cursor-pointer"
+                                        >
+                                            Reject
+                                        </button>
+                                        <button
+                                            onClick={handleOpenReturnDialog}
                                             className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-900/50 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg font-bold text-sm transition-colors cursor-pointer flex items-center gap-1.5"
                                         >
                                             <span className="material-symbols-outlined text-[18px]">assignment_return</span>
@@ -726,8 +807,55 @@ export default function EmployeeResignations() {
                     </div>
                 )}
 
-                {/* Return Reason Popup */}
+                {/* Reject Reason Popup */}
                 {showRejectDialog && selectedRequest && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+                        <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-xl">cancel</span>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-slate-800 dark:text-white">Reject Resignation Request</h3>
+                                        <p className="text-xs text-slate-400">Request ID: {selectedRequest.id} · {selectedRequest.employeeName}</p>
+                                    </div>
+                                </div>
+                                <button onClick={handleCloseRejectDialog} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    Please provide a reason for rejecting this resignation request. An email will be sent to the employee with this reason informing them of the rejection.
+                                </p>
+                                <textarea
+                                    value={rejectReason}
+                                    onChange={(e) => {
+                                        setRejectReason(e.target.value);
+                                        if (e.target.value.trim()) setRejectReasonError(false);
+                                    }}
+                                    placeholder="e.g. Critical handover pending or service agreement obligations unmet..."
+                                    rows={4}
+                                    className={`w-full border rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 resize-none transition-colors ${rejectReasonError ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-primary/20 focus:border-primary"}`}
+                                />
+                                {rejectReasonError && <p className="text-xs text-red-500">Reason is mandatory to reject.</p>}
+                            </div>
+                            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-end gap-3 rounded-b-2xl">
+                                <button onClick={handleCloseRejectDialog} className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 cursor-pointer">
+                                    Cancel
+                                </button>
+                                <button onClick={handleConfirmReject} className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[18px]">cancel</span>
+                                    Confirm Rejection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Return Reason Popup */}
+                {showReturnDialog && selectedRequest && (
                     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
                         <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -737,7 +865,7 @@ export default function EmployeeResignations() {
                                     </div>
                                     <h3 className="text-base font-bold text-slate-800 dark:text-white">Return Request for Amendment</h3>
                                 </div>
-                                <button onClick={handleCloseRejectDialog} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                                <button onClick={handleCloseReturnDialog} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
                                     <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
@@ -746,22 +874,22 @@ export default function EmployeeResignations() {
                                     Please specify the reason why this resignation request is being returned to the employee. The employee will be notified by email and will be able to amend and resubmit it.
                                 </p>
                                 <textarea
-                                    value={rejectReason}
+                                    value={returnReason}
                                     onChange={(e) => {
-                                        setRejectReason(e.target.value);
-                                        if (e.target.value.trim()) setRejectReasonError(false);
+                                        setReturnReason(e.target.value);
+                                        if (e.target.value.trim()) setReturnReasonError(false);
                                     }}
                                     placeholder="e.g. Please clarify obligations or re-upload the signed clearance letter..."
                                     rows={4}
-                                    className={`w-full border rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 resize-none transition-colors ${rejectReasonError ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-primary/20 focus:border-primary"}`}
+                                    className={`w-full border rounded-xl px-4 py-3 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 resize-none transition-colors ${returnReasonError ? "border-red-400 focus:ring-red-200" : "border-slate-200 focus:ring-primary/20 focus:border-primary"}`}
                                 />
-                                {rejectReasonError && <p className="text-xs text-red-500">Reason is mandatory.</p>}
+                                {returnReasonError && <p className="text-xs text-red-500">Reason is mandatory.</p>}
                             </div>
                             <div className="p-6 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-end gap-3 rounded-b-2xl">
-                                <button onClick={handleCloseRejectDialog} className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 cursor-pointer">
+                                <button onClick={handleCloseReturnDialog} className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-800 cursor-pointer">
                                     Cancel
                                 </button>
-                                <button onClick={handleConfirmReject} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-2">
+                                <button onClick={handleConfirmReturn} className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-2">
                                     <span className="material-symbols-outlined text-[18px]">assignment_return</span>
                                     Return Request
                                 </button>
@@ -770,6 +898,16 @@ export default function EmployeeResignations() {
                     </div>
                 )}
             </div>
+
+            {/* ── Toast Notifications ────────────────────────────── */}
+            {successMessage && (
+                <Toast
+                    message={successMessage}
+                    type="success"
+                    position="right"
+                    onClose={() => setSuccessMessage(null)}
+                />
+            )}
         </div>
     );
 }
